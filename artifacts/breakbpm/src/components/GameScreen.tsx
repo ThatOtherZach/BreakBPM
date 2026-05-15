@@ -370,9 +370,6 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
                 <img src="/copy-icon.png" alt="Copy code" style={{ height: 23, width: 'auto', display: 'block' }} />
               </button>
             </div>
-            <button className="hud-share-btn" onClick={handleShare}>
-              {toast ? '✓ COPIED' : '📋 SHARE'}
-            </button>
           </div>
         </div>
 
