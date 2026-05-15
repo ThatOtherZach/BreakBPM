@@ -67,20 +67,22 @@ export function getLegalBalls(
   }
 
   // 8-ball
+  // The 8-ball is always a legal tap until it's sunk — the game logic handles
+  // the consequence (loss or win) based on context. Never lock it out in the UI.
   if (!currentPlayer.team) {
-    // On the break (nothing sunk yet) every ball is reachable — enables the golden break
-    if (sunkBalls.length === 0) return remaining;
-    return remaining.filter(b => b !== EIGHT_BALL);
+    return remaining; // no group assigned yet — all balls reachable
   }
 
   const myGroup = getPlayerGroup(currentPlayer);
   const myRemaining = remaining.filter(b => myGroup.includes(b));
 
   if (myRemaining.length === 0) {
+    // Group cleared — 8-ball is the only legal shot
     return remaining.filter(b => b === EIGHT_BALL);
   }
 
-  return myRemaining;
+  // Group not yet cleared — own balls + 8 are both tappable
+  return [...myRemaining, EIGHT_BALL].filter(b => remaining.includes(b));
 }
 
 export function getLowestBall(sunkBalls: number[]): number {
