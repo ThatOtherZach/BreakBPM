@@ -147,6 +147,16 @@ body {
 .navbar-menu-item:active { background: var(--blue); color: #fff; }
 
 /* ── About Page ── */
+.about-window {
+  overflow: hidden;
+}
+
+.about-scroll-area {
+  flex: 1;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+}
+
 .about-content {
   padding: 12px;
   background: #fff;
