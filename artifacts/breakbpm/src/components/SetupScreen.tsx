@@ -54,7 +54,6 @@ export default function SetupScreen({ onStart, onAbout }: Props) {
     <div className="app-window">
       {/* Title bar */}
       <Navbar onAbout={onAbout} />
-
       {/* ── PC-98 Splash Panel ── */}
       <div className="splash-panel">
         {/* Left: 8-ball art in a CRT-style frame */}
@@ -69,15 +68,14 @@ export default function SetupScreen({ onStart, onAbout }: Props) {
           <div className="splash-title-rule" />
           <div className="splash-meta">
             <span>VER 1.00</span>
-            <span>© 1998</span>
+            <span>© 2026 Saym Services Inc.</span>
           </div>
-          <div className="splash-tagline">
+          <div className="splash-tagline text-left">
             TRACK YOUR<br />
             BALLS PER MINUTE
           </div>
         </div>
       </div>
-
       {/* ── Menu body ── */}
       <div className="app-body">
 
@@ -200,7 +198,6 @@ export default function SetupScreen({ onStart, onAbout }: Props) {
         </div>
 
       </div>
-
       {/* Status bar */}
       <div className="statusbar">
         <div className="statusbar-item" style={{ flex: 1 }}>READY</div>
