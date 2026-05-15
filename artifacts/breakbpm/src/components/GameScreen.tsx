@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { GameState, ShotLogEntry } from '../lib/gameLogic';
+import Navbar from './Navbar';
 import {
   getLegalBalls, getRemainingBalls, checkSinkResult,
   assignTeams, shouldAssignTeams, calculateBPM, formatTime,
@@ -10,6 +11,7 @@ import {
 interface Props {
   initialState: GameState;
   onNewGame: () => void;
+  onAbout: () => void;
 }
 
 const BALL_COLORS: Record<number, string> = {
@@ -30,7 +32,7 @@ function ballClass(ball: number, legal: number[], sunk: number[], _gameType: str
   return base;
 }
 
-export default function GameScreen({ initialState, onNewGame }: Props) {
+export default function GameScreen({ initialState, onNewGame, onAbout }: Props) {
   const [state, setState] = useState<GameState>(initialState);
   const [elapsed, setElapsed] = useState(0);
 
@@ -310,18 +312,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
 
   return (
     <div className="app-window">
-      {/* Title bar */}
-      <div className="titlebar">
-        <div className="titlebar-left">
-          <span className="titlebar-icon">🎱</span>
-          <span className="titlebar-title">BreakBPM</span>
-        </div>
-        <div className="titlebar-btns">
-          <button className="tb-btn">_</button>
-          <button className="tb-btn">□</button>
-          <button className="tb-btn" onClick={() => setConfirmNew(true)}>✕</button>
-        </div>
-      </div>
+      <Navbar onAbout={onAbout} />
 
       {/* ── Dark HUD panel (matches splash aesthetic) ── */}
       <div className="hud-panel">

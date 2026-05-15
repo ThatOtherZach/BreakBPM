@@ -48,7 +48,188 @@ body {
   border-right: 2px solid var(--dshadow);
 }
 
-/* ── Title Bar ── */
+/* ── Navbar ── */
+.navbar {
+  background: linear-gradient(to right, var(--navy) 0%, var(--blue) 100%);
+  color: var(--white);
+  padding: 0 10px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  user-select: none;
+  position: relative;
+  z-index: 100;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navbar-icon-img {
+  height: 28px;
+  width: auto;
+}
+
+.navbar-title {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 22px;
+  color: #fff;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.navbar-back-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-family: 'MS Sans Serif', 'Tahoma', Geneva, Arial, sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 2px;
+}
+.navbar-back-btn:hover { background: rgba(255,255,255,0.15); }
+.navbar-back-btn:active { background: rgba(255,255,255,0.3); }
+
+.navbar-hamburger {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 2px;
+  width: 36px;
+  height: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.navbar-hamburger:hover { background: rgba(255,255,255,0.15); }
+.navbar-hamburger:active { background: rgba(255,255,255,0.25); }
+
+.hamburger-bar {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: #fff;
+  border-radius: 1px;
+}
+
+.navbar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+}
+
+.navbar-menu {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  z-index: 300;
+  background: var(--silver);
+  border: 2px solid;
+  border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
+  min-width: 140px;
+  box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+}
+
+.navbar-menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  font-family: 'MS Sans Serif', 'Tahoma', Geneva, Arial, sans-serif;
+  font-size: 13px;
+  color: var(--black);
+  cursor: pointer;
+  border-bottom: 1px solid var(--dark);
+}
+.navbar-menu-item:last-child { border-bottom: none; }
+.navbar-menu-item:hover { background: var(--navy); color: #fff; }
+.navbar-menu-item:active { background: var(--blue); color: #fff; }
+
+/* ── About Page ── */
+.about-content {
+  padding: 12px;
+  background: #fff;
+}
+
+.about-loading,
+.about-error {
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  color: var(--dark);
+  padding: 16px 0;
+  text-align: center;
+}
+
+.about-error { color: #c00; }
+
+.about-markdown {
+  font-family: 'MS Sans Serif', 'Tahoma', Geneva, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #111;
+  word-break: break-word;
+}
+
+.about-markdown h1,
+.about-markdown h2,
+.about-markdown h3 {
+  font-family: 'VT323', monospace;
+  color: var(--navy);
+  margin: 16px 0 6px;
+  line-height: 1.1;
+}
+.about-markdown h1 { font-size: 28px; }
+.about-markdown h2 { font-size: 22px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+.about-markdown h3 { font-size: 18px; }
+
+.about-markdown p { margin: 0 0 10px; }
+.about-markdown ul,
+.about-markdown ol { margin: 0 0 10px 20px; }
+.about-markdown li { margin-bottom: 4px; }
+.about-markdown code {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  background: #eee;
+  padding: 1px 4px;
+  border: 1px solid #ccc;
+}
+.about-markdown pre {
+  background: #111;
+  color: #0f0;
+  padding: 10px;
+  overflow-x: auto;
+  margin: 0 0 10px;
+  font-size: 12px;
+}
+.about-markdown pre code {
+  background: none;
+  border: none;
+  color: inherit;
+}
+.about-markdown a { color: var(--navy); }
+.about-markdown strong { font-weight: bold; }
+.about-markdown em { font-style: italic; }
+.about-markdown hr { border: none; border-top: 1px solid #ccc; margin: 12px 0; }
+.about-markdown blockquote {
+  border-left: 3px solid var(--navy);
+  padding-left: 10px;
+  color: #555;
+  margin: 0 0 10px;
+}
+
+/* ── Title Bar (legacy, kept for reference) ── */
 .titlebar {
   background: linear-gradient(to right, var(--navy) 0%, var(--blue) 100%);
   color: var(--white);

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { GameType, Player } from '../lib/gameLogic';
 import ballImg from '/eightball_nobg.png';
+import Navbar from './Navbar';
 
 const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
   { id: '8ball', label: '8-Ball', desc: 'Solids vs Stripes' },
@@ -10,9 +11,9 @@ const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
 
 const DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
 
-interface Props { onStart: (gt: GameType, players: Player[]) => void; }
+interface Props { onStart: (gt: GameType, players: Player[]) => void; onAbout: () => void; }
 
-export default function SetupScreen({ onStart }: Props) {
+export default function SetupScreen({ onStart, onAbout }: Props) {
   const [gameType, setGameType] = useState<GameType>('8ball');
   const [playerCount, setPlayerCount] = useState(2);
   const [names, setNames] = useState(['', '', '', '']);
@@ -52,17 +53,7 @@ export default function SetupScreen({ onStart }: Props) {
   return (
     <div className="app-window">
       {/* Title bar */}
-      <div className="titlebar">
-        <div className="titlebar-left">
-          <span className="titlebar-icon">🎱</span>
-          <span className="titlebar-title">BreakBPM v1.0</span>
-        </div>
-        <div className="titlebar-btns">
-          <button className="tb-btn">_</button>
-          <button className="tb-btn">□</button>
-          <button className="tb-btn">✕</button>
-        </div>
-      </div>
+      <Navbar onAbout={onAbout} />
 
       {/* ── PC-98 Splash Panel ── */}
       <div className="splash-panel">

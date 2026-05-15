@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import SetupScreen from './components/SetupScreen';
 import GameScreen from './components/GameScreen';
+import AboutScreen from './components/AboutScreen';
 import type { GameType, GameState, Player } from './lib/gameLogic';
 import { generateShareCode, decodeGameState } from './lib/gameLogic';
+
+type View = 'setup' | 'game' | 'about';
 
 function loadStateFromUrl(): Partial<GameState> | null {
   try {
@@ -34,10 +37,10 @@ function createInitialGameState(gameType: GameType, players: Player[]): GameStat
 }
 
 export default function App() {
+  const [view, setView] = useState<View>('setup');
   const [gameState, setGameState] = useState<GameState | null>(null);
 
   useEffect(() => {
-    // Try to restore from URL
     const restored = loadStateFromUrl();
     if (restored && restored.phase && restored.players && restored.players.length > 0) {
       setGameState({
@@ -55,13 +58,14 @@ export default function App() {
         shareCode: restored.shareCode ?? generateShareCode(),
         teamAssigned: restored.teamAssigned ?? false,
       });
+      setView('game');
     }
   }, []);
 
   function handleStart(gameType: GameType, players: Player[]) {
     const newState = createInitialGameState(gameType, players);
     setGameState(newState);
-    // Clear URL params
+    setView('game');
     const url = new URL(window.location.href);
     url.searchParams.delete('state');
     url.searchParams.delete('game');
@@ -70,21 +74,35 @@ export default function App() {
 
   function handleNewGame() {
     setGameState(null);
+    setView('setup');
     const url = new URL(window.location.href);
     url.searchParams.delete('state');
     url.searchParams.delete('game');
     window.history.replaceState(null, '', url.toString());
   }
 
-  if (!gameState) {
-    return <SetupScreen onStart={handleStart} />;
+  function handleAbout() {
+    setView('about');
   }
 
-  return (
-    <GameScreen
-      key={gameState.shareCode}
-      initialState={gameState}
-      onNewGame={handleNewGame}
-    />
-  );
+  function handleBackFromAbout() {
+    setView(gameState ? 'game' : 'setup');
+  }
+
+  if (view === 'about') {
+    return <AboutScreen onBack={handleBackFromAbout} />;
+  }
+
+  if (view === 'game' && gameState) {
+    return (
+      <GameScreen
+        key={gameState.shareCode}
+        initialState={gameState}
+        onNewGame={handleNewGame}
+        onAbout={handleAbout}
+      />
+    );
+  }
+
+  return <SetupScreen onStart={handleStart} onAbout={handleAbout} />;
 }
