@@ -112,7 +112,7 @@ export default function SetupScreen({ onStart }: Props) {
           <div>
             <div className="menu-section-label">▶ NUMBER OF PLAYERS</div>
             <div className="flex gap-1">
-              {[2, 3, 4].map(n => (
+              {[1, 2, 4].map(n => (
                 <button
                   key={n}
                   className={`btn ${playerCount === n ? 'btn-primary' : ''}`}

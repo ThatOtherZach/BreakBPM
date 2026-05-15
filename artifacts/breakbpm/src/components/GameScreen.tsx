@@ -230,6 +230,28 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
     setPaused(false);
   }
 
+  function handleReset() {
+    const now = Date.now();
+    const fresh: GameState = {
+      ...state,
+      phase: 'playing',
+      sunkBalls: [],
+      shotLog: [],
+      firstActionTime: null,
+      lastActionTime: null,
+      gameStartTime: now,
+      winner: null,
+      winMessage: '',
+    };
+    setUndoStack([]);
+    setBpm(null);
+    setElapsed(0);
+    setPaused(false);
+    setPausedDuration(0);
+    setPauseStart(null);
+    applyState(fresh);
+  }
+
   // Final BPM: snapshot at the last action, not at game-end time
   const finalBpm = state.firstActionTime
     ? calculateBPM(state.sunkBalls.length, state.firstActionTime, state.lastActionTime ?? Date.now())
@@ -440,6 +462,11 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
           )}
         </div>
 
+        {state.phase === 'playing' && state.gameType === 'practice' && (
+          <button className="btn w-full" onClick={handleReset}>
+            ↺ Reset Table
+          </button>
+        )}
         {state.phase === 'playing' && (
           <button className="btn btn-danger w-full" onClick={() => setConfirmNew(true)}>
             ✖ End Game / New Game
