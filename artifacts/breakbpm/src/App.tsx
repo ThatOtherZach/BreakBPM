@@ -1,0 +1,86 @@
+import { useState, useEffect } from 'react';
+import SetupScreen from './components/SetupScreen';
+import GameScreen from './components/GameScreen';
+import type { GameType, GameState, Player } from './lib/gameLogic';
+import { generateShareCode, decodeGameState } from './lib/gameLogic';
+
+function loadStateFromUrl(): Partial<GameState> | null {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get('state');
+    if (encoded) {
+      return decodeGameState(encoded);
+    }
+  } catch {}
+  return null;
+}
+
+function createInitialGameState(gameType: GameType, players: Player[]): GameState {
+  return {
+    phase: 'playing',
+    gameType,
+    players,
+    currentPlayerIndex: 0,
+    sunkBalls: [],
+    shotLog: [],
+    gameStartTime: Date.now(),
+    winner: null,
+    winMessage: '',
+    shareCode: generateShareCode(),
+    teamAssigned: players.some(p => p.team !== undefined),
+  };
+}
+
+export default function App() {
+  const [gameState, setGameState] = useState<GameState | null>(null);
+
+  useEffect(() => {
+    // Try to restore from URL
+    const restored = loadStateFromUrl();
+    if (restored && restored.phase && restored.players && restored.players.length > 0) {
+      setGameState({
+        phase: restored.phase!,
+        gameType: restored.gameType ?? '8ball',
+        players: restored.players ?? [],
+        currentPlayerIndex: restored.currentPlayerIndex ?? 0,
+        sunkBalls: restored.sunkBalls ?? [],
+        shotLog: restored.shotLog ?? [],
+        gameStartTime: restored.gameStartTime ?? Date.now(),
+        winner: restored.winner ?? null,
+        winMessage: restored.winMessage ?? '',
+        shareCode: restored.shareCode ?? generateShareCode(),
+        teamAssigned: restored.teamAssigned ?? false,
+      });
+    }
+  }, []);
+
+  function handleStart(gameType: GameType, players: Player[]) {
+    const newState = createInitialGameState(gameType, players);
+    setGameState(newState);
+    // Clear URL params
+    const url = new URL(window.location.href);
+    url.searchParams.delete('state');
+    url.searchParams.delete('game');
+    window.history.replaceState(null, '', url.toString());
+  }
+
+  function handleNewGame() {
+    setGameState(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('state');
+    url.searchParams.delete('game');
+    window.history.replaceState(null, '', url.toString());
+  }
+
+  if (!gameState) {
+    return <SetupScreen onStart={handleStart} />;
+  }
+
+  return (
+    <GameScreen
+      key={gameState.shareCode}
+      initialState={gameState}
+      onNewGame={handleNewGame}
+    />
+  );
+}
