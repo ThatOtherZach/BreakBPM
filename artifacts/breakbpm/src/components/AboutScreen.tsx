@@ -70,8 +70,7 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
       </div>
 
       <div className="statusbar">
-        <span>ABOUT</span>
-        <span>BREAKBPM SYS v1.0</span>
+        <span>BREAKBPM SYS v1.0 - Saym Services Inc.</span>
       </div>
     </div>
   );
