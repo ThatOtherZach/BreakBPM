@@ -482,7 +482,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
             style={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'nowrap', minHeight: 32, fontSize: 12 }}
             onClick={() => setLogOpen(o => !o)}
           >
-            <span><img src="/history-icon.png" alt="History" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Game History ({state.shotLog.length})</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><img src="/history-icon.png" alt="History" style={{ width: 16, height: 16, flexShrink: 0 }} />Game History ({state.shotLog.length})</span>
             <span>{logOpen ? '▲' : '▼'}</span>
           </button>
           {logOpen && (
