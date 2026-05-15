@@ -1117,6 +1117,7 @@ body {
   font-size: 13px;
 }
 
+.btn.selected,
 .type-btn.selected {
   background: #e0e8ff;
   box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey;

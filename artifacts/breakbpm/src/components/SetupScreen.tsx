@@ -106,7 +106,7 @@ export default function SetupScreen({ onStart, onAbout }: Props) {
               {[1, 2, 4].map(n => (
                 <button
                   key={n}
-                  className={`btn ${playerCount === n ? 'btn-primary' : ''}`}
+                  className={`btn ${playerCount === n ? 'selected' : ''}`}
                   style={{ flex: 1, fontSize: 16, fontWeight: 'bold', minHeight: 44 }}
                   onClick={() => setPlayerCount(n)}
                 >
