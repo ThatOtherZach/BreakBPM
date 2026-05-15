@@ -321,8 +321,8 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
             </div>
             <div className="hud-right-row">
               <span className="hud-meta-label">TIME</span>
+              <span className="hud-timer-indicator">{paused ? '⏸' : '▶'}</span>
               <span className={`hud-timer${paused ? ' hud-timer-paused' : ''}`}>{formatTime(dispTime)}</span>
-              {paused && <span className="hud-paused-badge">⏸</span>}
             </div>
             <div className="hud-right-row">
               <span className="hud-meta-label">CODE</span>
@@ -336,16 +336,15 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
 
         {/* Sunk balls readout — full width within the panel */}
         <div className="hud-terminal">
-          <span className="hud-terminal-prompt">▶ </span>
           {state.sunkBalls.length === 0
             ? <span className="hud-terminal-idle">_ awaiting first shot_</span>
             : state.sunkBalls.map((b, i) => (
-              <span key={i} className={
-                b === 8 ? 'hud-ball hud-ball-8'
-                : b === 9 ? 'hud-ball hud-ball-9'
-                : 'hud-ball'
-              }>
-                ({b})
+              <span
+                key={i}
+                className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}`}
+                style={{ '--chip-color': BALL_COLORS[b] } as React.CSSProperties}
+              >
+                {b}
               </span>
             ))
           }
