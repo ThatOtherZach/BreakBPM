@@ -511,7 +511,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
 
         {state.phase === 'playing' && state.gameType === 'practice' && (
           <button className="btn w-full" onClick={handleReset}>
-            ↺ Reset Table
+            <img src="/reset-icon.png" alt="Reset" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Reset Table
           </button>
         )}
         {state.phase === 'playing' && (
