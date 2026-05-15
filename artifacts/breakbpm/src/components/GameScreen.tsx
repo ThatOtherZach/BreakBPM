@@ -172,6 +172,41 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
 
     const now = Date.now();
     const firstActionTime = state.firstActionTime ?? now;
+
+    // Foul-on-8 rule: if the player fouls while the 8-ball is their only
+    // remaining legal ball (group fully cleared), it's an instant loss.
+    if (
+      type === 'foul' &&
+      state.gameType === '8ball' &&
+      state.teamAssigned &&
+      cur.team &&
+      !state.sunkBalls.includes(EIGHT_BALL)
+    ) {
+      const myGroup = cur.team === 'solids' ? SOLIDS : STRIPES;
+      const groupCleared = myGroup.every(b => state.sunkBalls.includes(b));
+      if (groupCleared) {
+        const winnerIdx = state.players.findIndex((_, i) => i !== state.currentPlayerIndex);
+        const winnerName = winnerIdx >= 0 ? state.players[winnerIdx].name : 'Opponent';
+        const entry: ShotLogEntry = {
+          type: 'lose', playerName: cur.name,
+          timestamp: now, gameTime: now - state.gameStartTime,
+          note: 'Foul on the 8-ball',
+        };
+        const next: GameState = {
+          ...state,
+          phase: 'ended',
+          winner: winnerName,
+          winMessage: `${cur.name} fouled on the 8-ball — ${winnerName} wins!`,
+          firstActionTime,
+          lastActionTime: now,
+          shotLog: [...state.shotLog, entry],
+        };
+        snapBpm(next.sunkBalls.length, firstActionTime, now);
+        applyState(next);
+        return;
+      }
+    }
+
     const nextIdx = (state.currentPlayerIndex + 1) % state.players.length;
     const entry: ShotLogEntry = {
       type, playerName: cur.name,

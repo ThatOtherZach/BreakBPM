@@ -106,9 +106,16 @@ export function checkSinkResult(
     const newSunk = [...sunkBalls, ballSunk];
 
     if (ballSunk === EIGHT_BALL) {
+      // Golden Break: 8-ball sunk as the very first ball on the break → instant win
+      if (sunkBalls.length === 0) {
+        return { win: true, lose: false, message: `GOLDEN BREAK! ${currentPlayer.name} sinks the 8 on the break — WINNER!`, switchTurn: false };
+      }
+
+      // No team assigned yet (sank 8 before establishing a group) → loss
       if (!currentPlayer.team) {
         return { win: false, lose: true, message: `${currentPlayer.name} pocketed the 8-ball early — LOSS!`, switchTurn: false };
       }
+
       const myGroup = getPlayerGroup(currentPlayer);
       const myRemaining = myGroup.filter(b => !newSunk.includes(b));
       if (myRemaining.length === 0) {
