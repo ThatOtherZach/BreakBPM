@@ -155,6 +155,52 @@ body {
   flex: 1;
   overflow-y: scroll;
   -webkit-overflow-scrolling: touch;
+  scrollbar-color: var(--silver) #888;
+  scrollbar-width: thin;
+}
+
+/* Win98-style scrollbar */
+.about-scroll-area::-webkit-scrollbar {
+  width: 16px;
+}
+.about-scroll-area::-webkit-scrollbar-track {
+  background: var(--silver);
+  border-left: 1px solid var(--dshadow);
+  box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #fff;
+}
+.about-scroll-area::-webkit-scrollbar-thumb {
+  background: var(--silver);
+  border: 2px solid;
+  border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
+  box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #404040;
+  min-height: 24px;
+}
+.about-scroll-area::-webkit-scrollbar-thumb:active {
+  border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
+  box-shadow: none;
+}
+.about-scroll-area::-webkit-scrollbar-button {
+  background: var(--silver);
+  border: 2px solid;
+  border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
+  height: 16px;
+  width: 16px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 8px 8px;
+}
+.about-scroll-area::-webkit-scrollbar-button:active {
+  border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
+}
+.about-scroll-area::-webkit-scrollbar-button:vertical:start:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpolygon points='4,0 8,8 0,8' fill='%23000000'/%3E%3C/svg%3E");
+}
+.about-scroll-area::-webkit-scrollbar-button:vertical:end:increment {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpolygon points='0,0 8,0 4,8' fill='%23000000'/%3E%3C/svg%3E");
+}
+.about-scroll-area::-webkit-scrollbar-button:vertical:start:increment,
+.about-scroll-area::-webkit-scrollbar-button:vertical:end:decrement {
+  display: none;
 }
 
 .about-content {
