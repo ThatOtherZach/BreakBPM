@@ -516,7 +516,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
         )}
         {state.phase === 'playing' && (
           <button className="btn btn-danger w-full" onClick={() => setConfirmNew(true)}>
-            ✖ End Game / New Game
+            <img src="/endgame-icon.png" alt="End Game" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />End Game / New Game
           </button>
         )}
 
