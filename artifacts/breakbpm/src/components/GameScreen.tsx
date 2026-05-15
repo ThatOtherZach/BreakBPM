@@ -1,142 +1,109 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Win98Window, Win98Button, Win98StatusBar } from './Win98';
 import type { GameState, ShotLogEntry } from '../lib/gameLogic';
 import {
-  getLegalBalls,
-  getRemainingBalls,
-  checkSinkResult,
-  assignTeams,
-  shouldAssignTeams,
-  calculateBPM,
-  formatTime,
-  encodeGameState,
-  generateShareCode,
-  getTeamLabel,
-  ballLabel,
-  SOLIDS,
-  STRIPES,
-  EIGHT_BALL,
-  getLowestBall,
+  getLegalBalls, getRemainingBalls, checkSinkResult,
+  assignTeams, shouldAssignTeams, calculateBPM, formatTime,
+  encodeGameState, getTeamLabel, ballLabel,
+  SOLIDS, STRIPES, EIGHT_BALL, getLowestBall,
 } from '../lib/gameLogic';
 
-interface GameScreenProps {
+interface Props {
   initialState: GameState;
   onNewGame: () => void;
 }
 
-function getBallClass(ball: number, legalBalls: number[], sunkBalls: number[], gameType: string): string {
-  if (sunkBalls.includes(ball)) return 'ball-btn ball-btn-sunk';
-  const isLegal = legalBalls.includes(ball);
-  if (ball === EIGHT_BALL) return `ball-btn ball-btn-8 ${isLegal ? 'ball-btn-legal' : 'ball-btn-illegal'}`;
-  if (ball === 9 && gameType === '9ball') return `ball-btn ball-btn-9 ${isLegal ? 'ball-btn-legal' : 'ball-btn-illegal'}`;
-  if (SOLIDS.includes(ball)) return `ball-btn ball-btn-solid ${isLegal ? 'ball-btn-legal' : 'ball-btn-illegal'}`;
-  if (STRIPES.includes(ball)) return `ball-btn ball-btn-stripe ${isLegal ? 'ball-btn-legal' : 'ball-btn-illegal'}`;
-  return `ball-btn ${isLegal ? 'ball-btn-legal' : 'ball-btn-illegal'}`;
+function ballClass(ball: number, legal: number[], sunk: number[], gameType: string) {
+  if (sunk.includes(ball)) return 'ball-btn sunk';
+  const ok = legal.includes(ball);
+  let base = 'ball-btn';
+  if (ball === EIGHT_BALL) base += ' eight';
+  else if (ball === 9 && gameType === '9ball') base += ' nine';
+  else if (SOLIDS.includes(ball)) base += ' solid';
+  else if (STRIPES.includes(ball)) base += ' stripe';
+  base += ok ? ' legal' : ' illegal';
+  return base;
 }
 
-export default function GameScreen({ initialState, onNewGame }: GameScreenProps) {
+export default function GameScreen({ initialState, onNewGame }: Props) {
   const [state, setState] = useState<GameState>(initialState);
   const [elapsed, setElapsed] = useState(0);
   const [bpm, setBpm] = useState(0);
-  const [shareToast, setShareToast] = useState('');
+  const [toast, setToast] = useState('');
   const [undoStack, setUndoStack] = useState<GameState[]>([]);
-  const [clockTime, setClockTime] = useState('');
+  const [clock, setClock] = useState('');
   const [confirmNew, setConfirmNew] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Update URL with game state
   const syncUrl = useCallback((s: GameState) => {
     try {
-      const encoded = encodeGameState(s);
       const url = new URL(window.location.href);
-      url.searchParams.set('state', encoded);
+      url.searchParams.set('state', encodeGameState(s));
       url.searchParams.set('game', s.shareCode);
       window.history.replaceState(null, '', url.toString());
-    } catch {}
+    } catch { /* noop */ }
   }, []);
-
-  useEffect(() => {
-    syncUrl(state);
-  }, [state, syncUrl]);
 
   // Timer
   useEffect(() => {
     if (state.phase !== 'playing') return;
-    timerRef.current = setInterval(() => {
-      const now = Date.now();
-      const e = now - state.gameStartTime;
+    const id = setInterval(() => {
+      const e = Date.now() - state.gameStartTime;
       setElapsed(e);
       setBpm(calculateBPM(state.sunkBalls.length, state.gameStartTime));
     }, 500);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return () => clearInterval(id);
   }, [state.phase, state.gameStartTime, state.sunkBalls.length]);
 
   // System clock
   useEffect(() => {
-    const tick = () => {
-      const d = new Date();
-      setClockTime(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    };
+    const tick = () => setClock(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     tick();
     const id = setInterval(tick, 10000);
     return () => clearInterval(id);
   }, []);
 
-  // Scroll log to bottom
+  // Sync URL on state change
+  useEffect(() => { syncUrl(state); }, [state, syncUrl]);
+
+  // Auto-scroll log
   useEffect(() => {
-    if (logRef.current) {
-      logRef.current.scrollTop = logRef.current.scrollHeight;
-    }
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [state.shotLog]);
 
-  const currentPlayer = state.players[state.currentPlayerIndex];
-  const remaining = getRemainingBalls(state.sunkBalls, state.gameType);
+  const cur = state.players[state.currentPlayerIndex];
   const legalBalls = state.phase === 'playing'
     ? getLegalBalls(state.gameType, state.players, state.currentPlayerIndex, state.sunkBalls)
     : [];
-
   const allBalls = state.gameType === '9ball'
     ? [1, 2, 3, 4, 5, 6, 7, 8, 9]
     : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+  const remaining = getRemainingBalls(state.sunkBalls, state.gameType);
+  const lowest9 = state.gameType === '9ball' ? getLowestBall(state.sunkBalls) : 0;
+  const finalBpm = calculateBPM(state.sunkBalls.length, state.gameStartTime);
 
-  function addLog(entry: ShotLogEntry) {
-    setState(prev => ({
-      ...prev,
-      shotLog: [...prev.shotLog, entry],
-    }));
-  }
+  function pushUndo(s: GameState) { setUndoStack(prev => [...prev.slice(-19), s]); }
+
+  function applyState(next: GameState) { setState(next); syncUrl(next); }
 
   function sinkBall(ball: number) {
-    if (state.phase !== 'playing') return;
-    if (state.sunkBalls.includes(ball)) return;
+    if (state.phase !== 'playing' || state.sunkBalls.includes(ball)) return;
+    pushUndo(state);
 
-    setUndoStack(prev => [...prev, state]);
+    let next = { ...state };
 
-    let nextState = { ...state };
-
-    // Assign teams if needed (8-ball)
     if (shouldAssignTeams(state.gameType, state.teamAssigned, state.players, state.currentPlayerIndex, ball)) {
-      nextState.players = assignTeams(state.players, state.currentPlayerIndex, ball);
-      nextState.teamAssigned = true;
+      next.players = assignTeams(state.players, state.currentPlayerIndex, ball);
+      next.teamAssigned = true;
     }
 
-    const newSunk = [...nextState.sunkBalls, ball];
-    nextState.sunkBalls = newSunk;
+    next.sunkBalls = [...next.sunkBalls, ball];
 
-    const result = checkSinkResult(
-      nextState.gameType,
-      nextState.players,
-      nextState.currentPlayerIndex,
-      state.sunkBalls,
-      ball
-    );
+    const result = checkSinkResult(next.gameType, next.players, next.currentPlayerIndex, state.sunkBalls, ball);
 
-    const logEntry: ShotLogEntry = {
+    const entry: ShotLogEntry = {
       type: result.win ? 'win' : result.lose ? 'lose' : 'sink',
-      playerName: currentPlayer.name,
+      playerName: cur.name,
       ball,
       timestamp: Date.now(),
       gameTime: Date.now() - state.gameStartTime,
@@ -144,384 +111,293 @@ export default function GameScreen({ initialState, onNewGame }: GameScreenProps)
     };
 
     if (result.win) {
-      nextState.phase = 'ended';
-      nextState.winner = currentPlayer.name;
-      nextState.winMessage = result.message;
+      next.phase = 'ended';
+      next.winner = cur.name;
+      next.winMessage = result.message;
     } else if (result.lose) {
-      // Find other player (opponent wins)
-      const loserIdx = nextState.currentPlayerIndex;
-      const winnerIdx = nextState.players.findIndex((_, i) => i !== loserIdx);
-      const winner = winnerIdx >= 0 ? nextState.players[winnerIdx] : null;
-      nextState.phase = 'ended';
-      nextState.winner = winner ? winner.name : 'Opponent';
-      nextState.winMessage = result.message;
+      const winIdx = next.players.findIndex((_, i) => i !== next.currentPlayerIndex);
+      next.phase = 'ended';
+      next.winner = winIdx >= 0 ? next.players[winIdx].name : 'Opponent';
+      next.winMessage = result.message;
+    } else if (state.gameType === 'practice' && remaining.length === 1) {
+      next.phase = 'ended';
+      next.winner = cur.name;
+      next.winMessage = `Table cleared! Final BPM: ${finalBpm.toFixed(1)}`;
     }
 
-    // Practice mode: no win/lose, just track
-    if (state.gameType === 'practice' && remaining.length === 1) {
-      nextState.phase = 'ended';
-      nextState.winner = currentPlayer.name;
-      nextState.winMessage = `${currentPlayer.name} cleared the table! Final BPM: ${calculateBPM(newSunk.length, state.gameStartTime).toFixed(1)}`;
-    }
-
-    nextState.shotLog = [...nextState.shotLog, logEntry];
-    setState(nextState);
-    syncUrl(nextState);
+    next.shotLog = [...next.shotLog, entry];
+    applyState(next);
   }
 
-  function recordFoul() {
+  function turnAction(type: 'miss' | 'foul' | 'safety', note?: string) {
     if (state.phase !== 'playing') return;
-    setUndoStack(prev => [...prev, state]);
-
-    const logEntry: ShotLogEntry = {
-      type: 'foul',
-      playerName: currentPlayer.name,
-      timestamp: Date.now(),
-      gameTime: Date.now() - state.gameStartTime,
-      note: 'Foul — ball in hand to opponent',
-    };
-
+    pushUndo(state);
     const nextIdx = (state.currentPlayerIndex + 1) % state.players.length;
-    setState(prev => ({
-      ...prev,
-      currentPlayerIndex: nextIdx,
-      shotLog: [...prev.shotLog, logEntry],
-    }));
-  }
-
-  function recordSafety() {
-    if (state.phase !== 'playing') return;
-    setUndoStack(prev => [...prev, state]);
-
-    const logEntry: ShotLogEntry = {
-      type: 'safety',
-      playerName: currentPlayer.name,
-      timestamp: Date.now(),
-      gameTime: Date.now() - state.gameStartTime,
-      note: 'Safety — turn passes',
+    const entry: ShotLogEntry = {
+      type, playerName: cur.name,
+      timestamp: Date.now(), gameTime: Date.now() - state.gameStartTime, note,
     };
-
-    const nextIdx = (state.currentPlayerIndex + 1) % state.players.length;
-    setState(prev => ({
-      ...prev,
-      currentPlayerIndex: nextIdx,
-      shotLog: [...prev.shotLog, logEntry],
-    }));
-  }
-
-  function recordMiss() {
-    if (state.phase !== 'playing') return;
-    setUndoStack(prev => [...prev, state]);
-
-    const logEntry: ShotLogEntry = {
-      type: 'miss',
-      playerName: currentPlayer.name,
-      timestamp: Date.now(),
-      gameTime: Date.now() - state.gameStartTime,
-    };
-
-    const nextIdx = (state.currentPlayerIndex + 1) % state.players.length;
-    setState(prev => ({
-      ...prev,
-      currentPlayerIndex: nextIdx,
-      shotLog: [...prev.shotLog, logEntry],
-    }));
+    applyState({ ...state, currentPlayerIndex: nextIdx, shotLog: [...state.shotLog, entry] });
   }
 
   function handleUndo() {
-    if (undoStack.length === 0) return;
+    if (!undoStack.length) return;
     const prev = undoStack[undoStack.length - 1];
     setUndoStack(s => s.slice(0, -1));
-    setState(prev);
-    syncUrl(prev);
+    applyState(prev);
   }
 
   function handleShare() {
     const url = window.location.href;
-    navigator.clipboard.writeText(url).then(() => {
-      setShareToast('URL copied to clipboard!');
-      setTimeout(() => setShareToast(''), 2500);
-    }).catch(() => {
-      setShareToast(url);
-      setTimeout(() => setShareToast(''), 5000);
-    });
+    navigator.clipboard.writeText(url)
+      .then(() => { setToast('URL copied!'); setTimeout(() => setToast(''), 2000); })
+      .catch(() => { setToast('Copy the URL above'); setTimeout(() => setToast(''), 3000); });
   }
 
-  const finalBpm = state.gameType === 'practice' || state.phase === 'ended'
-    ? calculateBPM(state.sunkBalls.length, state.gameStartTime)
-    : bpm;
+  const dispBpm = state.phase === 'playing' ? bpm : finalBpm;
+  const dispTime = state.phase === 'playing' ? elapsed : (Date.now() - state.gameStartTime);
 
-  const lowestBall9 = state.gameType === '9ball' ? getLowestBall(state.sunkBalls) : 0;
+  /* ── subtitle for ball selector ── */
+  let selectorHint = '';
+  if (state.gameType === '9ball') selectorHint = `Hit (${lowest9}) first`;
+  else if (state.gameType === '8ball') {
+    if (!state.teamAssigned) selectorHint = 'First sink assigns team';
+    else selectorHint = cur.team ? getTeamLabel(cur.team) : '';
+  }
 
   return (
-    <div className="app-root" style={{ paddingBottom: 40 }}>
-      <div className="app-center">
+    <div className="app-window">
+      {/* Title bar */}
+      <div className="titlebar">
+        <div className="titlebar-left">
+          <span className="titlebar-icon">🎱</span>
+          <span className="titlebar-title">
+            BreakBPM · {state.gameType === 'practice' ? 'Practice' : state.gameType.toUpperCase()} · {state.shareCode}
+          </span>
+        </div>
+        <div className="titlebar-btns">
+          <button className="tb-btn">_</button>
+          <button className="tb-btn">□</button>
+          <button className="tb-btn" onClick={() => setConfirmNew(true)}>✕</button>
+        </div>
+      </div>
 
-        {/* Header */}
-        <Win98Window title={`BreakBPM — ${state.gameType === 'practice' ? 'Practice Mode' : state.gameType.toUpperCase()} — Code: ${state.shareCode}`} icon="🎱">
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'stretch' }}>
+      <div className="app-body">
 
-            {/* BPM + Timer */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 90 }}>
-              <div className="bpm-display">{state.phase === 'playing' ? bpm.toFixed(1) : finalBpm.toFixed(1)}</div>
-              <div className="bpm-label">BALLS / MIN</div>
-              <div className="timer-display" style={{ marginTop: 4 }}>
-                {state.phase === 'playing' ? formatTime(elapsed) : formatTime(Date.now() - state.gameStartTime)}
-              </div>
-              <div className="bpm-label">ELAPSED</div>
+        {/* ── Stats row ── */}
+        <div className="flex gap-2">
+          <div style={{ flex: 1 }}>
+            <div className="digit-display digit-bpm">{dispBpm.toFixed(1)}</div>
+            <div className="digit-label">BALLS / MIN</div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div className="digit-display digit-timer">{formatTime(dispTime)}</div>
+            <div className="digit-label">ELAPSED</div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+            <div className="share-code">{state.shareCode}</div>
+            <button className="btn" style={{ fontSize: 11, minHeight: 28, padding: '2px 8px', minWidth: 'unset', width: '100%' }} onClick={handleShare}>
+              📋 Share
+            </button>
+            {toast && <div style={{ fontSize: 10, color: '#006400', textAlign: 'center' }}>{toast}</div>}
+          </div>
+        </div>
+
+        {/* ── WIN SCREEN ── */}
+        {state.phase === 'ended' && (
+          <div>
+            <div className="win-banner">
+              {state.winner ? `★ ${state.winner.toUpperCase()} WINS!` : 'GAME OVER'}
             </div>
-
-            {/* Terminal readout */}
-            <div style={{ flex: 1, minWidth: 180 }}>
-              <div className="terminal-label">SUNK BALLS LOG &gt;</div>
-              <div className="terminal" style={{ minHeight: 64, fontSize: 14, letterSpacing: 0 }}>
-                {state.sunkBalls.length === 0
-                  ? <span style={{ color: '#006600' }}>_ awaiting first shot...</span>
-                  : state.sunkBalls.map((b, i) => (
-                    <span
-                      key={i}
-                      className={`terminal-ball ${b === 8 ? 'terminal-8ball' : b === 9 ? 'terminal-9ball' : ''}`}
-                    >
-                      {ballLabel(b)}
-                    </span>
-                  ))
-                }
-              </div>
-              <div style={{ marginTop: 4, fontSize: 10, color: '#444' }}>
-                {state.sunkBalls.length} ball{state.sunkBalls.length !== 1 ? 's' : ''} sunk
-                {state.gameType !== 'practice' && ` · ${remaining.length} remaining`}
-              </div>
+            <div style={{ fontWeight: 'bold', color: '#000080', marginTop: 6, fontSize: 13 }}>
+              {state.winMessage}
             </div>
-
-            {/* Share code */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', justifyContent: 'center', minWidth: 80 }}>
-              <div style={{ fontSize: 10, color: '#444' }}>SHARE CODE</div>
-              <div className="share-code">{state.shareCode}</div>
-              <Win98Button onClick={handleShare} style={{ fontSize: 10, minWidth: 70 }}>
-                📋 Copy URL
-              </Win98Button>
-              {shareToast && (
-                <div style={{ fontSize: 9, color: '#006400', textAlign: 'center', maxWidth: 100, wordBreak: 'break-all' }}>
-                  {shareToast}
-                </div>
-              )}
+            <div style={{ fontSize: 12, color: '#444', marginTop: 4, marginBottom: 8 }}>
+              BPM: <strong>{finalBpm.toFixed(2)}</strong> &nbsp;·&nbsp;
+              Time: <strong>{formatTime(Date.now() - state.gameStartTime)}</strong> &nbsp;·&nbsp;
+              Sunk: <strong>{state.sunkBalls.length}</strong>
+            </div>
+            <div className="grid-2">
+              <button className="btn btn-primary btn-big" onClick={onNewGame}>▶ New Game</button>
+              <button className="btn btn-big" onClick={handleShare}>📋 Share</button>
             </div>
           </div>
-        </Win98Window>
-
-        {/* Win/Ended screen */}
-        {state.phase === 'ended' && (
-          <Win98Window title="Game Over" style={{ marginTop: 8 }}>
-            <div className="win-screen">
-              <div className="win-banner">
-                {state.winner ? `🏆 ${state.winner.toUpperCase()} WINS!` : 'GAME OVER'}
-              </div>
-              <div style={{ marginBottom: 12, fontSize: 13, color: '#000080', fontWeight: 'bold' }}>
-                {state.winMessage}
-              </div>
-              <div style={{ fontSize: 11, marginBottom: 12, color: '#444' }}>
-                Final BPM: <strong>{finalBpm.toFixed(2)}</strong> &nbsp;|&nbsp;
-                Time: <strong>{formatTime(Date.now() - state.gameStartTime)}</strong> &nbsp;|&nbsp;
-                Balls sunk: <strong>{state.sunkBalls.length}</strong>
-              </div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-                <Win98Button variant="primary" onClick={onNewGame} style={{ fontSize: 13 }}>
-                  ▶ New Game
-                </Win98Button>
-                <Win98Button onClick={handleShare}>
-                  📋 Share Result
-                </Win98Button>
-              </div>
-            </div>
-          </Win98Window>
         )}
 
-        {/* Players */}
-        {state.phase !== 'ended' && state.gameType !== 'practice' && (
-          <Win98Window title="Players" style={{ marginTop: 8 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${state.players.length}, 1fr)`, gap: 6 }}>
-              {state.players.map((player, i) => {
-                const isCurrent = i === state.currentPlayerIndex;
-                const myGroup = player.team === 'solids' ? SOLIDS : player.team === 'stripes' ? STRIPES : [];
-                const mySunk = state.sunkBalls.filter(b => myGroup.includes(b));
-                const myRemaining = myGroup.filter(b => !state.sunkBalls.includes(b));
+        {/* ── Sunk balls terminal ── */}
+        <div>
+          <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#555', marginBottom: 2 }}>SUNK BALLS ›</div>
+          <div className="terminal">
+            {state.sunkBalls.length === 0
+              ? <span className="terminal-dim">_ awaiting first shot...</span>
+              : state.sunkBalls.map((b, i) => (
+                <span
+                  key={i}
+                  style={{
+                    color: b === 8 ? '#ffb300' : b === 9 ? '#ff6600' : '#00ff41',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {ballLabel(b)}
+                </span>
+              ))
+            }
+          </div>
+          <div style={{ fontSize: 11, color: '#555', marginTop: 3 }}>
+            {state.sunkBalls.length} sunk
+            {state.gameType !== 'practice' && ` · ${remaining.length} remaining`}
+          </div>
+        </div>
+
+        {/* ── Current player + teams (playing only) ── */}
+        {state.phase === 'playing' && state.gameType !== 'practice' && (
+          <div>
+            {/* Players compact row */}
+            <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
+              {state.players.map((p, i) => {
+                const active = i === state.currentPlayerIndex;
+                const myGroup = p.team === 'solids' ? SOLIDS : p.team === 'stripes' ? STRIPES : [];
+                const cleared = myGroup.length > 0 && myGroup.every(b => state.sunkBalls.includes(b));
                 return (
-                  <div key={player.id} className={`player-panel ${isCurrent ? 'active' : ''}`}>
-                    <div className="player-name">
-                      {isCurrent ? '▶ ' : ''}{player.name}
+                  <div
+                    key={p.id}
+                    style={{
+                      flex: 1,
+                      minWidth: 70,
+                      border: `2px solid ${active ? '#000080' : '#808080'}`,
+                      background: active ? '#e8f0ff' : '#c0c0c0',
+                      padding: '4px 6px',
+                    }}
+                  >
+                    <div style={{ fontWeight: 'bold', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {active ? '▶ ' : ''}{p.name}
                     </div>
-                    {state.gameType === '8ball' && (
-                      <div className={player.team === 'solids' ? 'player-team-solid' : 'player-team-stripe'}>
-                        {player.team ? getTeamLabel(player.team) : 'Team: TBD'}
-                      </div>
-                    )}
-                    {player.team && (
-                      <div style={{ fontSize: 10, color: '#555', marginTop: 2 }}>
-                        {mySunk.length}/{myGroup.length} sunk
-                        {myRemaining.length === 0 && <span style={{ color: '#006400', fontWeight: 'bold' }}> ✓ Clear!</span>}
-                      </div>
-                    )}
+                    <div style={{ fontSize: 10, color: p.team === 'solids' ? '#000080' : p.team === 'stripes' ? '#804000' : '#444' }}>
+                      {p.team ? (p.team === 'solids' ? 'Solids' : 'Stripes') : 'TBD'}
+                      {cleared && <span style={{ color: '#006400', fontWeight: 'bold' }}> ✓</span>}
+                    </div>
                   </div>
                 );
               })}
             </div>
-          </Win98Window>
+          </div>
         )}
 
-        {/* Ball Selector */}
+        {/* ── Ball selector ── */}
         {state.phase !== 'ended' && (
-          <Win98Window
-            title={
-              state.gameType === 'practice'
-                ? 'Ball Selector — Practice Mode'
-                : state.gameType === '9ball'
-                ? `Ball Selector — Hit (${lowestBall9}) first | Sink any on combo`
-                : `Ball Selector — ${currentPlayer.name}'s turn (${currentPlayer.team ? getTeamLabel(currentPlayer.team) : 'team TBD'})`
-            }
-            style={{ marginTop: 8 }}
-          >
+          <div>
+            <div className="panel-header" style={{ background: 'none', border: 'none', padding: '0 0 4px', borderBottom: '1px solid #808080', marginBottom: 6 }}>
+              <span style={{ fontWeight: 'bold', fontSize: 12 }}>
+                {state.gameType === 'practice' ? 'Ball Selector' : `${cur.name}'s turn`}
+              </span>
+              {selectorHint && <span style={{ fontSize: 11, color: '#555' }}>{selectorHint}</span>}
+            </div>
+
             <div className="ball-grid">
-              {allBalls.map(ball => {
-                const sunk = state.sunkBalls.includes(ball);
-                const isLegal = legalBalls.includes(ball);
-                const cls = getBallClass(ball, legalBalls, state.sunkBalls, state.gameType);
-                return (
-                  <button
-                    key={ball}
-                    className={cls}
-                    onClick={() => !sunk && isLegal && sinkBall(ball)}
-                    disabled={sunk || !isLegal || state.phase !== 'playing'}
-                    title={
-                      sunk ? `Ball ${ball} already sunk` :
-                      !isLegal ? `Ball ${ball} — not legal right now` :
-                      `Sink ball ${ball}`
-                    }
-                  >
-                    ({ball})
-                  </button>
-                );
-              })}
+              {allBalls.map(ball => (
+                <button
+                  key={ball}
+                  className={ballClass(ball, legalBalls, state.sunkBalls, state.gameType)}
+                  onClick={() => sinkBall(ball)}
+                  style={{ fontSize: 13 }}
+                >
+                  ({ball})
+                </button>
+              ))}
             </div>
 
             {state.gameType === '8ball' && !state.teamAssigned && (
-              <div className="win98-notice" style={{ margin: '4px 4px 0' }}>
-                <span className="win98-notice-icon">💡</span>
-                <span>First ball sunk determines team assignment (Solids 1-7 or Stripes 9-15)</span>
+              <div className="notice" style={{ marginTop: 6 }}>
+                <span>💡</span>
+                <span style={{ fontSize: 11 }}>First ball sunk assigns Solids (1-7) or Stripes (9-15)</span>
               </div>
             )}
-          </Win98Window>
+          </div>
         )}
 
-        {/* Action buttons */}
+        {/* ── Actions ── */}
         {state.phase === 'playing' && (
-          <Win98Window title="Actions" style={{ marginTop: 8 }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '2px 0' }}>
-              <Win98Button onClick={recordMiss} title="Missed shot — next player's turn">
-                ↷ Miss / Next Turn
-              </Win98Button>
-              <Win98Button onClick={recordFoul} variant="danger" title="Foul — ball in hand to opponent">
-                ⚠ Foul
-              </Win98Button>
-              <Win98Button onClick={recordSafety} title="Safety shot — next player's turn">
-                🛡 Safety
-              </Win98Button>
-              <Win98Button
-                onClick={handleUndo}
-                disabled={undoStack.length === 0}
-                title="Undo last action"
-              >
-                ↩ Undo
-              </Win98Button>
-              <Win98Button
-                variant="danger"
-                onClick={() => setConfirmNew(true)}
-                title="Start a new game"
-                style={{ marginLeft: 'auto' }}
-              >
-                ✖ End Game
-              </Win98Button>
+          <div className="action-grid">
+            <button className="btn btn-big" onClick={() => turnAction('miss')}>↷ Miss</button>
+            <button className="btn btn-big btn-danger" onClick={() => turnAction('foul', 'Ball in hand to opponent')}>⚠ Foul</button>
+            <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')}>🛡 Safety</button>
+            <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}>↩ Undo</button>
+          </div>
+        )}
+
+        {/* ── Shot log (collapsible) ── */}
+        <div>
+          <button
+            className="btn w-full"
+            style={{ justifyContent: 'space-between', minHeight: 32, fontSize: 12 }}
+            onClick={() => setLogOpen(o => !o)}
+          >
+            <span>📋 Shot Log ({state.shotLog.length})</span>
+            <span>{logOpen ? '▲' : '▼'}</span>
+          </button>
+          {logOpen && (
+            <div className="shot-log" ref={logRef}>
+              {state.shotLog.length === 0
+                ? <div style={{ color: '#006600' }}>_ no shots yet...</div>
+                : state.shotLog.map((e, i) => {
+                  const t = formatTime(e.gameTime);
+                  let line = '';
+                  if (e.type === 'sink') line = `[${t}] ${e.playerName} » SINK ${ballLabel(e.ball!)}`;
+                  else if (e.type === 'foul') line = `[${t}] ${e.playerName} » FOUL`;
+                  else if (e.type === 'safety') line = `[${t}] ${e.playerName} » SAFETY`;
+                  else if (e.type === 'miss') line = `[${t}] ${e.playerName} » MISS`;
+                  else if (e.type === 'win') line = `[${t}] ${e.playerName} » WIN! ${e.ball ? ballLabel(e.ball) : ''}`;
+                  else if (e.type === 'lose') line = `[${t}] ${e.playerName} » LOSS`;
+                  return (
+                    <div key={i} className={`log-entry ${e.type}`}>
+                      {line}{e.note ? ` — ${e.note}` : ''}
+                    </div>
+                  );
+                })
+              }
             </div>
-          </Win98Window>
+          )}
+        </div>
+
+        {/* End game button */}
+        {state.phase === 'playing' && (
+          <button className="btn btn-danger w-full" onClick={() => setConfirmNew(true)}>
+            ✖ End Game / New Game
+          </button>
         )}
-
-        {/* Shot Log */}
-        <Win98Window title="Shot Log" style={{ marginTop: 8 }}>
-          <div className="terminal-label">SHOT HISTORY &gt;</div>
-          <div className="shot-log" ref={logRef}>
-            {state.shotLog.length === 0 && (
-              <div style={{ color: '#006600' }}>_ no shots recorded yet...</div>
-            )}
-            {state.shotLog.map((entry, i) => {
-              const t = formatTime(entry.gameTime);
-              let line = '';
-              if (entry.type === 'sink') line = `[${t}] ${entry.playerName} >> SINK ${ballLabel(entry.ball!)}`;
-              else if (entry.type === 'foul') line = `[${t}] ${entry.playerName} >> FOUL`;
-              else if (entry.type === 'safety') line = `[${t}] ${entry.playerName} >> SAFETY`;
-              else if (entry.type === 'miss') line = `[${t}] ${entry.playerName} >> MISS`;
-              else if (entry.type === 'win') line = `[${t}] ${entry.playerName} >> WIN! ${entry.ball ? ballLabel(entry.ball) : ''}`;
-              else if (entry.type === 'lose') line = `[${t}] ${entry.playerName} >> LOSS`;
-              return (
-                <div key={i} className={`shot-log-entry ${entry.type}`}>
-                  {line}{entry.note ? ` — ${entry.note}` : ''}
-                </div>
-              );
-            })}
-          </div>
-        </Win98Window>
-
-        {/* New Game button at bottom if ended */}
         {state.phase === 'ended' && (
-          <div style={{ textAlign: 'center', marginTop: 8 }}>
-            <Win98Button variant="primary" onClick={onNewGame} style={{ fontSize: 13 }}>
-              ▶ New Game
-            </Win98Button>
-          </div>
+          <button className="btn btn-primary btn-big w-full" onClick={onNewGame}>▶ New Game</button>
         )}
+
       </div>
 
-      {/* Confirm new game dialog */}
+      {/* Status bar */}
+      <div className="statusbar">
+        <div className="statusbar-item" style={{ flex: 2 }}>
+          {state.phase === 'playing' ? `▶ ${cur.name}'s turn` : state.phase === 'ended' ? '■ Game Over' : '—'}
+        </div>
+        <div className="statusbar-item" style={{ flex: 1 }}>BPM: {dispBpm.toFixed(1)}</div>
+        <div className="statusbar-item">{clock}</div>
+      </div>
+
+      {/* Confirm dialog */}
       {confirmNew && (
-        <div className="win98-dialog-overlay" onClick={() => setConfirmNew(false)}>
-          <div onClick={e => e.stopPropagation()}>
-            <Win98Window title="BreakBPM" className="win98-dialog">
-              <div style={{ padding: '8px 0', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                <span style={{ fontSize: 32 }}>⚠</span>
-                <div>
-                  <div style={{ fontWeight: 'bold', marginBottom: 6 }}>End current game?</div>
-                  <div style={{ fontSize: 11, color: '#444' }}>
-                    The current game will be lost. Are you sure you want to start a new game?
-                  </div>
-                </div>
+        <div className="dialog-overlay" onClick={() => setConfirmNew(false)}>
+          <div className="dialog-box" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'flex-start' }}>
+              <span style={{ fontSize: 28 }}>⚠</span>
+              <div>
+                <div style={{ fontWeight: 'bold', marginBottom: 4 }}>End current game?</div>
+                <div style={{ fontSize: 12, color: '#444' }}>All progress will be lost.</div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 8 }}>
-                <Win98Button variant="primary" onClick={onNewGame}>Yes</Win98Button>
-                <Win98Button onClick={() => setConfirmNew(false)}>No</Win98Button>
-              </div>
-            </Win98Window>
+            </div>
+            <div className="grid-2">
+              <button className="btn btn-primary btn-big" onClick={onNewGame}>Yes, end it</button>
+              <button className="btn btn-big" onClick={() => setConfirmNew(false)}>Cancel</button>
+            </div>
           </div>
         </div>
       )}
-
-      {/* Taskbar */}
-      <div className="win98-taskbar">
-        <button className="win98-start-btn">
-          <span>⊞</span> Start
-        </button>
-        <Win98Button style={{ minWidth: 'unset', padding: '1px 8px', fontSize: 10, height: 22 }}>
-          🎱 BreakBPM
-        </Win98Button>
-        <div className="win98-clock">{clockTime}</div>
-      </div>
-
-      <Win98StatusBar
-        items={[
-          state.phase === 'playing' ? `▶ Playing` : state.phase === 'ended' ? '■ Game Over' : '...',
-          state.gameType.toUpperCase(),
-          `BPM: ${bpm.toFixed(1)}`,
-          `Balls: ${state.sunkBalls.length}`,
-          `Code: ${state.shareCode}`,
-        ]}
-      />
     </div>
   );
 }
