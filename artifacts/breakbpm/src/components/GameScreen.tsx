@@ -6,6 +6,7 @@ import {
   encodeGameState, getTeamLabel, ballLabel,
   SOLIDS, STRIPES, EIGHT_BALL, getLowestBall,
 } from '../lib/gameLogic';
+import ballImg from '/eightball_nobg.png';
 
 interface Props {
   initialState: GameState;
@@ -44,18 +45,15 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
     } catch { /* noop */ }
   }, []);
 
-  // Timer
   useEffect(() => {
     if (state.phase !== 'playing') return;
     const id = setInterval(() => {
-      const e = Date.now() - state.gameStartTime;
-      setElapsed(e);
+      setElapsed(Date.now() - state.gameStartTime);
       setBpm(calculateBPM(state.sunkBalls.length, state.gameStartTime));
     }, 500);
     return () => clearInterval(id);
   }, [state.phase, state.gameStartTime, state.sunkBalls.length]);
 
-  // System clock
   useEffect(() => {
     const tick = () => setClock(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     tick();
@@ -63,10 +61,8 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
     return () => clearInterval(id);
   }, []);
 
-  // Sync URL on state change
   useEffect(() => { syncUrl(state); }, [state, syncUrl]);
 
-  // Auto-scroll log
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [state.shotLog]);
@@ -81,50 +77,46 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
   const remaining = getRemainingBalls(state.sunkBalls, state.gameType);
   const lowest9 = state.gameType === '9ball' ? getLowestBall(state.sunkBalls) : 0;
   const finalBpm = calculateBPM(state.sunkBalls.length, state.gameStartTime);
+  const dispBpm = state.phase === 'playing' ? bpm : finalBpm;
+  const dispTime = state.phase === 'playing' ? elapsed : (Date.now() - state.gameStartTime);
+
+  let selectorHint = '';
+  if (state.gameType === '9ball') selectorHint = `Must hit (${lowest9}) first`;
+  else if (state.gameType === '8ball') {
+    if (!state.teamAssigned) selectorHint = 'First sink assigns team';
+    else selectorHint = cur.team ? getTeamLabel(cur.team) : '';
+  }
 
   function pushUndo(s: GameState) { setUndoStack(prev => [...prev.slice(-19), s]); }
-
   function applyState(next: GameState) { setState(next); syncUrl(next); }
 
   function sinkBall(ball: number) {
     if (state.phase !== 'playing' || state.sunkBalls.includes(ball)) return;
     pushUndo(state);
-
     let next = { ...state };
-
     if (shouldAssignTeams(state.gameType, state.teamAssigned, state.players, state.currentPlayerIndex, ball)) {
       next.players = assignTeams(state.players, state.currentPlayerIndex, ball);
       next.teamAssigned = true;
     }
-
     next.sunkBalls = [...next.sunkBalls, ball];
-
     const result = checkSinkResult(next.gameType, next.players, next.currentPlayerIndex, state.sunkBalls, ball);
-
     const entry: ShotLogEntry = {
       type: result.win ? 'win' : result.lose ? 'lose' : 'sink',
-      playerName: cur.name,
-      ball,
-      timestamp: Date.now(),
-      gameTime: Date.now() - state.gameStartTime,
+      playerName: cur.name, ball,
+      timestamp: Date.now(), gameTime: Date.now() - state.gameStartTime,
       note: result.message || undefined,
     };
-
     if (result.win) {
-      next.phase = 'ended';
-      next.winner = cur.name;
-      next.winMessage = result.message;
+      next.phase = 'ended'; next.winner = cur.name; next.winMessage = result.message;
     } else if (result.lose) {
       const winIdx = next.players.findIndex((_, i) => i !== next.currentPlayerIndex);
       next.phase = 'ended';
       next.winner = winIdx >= 0 ? next.players[winIdx].name : 'Opponent';
       next.winMessage = result.message;
     } else if (state.gameType === 'practice' && remaining.length === 1) {
-      next.phase = 'ended';
-      next.winner = cur.name;
+      next.phase = 'ended'; next.winner = cur.name;
       next.winMessage = `Table cleared! Final BPM: ${finalBpm.toFixed(1)}`;
     }
-
     next.shotLog = [...next.shotLog, entry];
     applyState(next);
   }
@@ -148,32 +140,20 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
   }
 
   function handleShare() {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url)
-      .then(() => { setToast('URL copied!'); setTimeout(() => setToast(''), 2000); })
-      .catch(() => { setToast('Copy the URL above'); setTimeout(() => setToast(''), 3000); });
+    navigator.clipboard.writeText(window.location.href)
+      .then(() => { setToast('Copied!'); setTimeout(() => setToast(''), 2000); })
+      .catch(() => { setToast('Copy URL from bar'); setTimeout(() => setToast(''), 3000); });
   }
 
-  const dispBpm = state.phase === 'playing' ? bpm : finalBpm;
-  const dispTime = state.phase === 'playing' ? elapsed : (Date.now() - state.gameStartTime);
-
-  /* ── subtitle for ball selector ── */
-  let selectorHint = '';
-  if (state.gameType === '9ball') selectorHint = `Hit (${lowest9}) first`;
-  else if (state.gameType === '8ball') {
-    if (!state.teamAssigned) selectorHint = 'First sink assigns team';
-    else selectorHint = cur.team ? getTeamLabel(cur.team) : '';
-  }
+  const modeLabel = state.gameType === 'practice' ? 'PRACTICE' : state.gameType.toUpperCase();
 
   return (
     <div className="app-window">
-      {/* Title bar */}
+      {/* ── Title bar ── */}
       <div className="titlebar">
         <div className="titlebar-left">
           <span className="titlebar-icon">🎱</span>
-          <span className="titlebar-title">
-            BreakBPM · {state.gameType === 'practice' ? 'Practice' : state.gameType.toUpperCase()} · {state.shareCode}
-          </span>
+          <span className="titlebar-title">BreakBPM · {modeLabel} · {state.shareCode}</span>
         </div>
         <div className="titlebar-btns">
           <button className="tb-btn">_</button>
@@ -182,28 +162,73 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
         </div>
       </div>
 
-      <div className="app-body">
-
-        {/* ── Stats row ── */}
-        <div className="flex gap-2">
-          <div style={{ flex: 1 }}>
-            <div className="digit-display digit-bpm">{dispBpm.toFixed(1)}</div>
-            <div className="digit-label">BALLS / MIN</div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div className="digit-display digit-timer">{formatTime(dispTime)}</div>
-            <div className="digit-label">ELAPSED</div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
-            <div className="share-code">{state.shareCode}</div>
-            <button className="btn" style={{ fontSize: 11, minHeight: 28, padding: '2px 8px', minWidth: 'unset', width: '100%' }} onClick={handleShare}>
-              📋 Share
-            </button>
-            {toast && <div style={{ fontSize: 10, color: '#006400', textAlign: 'center' }}>{toast}</div>}
-          </div>
+      {/* ── PC-98 Game Header ── */}
+      <div className="splash-panel game-header-panel">
+        {/* Left: logo */}
+        <div className="splash-art-frame game-art-frame">
+          <img src={ballImg} alt="8-ball" className="splash-ball-img game-ball-img" />
         </div>
 
-        {/* ── WIN SCREEN ── */}
+        {/* Right: live stats */}
+        <div className="game-stats-block">
+          {/* Top row: mode + code */}
+          <div className="game-stats-toprow">
+            <span className="game-mode-badge">{modeLabel}</span>
+            <div className="game-code-inline">
+              <span className="game-code-val">{state.shareCode}</span>
+              <button className="game-share-btn" onClick={handleShare} title="Copy share URL">
+                {toast ? <span style={{ color: '#00ff41', fontSize: 9 }}>{toast}</span> : '📋'}
+              </button>
+            </div>
+          </div>
+
+          {/* BPM — big, dominant */}
+          <div className="game-bpm-row">
+            <div>
+              <div className="game-bpm-val">{dispBpm.toFixed(1)}</div>
+              <div className="game-bpm-unit">BPM</div>
+            </div>
+            <div className="game-bpm-divider" />
+            <div>
+              <div className="game-timer-val">{formatTime(dispTime)}</div>
+              <div className="game-bpm-unit">TIME</div>
+            </div>
+            <div className="game-bpm-divider" />
+            <div>
+              <div className="game-count-val">{state.sunkBalls.length}</div>
+              <div className="game-bpm-unit">SUNK</div>
+            </div>
+          </div>
+
+          {/* Current player bar */}
+          {state.phase === 'playing' && (
+            <div className="game-cur-player">
+              <span className="game-cur-arrow">▶</span>
+              <span className="game-cur-name">{cur.name}</span>
+              {cur.team && (
+                <span className="game-cur-team">
+                  {cur.team === 'solids' ? 'SOL' : 'STR'}
+                </span>
+              )}
+              {state.gameType === '9ball' && (
+                <span className="game-cur-hint">hit ({lowest9})</span>
+              )}
+            </div>
+          )}
+          {state.phase === 'ended' && (
+            <div className="game-cur-player" style={{ background: '#1a1a00', borderColor: '#ffb300' }}>
+              <span style={{ color: '#ffb300', fontFamily: 'VT323, monospace', fontSize: 16 }}>
+                ★ {state.winner?.toUpperCase()} WINS
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Scrollable body ── */}
+      <div className="app-body">
+
+        {/* WIN SCREEN */}
         {state.phase === 'ended' && (
           <div>
             <div className="win-banner">
@@ -212,10 +237,10 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
             <div style={{ fontWeight: 'bold', color: '#000080', marginTop: 6, fontSize: 13 }}>
               {state.winMessage}
             </div>
-            <div style={{ fontSize: 12, color: '#444', marginTop: 4, marginBottom: 8 }}>
-              BPM: <strong>{finalBpm.toFixed(2)}</strong> &nbsp;·&nbsp;
-              Time: <strong>{formatTime(Date.now() - state.gameStartTime)}</strong> &nbsp;·&nbsp;
-              Sunk: <strong>{state.sunkBalls.length}</strong>
+            <div style={{ fontSize: 11, color: '#444', marginTop: 4, marginBottom: 8, fontFamily: 'Courier New, monospace' }}>
+              FINAL BPM <strong>{finalBpm.toFixed(2)}</strong> &nbsp;·&nbsp;
+              TIME <strong>{formatTime(Date.now() - state.gameStartTime)}</strong> &nbsp;·&nbsp;
+              SUNK <strong>{state.sunkBalls.length}</strong>
             </div>
             <div className="grid-2">
               <button className="btn btn-primary btn-big" onClick={onNewGame}>▶ New Game</button>
@@ -224,57 +249,30 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
           </div>
         )}
 
-        {/* ── Sunk balls terminal ── */}
-        <div>
-          <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#555', marginBottom: 2 }}>SUNK BALLS ›</div>
-          <div className="terminal">
-            {state.sunkBalls.length === 0
-              ? <span className="terminal-dim">_ awaiting first shot...</span>
-              : state.sunkBalls.map((b, i) => (
-                <span
-                  key={i}
-                  style={{
-                    color: b === 8 ? '#ffb300' : b === 9 ? '#ff6600' : '#00ff41',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  {ballLabel(b)}
-                </span>
-              ))
-            }
-          </div>
-          <div style={{ fontSize: 11, color: '#555', marginTop: 3 }}>
-            {state.sunkBalls.length} sunk
-            {state.gameType !== 'practice' && ` · ${remaining.length} remaining`}
-          </div>
-        </div>
-
-        {/* ── Current player + teams (playing only) ── */}
-        {state.phase === 'playing' && state.gameType !== 'practice' && (
+        {/* ── Players (multi-player, not practice) ── */}
+        {state.gameType !== 'practice' && (
           <div>
-            {/* Players compact row */}
+            <div className="menu-section-label">▶ PLAYERS</div>
             <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
               {state.players.map((p, i) => {
                 const active = i === state.currentPlayerIndex;
                 const myGroup = p.team === 'solids' ? SOLIDS : p.team === 'stripes' ? STRIPES : [];
                 const cleared = myGroup.length > 0 && myGroup.every(b => state.sunkBalls.includes(b));
+                const mySunk = state.sunkBalls.filter(b => myGroup.includes(b)).length;
                 return (
-                  <div
-                    key={p.id}
-                    style={{
-                      flex: 1,
-                      minWidth: 70,
-                      border: `2px solid ${active ? '#000080' : '#808080'}`,
-                      background: active ? '#e8f0ff' : '#c0c0c0',
-                      padding: '4px 6px',
-                    }}
-                  >
-                    <div style={{ fontWeight: 'bold', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div key={p.id} className={`player-card ${active ? 'player-card-active' : ''}`}>
+                    <div className="player-card-name">
                       {active ? '▶ ' : ''}{p.name}
                     </div>
-                    <div style={{ fontSize: 10, color: p.team === 'solids' ? '#000080' : p.team === 'stripes' ? '#804000' : '#444' }}>
-                      {p.team ? (p.team === 'solids' ? 'Solids' : 'Stripes') : 'TBD'}
-                      {cleared && <span style={{ color: '#006400', fontWeight: 'bold' }}> ✓</span>}
+                    <div className="player-card-sub">
+                      {p.team
+                        ? <><span style={{ color: p.team === 'solids' ? '#4466ff' : '#cc8800' }}>
+                            {p.team === 'solids' ? 'SOLIDS' : 'STRIPES'}
+                          </span>{' '}{mySunk}/{myGroup.length}
+                          {cleared && <span style={{ color: '#00ff41' }}> ✓</span>}
+                        </>
+                        : <span style={{ color: '#666' }}>TBD</span>
+                      }
                     </div>
                   </div>
                 );
@@ -283,16 +281,37 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
           </div>
         )}
 
+        {/* ── Sunk balls terminal ── */}
+        <div>
+          <div className="menu-section-label">▶ SUNK BALLS
+            <span style={{ fontWeight: 'normal', color: '#888', marginLeft: 6 }}>
+              {state.sunkBalls.length} sunk{state.gameType !== 'practice' ? ` · ${remaining.length} left` : ''}
+            </span>
+          </div>
+          <div className="terminal">
+            {state.sunkBalls.length === 0
+              ? <span className="terminal-dim">_ awaiting first shot...</span>
+              : state.sunkBalls.map((b, i) => (
+                <span key={i} style={{
+                  color: b === 8 ? '#ffb300' : b === 9 ? '#ff6600' : '#00ff41',
+                  fontWeight: 'bold',
+                }}>
+                  {ballLabel(b)}
+                </span>
+              ))
+            }
+          </div>
+        </div>
+
         {/* ── Ball selector ── */}
         {state.phase !== 'ended' && (
           <div>
-            <div className="panel-header" style={{ background: 'none', border: 'none', padding: '0 0 4px', borderBottom: '1px solid #808080', marginBottom: 6 }}>
-              <span style={{ fontWeight: 'bold', fontSize: 12 }}>
-                {state.gameType === 'practice' ? 'Ball Selector' : `${cur.name}'s turn`}
-              </span>
-              {selectorHint && <span style={{ fontSize: 11, color: '#555' }}>{selectorHint}</span>}
+            <div className="menu-section-label">
+              ▶ {state.gameType === 'practice' ? 'SELECT BALL' : `${cur.name.toUpperCase()}'S SHOT`}
+              {selectorHint && (
+                <span style={{ fontWeight: 'normal', color: '#888', marginLeft: 6 }}>{selectorHint}</span>
+              )}
             </div>
-
             <div className="ball-grid">
               {allBalls.map(ball => (
                 <button
@@ -305,11 +324,10 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
                 </button>
               ))}
             </div>
-
             {state.gameType === '8ball' && !state.teamAssigned && (
               <div className="notice" style={{ marginTop: 6 }}>
                 <span>💡</span>
-                <span style={{ fontSize: 11 }}>First ball sunk assigns Solids (1-7) or Stripes (9-15)</span>
+                <span style={{ fontSize: 11 }}>First ball sunk assigns Solids (1–7) or Stripes (9–15)</span>
               </div>
             )}
           </div>
@@ -317,11 +335,14 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
 
         {/* ── Actions ── */}
         {state.phase === 'playing' && (
-          <div className="action-grid">
-            <button className="btn btn-big" onClick={() => turnAction('miss')}>↷ Miss</button>
-            <button className="btn btn-big btn-danger" onClick={() => turnAction('foul', 'Ball in hand to opponent')}>⚠ Foul</button>
-            <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')}>🛡 Safety</button>
-            <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}>↩ Undo</button>
+          <div>
+            <div className="menu-section-label">▶ ACTIONS</div>
+            <div className="action-grid">
+              <button className="btn btn-big" onClick={() => turnAction('miss')}>↷ Miss</button>
+              <button className="btn btn-big btn-danger" onClick={() => turnAction('foul', 'Ball in hand to opponent')}>⚠ Foul</button>
+              <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')}>🛡 Safety</button>
+              <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}>↩ Undo</button>
+            </div>
           </div>
         )}
 
@@ -329,10 +350,10 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
         <div>
           <button
             className="btn w-full"
-            style={{ justifyContent: 'space-between', minHeight: 32, fontSize: 12 }}
+            style={{ justifyContent: 'space-between', minHeight: 34, fontSize: 11, fontFamily: 'Courier New, monospace', letterSpacing: 1 }}
             onClick={() => setLogOpen(o => !o)}
           >
-            <span>📋 Shot Log ({state.shotLog.length})</span>
+            <span>▶ SHOT LOG ({state.shotLog.length} entries)</span>
             <span>{logOpen ? '▲' : '▼'}</span>
           </button>
           {logOpen && (
@@ -359,9 +380,8 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
           )}
         </div>
 
-        {/* End game button */}
         {state.phase === 'playing' && (
-          <button className="btn btn-danger w-full" onClick={() => setConfirmNew(true)}>
+          <button className="btn btn-danger w-full" style={{ fontSize: 11 }} onClick={() => setConfirmNew(true)}>
             ✖ End Game / New Game
           </button>
         )}
@@ -371,7 +391,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
 
       </div>
 
-      {/* Status bar */}
+      {/* ── Status bar ── */}
       <div className="statusbar">
         <div className="statusbar-item" style={{ flex: 2 }}>
           {state.phase === 'playing' ? `▶ ${cur.name}'s turn` : state.phase === 'ended' ? '■ Game Over' : '—'}
@@ -380,7 +400,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
         <div className="statusbar-item">{clock}</div>
       </div>
 
-      {/* Confirm dialog */}
+      {/* ── Confirm dialog ── */}
       {confirmNew && (
         <div className="dialog-overlay" onClick={() => setConfirmNew(false)}>
           <div className="dialog-box" onClick={e => e.stopPropagation()}>
