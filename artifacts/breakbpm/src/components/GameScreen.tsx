@@ -471,7 +471,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
               ? <button className={`btn btn-big${paused ? ' btn-primary' : ''}`} onClick={handlePause}>{paused ? '▶ Resume' : '⏸ Pause'}</button>
               : <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')}><img src="/safety-icon.png" alt="Safety" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Safety</button>
             }
-            <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}>↩ Undo</button>
+            <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}><img src="/undo-icon.png" alt="Undo" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Undo</button>
           </div>
         )}
 
