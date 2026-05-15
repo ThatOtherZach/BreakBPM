@@ -150,6 +150,7 @@ body {
 .about-content {
   padding: 12px;
   background: #fff;
+  overflow: visible;
 }
 
 .about-loading,
