@@ -359,7 +359,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
               <span className={`hud-timer${paused ? ' hud-timer-paused' : ''}`}>{formatTime(dispTime)}</span>
               <span className="hud-timer-indicator">{paused ? '⏸' : '▶'}</span>
             </div>
-            <div className="hud-right-row" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className="hud-right-row">
               <button
                 className="hud-copy-code-btn"
                 onClick={() => { navigator.clipboard.writeText(state.shareCode); }}
