@@ -68,6 +68,8 @@ export function getLegalBalls(
 
   // 8-ball
   if (!currentPlayer.team) {
+    // On the break (nothing sunk yet) every ball is reachable — enables the golden break
+    if (sunkBalls.length === 0) return remaining;
     return remaining.filter(b => b !== EIGHT_BALL);
   }
 
