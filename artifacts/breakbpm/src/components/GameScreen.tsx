@@ -376,7 +376,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
         {/* Sunk balls readout — full width within the panel */}
         <div className="hud-terminal">
           {state.sunkBalls.length === 0
-            ? <span className="hud-terminal-idle">_ awaiting first shot_</span>
+            ? <span className="hud-terminal-idle">&gt;awaiting first shot</span>
             : state.sunkBalls.map((b, i) => (
               <span
                 key={i}
