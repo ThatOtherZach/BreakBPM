@@ -479,7 +479,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
         <div>
           <button
             className="btn w-full"
-            style={{ justifyContent: 'space-between', minHeight: 32, fontSize: 12 }}
+            style={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'nowrap', minHeight: 32, fontSize: 12 }}
             onClick={() => setLogOpen(o => !o)}
           >
             <span><img src="/history-icon.png" alt="History" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Game History ({state.shotLog.length})</span>
