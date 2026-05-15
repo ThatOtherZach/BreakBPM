@@ -71,8 +71,8 @@ export default function SetupScreen({ onStart, onAbout }: Props) {
             <span>© 2026 Saym Services Inc.</span>
           </div>
           <div className="splash-tagline text-left">
-            TRACK YOUR<br />
-            BALLS PER MINUTE
+            PLAY FAST,<br />
+            TRACK STATS
           </div>
         </div>
       </div>
