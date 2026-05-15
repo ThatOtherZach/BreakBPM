@@ -367,7 +367,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
                 onClick={() => { navigator.clipboard.writeText(state.shareCode); }}
                 title="Copy code"
               >
-                <img src="/copy-icon.png" alt="Copy code" style={{ height: 25, width: 'auto', display: 'block' }} />
+                <img src="/copy-icon.png" alt="Copy code" style={{ height: 23, width: 'auto', display: 'block' }} />
               </button>
             </div>
             <button className="hud-share-btn" onClick={handleShare}>
