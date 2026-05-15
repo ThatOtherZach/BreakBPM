@@ -408,7 +408,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
                   onClick={() => sinkBall(ball)}
                   style={{ '--ball-color': BALL_COLORS[ball] } as React.CSSProperties}
                 >
-                  <span className="ball-num">{ball}</span>
+                  <span className="ball-num" style={ball >= 11 ? { fontSize: 10, letterSpacing: '-0.5px' } : undefined}>{ball}</span>
                 </button>
               ))}
             </div>
