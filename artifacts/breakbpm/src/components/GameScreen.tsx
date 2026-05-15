@@ -465,7 +465,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
         {/* ── Actions ── */}
         {state.phase === 'playing' && (
           <div className="action-grid">
-            <button className="btn btn-big" onClick={() => turnAction('miss')}>↷ Miss</button>
+            <button className="btn btn-big" onClick={() => turnAction('miss')}><img src="/miss-icon.png" alt="Miss" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Miss</button>
             <button className="btn btn-big btn-danger" onClick={() => turnAction('foul', 'Ball in hand to opponent')}>⚠ Foul</button>
             {state.gameType === 'practice'
               ? <button className={`btn btn-big${paused ? ' btn-primary' : ''}`} onClick={handlePause}>{paused ? '▶ Resume' : '⏸ Pause'}</button>
