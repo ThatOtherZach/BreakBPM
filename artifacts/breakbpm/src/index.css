@@ -291,39 +291,84 @@ body {
   background: var(--silver);
   border: 2px solid;
   border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-  font-weight: bold;
-  color: var(--black);
   cursor: pointer;
-  text-align: center;
   user-select: none;
   touch-action: manipulation;
-  line-height: 1;
   padding: 0;
   aspect-ratio: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  overflow: hidden;
 }
 
 .ball-btn:active:not(:disabled) {
   border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
 }
 
-.ball-btn.solid  { background: #ddeeff; }
-.ball-btn.stripe { background: #fff0cc; }
-.ball-btn.eight  { background: #222; color: #fff; border-color: #fff var(--darker) var(--darker) #fff; }
-.ball-btn.nine   { background: #ffdd00; color: #000; }
+/* Solid balls: full ball color as background */
+.ball-btn.solid {
+  background: var(--ball-color);
+}
 
-.ball-btn.legal  { background: #ccffcc; color: #003300; }
-.ball-btn.illegal { opacity: 0.35; pointer-events: none; }
-.ball-btn.sunk {
-  background: var(--dark);
-  color: #555;
+/* 8-ball: black background */
+.ball-btn.eight {
+  background: #000;
+  border-color: #555 var(--dshadow) var(--dshadow) #555;
+}
+
+/* Stripe balls: white with a horizontal color band */
+.ball-btn.stripe {
+  background: #fff;
+}
+
+.ball-btn.stripe::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 38%;
+  background: var(--ball-color);
+  z-index: 0;
+}
+
+/* Number circle — sits on top of the stripe/color */
+.ball-num {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 900;
+  font-size: 10px;
+  color: #000;
+  line-height: 1;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+}
+
+/* Legal: full opacity — ball colors show naturally */
+.ball-btn.legal { /* default, no override */ }
+
+/* Illegal: dimmed and desaturated */
+.ball-btn.illegal {
+  opacity: 0.28;
   pointer-events: none;
-  text-decoration: line-through;
-  opacity: 0.5;
+  filter: saturate(0.15);
+}
+
+/* Sunk: greyed out, no interaction */
+.ball-btn.sunk {
+  opacity: 0.18;
+  pointer-events: none;
+  filter: grayscale(1) brightness(0.7);
 }
 
 /* ── Player indicator ── */

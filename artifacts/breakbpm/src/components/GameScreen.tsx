@@ -12,14 +12,20 @@ interface Props {
   onNewGame: () => void;
 }
 
-function ballClass(ball: number, legal: number[], sunk: number[], gameType: string) {
+const BALL_COLORS: Record<number, string> = {
+  1: '#FDD307', 2: '#1F4E9E', 3: '#C3342B', 4: '#5B247A',
+  5: '#F27C1D', 6: '#276B40', 7: '#6B1F2A', 8: '#000000',
+  9: '#FDD307', 10: '#1F4E9E', 11: '#C3342B', 12: '#5B247A',
+  13: '#F27C1D', 14: '#276B40', 15: '#6B1F2A',
+};
+
+function ballClass(ball: number, legal: number[], sunk: number[], _gameType: string) {
   if (sunk.includes(ball)) return 'ball-btn sunk';
   const ok = legal.includes(ball);
   let base = 'ball-btn';
   if (ball === EIGHT_BALL) base += ' eight';
-  else if (ball === 9 && gameType === '9ball') base += ' nine';
   else if (SOLIDS.includes(ball)) base += ' solid';
-  else if (STRIPES.includes(ball)) base += ' stripe';
+  else base += ' stripe';
   base += ok ? ' legal' : ' illegal';
   return base;
 }
@@ -400,9 +406,9 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
                   key={ball}
                   className={ballClass(ball, legalBalls, state.sunkBalls, state.gameType)}
                   onClick={() => sinkBall(ball)}
-                  style={{ fontSize: 13 }}
+                  style={{ '--ball-color': BALL_COLORS[ball] } as React.CSSProperties}
                 >
-                  ({ball})
+                  <span className="ball-num">{ball}</span>
                 </button>
               ))}
             </div>
