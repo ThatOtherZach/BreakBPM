@@ -17,7 +17,7 @@ export default function SetupScreen({ onStart, onAbout }: Props) {
   const [gameType, setGameType] = useState<GameType>('8ball');
   const [playerCount, setPlayerCount] = useState(2);
   const [names, setNames] = useState(['', '', '', '']);
-  const [teamMode, setTeamMode] = useState<'auto' | 'manual'>('auto');
+  const [autoTeam, setAutoTeam] = useState(true);
   const [manualTeams, setManualTeams] = useState<('solids' | 'stripes' | '')[]>(['', '', '', '']);
   const [joinCode, setJoinCode] = useState('');
 
@@ -27,7 +27,7 @@ export default function SetupScreen({ onStart, onAbout }: Props) {
   function handleStart() {
     const players: Player[] = Array.from({ length: count }, (_, i) => {
       const p: Player = { id: i, name: names[i] || DEFAULT_NAMES[i] };
-      if (gameType === '8ball' && teamMode === 'manual' && manualTeams[i]) {
+      if (gameType === '8ball' && !autoTeam && manualTeams[i]) {
         p.team = manualTeams[i] as 'solids' | 'stripes';
       }
       return p;
@@ -131,14 +131,14 @@ export default function SetupScreen({ onStart, onAbout }: Props) {
                   placeholder={DEFAULT_NAMES[i]}
                   maxLength={16}
                 />
-                {gameType === '8ball' && teamMode === 'manual' && (
+                {gameType === '8ball' && !autoTeam && (
                   <select
                     className="input"
                     style={{ width: 'auto', minWidth: 110, flex: '0 0 auto' }}
                     value={manualTeams[i]}
                     onChange={e => setTeam(i, e.target.value)}
                   >
-                    <option value="">Team?</option>
+                    <option value="">-Select-</option>
                     <option value="solids">Solids (1-7)</option>
                     <option value="stripes">Stripes (9-15)</option>
                   </select>
@@ -150,13 +150,13 @@ export default function SetupScreen({ onStart, onAbout }: Props) {
           {gameType === '8ball' && !isPractice && (
             <div style={{ marginTop: 10 }}>
               <div className="menu-section-label">▶ TEAM ASSIGNMENT</div>
-              <label className="radio-label">
-                <input type="radio" name="teamMode" checked={teamMode === 'auto'} onChange={() => setTeamMode('auto')} />
-                Auto — first ball sunk decides
-              </label>
-              <label className="radio-label">
-                <input type="radio" name="teamMode" checked={teamMode === 'manual'} onChange={() => setTeamMode('manual')} />
-                Manual — set teams now
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={autoTeam}
+                  onChange={e => setAutoTeam(e.target.checked)}
+                />
+                Automatic team assignment
               </label>
             </div>
           )}

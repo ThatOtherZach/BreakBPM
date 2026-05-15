@@ -363,9 +363,8 @@ body {
 /* ── Win98 Buttons ── */
 .btn {
   background: var(--silver);
-  border: 2px solid;
-  border-color: var(--highlight) var(--shadow) var(--shadow) var(--highlight);
-  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 var(--dshadow), 1px 1px 0 var(--dshadow);
+  border: none;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf;
   font-family: 'MS Sans Serif', 'Tahoma', Geneva, Arial, sans-serif;
   font-size: 13px;
   color: var(--black);
@@ -389,26 +388,23 @@ body {
 }
 
 .btn:active:not(:disabled) {
-  border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
-  box-shadow: inset 1px 1px 0 var(--dshadow), inset -1px -1px 0 #fff;
-  padding: 7px 11px 5px 13px;
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey;
+  text-shadow: 1px 1px #222;
 }
 
 .btn:disabled {
   color: var(--shadow);
   text-shadow: 1px 1px 0 var(--highlight);
   cursor: default;
-  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 var(--dshadow), 1px 1px 0 var(--dshadow);
 }
 
 .btn-primary {
-  outline: 2px solid var(--black);
-  outline-offset: -4px;
+  box-shadow: inset -2px -2px #0a0a0a, inset 1px 1px #0a0a0a, inset 2px 2px #fff, inset -3px -3px grey, inset 3px 3px #dfdfdf;
   font-weight: bold;
 }
-.btn-primary:focus-visible {
-  outline: 2px solid var(--black);
-  outline-offset: -4px;
+.btn-primary:active:not(:disabled) {
+  box-shadow: inset 2px 2px #0a0a0a, inset -1px -1px #0a0a0a, inset -2px -2px #fff, inset 3px 3px grey, inset -3px -3px #dfdfdf;
+  text-shadow: 1px 1px #222;
 }
 
 .btn-danger:not(:disabled) { color: #800000; }
@@ -499,6 +495,48 @@ body {
 }
 
 .radio-label input[type="radio"]:focus-visible {
+  outline: 1px dotted var(--black);
+  outline-offset: 2px;
+}
+
+/* ── Checkbox ── */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 0;
+  min-height: 36px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  background: #fff;
+  border: none;
+  box-shadow: inset -1px -1px #fff, inset 1px 1px grey, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a;
+  cursor: pointer;
+  position: relative;
+  margin: 0;
+}
+
+.checkbox-label input[type="checkbox"]:checked::after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  width: 7px;
+  height: 7px;
+  background: url("data:image/svg+xml;charset=utf-8,%3Csvg width='7' height='7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M7 0H6v1H5v1H4v1H3v1H2V3H1V2H0v3h1v1h1v1h1V6h1V5h1V4h1V3h1V0z' fill='%23000'/%3E%3C/svg%3E") no-repeat;
+}
+
+.checkbox-label input[type="checkbox"]:focus-visible {
   outline: 1px dotted var(--black);
   outline-offset: 2px;
 }
@@ -1081,9 +1119,7 @@ body {
 
 .type-btn.selected {
   background: #e0e8ff;
-  border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
-  outline: 2px solid var(--navy);
-  outline-offset: -2px;
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey;
 }
 
 .type-btn-label { font-weight: bold; font-size: 14px; }
