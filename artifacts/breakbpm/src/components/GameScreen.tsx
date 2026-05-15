@@ -359,9 +359,16 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
               <span className={`hud-timer${paused ? ' hud-timer-paused' : ''}`}>{formatTime(dispTime)}</span>
               <span className="hud-timer-indicator">{paused ? '⏸' : '▶'}</span>
             </div>
-            <div className="hud-right-row">
+            <div className="hud-right-row" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span className="hud-meta-label">CODE</span>
               <span className="hud-code">{state.shareCode}</span>
+              <button
+                className="hud-copy-code-btn"
+                onClick={() => { navigator.clipboard.writeText(state.shareCode); }}
+                title="Copy code"
+              >
+                <img src="/copy-icon.png" alt="Copy code" style={{ height: 28, width: 'auto', display: 'block' }} />
+              </button>
             </div>
             <button className="hud-share-btn" onClick={handleShare}>
               {toast ? '✓ COPIED' : '📋 SHARE'}
