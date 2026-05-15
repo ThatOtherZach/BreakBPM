@@ -614,6 +614,20 @@ body {
   width: 30px;
 }
 
+.hud-mode {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 22px;
+  color: #00ff41;
+  line-height: 1;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(0,255,65,0.3);
+}
+
+.hud-mode-players {
+  color: #3a7a3a;
+  font-size: 18px;
+}
+
 .hud-timer {
   font-family: 'VT323', 'Courier New', monospace;
   font-size: 28px;

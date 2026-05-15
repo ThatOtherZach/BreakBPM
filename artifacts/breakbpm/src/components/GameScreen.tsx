@@ -279,9 +279,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
       <div className="titlebar">
         <div className="titlebar-left">
           <span className="titlebar-icon">🎱</span>
-          <span className="titlebar-title">
-            BreakBPM · {state.gameType === 'practice' ? 'PRACTICE' : state.gameType.toUpperCase()} · {state.shareCode}
-          </span>
+          <span className="titlebar-title">BreakBPM</span>
         </div>
         <div className="titlebar-btns">
           <button className="tb-btn">_</button>
@@ -310,8 +308,17 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
           {/* Divider */}
           <div className="hud-divider" />
 
-          {/* Right: timer + share */}
+          {/* Right: mode + timer + share */}
           <div className="hud-right">
+            <div className="hud-right-row">
+              <span className="hud-meta-label">MODE</span>
+              <span className="hud-mode">
+                {state.gameType === 'practice' ? 'PRACTICE'
+                  : state.gameType === '8ball' ? '8-BALL'
+                  : '9-BALL'}
+                <span className="hud-mode-players"> · {state.players.length}P</span>
+              </span>
+            </div>
             <div className="hud-right-row">
               <span className="hud-meta-label">TIME</span>
               <span className={`hud-timer${paused ? ' hud-timer-paused' : ''}`}>{formatTime(dispTime)}</span>
