@@ -35,17 +35,14 @@ export default function Navbar({ onAbout, onBack }: NavbarProps) {
       </div>
 
       {open && onAbout && (
-        <>
-          <div className="navbar-overlay" onClick={() => setOpen(false)} />
-          <div className="navbar-menu">
-            <button
-              className="navbar-menu-item"
-              onClick={() => { setOpen(false); onAbout(); }}
-            >
-              About
-            </button>
-          </div>
-        </>
+        <div className="navbar-menu">
+          <button
+            className="navbar-menu-item"
+            onClick={() => { setOpen(false); onAbout(); }}
+          >
+            About
+          </button>
+        </div>
       )}
     </>
   );
