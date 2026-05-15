@@ -25,6 +25,10 @@ export interface GameState {
   sunkBalls: number[];
   shotLog: ShotLogEntry[];
   gameStartTime: number;
+  /** Timestamp of the very first action (sink/miss/foul/safety). BPM is measured from here. */
+  firstActionTime: number | null;
+  /** Last action timestamp — used for the final BPM snapshot at game end. */
+  lastActionTime: number | null;
   winner: string | null;
   winMessage: string;
   shareCode: string;
@@ -158,9 +162,18 @@ export function generateShareCode(): string {
   return code;
 }
 
-export function calculateBPM(sunkCount: number, gameStartTime: number): number {
-  if (!gameStartTime) return 0;
-  const elapsed = (Date.now() - gameStartTime) / 60000;
+/**
+ * Best-practice BPM: measure from the first action, not game start.
+ * This way idle setup time doesn't dilute the score.
+ * Pass a specific `atTime` to get a snapshot (e.g. at the moment an action happened).
+ */
+export function calculateBPM(
+  sunkCount: number,
+  firstActionTime: number | null,
+  atTime: number = Date.now()
+): number {
+  if (!firstActionTime || sunkCount === 0) return 0;
+  const elapsed = (atTime - firstActionTime) / 60000;
   if (elapsed < 0.001) return 0;
   return Math.round((sunkCount / elapsed) * 10) / 10;
 }
@@ -183,6 +196,8 @@ export function encodeGameState(state: GameState): string {
       ci: state.currentPlayerIndex,
       sb: state.sunkBalls,
       gst: state.gameStartTime,
+      fat: state.firstActionTime,
+      lat: state.lastActionTime,
       w: state.winner,
       wm: state.winMessage,
       sc: state.shareCode,
@@ -204,6 +219,8 @@ export function decodeGameState(encoded: string): Partial<GameState> | null {
       currentPlayerIndex: d.ci,
       sunkBalls: d.sb,
       gameStartTime: d.gst,
+      firstActionTime: d.fat ?? null,
+      lastActionTime: d.lat ?? null,
       winner: d.w,
       winMessage: d.wm,
       shareCode: d.sc,

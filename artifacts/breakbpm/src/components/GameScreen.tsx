@@ -27,7 +27,15 @@ function ballClass(ball: number, legal: number[], sunk: number[], gameType: stri
 export default function GameScreen({ initialState, onNewGame }: Props) {
   const [state, setState] = useState<GameState>(initialState);
   const [elapsed, setElapsed] = useState(0);
-  const [bpm, setBpm] = useState(0);
+
+  // BPM is a snapshot — only updated at the moment of each action, not in real-time.
+  // This ensures it reflects pace during active play, not idle time.
+  const [bpm, setBpm] = useState<number | null>(
+    initialState.firstActionTime !== null
+      ? calculateBPM(initialState.sunkBalls.length, initialState.firstActionTime, initialState.lastActionTime ?? Date.now())
+      : null
+  );
+
   const [toast, setToast] = useState('');
   const [undoStack, setUndoStack] = useState<GameState[]>([]);
   const [clock, setClock] = useState('');
@@ -44,16 +52,14 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
     } catch { /* noop */ }
   }, []);
 
-  // Timer
+  // Timer — only tracks elapsed time. BPM is NOT updated here.
   useEffect(() => {
     if (state.phase !== 'playing') return;
     const id = setInterval(() => {
-      const e = Date.now() - state.gameStartTime;
-      setElapsed(e);
-      setBpm(calculateBPM(state.sunkBalls.length, state.gameStartTime));
-    }, 500);
+      setElapsed(Date.now() - state.gameStartTime);
+    }, 1000);
     return () => clearInterval(id);
-  }, [state.phase, state.gameStartTime, state.sunkBalls.length]);
+  }, [state.phase, state.gameStartTime]);
 
   // System clock
   useEffect(() => {
@@ -80,17 +86,29 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
     : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const remaining = getRemainingBalls(state.sunkBalls, state.gameType);
   const lowest9 = state.gameType === '9ball' ? getLowestBall(state.sunkBalls) : 0;
-  const finalBpm = calculateBPM(state.sunkBalls.length, state.gameStartTime);
 
   function pushUndo(s: GameState) { setUndoStack(prev => [...prev.slice(-19), s]); }
 
   function applyState(next: GameState) { setState(next); syncUrl(next); }
 
+  /**
+   * Snap BPM at a specific moment in time.
+   * Always called right after an action so the number freezes until the next one.
+   */
+  function snapBpm(sunkCount: number, firstActionTime: number, atTime: number) {
+    setBpm(calculateBPM(sunkCount, firstActionTime, atTime));
+  }
+
   function sinkBall(ball: number) {
     if (state.phase !== 'playing' || state.sunkBalls.includes(ball)) return;
     pushUndo(state);
 
+    const now = Date.now();
     let next = { ...state };
+
+    // Record first action time if this is the first event
+    if (!next.firstActionTime) next.firstActionTime = now;
+    next.lastActionTime = now;
 
     if (shouldAssignTeams(state.gameType, state.teamAssigned, state.players, state.currentPlayerIndex, ball)) {
       next.players = assignTeams(state.players, state.currentPlayerIndex, ball);
@@ -105,8 +123,8 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
       type: result.win ? 'win' : result.lose ? 'lose' : 'sink',
       playerName: cur.name,
       ball,
-      timestamp: Date.now(),
-      gameTime: Date.now() - state.gameStartTime,
+      timestamp: now,
+      gameTime: now - state.gameStartTime,
       note: result.message || undefined,
     };
 
@@ -122,28 +140,56 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
     } else if (state.gameType === 'practice' && remaining.length === 1) {
       next.phase = 'ended';
       next.winner = cur.name;
+      const finalBpm = calculateBPM(next.sunkBalls.length, next.firstActionTime!, now);
       next.winMessage = `Table cleared! Final BPM: ${finalBpm.toFixed(1)}`;
     }
 
     next.shotLog = [...next.shotLog, entry];
+
+    // Snap BPM at the exact moment of this action
+    snapBpm(next.sunkBalls.length, next.firstActionTime!, now);
+
     applyState(next);
   }
 
   function turnAction(type: 'miss' | 'foul' | 'safety', note?: string) {
     if (state.phase !== 'playing') return;
     pushUndo(state);
+
+    const now = Date.now();
+    const firstActionTime = state.firstActionTime ?? now;
     const nextIdx = (state.currentPlayerIndex + 1) % state.players.length;
     const entry: ShotLogEntry = {
       type, playerName: cur.name,
-      timestamp: Date.now(), gameTime: Date.now() - state.gameStartTime, note,
+      timestamp: now, gameTime: now - state.gameStartTime, note,
     };
-    applyState({ ...state, currentPlayerIndex: nextIdx, shotLog: [...state.shotLog, entry] });
+    const next: GameState = {
+      ...state,
+      currentPlayerIndex: nextIdx,
+      firstActionTime,
+      lastActionTime: now,
+      shotLog: [...state.shotLog, entry],
+    };
+
+    // BPM doesn't change on miss/foul/safety (no balls sunk) — but freeze the display
+    // at this moment so it doesn't drift while the next player deliberates
+    snapBpm(next.sunkBalls.length, firstActionTime, now);
+
+    applyState(next);
   }
 
   function handleUndo() {
     if (!undoStack.length) return;
     const prev = undoStack[undoStack.length - 1];
     setUndoStack(s => s.slice(0, -1));
+
+    // Restore BPM to the snapshot at the time of that previous state's last action
+    if (prev.firstActionTime) {
+      setBpm(calculateBPM(prev.sunkBalls.length, prev.firstActionTime, prev.lastActionTime ?? Date.now()));
+    } else {
+      setBpm(null);
+    }
+
     applyState(prev);
   }
 
@@ -151,13 +197,17 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
     const url = window.location.href;
     navigator.clipboard.writeText(url)
       .then(() => { setToast('URL copied!'); setTimeout(() => setToast(''), 2000); })
-      .catch(() => { setToast('Copy the URL above'); setTimeout(() => setToast(''), 3000); });
+      .catch(() => { setToast('Copy URL above'); setTimeout(() => setToast(''), 3000); });
   }
 
-  const dispBpm = state.phase === 'playing' ? bpm : finalBpm;
+  // Final BPM: snapshot at the last action, not at game-end time
+  const finalBpm = state.firstActionTime
+    ? calculateBPM(state.sunkBalls.length, state.firstActionTime, state.lastActionTime ?? Date.now())
+    : null;
+
+  const dispBpm = state.phase === 'ended' ? finalBpm : bpm;
   const dispTime = state.phase === 'playing' ? elapsed : (Date.now() - state.gameStartTime);
 
-  /* ── subtitle for ball selector ── */
   let selectorHint = '';
   if (state.gameType === '9ball') selectorHint = `Hit (${lowest9}) first`;
   else if (state.gameType === '8ball') {
@@ -187,8 +237,12 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
         {/* ── Stats row ── */}
         <div className="flex gap-2">
           <div style={{ flex: 1 }}>
-            <div className="digit-display digit-bpm">{dispBpm.toFixed(1)}</div>
-            <div className="digit-label">BALLS / MIN</div>
+            <div className="digit-display digit-bpm">
+              {dispBpm !== null ? dispBpm.toFixed(1) : '--.-'}
+            </div>
+            <div className="digit-label">
+              {dispBpm === null ? 'AWAITING PLAY' : 'BALLS / MIN'}
+            </div>
           </div>
           <div style={{ flex: 1 }}>
             <div className="digit-display digit-timer">{formatTime(dispTime)}</div>
@@ -196,7 +250,11 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
             <div className="share-code">{state.shareCode}</div>
-            <button className="btn" style={{ fontSize: 11, minHeight: 28, padding: '2px 8px', minWidth: 'unset', width: '100%' }} onClick={handleShare}>
+            <button
+              className="btn"
+              style={{ fontSize: 11, minHeight: 28, padding: '2px 8px', minWidth: 'unset', width: '100%' }}
+              onClick={handleShare}
+            >
               📋 Share
             </button>
             {toast && <div style={{ fontSize: 10, color: '#006400', textAlign: 'center' }}>{toast}</div>}
@@ -213,9 +271,9 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
               {state.winMessage}
             </div>
             <div style={{ fontSize: 12, color: '#444', marginTop: 4, marginBottom: 8 }}>
-              BPM: <strong>{finalBpm.toFixed(2)}</strong> &nbsp;·&nbsp;
-              Time: <strong>{formatTime(Date.now() - state.gameStartTime)}</strong> &nbsp;·&nbsp;
-              Sunk: <strong>{state.sunkBalls.length}</strong>
+              Final BPM: <strong>{finalBpm !== null ? finalBpm.toFixed(2) : '—'}</strong>
+              &nbsp;·&nbsp;Time: <strong>{formatTime(Date.now() - state.gameStartTime)}</strong>
+              &nbsp;·&nbsp;Sunk: <strong>{state.sunkBalls.length}</strong>
             </div>
             <div className="grid-2">
               <button className="btn btn-primary btn-big" onClick={onNewGame}>▶ New Game</button>
@@ -231,13 +289,10 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
             {state.sunkBalls.length === 0
               ? <span className="terminal-dim">_ awaiting first shot...</span>
               : state.sunkBalls.map((b, i) => (
-                <span
-                  key={i}
-                  style={{
-                    color: b === 8 ? '#ffb300' : b === 9 ? '#ff6600' : '#00ff41',
-                    fontWeight: 'bold',
-                  }}
-                >
+                <span key={i} style={{
+                  color: b === 8 ? '#ffb300' : b === 9 ? '#ff6600' : '#00ff41',
+                  fontWeight: 'bold',
+                }}>
                   {ballLabel(b)}
                 </span>
               ))
@@ -249,50 +304,42 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
           </div>
         </div>
 
-        {/* ── Current player + teams (playing only) ── */}
+        {/* ── Players ── */}
         {state.phase === 'playing' && state.gameType !== 'practice' && (
-          <div>
-            {/* Players compact row */}
-            <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
-              {state.players.map((p, i) => {
-                const active = i === state.currentPlayerIndex;
-                const myGroup = p.team === 'solids' ? SOLIDS : p.team === 'stripes' ? STRIPES : [];
-                const cleared = myGroup.length > 0 && myGroup.every(b => state.sunkBalls.includes(b));
-                return (
-                  <div
-                    key={p.id}
-                    style={{
-                      flex: 1,
-                      minWidth: 70,
-                      border: `2px solid ${active ? '#000080' : '#808080'}`,
-                      background: active ? '#e8f0ff' : '#c0c0c0',
-                      padding: '4px 6px',
-                    }}
-                  >
-                    <div style={{ fontWeight: 'bold', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {active ? '▶ ' : ''}{p.name}
-                    </div>
-                    <div style={{ fontSize: 10, color: p.team === 'solids' ? '#000080' : p.team === 'stripes' ? '#804000' : '#444' }}>
-                      {p.team ? (p.team === 'solids' ? 'Solids' : 'Stripes') : 'TBD'}
-                      {cleared && <span style={{ color: '#006400', fontWeight: 'bold' }}> ✓</span>}
-                    </div>
+          <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
+            {state.players.map((p, i) => {
+              const active = i === state.currentPlayerIndex;
+              const myGroup = p.team === 'solids' ? SOLIDS : p.team === 'stripes' ? STRIPES : [];
+              const cleared = myGroup.length > 0 && myGroup.every(b => state.sunkBalls.includes(b));
+              return (
+                <div key={p.id} style={{
+                  flex: 1, minWidth: 70,
+                  border: `2px solid ${active ? '#000080' : '#808080'}`,
+                  background: active ? '#e8f0ff' : '#c0c0c0',
+                  padding: '4px 6px',
+                }}>
+                  <div style={{ fontWeight: 'bold', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {active ? '▶ ' : ''}{p.name}
                   </div>
-                );
-              })}
-            </div>
+                  <div style={{ fontSize: 10, color: p.team === 'solids' ? '#000080' : p.team === 'stripes' ? '#804000' : '#444' }}>
+                    {p.team ? (p.team === 'solids' ? 'Solids' : 'Stripes') : 'TBD'}
+                    {cleared && <span style={{ color: '#006400', fontWeight: 'bold' }}> ✓</span>}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
         {/* ── Ball selector ── */}
         {state.phase !== 'ended' && (
           <div>
-            <div className="panel-header" style={{ background: 'none', border: 'none', padding: '0 0 4px', borderBottom: '1px solid #808080', marginBottom: 6 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderBottom: '1px solid #808080', marginBottom: 6, paddingBottom: 3 }}>
               <span style={{ fontWeight: 'bold', fontSize: 12 }}>
                 {state.gameType === 'practice' ? 'Ball Selector' : `${cur.name}'s turn`}
               </span>
               {selectorHint && <span style={{ fontSize: 11, color: '#555' }}>{selectorHint}</span>}
             </div>
-
             <div className="ball-grid">
               {allBalls.map(ball => (
                 <button
@@ -305,7 +352,6 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
                 </button>
               ))}
             </div>
-
             {state.gameType === '8ball' && !state.teamAssigned && (
               <div className="notice" style={{ marginTop: 6 }}>
                 <span>💡</span>
@@ -325,7 +371,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
           </div>
         )}
 
-        {/* ── Shot log (collapsible) ── */}
+        {/* ── Shot log ── */}
         <div>
           <button
             className="btn w-full"
@@ -359,7 +405,6 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
           )}
         </div>
 
-        {/* End game button */}
         {state.phase === 'playing' && (
           <button className="btn btn-danger w-full" onClick={() => setConfirmNew(true)}>
             ✖ End Game / New Game
@@ -376,7 +421,9 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
         <div className="statusbar-item" style={{ flex: 2 }}>
           {state.phase === 'playing' ? `▶ ${cur.name}'s turn` : state.phase === 'ended' ? '■ Game Over' : '—'}
         </div>
-        <div className="statusbar-item" style={{ flex: 1 }}>BPM: {dispBpm.toFixed(1)}</div>
+        <div className="statusbar-item" style={{ flex: 1 }}>
+          BPM: {dispBpm !== null ? dispBpm.toFixed(1) : '--'}
+        </div>
         <div className="statusbar-item">{clock}</div>
       </div>
 
