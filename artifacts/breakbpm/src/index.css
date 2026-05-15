@@ -381,6 +381,112 @@ body {
 
 @keyframes blink { 50% { opacity: 0.5; } }
 
+/* ── PC-98 Splash Panel ── */
+.splash-panel {
+  display: flex;
+  flex-direction: row;
+  background: #0a1a0a;
+  border-bottom: 3px solid #000;
+  flex-shrink: 0;
+  overflow: hidden;
+  height: 160px;
+}
+
+.splash-art-frame {
+  width: 130px;
+  flex-shrink: 0;
+  border-right: 3px solid #000;
+  border-bottom: 2px solid #1a4a1a;
+  background: #051005;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  /* CRT scanline overlay */
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.18) 2px,
+      rgba(0,0,0,0.18) 4px
+    );
+}
+
+.splash-ball-img {
+  width: 108px;
+  height: 108px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 0 12px rgba(0,255,80,0.25));
+}
+
+.splash-title-block {
+  flex: 1;
+  padding: 12px 12px 10px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.splash-title-main {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 46px;
+  line-height: 1;
+  color: #e8e8e8;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.splash-title-accent { color: #00ff41; }
+
+.splash-title-sub {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  color: #5a9a5a;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: -2px;
+}
+
+.splash-title-rule {
+  height: 1px;
+  background: linear-gradient(to right, #2a6a2a, transparent);
+  margin: 4px 0;
+}
+
+.splash-meta {
+  display: flex;
+  gap: 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #3a7a3a;
+}
+
+.splash-tagline {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #7aba7a;
+  line-height: 1.4;
+  letter-spacing: 1px;
+}
+
+/* ── Menu section labels (PC-98 style) ── */
+.menu-section-label {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #000080;
+  letter-spacing: 1.5px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  border-left: 3px solid #000080;
+  padding-left: 6px;
+}
+
 /* ── Game type selector ── */
 .game-type-grid {
   display: grid;

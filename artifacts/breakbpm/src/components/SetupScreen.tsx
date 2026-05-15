@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import type { GameType, Player } from '../lib/gameLogic';
+import ballImg from '/eightball_nobg.png';
 
 const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
   { id: '8ball', label: '8-Ball', desc: 'Solids vs Stripes' },
   { id: '9ball', label: '9-Ball', desc: 'Sink the 9 to win' },
-  { id: 'practice', label: 'Practice', desc: 'Solo / drill mode' },
+  { id: 'practice', label: 'Practice', desc: 'Solo drills' },
 ];
 
 const DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
@@ -54,7 +55,7 @@ export default function SetupScreen({ onStart }: Props) {
       <div className="titlebar">
         <div className="titlebar-left">
           <span className="titlebar-icon">🎱</span>
-          <span className="titlebar-title">BreakBPM — New Game</span>
+          <span className="titlebar-title">BreakBPM v1.0</span>
         </div>
         <div className="titlebar-btns">
           <button className="tb-btn">_</button>
@@ -63,27 +64,35 @@ export default function SetupScreen({ onStart }: Props) {
         </div>
       </div>
 
-      <div className="app-body">
-        {/* Logo */}
-        <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
-          <div style={{
-            fontFamily: "'VT323','Courier New',monospace",
-            fontSize: 52,
-            lineHeight: 1,
-            letterSpacing: 2,
-          }}>
-            <span style={{ color: '#000080' }}>BREAK</span><span style={{ color: '#008000' }}>BPM</span>
-          </div>
-          <div style={{ fontSize: 12, color: '#444', marginTop: 2 }}>
-            Pool &amp; Billiards Score Tracker
-          </div>
+      {/* ── PC-98 Splash Panel ── */}
+      <div className="splash-panel">
+        {/* Left: 8-ball art in a CRT-style frame */}
+        <div className="splash-art-frame">
+          <img src={ballImg} alt="8-ball" className="splash-ball-img" />
         </div>
 
-        <hr className="sep" />
+        {/* Right: title block */}
+        <div className="splash-title-block">
+          <div className="splash-title-main">BREAK<span className="splash-title-accent">BPM</span></div>
+          <div className="splash-title-sub">BILLIARDS SCORE SYSTEM</div>
+          <div className="splash-title-rule" />
+          <div className="splash-meta">
+            <span>VER 1.00</span>
+            <span>© 1998</span>
+          </div>
+          <div className="splash-tagline">
+            TRACK YOUR<br />
+            BALLS PER MINUTE
+          </div>
+        </div>
+      </div>
+
+      {/* ── Menu body ── */}
+      <div className="app-body">
 
         {/* Game type */}
         <div>
-          <div style={{ fontWeight: 'bold', marginBottom: 6, fontSize: 12 }}>Game Type</div>
+          <div className="menu-section-label">▶ SELECT GAME TYPE</div>
           <div className="game-type-grid">
             {GAME_TYPES.map(gt => (
               <button
@@ -98,10 +107,10 @@ export default function SetupScreen({ onStart }: Props) {
           </div>
         </div>
 
-        {/* Player count (not practice) */}
+        {/* Player count */}
         {!isPractice && (
           <div>
-            <div style={{ fontWeight: 'bold', marginBottom: 6, fontSize: 12 }}>Number of Players</div>
+            <div className="menu-section-label">▶ NUMBER OF PLAYERS</div>
             <div className="flex gap-1">
               {[2, 3, 4].map(n => (
                 <button
@@ -110,7 +119,7 @@ export default function SetupScreen({ onStart }: Props) {
                   style={{ flex: 1, fontSize: 16, fontWeight: 'bold', minHeight: 44 }}
                   onClick={() => setPlayerCount(n)}
                 >
-                  {n}
+                  {n}P
                 </button>
               ))}
             </div>
@@ -119,9 +128,7 @@ export default function SetupScreen({ onStart }: Props) {
 
         {/* Player names */}
         <div>
-          <div style={{ fontWeight: 'bold', marginBottom: 6, fontSize: 12 }}>
-            {isPractice ? 'Your Name' : 'Player Names'}
-          </div>
+          <div className="menu-section-label">▶ {isPractice ? 'YOUR NAME' : 'PLAYER NAMES'}</div>
           <div className="flex flex-col gap-2">
             {Array.from({ length: count }).map((_, i) => (
               <div key={i} className="player-row">
@@ -149,17 +156,16 @@ export default function SetupScreen({ onStart }: Props) {
             ))}
           </div>
 
-          {/* Team assignment mode for 8-ball */}
           {gameType === '8ball' && !isPractice && (
             <div style={{ marginTop: 10 }}>
-              <div style={{ fontWeight: 'bold', marginBottom: 4, fontSize: 12 }}>Team Assignment</div>
+              <div className="menu-section-label">▶ TEAM ASSIGNMENT</div>
               <label className="radio-label">
                 <input type="radio" name="teamMode" checked={teamMode === 'auto'} onChange={() => setTeamMode('auto')} />
-                Auto (first ball sunk decides)
+                Auto — first ball sunk decides
               </label>
               <label className="radio-label">
                 <input type="radio" name="teamMode" checked={teamMode === 'manual'} onChange={() => setTeamMode('manual')} />
-                Manual (set teams now)
+                Manual — set teams now
               </label>
             </div>
           )}
@@ -174,14 +180,14 @@ export default function SetupScreen({ onStart }: Props) {
 
         {/* Start */}
         <button className="btn btn-primary btn-big btn-full" onClick={handleStart}>
-          ▶ {isPractice ? 'Start Practice' : 'Start Game'}
+          ▶ {isPractice ? 'START PRACTICE' : 'START GAME'}
         </button>
 
         <hr className="sep" />
 
         {/* Join shared game */}
         <div>
-          <div style={{ fontWeight: 'bold', marginBottom: 6, fontSize: 12 }}>Join Shared Game</div>
+          <div className="menu-section-label">▶ JOIN SHARED GAME</div>
           <div className="flex gap-2 items-center">
             <input
               className="input"
@@ -200,20 +206,14 @@ export default function SetupScreen({ onStart }: Props) {
               Join →
             </button>
           </div>
-          <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>
-            Or paste a full share URL into your browser.
-          </div>
         </div>
 
-        <div style={{ textAlign: 'center', fontSize: 10, color: '#888', paddingBottom: 4 }}>
-          BreakBPM v1.0 — Windows 98 Edition
-        </div>
       </div>
 
       {/* Status bar */}
       <div className="statusbar">
-        <div className="statusbar-item" style={{ flex: 1 }}>Ready</div>
-        <div className="statusbar-item">BreakBPM</div>
+        <div className="statusbar-item" style={{ flex: 1 }}>READY</div>
+        <div className="statusbar-item">BREAKBPM SYS v1.0</div>
       </div>
     </div>
   );
