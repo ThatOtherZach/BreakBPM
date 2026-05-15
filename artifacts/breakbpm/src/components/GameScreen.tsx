@@ -43,6 +43,11 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
   const [logOpen, setLogOpen] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
+  // Practice-mode pause
+  const [paused, setPaused] = useState(false);
+  const [pausedDuration, setPausedDuration] = useState(0); // total ms spent paused
+  const [pauseStart, setPauseStart] = useState<number | null>(null);
+
   const syncUrl = useCallback((s: GameState) => {
     try {
       const url = new URL(window.location.href);
@@ -53,13 +58,14 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
   }, []);
 
   // Timer — only tracks elapsed time. BPM is NOT updated here.
+  // Stops when paused; pausedDuration is subtracted so the displayed time excludes idle pauses.
   useEffect(() => {
-    if (state.phase !== 'playing') return;
+    if (state.phase !== 'playing' || paused) return;
     const id = setInterval(() => {
-      setElapsed(Date.now() - state.gameStartTime);
+      setElapsed(Date.now() - state.gameStartTime - pausedDuration);
     }, 1000);
     return () => clearInterval(id);
-  }, [state.phase, state.gameStartTime]);
+  }, [state.phase, state.gameStartTime, paused, pausedDuration]);
 
   // System clock
   useEffect(() => {
@@ -101,6 +107,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
 
   function sinkBall(ball: number) {
     if (state.phase !== 'playing' || state.sunkBalls.includes(ball)) return;
+    resumeIfPaused();
     pushUndo(state);
 
     const now = Date.now();
@@ -154,6 +161,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
 
   function turnAction(type: 'miss' | 'foul' | 'safety', note?: string) {
     if (state.phase !== 'playing') return;
+    resumeIfPaused();
     pushUndo(state);
 
     const now = Date.now();
@@ -200,13 +208,35 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
       .catch(() => { setToast('Copy URL above'); setTimeout(() => setToast(''), 3000); });
   }
 
+  function handlePause() {
+    if (!paused) {
+      // Freeze elapsed precisely at this moment before the interval stops
+      setElapsed(Date.now() - state.gameStartTime - pausedDuration);
+      setPaused(true);
+      setPauseStart(Date.now());
+    } else {
+      const added = pauseStart ? Date.now() - pauseStart : 0;
+      setPausedDuration(d => d + added);
+      setPauseStart(null);
+      setPaused(false);
+    }
+  }
+
+  function resumeIfPaused() {
+    if (!paused) return;
+    const added = pauseStart ? Date.now() - pauseStart : 0;
+    setPausedDuration(d => d + added);
+    setPauseStart(null);
+    setPaused(false);
+  }
+
   // Final BPM: snapshot at the last action, not at game-end time
   const finalBpm = state.firstActionTime
     ? calculateBPM(state.sunkBalls.length, state.firstActionTime, state.lastActionTime ?? Date.now())
     : null;
 
   const dispBpm = state.phase === 'ended' ? finalBpm : bpm;
-  const dispTime = state.phase === 'playing' ? elapsed : (Date.now() - state.gameStartTime);
+  const dispTime = state.phase === 'playing' ? elapsed : (Date.now() - state.gameStartTime - pausedDuration);
 
   let selectorHint = '';
   if (state.gameType === '9ball') selectorHint = `Hit (${lowest9}) first`;
@@ -256,7 +286,8 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
           <div className="hud-right">
             <div className="hud-right-row">
               <span className="hud-meta-label">TIME</span>
-              <span className="hud-timer">{formatTime(dispTime)}</span>
+              <span className={`hud-timer${paused ? ' hud-timer-paused' : ''}`}>{formatTime(dispTime)}</span>
+              {paused && <span className="hud-paused-badge">⏸</span>}
             </div>
             <div className="hud-right-row">
               <span className="hud-meta-label">CODE</span>
@@ -367,7 +398,10 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
           <div className="action-grid">
             <button className="btn btn-big" onClick={() => turnAction('miss')}>↷ Miss</button>
             <button className="btn btn-big btn-danger" onClick={() => turnAction('foul', 'Ball in hand to opponent')}>⚠ Foul</button>
-            <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')}>🛡 Safety</button>
+            {state.gameType === 'practice'
+              ? <button className={`btn btn-big${paused ? ' btn-primary' : ''}`} onClick={handlePause}>{paused ? '▶ Resume' : '⏸ Pause'}</button>
+              : <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')}>🛡 Safety</button>
+            }
             <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}>↩ Undo</button>
           </div>
         )}
@@ -411,16 +445,15 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
             ✖ End Game / New Game
           </button>
         )}
-        {state.phase === 'ended' && (
-          <button className="btn btn-primary btn-big w-full" onClick={onNewGame}>▶ New Game</button>
-        )}
 
       </div>
 
       {/* Status bar */}
       <div className="statusbar">
         <div className="statusbar-item" style={{ flex: 2 }}>
-          {state.phase === 'playing' ? `▶ ${cur.name}'s turn` : state.phase === 'ended' ? '■ Game Over' : '—'}
+          {paused ? '⏸ PAUSED'
+            : state.phase === 'playing' ? `▶ ${cur.name}'s turn`
+            : state.phase === 'ended' ? '■ Game Over' : '—'}
         </div>
         <div className="statusbar-item" style={{ flex: 1 }}>
           BPM: {dispBpm !== null ? dispBpm.toFixed(1) : '--'}

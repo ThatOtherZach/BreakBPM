@@ -586,6 +586,20 @@ body {
   letter-spacing: 4px;
 }
 
+.hud-timer-paused {
+  color: #664400;
+  text-shadow: none;
+}
+
+.hud-paused-badge {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: var(--amber);
+  animation: blink 1s step-end infinite;
+  margin-left: 2px;
+  line-height: 1;
+}
+
 .hud-share-btn {
   background: transparent;
   border: 1px solid #2a5a2a;
