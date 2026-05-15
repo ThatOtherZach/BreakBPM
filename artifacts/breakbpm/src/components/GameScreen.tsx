@@ -321,8 +321,8 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
             </div>
             <div className="hud-right-row">
               <span className="hud-meta-label">TIME</span>
-              <span className="hud-timer-indicator">{paused ? '⏸' : '▶'}</span>
               <span className={`hud-timer${paused ? ' hud-timer-paused' : ''}`}>{formatTime(dispTime)}</span>
+              <span className="hud-timer-indicator">{paused ? '⏸' : '▶'}</span>
             </div>
             <div className="hud-right-row">
               <span className="hud-meta-label">CODE</span>
