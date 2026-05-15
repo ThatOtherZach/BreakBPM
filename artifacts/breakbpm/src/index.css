@@ -730,7 +730,7 @@ body {
 .hud-chip-stripe {
   background: #fff;
   color: #000;
-  border-left: 3px solid var(--chip-color);
+  border-left: 4px solid var(--chip-color);
 }
 
 /* Win flash inside HUD */
