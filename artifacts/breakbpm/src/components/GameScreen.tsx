@@ -222,7 +222,7 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
         <div className="titlebar-left">
           <span className="titlebar-icon">🎱</span>
           <span className="titlebar-title">
-            BreakBPM · {state.gameType === 'practice' ? 'Practice' : state.gameType.toUpperCase()} · {state.shareCode}
+            BreakBPM · {state.gameType === 'practice' ? 'PRACTICE' : state.gameType.toUpperCase()} · {state.shareCode}
           </span>
         </div>
         <div className="titlebar-btns">
@@ -232,77 +232,79 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
         </div>
       </div>
 
-      <div className="app-body">
+      {/* ── Dark HUD panel (matches splash aesthetic) ── */}
+      <div className="hud-panel">
 
-        {/* ── Stats row ── */}
-        <div className="flex gap-2">
-          <div style={{ flex: 1 }}>
-            <div className="digit-display digit-bpm">
+        {/* Top row: BPM + right column */}
+        <div className="hud-top">
+
+          {/* BPM — the hero number */}
+          <div className="hud-bpm-block">
+            <div className="hud-bpm-label">BALLS/MIN</div>
+            <div className={`hud-bpm-value${dispBpm === null ? ' hud-bpm-dim' : ''}`}>
               {dispBpm !== null ? dispBpm.toFixed(1) : '--.-'}
             </div>
-            <div className="digit-label">
-              {dispBpm === null ? 'AWAITING PLAY' : 'BALLS / MIN'}
+            <div className="hud-bpm-sub">
+              {dispBpm === null ? 'AWAITING PLAY' : `${state.sunkBalls.length} SUNK`}
             </div>
           </div>
-          <div style={{ flex: 1 }}>
-            <div className="digit-display digit-timer">{formatTime(dispTime)}</div>
-            <div className="digit-label">ELAPSED</div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
-            <div className="share-code">{state.shareCode}</div>
-            <button
-              className="btn"
-              style={{ fontSize: 11, minHeight: 28, padding: '2px 8px', minWidth: 'unset', width: '100%' }}
-              onClick={handleShare}
-            >
-              📋 Share
+
+          {/* Divider */}
+          <div className="hud-divider" />
+
+          {/* Right: timer + share */}
+          <div className="hud-right">
+            <div className="hud-right-row">
+              <span className="hud-meta-label">TIME</span>
+              <span className="hud-timer">{formatTime(dispTime)}</span>
+            </div>
+            <div className="hud-right-row">
+              <span className="hud-meta-label">CODE</span>
+              <span className="hud-code">{state.shareCode}</span>
+            </div>
+            <button className="hud-share-btn" onClick={handleShare}>
+              {toast ? '✓ COPIED' : '📋 SHARE'}
             </button>
-            {toast && <div style={{ fontSize: 10, color: '#006400', textAlign: 'center' }}>{toast}</div>}
           </div>
         </div>
 
-        {/* ── WIN SCREEN ── */}
+        {/* Sunk balls readout — full width within the panel */}
+        <div className="hud-terminal">
+          <span className="hud-terminal-prompt">▶ </span>
+          {state.sunkBalls.length === 0
+            ? <span className="hud-terminal-idle">_ awaiting first shot_</span>
+            : state.sunkBalls.map((b, i) => (
+              <span key={i} className={
+                b === 8 ? 'hud-ball hud-ball-8'
+                : b === 9 ? 'hud-ball hud-ball-9'
+                : 'hud-ball'
+              }>
+                ({b})
+              </span>
+            ))
+          }
+        </div>
+
+        {/* Win/Loss flash — inside HUD */}
         {state.phase === 'ended' && (
-          <div>
-            <div className="win-banner">
-              {state.winner ? `★ ${state.winner.toUpperCase()} WINS!` : 'GAME OVER'}
-            </div>
-            <div style={{ fontWeight: 'bold', color: '#000080', marginTop: 6, fontSize: 13 }}>
-              {state.winMessage}
-            </div>
-            <div style={{ fontSize: 12, color: '#444', marginTop: 4, marginBottom: 8 }}>
-              Final BPM: <strong>{finalBpm !== null ? finalBpm.toFixed(2) : '—'}</strong>
-              &nbsp;·&nbsp;Time: <strong>{formatTime(Date.now() - state.gameStartTime)}</strong>
-              &nbsp;·&nbsp;Sunk: <strong>{state.sunkBalls.length}</strong>
-            </div>
-            <div className="grid-2">
-              <button className="btn btn-primary btn-big" onClick={onNewGame}>▶ New Game</button>
-              <button className="btn btn-big" onClick={handleShare}>📋 Share</button>
-            </div>
+          <div className="hud-winner">
+            <span className="hud-winner-text">
+              {state.winner ? `★ ${state.winner.toUpperCase()} WINS` : 'GAME OVER'}
+            </span>
+            <span className="hud-winner-sub">{state.winMessage}</span>
           </div>
         )}
+      </div>
 
-        {/* ── Sunk balls terminal ── */}
-        <div>
-          <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#555', marginBottom: 2 }}>SUNK BALLS ›</div>
-          <div className="terminal">
-            {state.sunkBalls.length === 0
-              ? <span className="terminal-dim">_ awaiting first shot...</span>
-              : state.sunkBalls.map((b, i) => (
-                <span key={i} style={{
-                  color: b === 8 ? '#ffb300' : b === 9 ? '#ff6600' : '#00ff41',
-                  fontWeight: 'bold',
-                }}>
-                  {ballLabel(b)}
-                </span>
-              ))
-            }
+      <div className="app-body">
+
+        {/* Win screen action buttons */}
+        {state.phase === 'ended' && (
+          <div className="grid-2" style={{ marginTop: 0 }}>
+            <button className="btn btn-primary btn-big" onClick={onNewGame}>▶ New Game</button>
+            <button className="btn btn-big" onClick={handleShare}>📋 Share</button>
           </div>
-          <div style={{ fontSize: 11, color: '#555', marginTop: 3 }}>
-            {state.sunkBalls.length} sunk
-            {state.gameType !== 'practice' && ` · ${remaining.length} remaining`}
-          </div>
-        </div>
+        )}
 
         {/* ── Players ── */}
         {state.phase === 'playing' && state.gameType !== 'practice' && (
@@ -334,11 +336,10 @@ export default function GameScreen({ initialState, onNewGame }: Props) {
         {/* ── Ball selector ── */}
         {state.phase !== 'ended' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderBottom: '1px solid #808080', marginBottom: 6, paddingBottom: 3 }}>
-              <span style={{ fontWeight: 'bold', fontSize: 12 }}>
-                {state.gameType === 'practice' ? 'Ball Selector' : `${cur.name}'s turn`}
-              </span>
-              {selectorHint && <span style={{ fontSize: 11, color: '#555' }}>{selectorHint}</span>}
+            <div className="menu-section-label" style={{ marginBottom: 6 }}>
+              {state.gameType === 'practice' ? 'BALL SELECTOR'
+                : `${cur.name.toUpperCase()}'S TURN`}
+              {selectorHint && <span style={{ fontWeight: 'normal', marginLeft: 8, letterSpacing: 0, textTransform: 'none', color: '#555' }}>{selectorHint}</span>}
             </div>
             <div className="ball-grid">
               {allBalls.map(ball => (

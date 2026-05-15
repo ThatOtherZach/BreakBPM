@@ -475,6 +475,198 @@ body {
   letter-spacing: 1px;
 }
 
+/* ── Game HUD Panel (mirrors splash-panel aesthetic) ── */
+.hud-panel {
+  background: #0a1a0a;
+  border-bottom: 3px solid #000;
+  flex-shrink: 0;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+}
+
+.hud-top {
+  display: flex;
+  align-items: stretch;
+  padding: 10px 12px 8px;
+  gap: 0;
+}
+
+/* BPM hero block */
+.hud-bpm-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.hud-bpm-label {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  color: #3a7a3a;
+  letter-spacing: 2px;
+  margin-bottom: 2px;
+}
+
+.hud-bpm-value {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 64px;
+  line-height: 1;
+  color: #00ff41;
+  letter-spacing: -1px;
+  text-shadow: 0 0 16px rgba(0,255,65,0.4);
+}
+
+.hud-bpm-dim {
+  color: #1a5a1a;
+  text-shadow: none;
+}
+
+.hud-bpm-sub {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  color: #2a6a2a;
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+
+/* Vertical divider */
+.hud-divider {
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, #1a5a1a 20%, #1a5a1a 80%, transparent);
+  margin: 0 12px;
+  flex-shrink: 0;
+}
+
+/* Right column: timer + code + share */
+.hud-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.hud-right-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.hud-meta-label {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  color: #3a7a3a;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  width: 30px;
+}
+
+.hud-timer {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 28px;
+  color: var(--amber);
+  line-height: 1;
+  letter-spacing: 1px;
+  text-shadow: 0 0 10px rgba(255,179,0,0.3);
+}
+
+.hud-code {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 28px;
+  color: #e8e8e8;
+  line-height: 1;
+  letter-spacing: 4px;
+}
+
+.hud-share-btn {
+  background: transparent;
+  border: 1px solid #2a5a2a;
+  color: #5a9a5a;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  cursor: pointer;
+  text-align: left;
+  touch-action: manipulation;
+  align-self: flex-start;
+  transition: border-color 0.1s, color 0.1s;
+}
+
+.hud-share-btn:active {
+  border-color: #00ff41;
+  color: #00ff41;
+}
+
+/* Sunk balls terminal row */
+.hud-terminal {
+  border-top: 1px solid #0f2f0f;
+  padding: 6px 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  word-break: break-all;
+  line-height: 1.5;
+  min-height: 34px;
+}
+
+.hud-terminal-prompt {
+  color: #2a7a2a;
+}
+
+.hud-terminal-idle {
+  color: #1a5a1a;
+  animation: cursor-blink 1.2s step-end infinite;
+}
+
+@keyframes cursor-blink {
+  50% { opacity: 0; }
+}
+
+.hud-ball {
+  color: #00ff41;
+  font-weight: bold;
+}
+
+.hud-ball-8 {
+  color: var(--amber) !important;
+}
+
+.hud-ball-9 {
+  color: #ff6600 !important;
+}
+
+/* Win flash inside HUD */
+.hud-winner {
+  border-top: 1px solid #1a4a0a;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hud-winner-text {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 36px;
+  color: var(--amber);
+  line-height: 1;
+  animation: blink 1s step-end infinite;
+}
+
+.hud-winner-sub {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #5a9a5a;
+  letter-spacing: 0.5px;
+}
+
 /* ── Menu section labels (PC-98 style) ── */
 .menu-section-label {
   font-family: 'Courier New', monospace;
