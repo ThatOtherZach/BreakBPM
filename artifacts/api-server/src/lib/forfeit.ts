@@ -23,9 +23,12 @@ export const INACTIVITY_FORFEIT_MS = 60 * 60 * 1000; // 60 minutes
  */
 export async function sweepStaleGames(userId: string, now: Date = new Date()): Promise<number> {
   const cutoff = new Date(now.getTime() - INACTIVITY_FORFEIT_MS);
-  const stale = await db
-    .update(gamesTable)
-    .set({ endedAt: now, outcome: "forfeit" })
+  // Pull the candidates first so we can derive a per-game winner (the
+  // opponent of whoever was on the table when activity stopped) instead
+  // of leaving forfeited rows with a null winner.
+  const candidates = await db
+    .select()
+    .from(gamesTable)
     .where(
       and(
         eq(gamesTable.userId, userId),
@@ -33,7 +36,37 @@ export async function sweepStaleGames(userId: string, now: Date = new Date()): P
         lt(gamesTable.lastActivityAt, cutoff),
         ne(gamesTable.gameType, "practice"),
       ),
-    )
-    .returning({ id: gamesTable.id });
-  return stale.length;
+    );
+  if (candidates.length === 0) return 0;
+
+  for (const row of candidates) {
+    let winner: string | null = null;
+    let forfeitingPlayer: string | null = null;
+    const gs = row.gameState as {
+      players?: { name: string }[];
+      currentPlayerIndex?: number;
+    } | null;
+    const players = gs?.players;
+    const idx = gs?.currentPlayerIndex;
+    if (Array.isArray(players) && players.length > 1 && typeof idx === "number") {
+      forfeitingPlayer = players[idx]?.name ?? null;
+      winner = players[(idx + 1) % players.length]?.name ?? null;
+    }
+    await db
+      .update(gamesTable)
+      .set({
+        endedAt: now,
+        outcome: "forfeit",
+        winner,
+        // Fold a forfeit-reason marker into gameState so the history view
+        // and any downstream consumers can surface why the game ended.
+        gameState: {
+          ...((row.gameState as Record<string, unknown> | null) ?? {}),
+          forfeitReason: "inactivity_60min",
+          forfeitedPlayer: forfeitingPlayer,
+        },
+      })
+      .where(eq(gamesTable.id, row.id));
+  }
+  return candidates.length;
 }

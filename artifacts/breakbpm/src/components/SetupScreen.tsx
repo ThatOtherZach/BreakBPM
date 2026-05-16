@@ -48,10 +48,12 @@ export default function SetupScreen({ onStart, onAbout, onAccount, onSignIn }: P
       const res = await startGame.mutateAsync({ data: { deviceId: getDeviceId(), gameType } });
       onStart(gameType, players, res.gameId ?? null);
     } catch (e: unknown) {
-      // useStartGame surfaces a fetch error with the response status; on 429 we
-      // also get back cooldownSecondsRemaining in the body.
-      const err = e as { status?: number; response?: { data?: { cooldownSecondsRemaining?: number; error?: string } } };
-      const data = err?.response?.data;
+      // customFetch throws ApiError with the parsed body on `data` (not
+      // `response.data`). On 429 the body includes the authoritative
+      // cooldownSecondsRemaining — use it so the modal shows the right
+      // countdown instead of falling back to the 5-min default.
+      const err = e as { status?: number; data?: { cooldownSecondsRemaining?: number; error?: string } };
+      const data = err?.data;
       if (err?.status === 429 || data?.cooldownSecondsRemaining) {
         setCooldownSec(data?.cooldownSecondsRemaining ?? 300);
       } else {
