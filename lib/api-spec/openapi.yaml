@@ -131,22 +131,26 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/CooldownError" }
 
-  /games/heartbeat:
+  /games/activity:
     post:
-      operationId: heartbeatGame
+      operationId: recordGameActivity
       tags: [games]
-      summary: Bump the in-progress game's last-activity timestamp
+      summary: Record a logged in-game action (resets the inactivity clock)
+      description: >
+        Called by the client every time a player logs an action
+        (sink/miss/foul/safety). NOT a periodic heartbeat — the inactivity
+        forfeit deliberately tracks gameplay, not tab liveness.
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/HeartbeatInput" }
+            schema: { $ref: "#/components/schemas/GameActivityInput" }
       responses:
         "200":
           description: OK
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/HeartbeatResult" }
+              schema: { $ref: "#/components/schemas/GameActivityResult" }
 
   /games/save:
     post:
@@ -281,9 +285,12 @@ components:
 
     StartGameInput:
       type: object
-      required: [deviceId]
+      required: [deviceId, gameType]
       properties:
         deviceId: { type: string, minLength: 8, maxLength: 128 }
+        # Stored on the in-progress row so the inactivity sweep can exempt
+        # practice mode (no opponent, no win condition → no forfeit).
+        gameType: { type: string, enum: [8ball, 9ball, practice] }
 
     StartGameResult:
       type: object
@@ -298,18 +305,18 @@ components:
         # How long the server will tolerate inactivity before auto-forfeit.
         inactivityTimeoutMs: { type: integer }
 
-    HeartbeatInput:
+    GameActivityInput:
       type: object
       required: [gameId]
       properties:
         gameId: { type: string }
 
-    HeartbeatResult:
+    GameActivityResult:
       type: object
       required: [alive]
       properties:
         # False if the game was already auto-forfeited or no longer exists.
-        # The client should stop heartbeating and surface a forfeit screen.
+        # The client should stop logging activity and show the forfeit state.
         alive: { type: boolean }
         message: { type: string }
 

@@ -7,7 +7,7 @@ import {
   encodeGameState, getTeamLabel, ballLabel,
   SOLIDS, STRIPES, EIGHT_BALL, getLowestBall,
 } from '../lib/gameLogic';
-import { useSaveGame, useHeartbeatGame } from '@workspace/api-client-react';
+import { useSaveGame, useRecordGameActivity } from '@workspace/api-client-react';
 import { FORFEIT_INACTIVITY_MS } from '../lib/forfeit';
 import { getDeviceId } from '../lib/device';
 
@@ -21,9 +21,6 @@ interface Props {
   onSignIn: () => void;
 }
 
-// Bump server activity on this cadence. Well under the 60-min server
-// inactivity threshold, but loose enough not to spam the API.
-const HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 const BALL_COLORS: Record<number, string> = {
   1: '#FDD307', 2: '#1F4E9E', 3: '#C3342B', 4: '#5B247A',
@@ -45,7 +42,7 @@ function ballClass(ball: number, legal: number[], sunk: number[], _gameType: str
 
 export default function GameScreen({ initialState, serverGameId, onNewGame, onAbout, onAccount, onSignIn }: Props) {
   const saveGame = useSaveGame();
-  const heartbeat = useHeartbeatGame();
+  const recordActivity = useRecordGameActivity();
   const savedRef = useRef(false);
   const forfeitedRef = useRef(false);
   const [state, setState] = useState<GameState>(initialState);
@@ -170,18 +167,17 @@ export default function GameScreen({ initialState, serverGameId, onNewGame, onAb
     return () => clearTimeout(id);
   }, [state.phase, state.lastActionTime, state.gameStartTime, state.currentPlayerIndex, state.gameType, state.players, paused]);
 
-  // Periodic heartbeat — keeps the server's lastActivityAt fresh so the
-  // 60-min inactivity sweep doesn't auto-forfeit an in-progress game out
-  // from under us. Only meaningful for signed-in users (anonymous play has
-  // no server-side row).
+  // Server activity ping — fires only when the player logs an action
+  // (sink/miss/foul/safety bumps state.lastActionTime). Deliberately NOT
+  // a periodic heartbeat: that would let users dodge the 60-min inactivity
+  // forfeit just by leaving the tab open. Only signed-in users have a
+  // server-side row to update.
   useEffect(() => {
-    if (!serverGameId || state.phase !== 'playing' || paused) return;
-    const id = setInterval(() => {
-      heartbeat.mutate({ data: { gameId: serverGameId } });
-    }, HEARTBEAT_INTERVAL_MS);
-    return () => clearInterval(id);
+    if (!serverGameId || state.phase !== 'playing') return;
+    if (state.lastActionTime == null) return;
+    recordActivity.mutate({ data: { gameId: serverGameId } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serverGameId, state.phase, paused]);
+  }, [serverGameId, state.lastActionTime, state.phase]);
 
   // Auto-scroll log
   useEffect(() => {

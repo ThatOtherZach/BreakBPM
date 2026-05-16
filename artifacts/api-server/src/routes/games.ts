@@ -4,8 +4,8 @@ import { db, gamesTable } from "@workspace/db";
 import {
   StartGameBody,
   StartGameResponse,
-  HeartbeatGameBody,
-  HeartbeatGameResponse,
+  RecordGameActivityBody,
+  RecordGameActivityResponse,
   SaveGameBody,
   SaveGameResponse,
   GetGameHistoryResponse,
@@ -78,7 +78,9 @@ router.post("/games/start", async (req, res): Promise<void> => {
   await db.insert(gamesTable).values({
     id,
     userId: user.id,
-    gameType: "8ball",        // overwritten on /games/save
+    // Real gameType — the inactivity sweep relies on this to exempt
+    // practice mode. Overwritten on /games/save with the same value.
+    gameType: parsed.data.gameType,
     shareCode: "",            // overwritten on /games/save
     gameState: {},
     startedAt: new Date(),
@@ -98,12 +100,15 @@ router.post("/games/start", async (req, res): Promise<void> => {
 });
 
 /**
- * Heartbeat — bump lastActivityAt for an in-progress game. Returns
- * `alive: false` if the game was already finalized (typically by the
- * forfeit sweep) so the client can stop pinging and surface the result.
+ * Record a logged in-game action — bumps lastActivityAt for an in-progress
+ * game. Called by the client after every sink/miss/foul/safety, NOT on a
+ * timer, so the inactivity forfeit reflects gameplay rather than tab
+ * liveness. Returns `alive: false` if the row was already finalized
+ * (typically by the forfeit sweep) so the client can stop calling and
+ * surface the forfeit state.
  */
-router.post("/games/heartbeat", async (req, res): Promise<void> => {
-  const parsed = HeartbeatGameBody.safeParse(req.body);
+router.post("/games/activity", async (req, res): Promise<void> => {
+  const parsed = RecordGameActivityBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
@@ -127,14 +132,14 @@ router.post("/games/heartbeat", async (req, res): Promise<void> => {
     .returning({ id: gamesTable.id });
   if (updated.length === 0) {
     res.json(
-      HeartbeatGameResponse.parse({
+      RecordGameActivityResponse.parse({
         alive: false,
         message: "Game already ended (likely auto-forfeit)",
       }),
     );
     return;
   }
-  res.json(HeartbeatGameResponse.parse({ alive: true }));
+  res.json(RecordGameActivityResponse.parse({ alive: true }));
 });
 
 /**

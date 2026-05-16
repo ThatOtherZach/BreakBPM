@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HeartbeatInput {
-  gameId: string;
+export interface GameActivityResult {
+  alive: boolean;
+  message?: string;
 }

@@ -1,4 +1,4 @@
-import { eq, gt, or } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import type { Request } from "express";
 import { db, publicFreeCooldownsTable } from "@workspace/db";
 
@@ -78,6 +78,4 @@ export async function recordPublicFreeGameEnd(
         eq(publicFreeCooldownsTable.deviceId, deviceId),
       ),
     );
-  // suppress unused-import warning when only one helper is used elsewhere
-  void gt;
 }

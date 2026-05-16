@@ -45,7 +45,7 @@ export default function SetupScreen({ onStart, onAbout, onAccount, onSignIn }: P
       return p;
     });
     try {
-      const res = await startGame.mutateAsync({ data: { deviceId: getDeviceId() } });
+      const res = await startGame.mutateAsync({ data: { deviceId: getDeviceId(), gameType } });
       onStart(gameType, players, res.gameId ?? null);
     } catch (e: unknown) {
       // useStartGame surfaces a fetch error with the response status; on 429 we

@@ -9,13 +9,21 @@ export interface IssuePassInput {
   sourceRef?: string;
 }
 
-export async function issuePass(input: IssuePassInput) {
+/**
+ * Issue a pass row inside a caller-provided transaction. Used by the
+ * redeem/purchase flows so the pass + the redemption record are written
+ * atomically.
+ */
+export async function issuePassTx(
+  tx: Pick<typeof db, "insert">,
+  input: IssuePassInput,
+) {
   const startedAt = new Date();
   const durationSeconds = PASS_DURATIONS_SECONDS[input.kind];
   const priceCents =
     input.source === "purchase" ? PASS_PRICES[input.kind].priceCents : 0;
 
-  const [row] = await db
+  const [row] = await tx
     .insert(passesTable)
     .values({
       id: newId(),
@@ -29,4 +37,9 @@ export async function issuePass(input: IssuePassInput) {
     })
     .returning();
   return row;
+}
+
+/** Convenience wrapper for non-transactional callers. */
+export async function issuePass(input: IssuePassInput) {
+  return issuePassTx(db, input);
 }

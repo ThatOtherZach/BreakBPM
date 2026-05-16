@@ -15,7 +15,7 @@ import {
   VerifyPassCheckoutResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser } from "../lib/auth";
-import { issuePass } from "../lib/passes";
+import { issuePassTx } from "../lib/passes";
 import { paymentProvider } from "../lib/paymentProvider";
 import { newId } from "../lib/ids";
 
@@ -30,7 +30,16 @@ function passToSummary(pass: { kind: string; startedAt: Date; durationSeconds: n
   };
 }
 
-/** Discount-code redemption — does NOT touch the payment provider. */
+/**
+ * Discount-code redemption — does NOT touch the payment provider.
+ *
+ * The whole validate / decrement-cap / insert-redemption / issue-pass
+ * sequence runs inside a single transaction so the user can never end up
+ * with two passes from one code under concurrent requests. The unique
+ * (code, user_id) index on discount_redemptions provides the second line
+ * of defence — if two transactions race past the SELECT, the loser's
+ * INSERT fails and the whole tx rolls back, so no orphan pass row remains.
+ */
 router.post("/passes/redeem", async (req, res): Promise<void> => {
   const parsed = RedeemDiscountCodeBody.safeParse(req.body);
   if (!parsed.success) {
@@ -44,80 +53,85 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
   }
 
   const code = parsed.data.code.trim().toUpperCase();
-  const [discount] = await db
-    .select()
-    .from(discountCodesTable)
-    .where(eq(discountCodesTable.code, code))
-    .limit(1);
 
-  if (!discount) {
-    res.json(RedeemDiscountCodeResponse.parse({ success: false, message: "Invalid code" }));
+  type Outcome =
+    | { ok: true; pass: { kind: string; startedAt: Date; durationSeconds: number } }
+    | { ok: false; message: string };
+
+  let outcome: Outcome;
+  try {
+    outcome = await db.transaction(async (tx): Promise<Outcome> => {
+      const [discount] = await tx
+        .select()
+        .from(discountCodesTable)
+        .where(eq(discountCodesTable.code, code))
+        .for("update")
+        .limit(1);
+      if (!discount) return { ok: false, message: "Invalid code" };
+      if (discount.expiresAt && discount.expiresAt < new Date()) {
+        return { ok: false, message: "Code expired" };
+      }
+
+      // Atomic cap claim: this UPDATE only succeeds if the cap allows it.
+      const claim = await tx
+        .update(discountCodesTable)
+        .set({ redemptionCount: sql`${discountCodesTable.redemptionCount} + 1` })
+        .where(
+          and(
+            eq(discountCodesTable.code, code),
+            sql`(${discountCodesTable.maxRedemptions} IS NULL OR ${discountCodesTable.redemptionCount} < ${discountCodesTable.maxRedemptions})`,
+          ),
+        )
+        .returning({ id: discountCodesTable.code });
+      if (claim.length === 0) return { ok: false, message: "Code fully redeemed" };
+
+      // Issue pass + record redemption inside the same tx. The unique
+      // (code, user_id) index makes the INSERT throw on a concurrent
+      // double-redeem, which rolls back both writes — no orphan pass row.
+      const pass = await issuePassTx(tx, {
+        userId: user.id,
+        kind: discount.grantsPassKind as PassKind,
+        source: "discount_code",
+        sourceRef: code,
+      });
+      try {
+        await tx.insert(discountRedemptionsTable).values({
+          id: newId(),
+          code,
+          userId: user.id,
+          passId: pass.id,
+        });
+      } catch (e) {
+        // Translate the unique-violation into a friendly message. Any other
+        // error keeps propagating and rolls back the tx as expected.
+        const code = (e as { code?: string }).code;
+        if (code === "23505") {
+          return { ok: false, message: "You've already redeemed this code" };
+        }
+        throw e;
+      }
+      return { ok: true, pass };
+    });
+  } catch (err) {
+    req.log.error({ err, code, userId: user.id }, "Redeem failed");
+    res.status(500).json({ error: "Redeem failed" });
     return;
   }
-  if (discount.expiresAt && discount.expiresAt < new Date()) {
-    res.json(RedeemDiscountCodeResponse.parse({ success: false, message: "Code expired" }));
+
+  if (!outcome.ok) {
+    res.json(RedeemDiscountCodeResponse.parse({ success: false, message: outcome.message }));
     return;
   }
 
-  // One redemption per user per code.
-  const [already] = await db
-    .select()
-    .from(discountRedemptionsTable)
-    .where(
-      and(
-        eq(discountRedemptionsTable.code, code),
-        eq(discountRedemptionsTable.userId, user.id),
-      ),
-    )
-    .limit(1);
-  if (already) {
-    res.json(
-      RedeemDiscountCodeResponse.parse({
-        success: false,
-        message: "You've already redeemed this code",
-      }),
-    );
-    return;
-  }
-
-  // Atomically claim a redemption slot — the WHERE clause prevents concurrent
-  // redeems from pushing past the cap.
-  const claim = await db
-    .update(discountCodesTable)
-    .set({ redemptionCount: sql`${discountCodesTable.redemptionCount} + 1` })
-    .where(
-      and(
-        eq(discountCodesTable.code, code),
-        sql`(${discountCodesTable.maxRedemptions} IS NULL OR ${discountCodesTable.redemptionCount} < ${discountCodesTable.maxRedemptions})`,
-      ),
-    )
-    .returning({ id: discountCodesTable.code });
-  if (claim.length === 0) {
-    res.json(
-      RedeemDiscountCodeResponse.parse({ success: false, message: "Code fully redeemed" }),
-    );
-    return;
-  }
-
-  const pass = await issuePass({
-    userId: user.id,
-    kind: discount.grantsPassKind as PassKind,
-    source: "discount_code",
-    sourceRef: code,
-  });
-  await db.insert(discountRedemptionsTable).values({
-    id: newId(),
-    code,
-    userId: user.id,
-    passId: pass.id,
-  });
-
-  req.log.info({ userId: user.id, code, passKind: pass.kind }, "Discount code redeemed");
+  req.log.info(
+    { userId: user.id, code, passKind: outcome.pass.kind },
+    "Discount code redeemed",
+  );
   res.json(
     RedeemDiscountCodeResponse.parse({
       success: true,
-      message: `Granted ${pass.kind} pass`,
-      pass: passToSummary(pass),
+      message: `Granted ${outcome.pass.kind} pass`,
+      pass: passToSummary(outcome.pass),
     }),
   );
 });
@@ -158,12 +172,14 @@ router.post("/passes/verify", async (req, res): Promise<void> => {
     res.json(VerifyPassCheckoutResponse.parse({ success: false, message: verify.message }));
     return;
   }
-  const pass = await issuePass({
-    userId: user.id,
-    kind: verify.kind,
-    source: "purchase",
-    sourceRef: verify.providerRef,
-  });
+  const pass = await db.transaction((tx) =>
+    issuePassTx(tx, {
+      userId: user.id,
+      kind: verify.kind!,
+      source: "purchase",
+      sourceRef: verify.providerRef,
+    }),
+  );
   req.log.info({ userId: user.id, kind: pass.kind }, "Pass purchased");
   res.json(
     VerifyPassCheckoutResponse.parse({

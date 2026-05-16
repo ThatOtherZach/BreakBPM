@@ -137,7 +137,8 @@ export const startGameBodyDeviceIdMax = 128;
 
 
 export const StartGameBody = zod.object({
-  "deviceId": zod.string().min(startGameBodyDeviceIdMin).max(startGameBodyDeviceIdMax)
+  "deviceId": zod.string().min(startGameBodyDeviceIdMin).max(startGameBodyDeviceIdMax),
+  "gameType": zod.enum(['8ball', '9ball', 'practice'])
 })
 
 export const StartGameResponse = zod.object({
@@ -150,13 +151,15 @@ export const StartGameResponse = zod.object({
 
 
 /**
- * @summary Bump the in-progress game's last-activity timestamp
+ * Called by the client every time a player logs an action (sink/miss/foul/safety). NOT a periodic heartbeat — the inactivity forfeit deliberately tracks gameplay, not tab liveness.
+
+ * @summary Record a logged in-game action (resets the inactivity clock)
  */
-export const HeartbeatGameBody = zod.object({
+export const RecordGameActivityBody = zod.object({
   "gameId": zod.string()
 })
 
-export const HeartbeatGameResponse = zod.object({
+export const RecordGameActivityResponse = zod.object({
   "alive": zod.boolean(),
   "message": zod.string().optional()
 })

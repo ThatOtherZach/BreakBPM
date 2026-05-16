@@ -5,6 +5,7 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { StartGameInputGameType } from './startGameInputGameType';
 
 export interface StartGameInput {
   /**
@@ -12,4 +13,5 @@ export interface StartGameInput {
      * @maxLength 128
      */
   deviceId: string;
+  gameType: StartGameInputGameType;
 }

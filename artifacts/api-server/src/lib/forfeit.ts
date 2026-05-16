@@ -1,4 +1,4 @@
-import { and, eq, isNull, lt } from "drizzle-orm";
+import { and, eq, isNull, lt, ne } from "drizzle-orm";
 import { db, gamesTable } from "@workspace/db";
 
 /**
@@ -8,10 +8,18 @@ import { db, gamesTable } from "@workspace/db";
 export const INACTIVITY_FORFEIT_MS = 60 * 60 * 1000; // 60 minutes
 
 /**
- * Sweep any in-progress games for a user whose `lastActivityAt` is older
- * than the inactivity threshold and finalize them as forfeits. Called
- * lazily on /games/start, /games/heartbeat, and /games/history so we don't
- * need a background job to keep state honest.
+ * Sweep any in-progress games whose `lastActivityAt` is older than the
+ * inactivity threshold and finalize them as forfeits.
+ *
+ * Practice mode is exempt — those games have no opponent / win condition,
+ * so timing-out a solo drill makes no sense.
+ *
+ * `lastActivityAt` is bumped only by logged game actions (POST
+ * /games/activity) — NOT by liveness pings — so a user can't dodge a
+ * forfeit just by leaving the tab open.
+ *
+ * Invoked lazily on /games/start, /games/activity, and /games/history;
+ * no background job required.
  */
 export async function sweepStaleGames(userId: string, now: Date = new Date()): Promise<number> {
   const cutoff = new Date(now.getTime() - INACTIVITY_FORFEIT_MS);
@@ -23,6 +31,7 @@ export async function sweepStaleGames(userId: string, now: Date = new Date()): P
         eq(gamesTable.userId, userId),
         isNull(gamesTable.endedAt),
         lt(gamesTable.lastActivityAt, cutoff),
+        ne(gamesTable.gameType, "practice"),
       ),
     )
     .returning({ id: gamesTable.id });

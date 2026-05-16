@@ -114,12 +114,22 @@ export interface VerifyResult {
   pass?: PassSummary;
 }
 
+export type StartGameInputGameType = typeof StartGameInputGameType[keyof typeof StartGameInputGameType];
+
+
+export const StartGameInputGameType = {
+  '8ball': '8ball',
+  '9ball': '9ball',
+  practice: 'practice',
+} as const;
+
 export interface StartGameInput {
   /**
      * @minLength 8
      * @maxLength 128
      */
   deviceId: string;
+  gameType: StartGameInputGameType;
 }
 
 export type StartGameResultTier = typeof StartGameResultTier[keyof typeof StartGameResultTier];
@@ -141,11 +151,11 @@ export interface StartGameResult {
   inactivityTimeoutMs?: number;
 }
 
-export interface HeartbeatInput {
+export interface GameActivityInput {
   gameId: string;
 }
 
-export interface HeartbeatResult {
+export interface GameActivityResult {
   alive: boolean;
   message?: string;
 }
