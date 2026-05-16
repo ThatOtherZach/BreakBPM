@@ -11,6 +11,10 @@ export const authProvider: AuthProvider = new ClerkAuthProvider();
 /**
  * Resolve the local user row for the request's identity, creating it on
  * first sight. Returns null for anonymous callers.
+ *
+ * Newly-provisioned users get a placeholder screen name and
+ * `onboardingCompletedAt = null` — the client must walk them through the
+ * screen-name picker (POST /auth/screen-name) before regular app entry.
  */
 export async function getOrCreateUser(req: Request): Promise<User | null> {
   const identity = await authProvider.getIdentity(req);
@@ -31,7 +35,6 @@ export async function upsertUserFromIdentity(identity: ExternalIdentity): Promis
     .limit(1);
 
   if (existing) {
-    // Refresh email if Clerk has a newer one.
     if (identity.email && identity.email !== existing.email) {
       await db
         .update(usersTable)
@@ -42,9 +45,9 @@ export async function upsertUserFromIdentity(identity: ExternalIdentity): Promis
     return existing;
   }
 
-  const screenName =
-    (identity.defaultScreenName ?? "").trim() ||
-    `Player_${Math.random().toString(36).slice(2, 7)}`;
+  // First sight: provision a placeholder screen name. Onboarding stays
+  // incomplete until the user PATCHes /auth/screen-name.
+  const placeholderName = `Player_${Math.random().toString(36).slice(2, 7)}`;
 
   const [created] = await db
     .insert(usersTable)
@@ -52,9 +55,14 @@ export async function upsertUserFromIdentity(identity: ExternalIdentity): Promis
       id: newId(),
       authProvider: identity.provider,
       authSubject: identity.subject,
-      screenName,
+      screenName: placeholderName,
       email: identity.email ?? null,
+      onboardingCompletedAt: null,
     })
     .returning();
   return created;
+}
+
+export function needsOnboarding(user: User): boolean {
+  return user.onboardingCompletedAt == null;
 }

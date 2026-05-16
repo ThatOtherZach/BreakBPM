@@ -21,6 +21,7 @@ export const HealthCheckResponse = zod.object({
  */
 export const GetMeResponse = zod.object({
   "signedIn": zod.boolean(),
+  "needsOnboarding": zod.boolean(),
   "account": zod.object({
   "id": zod.string(),
   "screenName": zod.string(),
@@ -90,14 +91,32 @@ export const RedeemDiscountCodeResponse = zod.object({
 
 
 /**
- * @summary Purchase a pass (payment provider seam — no real charge yet)
+ * @summary Begin a pass purchase — returns a checkout URL + opaque token
  */
-export const PurchasePassBody = zod.object({
-  "kind": zod.enum(['day', 'year', 'lifetime']),
-  "paymentToken": zod.string().optional()
+export const CreatePassCheckoutBody = zod.object({
+  "kind": zod.enum(['day', 'year', 'lifetime'])
 })
 
-export const PurchasePassResponse = zod.object({
+export const CreatePassCheckoutResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "opaqueToken": zod.string().optional(),
+  "checkoutUrl": zod.string().optional()
+})
+
+
+/**
+ * @summary Verify a checkout token and grant the pass on success
+ */
+export const verifyPassCheckoutBodyOpaqueTokenMax = 512;
+
+
+
+export const VerifyPassCheckoutBody = zod.object({
+  "opaqueToken": zod.string().min(1).max(verifyPassCheckoutBodyOpaqueTokenMax)
+})
+
+export const VerifyPassCheckoutResponse = zod.object({
   "success": zod.boolean(),
   "message": zod.string(),
   "pass": zod.object({

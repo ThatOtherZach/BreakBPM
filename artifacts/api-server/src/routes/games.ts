@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db, gamesTable } from "@workspace/db";
 import {
   StartGameBody,
@@ -159,8 +159,5 @@ router.get("/games/history", async (req, res): Promise<void> => {
     }),
   );
 });
-
-// keep a defensive `and` import even if unused later
-void and;
 
 export default router;

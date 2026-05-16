@@ -21,19 +21,21 @@ import type {
 
 import type {
   Account,
+  CheckoutResult,
   CooldownError,
   DiscountRedeemInput,
   GameHistoryResponse,
   GameSaveInput,
   HealthStatus,
   MeResponse,
-  PassPurchaseInput,
-  PurchaseResult,
+  PassCheckoutInput,
   RedeemResult,
   SaveGameResult,
   ScreenNameUpdate,
   StartGameInput,
-  StartGameResult
+  StartGameResult,
+  VerifyCheckoutInput,
+  VerifyResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -344,37 +346,37 @@ export const useRedeemDiscountCode = <TError = ErrorType<unknown>,
       return useMutation(getRedeemDiscountCodeMutationOptions(options));
     }
 
-export const getPurchasePassUrl = () => {
+export const getCreatePassCheckoutUrl = () => {
 
 
 
 
-  return `/api/passes/purchase`
+  return `/api/passes/checkout`
 }
 
 /**
- * @summary Purchase a pass (payment provider seam — no real charge yet)
+ * @summary Begin a pass purchase — returns a checkout URL + opaque token
  */
-export const purchasePass = async (passPurchaseInput: PassPurchaseInput, options?: RequestInit): Promise<PurchaseResult> => {
+export const createPassCheckout = async (passCheckoutInput: PassCheckoutInput, options?: RequestInit): Promise<CheckoutResult> => {
 
-  return customFetch<PurchaseResult>(getPurchasePassUrl(),
+  return customFetch<CheckoutResult>(getCreatePassCheckoutUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      passPurchaseInput,)
+      passCheckoutInput,)
   }
 );}
 
 
 
 
-export const getPurchasePassMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchasePass>>, TError,{data: BodyType<PassPurchaseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof purchasePass>>, TError,{data: BodyType<PassPurchaseInput>}, TContext> => {
+export const getCreatePassCheckoutMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPassCheckout>>, TError,{data: BodyType<PassCheckoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPassCheckout>>, TError,{data: BodyType<PassCheckoutInput>}, TContext> => {
 
-const mutationKey = ['purchasePass'];
+const mutationKey = ['createPassCheckout'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -384,10 +386,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchasePass>>, {data: BodyType<PassPurchaseInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPassCheckout>>, {data: BodyType<PassCheckoutInput>}> = (props) => {
           const {data} = props ?? {};
 
-          return  purchasePass(data,requestOptions)
+          return  createPassCheckout(data,requestOptions)
         }
 
 
@@ -397,22 +399,93 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PurchasePassMutationResult = NonNullable<Awaited<ReturnType<typeof purchasePass>>>
-    export type PurchasePassMutationBody = BodyType<PassPurchaseInput>
-    export type PurchasePassMutationError = ErrorType<unknown>
+    export type CreatePassCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof createPassCheckout>>>
+    export type CreatePassCheckoutMutationBody = BodyType<PassCheckoutInput>
+    export type CreatePassCheckoutMutationError = ErrorType<unknown>
 
     /**
- * @summary Purchase a pass (payment provider seam — no real charge yet)
+ * @summary Begin a pass purchase — returns a checkout URL + opaque token
  */
-export const usePurchasePass = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchasePass>>, TError,{data: BodyType<PassPurchaseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useCreatePassCheckout = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPassCheckout>>, TError,{data: BodyType<PassCheckoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof purchasePass>>,
+        Awaited<ReturnType<typeof createPassCheckout>>,
         TError,
-        {data: BodyType<PassPurchaseInput>},
+        {data: BodyType<PassCheckoutInput>},
         TContext
       > => {
-      return useMutation(getPurchasePassMutationOptions(options));
+      return useMutation(getCreatePassCheckoutMutationOptions(options));
+    }
+
+export const getVerifyPassCheckoutUrl = () => {
+
+
+
+
+  return `/api/passes/verify`
+}
+
+/**
+ * @summary Verify a checkout token and grant the pass on success
+ */
+export const verifyPassCheckout = async (verifyCheckoutInput: VerifyCheckoutInput, options?: RequestInit): Promise<VerifyResult> => {
+
+  return customFetch<VerifyResult>(getVerifyPassCheckoutUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      verifyCheckoutInput,)
+  }
+);}
+
+
+
+
+export const getVerifyPassCheckoutMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyPassCheckout>>, TError,{data: BodyType<VerifyCheckoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyPassCheckout>>, TError,{data: BodyType<VerifyCheckoutInput>}, TContext> => {
+
+const mutationKey = ['verifyPassCheckout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyPassCheckout>>, {data: BodyType<VerifyCheckoutInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyPassCheckout(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyPassCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof verifyPassCheckout>>>
+    export type VerifyPassCheckoutMutationBody = BodyType<VerifyCheckoutInput>
+    export type VerifyPassCheckoutMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Verify a checkout token and grant the pass on success
+ */
+export const useVerifyPassCheckout = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyPassCheckout>>, TError,{data: BodyType<VerifyCheckoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyPassCheckout>>,
+        TError,
+        {data: BodyType<VerifyCheckoutInput>},
+        TContext
+      > => {
+      return useMutation(getVerifyPassCheckoutMutationOptions(options));
     }
 
 export const getStartGameUrl = () => {

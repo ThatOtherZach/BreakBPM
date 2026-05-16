@@ -11,6 +11,7 @@ import type { PassSummary } from './passSummary';
 
 export interface MeResponse {
   signedIn: boolean;
+  needsOnboarding: boolean;
   account?: Account;
   entitlement: Entitlement;
   passes?: PassSummary[];

@@ -75,22 +75,39 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/RedeemResult" }
 
-  /passes/purchase:
+  /passes/checkout:
     post:
-      operationId: purchasePass
+      operationId: createPassCheckout
       tags: [passes]
-      summary: Purchase a pass (payment provider seam — no real charge yet)
+      summary: Begin a pass purchase — returns a checkout URL + opaque token
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/PassPurchaseInput" }
+            schema: { $ref: "#/components/schemas/PassCheckoutInput" }
       responses:
         "200":
-          description: Purchased
+          description: Checkout created (or rejected if no provider)
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/PurchaseResult" }
+              schema: { $ref: "#/components/schemas/CheckoutResult" }
+
+  /passes/verify:
+    post:
+      operationId: verifyPassCheckout
+      tags: [passes]
+      summary: Verify a checkout token and grant the pass on success
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VerifyCheckoutInput" }
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VerifyResult" }
 
   /games/start:
     post:
@@ -181,9 +198,12 @@ components:
 
     MeResponse:
       type: object
-      required: [signedIn, entitlement]
+      required: [signedIn, entitlement, needsOnboarding]
       properties:
         signedIn: { type: boolean }
+        # True when the user is signed-in but hasn't confirmed a screen name
+        # yet — the client should mount the onboarding gate before app entry.
+        needsOnboarding: { type: boolean }
         account: { $ref: "#/components/schemas/Account" }
         entitlement: { $ref: "#/components/schemas/Entitlement" }
         passes:
@@ -210,15 +230,31 @@ components:
         message: { type: string }
         pass: { $ref: "#/components/schemas/PassSummary" }
 
-    PassPurchaseInput:
+    PassCheckoutInput:
       type: object
       required: [kind]
       properties:
         kind: { type: string, enum: [day, year, lifetime] }
-        # Optional in stub mode; real provider would require a payment token.
-        paymentToken: { type: string }
 
-    PurchaseResult:
+    CheckoutResult:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        # Provider-issued opaque token. Hand this to /passes/verify to
+        # complete the purchase. Absent when success=false.
+        opaqueToken: { type: string }
+        # Optional URL to redirect the user to (e.g. Stripe Checkout).
+        checkoutUrl: { type: string }
+
+    VerifyCheckoutInput:
+      type: object
+      required: [opaqueToken]
+      properties:
+        opaqueToken: { type: string, minLength: 1, maxLength: 512 }
+
+    VerifyResult:
       type: object
       required: [success, message]
       properties:

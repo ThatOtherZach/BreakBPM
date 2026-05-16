@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useClerk } from "@clerk/react";
+import { useSignOut, signInPath } from "../lib/authClient";
 import {
   useGetMe,
   useUpdateScreenName,
@@ -15,8 +15,6 @@ interface Props {
   onPasses: () => void;
 }
 
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-
 function fmtMs(ms: number): string {
   const total = Math.round(ms / 1000);
   const m = Math.floor(total / 60);
@@ -29,7 +27,7 @@ function fmtDate(d: Date | string): string {
 }
 
 export default function AccountScreen({ onBack, onPasses }: Props) {
-  const { signOut } = useClerk();
+  const signOut = useSignOut();
   const qc = useQueryClient();
   const me = useGetMe();
   const history = useGetGameHistory();
@@ -65,7 +63,7 @@ export default function AccountScreen({ onBack, onPasses }: Props) {
               <p style={{ fontSize: 13, marginBottom: 10 }}>You're not signed in.</p>
               <button
                 className="btn btn-primary btn-big w-full"
-                onClick={() => { window.location.href = `${basePath}/sign-in`; }}
+                onClick={() => { window.location.href = signInPath(); }}
               >
                 Sign In
               </button>

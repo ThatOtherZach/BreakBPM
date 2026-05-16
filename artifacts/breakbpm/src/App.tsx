@@ -1,61 +1,21 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  ClerkProvider,
-  useClerk,
-} from "@clerk/react";
-import { publishableKeyFromHost } from "@clerk/react/internal";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { useGetMe } from "@workspace/api-client-react";
 
 import SetupScreen from "./components/SetupScreen";
 import GameScreen from "./components/GameScreen";
 import AboutScreen from "./components/AboutScreen";
 import AccountScreen from "./components/AccountScreen";
 import PassesScreen from "./components/PassesScreen";
+import OnboardingGate from "./components/OnboardingGate";
 import { SignInPage, SignUpPage } from "./components/SignInPage";
 import type { GameType, GameState, Player } from "./lib/gameLogic";
 import { generateShareCode, decodeGameState } from "./lib/gameLogic";
 import { queryClient } from "./lib/queryClient";
+import { AuthProvider, useAuth } from "./lib/authClient";
 
-// REQUIRED — copy verbatim. Resolves the key from window.location.hostname so the
-// same build serves multiple Clerk custom domains.
-const clerkPubKey = publishableKeyFromHost(
-  window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-);
-// REQUIRED — empty in dev, auto-set in prod. Do NOT gate on PROD/NODE_ENV.
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-
-if (!clerkPubKey) {
-  throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY");
-}
-
-function stripBase(path: string): string {
-  return basePath && path.startsWith(basePath)
-    ? path.slice(basePath.length) || "/"
-    : path;
-}
-
-// Win98-themed Clerk appearance — keeps the modal visually consistent.
-const clerkAppearance = {
-  variables: {
-    colorPrimary: "#000080",
-    colorBackground: "#c0c0c0",
-    colorInput: "#ffffff",
-    colorInputForeground: "#000",
-    colorForeground: "#000",
-    colorMutedForeground: "#444",
-    colorNeutral: "#808080",
-    colorDanger: "#c00",
-    fontFamily: "MS Sans Serif, Tahoma, Geneva, Arial, sans-serif",
-    borderRadius: "0",
-  },
-  elements: {
-    rootBox: "w-full flex justify-center",
-    cardBox: "bg-[#c0c0c0]",
-  },
-};
 
 type AppView = "setup" | "game" | "about" | "account" | "passes";
 
@@ -86,19 +46,19 @@ function createInitialGameState(gameType: GameType, players: Player[]): GameStat
   };
 }
 
-// Invalidate query cache when signed-in user changes.
-function ClerkQueryClientCacheInvalidator() {
-  const { addListener } = useClerk();
+/**
+ * When the signed-in user changes, blow away the cache so /auth/me and
+ * /games/history queries don't leak across accounts.
+ */
+function CacheInvalidator() {
+  const { isSignedIn, isLoading } = useAuth();
   const qc = useQueryClient();
-  const prev = useRef<string | null | undefined>(undefined);
+  const prev = useRef<boolean | null>(null);
   useEffect(() => {
-    const unsub = addListener(({ user }) => {
-      const id = user?.id ?? null;
-      if (prev.current !== undefined && prev.current !== id) qc.clear();
-      prev.current = id;
-    });
-    return unsub;
-  }, [addListener, qc]);
+    if (isLoading) return;
+    if (prev.current !== null && prev.current !== isSignedIn) qc.clear();
+    prev.current = isSignedIn;
+  }, [isSignedIn, isLoading, qc]);
   return null;
 }
 
@@ -106,6 +66,7 @@ function MainApp() {
   const [, setLocation] = useLocation();
   const [view, setView] = useState<AppView>("setup");
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const me = useGetMe();
 
   useEffect(() => {
     const restored = loadStateFromUrl();
@@ -128,6 +89,11 @@ function MainApp() {
       setView("game");
     }
   }, []);
+
+  // Mandatory onboarding for first-login users.
+  if (me.data?.signedIn && me.data.needsOnboarding) {
+    return <OnboardingGate />;
+  }
 
   function handleStart(gameType: GameType, players: Player[]) {
     setGameState(createInitialGameState(gameType, players));
@@ -180,34 +146,26 @@ function MainApp() {
   );
 }
 
-function ClerkProviderWithRoutes() {
+function Routes() {
   const [, setLocation] = useLocation();
   return (
-    <ClerkProvider
-      publishableKey={clerkPubKey}
-      proxyUrl={clerkProxyUrl}
-      appearance={clerkAppearance}
-      signInUrl={`${basePath}/sign-in`}
-      signUpUrl={`${basePath}/sign-up`}
-      routerPush={(to) => setLocation(stripBase(to))}
-      routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
-    >
-      <QueryClientProvider client={queryClient}>
-        <ClerkQueryClientCacheInvalidator />
-        <Switch>
-          <Route path="/sign-in/*?" component={() => <SignInPage onBack={() => setLocation("/")} />} />
-          <Route path="/sign-up/*?" component={() => <SignUpPage onBack={() => setLocation("/")} />} />
-          <Route component={MainApp} />
-        </Switch>
-      </QueryClientProvider>
-    </ClerkProvider>
+    <Switch>
+      <Route path="/sign-in/*?" component={() => <SignInPage onBack={() => setLocation("/")} />} />
+      <Route path="/sign-up/*?" component={() => <SignUpPage onBack={() => setLocation("/")} />} />
+      <Route component={MainApp} />
+    </Switch>
   );
 }
 
 export default function App() {
   return (
     <WouterRouter base={basePath}>
-      <ClerkProviderWithRoutes />
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <CacheInvalidator />
+          <Routes />
+        </QueryClientProvider>
+      </AuthProvider>
     </WouterRouter>
   );
 }

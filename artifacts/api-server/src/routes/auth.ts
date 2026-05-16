@@ -6,7 +6,7 @@ import {
   UpdateScreenNameBody,
   UpdateScreenNameResponse,
 } from "@workspace/api-zod";
-import { authProvider, getOrCreateUser } from "../lib/auth";
+import { authProvider, getOrCreateUser, needsOnboarding } from "../lib/auth";
 import { computeEntitlement, getActivePasses } from "../lib/entitlement";
 
 const router: IRouter = Router();
@@ -17,6 +17,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
     res.json(
       GetMeResponse.parse({
         signedIn: false,
+        needsOnboarding: false,
         entitlement: { tier: "public", hasActivePass: false, historyVisibleLimit: 0 },
         passes: [],
       }),
@@ -33,6 +34,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
   res.json(
     GetMeResponse.parse({
       signedIn: true,
+      needsOnboarding: needsOnboarding(user),
       account: {
         id: user.id,
         screenName: user.screenName,
@@ -61,9 +63,10 @@ router.patch("/auth/screen-name", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Screen name required" });
     return;
   }
+  // Confirming the screen name also marks onboarding complete.
   const [updated] = await db
     .update(usersTable)
-    .set({ screenName: trimmed })
+    .set({ screenName: trimmed, onboardingCompletedAt: new Date() })
     .where(eq(usersTable.id, user.id))
     .returning();
   res.json(

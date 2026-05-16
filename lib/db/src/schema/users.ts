@@ -15,6 +15,8 @@ export const usersTable = pgTable(
     authSubject: text("auth_subject").notNull(),
     screenName: text("screen_name").notNull(),
     email: text("email"),
+    /** Null until the user confirms their screen name in onboarding. */
+    onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()

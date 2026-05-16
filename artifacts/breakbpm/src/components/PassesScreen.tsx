@@ -1,14 +1,14 @@
 import { useState } from "react";
 import {
   useGetMe,
-  usePurchasePass,
+  useCreatePassCheckout,
+  useVerifyPassCheckout,
   useRedeemDiscountCode,
   getGetMeQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "./Navbar";
-
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+import { signInPath } from "../lib/authClient";
 
 const TIERS = [
   { kind: "day" as const, label: "Day Pass", price: "$1.99", desc: "Unlocks unlimited play & full history for 24h" },
@@ -18,7 +18,8 @@ const TIERS = [
 
 export default function PassesScreen({ onBack }: { onBack: () => void }) {
   const me = useGetMe();
-  const purchase = usePurchasePass();
+  const checkout = useCreatePassCheckout();
+  const verify = useVerifyPassCheckout();
   const redeem = useRedeemDiscountCode();
   const qc = useQueryClient();
 
@@ -38,7 +39,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
               </p>
               <button
                 className="btn btn-primary btn-big w-full"
-                onClick={() => { window.location.href = `${basePath}/sign-in`; }}
+                onClick={() => { window.location.href = signInPath(); }}
               >
                 Sign In
               </button>
@@ -49,11 +50,28 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
     );
   }
 
+  /**
+   * Two-step: createCheckout returns an opaqueToken; the client then calls
+   * /passes/verify which triggers the provider to confirm and grant the
+   * pass. Until a real provider is wired up, createCheckout rejects with
+   * "Card payments aren't configured yet."
+   */
   async function handleBuy(kind: "day" | "year" | "lifetime") {
     setMsg("");
     try {
-      const result = await purchase.mutateAsync({ data: { kind } });
-      setMsg(result.message);
+      const ck = await checkout.mutateAsync({ data: { kind } });
+      if (!ck.success || !ck.opaqueToken) {
+        setMsg(ck.message);
+        return;
+      }
+      if (ck.checkoutUrl) {
+        // Real provider would redirect here; verification typically happens
+        // via a webhook or a redirect-back to /passes/verify.
+        window.location.href = ck.checkoutUrl;
+        return;
+      }
+      const v = await verify.mutateAsync({ data: { opaqueToken: ck.opaqueToken } });
+      setMsg(v.message);
       qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Purchase failed");
@@ -100,7 +118,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
                 <div style={{ fontSize: 11, color: "#444" }}>{t.desc}</div>
                 <button
                   className="btn btn-primary"
-                  disabled={purchase.isPending}
+                  disabled={checkout.isPending || verify.isPending}
                   onClick={() => handleBuy(t.kind)}
                 >
                   Buy
@@ -108,7 +126,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
               </div>
             ))}
             <p style={{ fontSize: 10, color: "#888", marginTop: 4 }}>
-              Note: payments are stubbed in this build — Buy grants the pass for free.
+              Card payments aren't connected yet — Buy will report that. Use a discount code to grant a pass in the meantime.
             </p>
           </div>
         </div>

@@ -9,8 +9,10 @@ import {
 import {
   RedeemDiscountCodeBody,
   RedeemDiscountCodeResponse,
-  PurchasePassBody,
-  PurchasePassResponse,
+  CreatePassCheckoutBody,
+  CreatePassCheckoutResponse,
+  VerifyPassCheckoutBody,
+  VerifyPassCheckoutResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser } from "../lib/auth";
 import { issuePass } from "../lib/passes";
@@ -21,13 +23,14 @@ const router: IRouter = Router();
 
 function passToSummary(pass: { kind: string; startedAt: Date; durationSeconds: number }) {
   return {
-    kind: pass.kind as "day" | "year" | "lifetime",
+    kind: pass.kind as PassKind,
     startedAt: pass.startedAt,
     expiresAt: new Date(pass.startedAt.getTime() + pass.durationSeconds * 1000),
     isLifetime: pass.kind === "lifetime",
   };
 }
 
+/** Discount-code redemption — does NOT touch the payment provider. */
 router.post("/passes/redeem", async (req, res): Promise<void> => {
   const parsed = RedeemDiscountCodeBody.safeParse(req.body);
   if (!parsed.success) {
@@ -55,6 +58,7 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
     res.json(RedeemDiscountCodeResponse.parse({ success: false, message: "Code expired" }));
     return;
   }
+
   // One redemption per user per code.
   const [already] = await db
     .select()
@@ -76,8 +80,8 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
     return;
   }
 
-  // Atomically claim a redemption slot — `WHERE redemption_count < max OR max IS NULL`
-  // ensures concurrent redeems can't push past the cap.
+  // Atomically claim a redemption slot — the WHERE clause prevents concurrent
+  // redeems from pushing past the cap.
   const claim = await db
     .update(discountCodesTable)
     .set({ redemptionCount: sql`${discountCodesTable.redemptionCount} + 1` })
@@ -118,8 +122,9 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
   );
 });
 
-router.post("/passes/purchase", async (req, res): Promise<void> => {
-  const parsed = PurchasePassBody.safeParse(req.body);
+/** Begin a paid checkout. The provider returns an opaque token (and optional URL). */
+router.post("/passes/checkout", async (req, res): Promise<void> => {
+  const parsed = CreatePassCheckoutBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
@@ -129,28 +134,41 @@ router.post("/passes/purchase", async (req, res): Promise<void> => {
     res.status(401).json({ error: "Sign in to purchase a pass" });
     return;
   }
-
-  const charge = await paymentProvider.charge({
+  const result = await paymentProvider.createCheckout({
     userId: user.id,
     kind: parsed.data.kind,
-    paymentToken: parsed.data.paymentToken,
   });
-  if (!charge.success) {
-    res.json(PurchasePassResponse.parse({ success: false, message: charge.message }));
+  res.json(CreatePassCheckoutResponse.parse(result));
+});
+
+/** Hand the opaque token back; provider verifies and the pass is granted. */
+router.post("/passes/verify", async (req, res): Promise<void> => {
+  const parsed = VerifyPassCheckoutBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
     return;
   }
-
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Sign in to verify a pass" });
+    return;
+  }
+  const verify = await paymentProvider.verifyAndGrant(parsed.data.opaqueToken);
+  if (!verify.success || !verify.kind) {
+    res.json(VerifyPassCheckoutResponse.parse({ success: false, message: verify.message }));
+    return;
+  }
   const pass = await issuePass({
     userId: user.id,
-    kind: parsed.data.kind,
+    kind: verify.kind,
     source: "purchase",
-    sourceRef: charge.providerRef,
+    sourceRef: verify.providerRef,
   });
-  req.log.info({ userId: user.id, kind: pass.kind }, "Pass purchased (stub)");
+  req.log.info({ userId: user.id, kind: pass.kind }, "Pass purchased");
   res.json(
-    PurchasePassResponse.parse({
+    VerifyPassCheckoutResponse.parse({
       success: true,
-      message: charge.message,
+      message: verify.message,
       pass: passToSummary(pass),
     }),
   );

@@ -1,4 +1,4 @@
-import { desc, eq, gte, or } from "drizzle-orm";
+import { desc, eq, or } from "drizzle-orm";
 import type { Request } from "express";
 import { db, publicFreeCooldownsTable } from "@workspace/db";
 
@@ -72,6 +72,4 @@ export async function recordPublicFreeGame(
         eq(publicFreeCooldownsTable.deviceId, deviceId),
       ),
     );
-  // suppress import-only warning
-  void gte;
 }

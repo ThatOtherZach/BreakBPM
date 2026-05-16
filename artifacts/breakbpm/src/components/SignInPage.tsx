@@ -1,36 +1,21 @@
-import { SignIn, SignUp } from "@clerk/react";
+import { SignInRoute, SignUpRoute } from "../lib/authClient";
 import Navbar from "./Navbar";
 
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-
-export function SignInPage({ onBack }: { onBack: () => void }) {
+function PageShell({ onBack, children }: { onBack: () => void; children: React.ReactNode }) {
   return (
     <div className="app-window">
       <Navbar onBack={onBack} />
       <div className="app-body" style={{ alignItems: "center", justifyContent: "flex-start", paddingTop: 16 }}>
-        <SignIn
-          routing="path"
-          path={`${basePath}/sign-in`}
-          signUpUrl={`${basePath}/sign-up`}
-          forceRedirectUrl={basePath || "/"}
-        />
+        {children}
       </div>
     </div>
   );
 }
 
+export function SignInPage({ onBack }: { onBack: () => void }) {
+  return <PageShell onBack={onBack}><SignInRoute /></PageShell>;
+}
+
 export function SignUpPage({ onBack }: { onBack: () => void }) {
-  return (
-    <div className="app-window">
-      <Navbar onBack={onBack} />
-      <div className="app-body" style={{ alignItems: "center", justifyContent: "flex-start", paddingTop: 16 }}>
-        <SignUp
-          routing="path"
-          path={`${basePath}/sign-up`}
-          signInUrl={`${basePath}/sign-in`}
-          forceRedirectUrl={basePath || "/"}
-        />
-      </div>
-    </div>
-  );
+  return <PageShell onBack={onBack}><SignUpRoute /></PageShell>;
 }

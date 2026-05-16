@@ -7,6 +7,7 @@
  */
 
 export * from './account';
+export * from './checkoutResult';
 export * from './cooldownError';
 export * from './discountRedeemInput';
 export * from './entitlement';
@@ -19,14 +20,15 @@ export * from './gameSaveInputGameType';
 export * from './gameSaveInputOutcome';
 export * from './healthStatus';
 export * from './meResponse';
-export * from './passPurchaseInput';
-export * from './passPurchaseInputKind';
+export * from './passCheckoutInput';
+export * from './passCheckoutInputKind';
 export * from './passSummary';
 export * from './passSummaryKind';
-export * from './purchaseResult';
 export * from './redeemResult';
 export * from './saveGameResult';
 export * from './screenNameUpdate';
 export * from './startGameInput';
 export * from './startGameResult';
 export * from './startGameResultTier';
+export * from './verifyCheckoutInput';
+export * from './verifyResult';

@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type PassPurchaseInputKind = typeof PassPurchaseInputKind[keyof typeof PassPurchaseInputKind];
+export type PassCheckoutInputKind = typeof PassCheckoutInputKind[keyof typeof PassCheckoutInputKind];
 
 
-export const PassPurchaseInputKind = {
+export const PassCheckoutInputKind = {
   day: 'day',
   year: 'year',
   lifetime: 'lifetime',

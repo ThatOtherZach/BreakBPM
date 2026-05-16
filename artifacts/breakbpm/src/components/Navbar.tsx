@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Show } from '@clerk/react';
+import { SignedIn, SignedOut } from '../lib/authClient';
 import { useGetMe } from '@workspace/api-client-react';
 
 interface NavbarProps {
@@ -66,20 +66,20 @@ export default function Navbar({ onAbout, onBack, onAccount, onSignIn }: NavbarP
               About
             </button>
           )}
-          <Show when="signed-in">
+          <SignedIn>
             {onAccount && (
               <button className="navbar-menu-item" onClick={() => { setOpen(false); onAccount(); }}>
                 Account
               </button>
             )}
-          </Show>
-          <Show when="signed-out">
+          </SignedIn>
+          <SignedOut>
             {onSignIn && (
               <button className="navbar-menu-item" onClick={() => { setOpen(false); onSignIn(); }}>
                 Sign In
               </button>
             )}
-          </Show>
+          </SignedOut>
         </div>
       )}
     </>

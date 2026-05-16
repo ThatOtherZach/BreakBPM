@@ -52,6 +52,7 @@ export interface Entitlement {
 
 export interface MeResponse {
   signedIn: boolean;
+  needsOnboarding: boolean;
   account?: Account;
   entitlement: Entitlement;
   passes?: PassSummary[];
@@ -79,21 +80,35 @@ export interface RedeemResult {
   pass?: PassSummary;
 }
 
-export type PassPurchaseInputKind = typeof PassPurchaseInputKind[keyof typeof PassPurchaseInputKind];
+export type PassCheckoutInputKind = typeof PassCheckoutInputKind[keyof typeof PassCheckoutInputKind];
 
 
-export const PassPurchaseInputKind = {
+export const PassCheckoutInputKind = {
   day: 'day',
   year: 'year',
   lifetime: 'lifetime',
 } as const;
 
-export interface PassPurchaseInput {
-  kind: PassPurchaseInputKind;
-  paymentToken?: string;
+export interface PassCheckoutInput {
+  kind: PassCheckoutInputKind;
 }
 
-export interface PurchaseResult {
+export interface CheckoutResult {
+  success: boolean;
+  message: string;
+  opaqueToken?: string;
+  checkoutUrl?: string;
+}
+
+export interface VerifyCheckoutInput {
+  /**
+     * @minLength 1
+     * @maxLength 512
+     */
+  opaqueToken: string;
+}
+
+export interface VerifyResult {
   success: boolean;
   message: string;
   pass?: PassSummary;
