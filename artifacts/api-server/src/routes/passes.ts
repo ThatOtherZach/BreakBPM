@@ -54,22 +54,30 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
 
   const code = parsed.data.code.trim().toUpperCase();
 
-  type Outcome =
-    | { ok: true; pass: { kind: string; startedAt: Date; durationSeconds: number } }
-    | { ok: false; message: string };
+  // We use a thrown sentinel for any "validation failed" path INSIDE the
+  // transaction so that pg rolls back any writes that already happened
+  // (e.g. the cap-claim UPDATE) before we hit the failure. Returning a
+  // non-throw result from inside the tx callback would commit those
+  // writes, which would leak entitlement state on the duplicate-redeem
+  // path.
+  class RedeemFailure extends Error {
+    constructor(public reason: string) { super(reason); }
+  }
 
-  let outcome: Outcome;
+  type Pass = { kind: string; startedAt: Date; durationSeconds: number };
+
+  let pass: Pass;
   try {
-    outcome = await db.transaction(async (tx): Promise<Outcome> => {
+    pass = await db.transaction(async (tx): Promise<Pass> => {
       const [discount] = await tx
         .select()
         .from(discountCodesTable)
         .where(eq(discountCodesTable.code, code))
         .for("update")
         .limit(1);
-      if (!discount) return { ok: false, message: "Invalid code" };
+      if (!discount) throw new RedeemFailure("Invalid code");
       if (discount.expiresAt && discount.expiresAt < new Date()) {
-        return { ok: false, message: "Code expired" };
+        throw new RedeemFailure("Code expired");
       }
 
       // Atomic cap claim: this UPDATE only succeeds if the cap allows it.
@@ -83,55 +91,53 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
           ),
         )
         .returning({ id: discountCodesTable.code });
-      if (claim.length === 0) return { ok: false, message: "Code fully redeemed" };
+      if (claim.length === 0) throw new RedeemFailure("Code fully redeemed");
 
-      // Issue pass + record redemption inside the same tx. The unique
-      // (code, user_id) index makes the INSERT throw on a concurrent
-      // double-redeem, which rolls back both writes — no orphan pass row.
-      const pass = await issuePassTx(tx, {
+      const issued = await issuePassTx(tx, {
         userId: user.id,
         kind: discount.grantsPassKind as PassKind,
         source: "discount_code",
         sourceRef: code,
       });
+
+      // Insert the redemption AFTER the pass so we can wire passId
+      // correctly. The unique (code, user_id) index catches duplicate
+      // redeems; the throw below rolls back BOTH the pass insert and
+      // the cap increment so partial entitlement state can never leak.
       try {
         await tx.insert(discountRedemptionsTable).values({
           id: newId(),
           code,
           userId: user.id,
-          passId: pass.id,
+          passId: issued.id,
         });
       } catch (e) {
-        // Translate the unique-violation into a friendly message. Any other
-        // error keeps propagating and rolls back the tx as expected.
-        const code = (e as { code?: string }).code;
-        if (code === "23505") {
-          return { ok: false, message: "You've already redeemed this code" };
+        if ((e as { code?: string }).code === "23505") {
+          throw new RedeemFailure("You've already redeemed this code");
         }
         throw e;
       }
-      return { ok: true, pass };
+      return issued;
     });
   } catch (err) {
+    if (err instanceof RedeemFailure) {
+      res.json(RedeemDiscountCodeResponse.parse({ success: false, message: err.reason }));
+      return;
+    }
     req.log.error({ err, code, userId: user.id }, "Redeem failed");
     res.status(500).json({ error: "Redeem failed" });
     return;
   }
 
-  if (!outcome.ok) {
-    res.json(RedeemDiscountCodeResponse.parse({ success: false, message: outcome.message }));
-    return;
-  }
-
   req.log.info(
-    { userId: user.id, code, passKind: outcome.pass.kind },
+    { userId: user.id, code, passKind: pass.kind },
     "Discount code redeemed",
   );
   res.json(
     RedeemDiscountCodeResponse.parse({
       success: true,
-      message: `Granted ${outcome.pass.kind} pass`,
-      pass: passToSummary(outcome.pass),
+      message: `Granted ${pass.kind} pass`,
+      pass: passToSummary(pass),
     }),
   );
 });
