@@ -12,4 +12,7 @@ export interface StartGameResult {
   tier: StartGameResultTier;
   /** @nullable */
   cooldownSecondsRemaining?: number | null;
+  /** @nullable */
+  gameId?: string | null;
+  inactivityTimeoutMs?: number;
 }

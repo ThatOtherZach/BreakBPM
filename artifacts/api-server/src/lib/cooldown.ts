@@ -1,4 +1,4 @@
-import { desc, eq, or } from "drizzle-orm";
+import { eq, gt, or } from "drizzle-orm";
 import type { Request } from "express";
 import { db, publicFreeCooldownsTable } from "@workspace/db";
 
@@ -20,16 +20,15 @@ export interface CooldownStatus {
 }
 
 /**
- * The cooldown blocks if EITHER the IP or the deviceId has played within the
- * window. Keying both jointly would let a user bypass simply by clearing
- * localStorage (changes deviceId) or rotating IP.
+ * Cooldown blocks if EITHER the IP or the deviceId has an unexpired
+ * `cooldownUntil` row. Joining both keys protects against bypasses via
+ * localStorage clearing (rotates deviceId) or IP rotation alone.
  */
 export async function checkPublicFreeCooldown(
   ip: string,
   deviceId: string,
   now: Date = new Date(),
 ): Promise<CooldownStatus> {
-  const cutoff = new Date(now.getTime() - PUBLIC_FREE_COOLDOWN_MS);
   const rows = await db
     .select()
     .from(publicFreeCooldownsTable)
@@ -38,38 +37,47 @@ export async function checkPublicFreeCooldown(
         eq(publicFreeCooldownsTable.ip, ip),
         eq(publicFreeCooldownsTable.deviceId, deviceId),
       ),
-    )
-    .orderBy(desc(publicFreeCooldownsTable.lastGameAt));
-
-  const recent = rows.find((r) => r.lastGameAt >= cutoff);
-  if (!recent) return { allowed: true, remainingMs: 0 };
-  const elapsed = now.getTime() - recent.lastGameAt.getTime();
-  return { allowed: false, remainingMs: PUBLIC_FREE_COOLDOWN_MS - elapsed };
+    );
+  let latest: Date | null = null;
+  for (const r of rows) {
+    if (r.cooldownUntil > now && (!latest || r.cooldownUntil > latest)) {
+      latest = r.cooldownUntil;
+    }
+  }
+  if (!latest) return { allowed: true, remainingMs: 0 };
+  return { allowed: false, remainingMs: latest.getTime() - now.getTime() };
 }
 
-export async function recordPublicFreeGame(
+/**
+ * Record a cooldown for the public free tier. Called at game END (not start)
+ * so the cooldown reflects "just used your free game" rather than "started
+ * one and may have abandoned it".
+ */
+export async function recordPublicFreeGameEnd(
   ip: string,
   deviceId: string,
   now: Date = new Date(),
 ): Promise<void> {
-  // Upsert by (ip, deviceId) composite primary key — touching both columns so
-  // either one matching on the next request triggers the cooldown.
+  const cooldownUntil = new Date(now.getTime() + PUBLIC_FREE_COOLDOWN_MS);
+  // Upsert by (ip, deviceId).
   await db
     .insert(publicFreeCooldownsTable)
-    .values({ ip, deviceId, lastGameAt: now })
+    .values({ ip, deviceId, cooldownUntil })
     .onConflictDoUpdate({
       target: [publicFreeCooldownsTable.ip, publicFreeCooldownsTable.deviceId],
-      set: { lastGameAt: now },
+      set: { cooldownUntil },
     });
-  // Touch usage timestamps for any older rows that share IP or deviceId so the
-  // window stays sticky even if the user rotates the OTHER key next time.
+  // Push the cooldown forward on any sibling rows that share IP or deviceId,
+  // so rotating one of the two keys won't dodge the cooldown.
   await db
     .update(publicFreeCooldownsTable)
-    .set({ lastGameAt: now })
+    .set({ cooldownUntil })
     .where(
       or(
         eq(publicFreeCooldownsTable.ip, ip),
         eq(publicFreeCooldownsTable.deviceId, deviceId),
       ),
     );
+  // suppress unused-import warning when only one helper is used elsewhere
+  void gt;
 }

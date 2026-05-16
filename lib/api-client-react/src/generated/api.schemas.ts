@@ -136,6 +136,18 @@ export interface StartGameResult {
   tier: StartGameResultTier;
   /** @nullable */
   cooldownSecondsRemaining?: number | null;
+  /** @nullable */
+  gameId?: string | null;
+  inactivityTimeoutMs?: number;
+}
+
+export interface HeartbeatInput {
+  gameId: string;
+}
+
+export interface HeartbeatResult {
+  alive: boolean;
+  message?: string;
 }
 
 export interface CooldownError {
@@ -163,6 +175,13 @@ export const GameSaveInputOutcome = {
 } as const;
 
 export interface GameSaveInput {
+  /**
+     * @minLength 8
+     * @maxLength 128
+     */
+  deviceId: string;
+  /** @nullable */
+  gameId?: string | null;
   shareCode: string;
   gameType: GameSaveInputGameType;
   /** @nullable */

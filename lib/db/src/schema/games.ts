@@ -4,12 +4,13 @@ import { z } from "zod/v4";
 import { usersTable } from "./users";
 
 /**
- * Persisted completed games. Only saved for signed-in users. All historical
- * rows are retained; the free-account history view only displays the 3 most
- * recent (gating happens in the route, not at the DB level).
+ * Persisted games. Created at /games/start with `endedAt = null` (in-progress)
+ * and finalized at /games/save (or by the server-side inactivity sweep,
+ * which marks them as forfeits).
  *
- * `gameState` is the full GameState JSON snapshot at completion — keeps the
- * schema flexible as game logic evolves.
+ * `lastActivityAt` is bumped by the client's /games/heartbeat call. Any
+ * in-progress row whose `lastActivityAt` is older than the inactivity
+ * threshold is auto-forfeited the next time we touch the user's games.
  */
 export const gamesTable = pgTable(
   "games",
@@ -22,14 +23,22 @@ export const gamesTable = pgTable(
     shareCode: text("share_code").notNull(),
     winner: text("winner"),
     bpm: integer("bpm_x10"), // BPM * 10 (so 8.7 BPM → 87) to keep integer
-    durationMs: integer("duration_ms").notNull(),
-    sunkBallsCount: integer("sunk_balls_count").notNull(),
-    outcome: text("outcome").notNull(), // "won" | "lost" | "forfeit" | "completed"
+    durationMs: integer("duration_ms").notNull().default(0),
+    sunkBallsCount: integer("sunk_balls_count").notNull().default(0),
+    outcome: text("outcome"), // null while in-progress; set at finalization
     gameState: jsonb("game_state").notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
-    endedAt: timestamp("ended_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Bumped by /games/heartbeat. Used by the inactivity sweep. */
+    lastActivityAt: timestamp("last_activity_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** Null while the game is in-progress. */
+    endedAt: timestamp("ended_at", { withTimezone: true }),
   },
-  (t) => [index("games_user_ended_idx").on(t.userId, t.endedAt)],
+  (t) => [
+    index("games_user_ended_idx").on(t.userId, t.endedAt),
+    index("games_active_idx").on(t.userId, t.lastActivityAt),
+  ],
 );
 
 export const insertGameSchema = createInsertSchema(gamesTable);

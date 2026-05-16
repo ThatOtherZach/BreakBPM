@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSignOut, signInPath } from "../lib/authClient";
+import { useAuth, signInPath } from "../lib/authClient";
 import {
   useGetMe,
   useUpdateScreenName,
@@ -27,7 +27,7 @@ function fmtDate(d: Date | string): string {
 }
 
 export default function AccountScreen({ onBack, onPasses }: Props) {
-  const signOut = useSignOut();
+  const { logout: signOut } = useAuth();
   const qc = useQueryClient();
   const me = useGetMe();
   const history = useGetGameHistory();

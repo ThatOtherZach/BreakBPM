@@ -9,6 +9,13 @@ import type { GameSaveInputGameType } from './gameSaveInputGameType';
 import type { GameSaveInputOutcome } from './gameSaveInputOutcome';
 
 export interface GameSaveInput {
+  /**
+     * @minLength 8
+     * @maxLength 128
+     */
+  deviceId: string;
+  /** @nullable */
+  gameId?: string | null;
   shareCode: string;
   gameType: GameSaveInputGameType;
   /** @nullable */

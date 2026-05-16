@@ -1,12 +1,11 @@
 /**
  * Single auth-provider seam for the client.
  *
- * All `@clerk/react` imports live in this file. The rest of the app calls
- * `useAuth()`, `<SignedIn>`, `<SignedOut>`, and renders the page components
- * exported here. To swap providers:
- *
- *   1. Reimplement this file against the new SDK.
- *   2. The router/wouter glue in App.tsx stays the same.
+ * All `@clerk/react` imports live in this file. The rest of the app uses
+ * `useAuth()` (returns the agreed `{ user, isLoading, isAuthenticated,
+ * login, logout }` contract), `<SignedIn>`, `<SignedOut>`, and the route
+ * components below. To swap providers, reimplement this file against the
+ * new SDK; nothing else needs to change.
  */
 import {
   ClerkProvider,
@@ -19,6 +18,7 @@ import {
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import type { ReactNode } from "react";
 import { useLocation } from "wouter";
+import { useGetMe } from "@workspace/api-client-react";
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
@@ -56,10 +56,7 @@ function stripBase(path: string): string {
     : path;
 }
 
-/**
- * Wraps the app with the auth provider. Wires the SDK's router into wouter
- * so its built-in redirects update our location.
- */
+/** Wraps the app with the auth provider + wouter routing glue. */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [, setLocation] = useLocation();
   return (
@@ -77,23 +74,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export interface AuthState {
-  isLoading: boolean;
-  isSignedIn: boolean;
+export interface AuthUser {
+  id: string;
+  screenName: string;
+  email: string | null | undefined;
 }
 
-export function useAuth(): AuthState {
-  const { isLoaded, isSignedIn } = useClerkAuth();
-  return { isLoading: !isLoaded, isSignedIn: !!isSignedIn };
+export interface AuthState {
+  /** Local user (null if anonymous OR before /auth/me has resolved). */
+  user: AuthUser | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  /** Navigate to the sign-in flow. */
+  login: () => void;
+  /** Sign out via the underlying provider. Resolves once complete. */
+  logout: () => Promise<void>;
 }
 
 /**
- * Provider-agnostic sign-out hook. Returns a callback the caller can `await`.
+ * Single hook the rest of the app uses. Wraps the underlying provider
+ * and merges in the local /auth/me account so callers don't have to
+ * juggle two sources of truth.
  */
-export function useSignOut(): () => Promise<void> {
-  const { signOut } = useClerk();
-  return async () => {
-    await signOut();
+export function useAuth(): AuthState {
+  const { isLoaded, isSignedIn } = useClerkAuth();
+  const clerk = useClerk();
+  const [, setLocation] = useLocation();
+  const me = useGetMe();
+
+  const isLoading = !isLoaded || (!!isSignedIn && me.isLoading);
+  const account = me.data?.account;
+  const user: AuthUser | null = account
+    ? { id: account.id, screenName: account.screenName, email: account.email ?? null }
+    : null;
+
+  return {
+    user,
+    isLoading,
+    isAuthenticated: !!isSignedIn,
+    login: () => setLocation("/sign-in"),
+    logout: async () => {
+      await clerk.signOut();
+    },
   };
 }
 
@@ -105,7 +127,6 @@ export function SignedOut({ children }: { children: ReactNode }) {
   return <Show when="signed-out">{children}</Show>;
 }
 
-/** Path the app uses to navigate to the sign-in flow. */
 export function signInPath(): string {
   return `${basePath}/sign-in`;
 }

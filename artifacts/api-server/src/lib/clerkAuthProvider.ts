@@ -5,35 +5,31 @@
  */
 import { getAuth, clerkClient } from "@clerk/express";
 import type { Request } from "express";
-import type { AuthProvider, ExternalIdentity } from "./authProvider";
+import type { AuthProvider, UserInfo, VerifiedToken } from "./authProvider";
 
 export class ClerkAuthProvider implements AuthProvider {
-  async getIdentity(req: Request): Promise<ExternalIdentity | null> {
+  verifyToken(req: Request): VerifiedToken | null {
     const auth = getAuth(req);
     const subject = auth?.userId;
     if (!subject) return null;
+    return { provider: "clerk", subject };
+  }
 
-    let email: string | null = null;
-    let defaultScreenName: string | null = null;
+  async getUserInfo(subject: string): Promise<UserInfo> {
     try {
       const user = await clerkClient.users.getUser(subject);
-      email =
+      const email =
         user.primaryEmailAddress?.emailAddress ??
         user.emailAddresses?.[0]?.emailAddress ??
         null;
-      defaultScreenName =
+      const defaultScreenName =
         user.firstName ??
         user.username ??
         (email ? email.split("@")[0] : null);
+      return { email, defaultScreenName };
     } catch {
-      // Tolerate Clerk lookup failures — just provision with a generic name.
+      // Tolerate Clerk lookup failures — caller will use placeholders.
+      return { email: null, defaultScreenName: null };
     }
-
-    return {
-      provider: "clerk",
-      subject,
-      email,
-      defaultScreenName,
-    };
   }
 }

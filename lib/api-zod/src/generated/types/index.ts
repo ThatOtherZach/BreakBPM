@@ -19,6 +19,8 @@ export * from './gameSaveInput';
 export * from './gameSaveInputGameType';
 export * from './gameSaveInputOutcome';
 export * from './healthStatus';
+export * from './heartbeatInput';
+export * from './heartbeatResult';
 export * from './meResponse';
 export * from './passCheckoutInput';
 export * from './passCheckoutInputKind';

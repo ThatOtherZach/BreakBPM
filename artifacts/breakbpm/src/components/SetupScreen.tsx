@@ -15,7 +15,7 @@ const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
 const DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
 
 interface Props {
-  onStart: (gt: GameType, players: Player[]) => void;
+  onStart: (gt: GameType, players: Player[], serverGameId: string | null) => void;
   onAbout: () => void;
   onAccount: () => void;
   onSignIn: () => void;
@@ -45,8 +45,8 @@ export default function SetupScreen({ onStart, onAbout, onAccount, onSignIn }: P
       return p;
     });
     try {
-      await startGame.mutateAsync({ data: { deviceId: getDeviceId() } });
-      onStart(gameType, players);
+      const res = await startGame.mutateAsync({ data: { deviceId: getDeviceId() } });
+      onStart(gameType, players, res.gameId ?? null);
     } catch (e: unknown) {
       // useStartGame surfaces a fetch error with the response status; on 429 we
       // also get back cooldownSecondsRemaining in the body.

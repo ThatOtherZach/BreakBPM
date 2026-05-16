@@ -5,7 +5,7 @@ import {
   getGetMeQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSignOut } from "../lib/authClient";
+import { useAuth } from "../lib/authClient";
 
 /**
  * Mandatory first-login screen-name picker. Mounted by App when
@@ -16,7 +16,7 @@ export default function OnboardingGate() {
   const me = useGetMe();
   const updateName = useUpdateScreenName();
   const qc = useQueryClient();
-  const signOut = useSignOut();
+  const { logout: signOut } = useAuth();
 
   const suggested = me.data?.account?.screenName ?? "";
   const [name, setName] = useState(suggested.startsWith("Player_") ? "" : suggested);

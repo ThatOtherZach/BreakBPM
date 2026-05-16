@@ -143,13 +143,31 @@ export const StartGameBody = zod.object({
 export const StartGameResponse = zod.object({
   "allowed": zod.boolean(),
   "tier": zod.enum(['public', 'account', 'pass']),
-  "cooldownSecondsRemaining": zod.number().nullish()
+  "cooldownSecondsRemaining": zod.number().nullish(),
+  "gameId": zod.string().nullish(),
+  "inactivityTimeoutMs": zod.number().optional()
+})
+
+
+/**
+ * @summary Bump the in-progress game's last-activity timestamp
+ */
+export const HeartbeatGameBody = zod.object({
+  "gameId": zod.string()
+})
+
+export const HeartbeatGameResponse = zod.object({
+  "alive": zod.boolean(),
+  "message": zod.string().optional()
 })
 
 
 /**
  * @summary Persist a completed game (signed-in users only)
  */
+export const saveGameBodyDeviceIdMin = 8;
+export const saveGameBodyDeviceIdMax = 128;
+
 export const saveGameBodyDurationMsMin = 0;
 
 export const saveGameBodySunkBallsCountMin = 0;
@@ -157,6 +175,8 @@ export const saveGameBodySunkBallsCountMin = 0;
 
 
 export const SaveGameBody = zod.object({
+  "deviceId": zod.string().min(saveGameBodyDeviceIdMin).max(saveGameBodyDeviceIdMax),
+  "gameId": zod.string().nullish(),
   "shareCode": zod.string(),
   "gameType": zod.enum(['8ball', '9ball', 'practice']),
   "winner": zod.string().nullish(),

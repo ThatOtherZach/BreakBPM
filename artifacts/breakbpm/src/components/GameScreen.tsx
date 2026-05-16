@@ -7,16 +7,23 @@ import {
   encodeGameState, getTeamLabel, ballLabel,
   SOLIDS, STRIPES, EIGHT_BALL, getLowestBall,
 } from '../lib/gameLogic';
-import { useSaveGame } from '@workspace/api-client-react';
+import { useSaveGame, useHeartbeatGame } from '@workspace/api-client-react';
 import { FORFEIT_INACTIVITY_MS } from '../lib/forfeit';
+import { getDeviceId } from '../lib/device';
 
 interface Props {
   initialState: GameState;
+  /** Server-issued in-progress game id (null for anonymous play). */
+  serverGameId: string | null;
   onNewGame: () => void;
   onAbout: () => void;
   onAccount: () => void;
   onSignIn: () => void;
 }
+
+// Bump server activity on this cadence. Well under the 60-min server
+// inactivity threshold, but loose enough not to spam the API.
+const HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 const BALL_COLORS: Record<number, string> = {
   1: '#FDD307', 2: '#1F4E9E', 3: '#C3342B', 4: '#5B247A',
@@ -36,8 +43,9 @@ function ballClass(ball: number, legal: number[], sunk: number[], _gameType: str
   return base;
 }
 
-export default function GameScreen({ initialState, onNewGame, onAbout, onAccount, onSignIn }: Props) {
+export default function GameScreen({ initialState, serverGameId, onNewGame, onAbout, onAccount, onSignIn }: Props) {
   const saveGame = useSaveGame();
+  const heartbeat = useHeartbeatGame();
   const savedRef = useRef(false);
   const forfeitedRef = useRef(false);
   const [state, setState] = useState<GameState>(initialState);
@@ -103,6 +111,10 @@ export default function GameScreen({ initialState, onNewGame, onAbout, onAccount
       : null;
     saveGame.mutate({
       data: {
+        // Anonymous tier records the public-free cooldown on save (game-end).
+        deviceId: getDeviceId(),
+        // If signed-in, finalize the in-progress server-side row.
+        gameId: serverGameId,
         gameType: state.gameType,
         shareCode: state.shareCode,
         winner: state.winner,
@@ -157,6 +169,19 @@ export default function GameScreen({ initialState, onNewGame, onAbout, onAccount
     }, ms);
     return () => clearTimeout(id);
   }, [state.phase, state.lastActionTime, state.gameStartTime, state.currentPlayerIndex, state.gameType, state.players, paused]);
+
+  // Periodic heartbeat — keeps the server's lastActivityAt fresh so the
+  // 60-min inactivity sweep doesn't auto-forfeit an in-progress game out
+  // from under us. Only meaningful for signed-in users (anonymous play has
+  // no server-side row).
+  useEffect(() => {
+    if (!serverGameId || state.phase !== 'playing' || paused) return;
+    const id = setInterval(() => {
+      heartbeat.mutate({ data: { gameId: serverGameId } });
+    }, HEARTBEAT_INTERVAL_MS);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverGameId, state.phase, paused]);
 
   // Auto-scroll log
   useEffect(() => {

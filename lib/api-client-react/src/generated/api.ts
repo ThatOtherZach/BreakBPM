@@ -27,6 +27,8 @@ import type {
   GameHistoryResponse,
   GameSaveInput,
   HealthStatus,
+  HeartbeatInput,
+  HeartbeatResult,
   MeResponse,
   PassCheckoutInput,
   RedeemResult,
@@ -557,6 +559,77 @@ export const useStartGame = <TError = ErrorType<CooldownError>,
         TContext
       > => {
       return useMutation(getStartGameMutationOptions(options));
+    }
+
+export const getHeartbeatGameUrl = () => {
+
+
+
+
+  return `/api/games/heartbeat`
+}
+
+/**
+ * @summary Bump the in-progress game's last-activity timestamp
+ */
+export const heartbeatGame = async (heartbeatInput: HeartbeatInput, options?: RequestInit): Promise<HeartbeatResult> => {
+
+  return customFetch<HeartbeatResult>(getHeartbeatGameUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      heartbeatInput,)
+  }
+);}
+
+
+
+
+export const getHeartbeatGameMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof heartbeatGame>>, TError,{data: BodyType<HeartbeatInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof heartbeatGame>>, TError,{data: BodyType<HeartbeatInput>}, TContext> => {
+
+const mutationKey = ['heartbeatGame'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof heartbeatGame>>, {data: BodyType<HeartbeatInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  heartbeatGame(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type HeartbeatGameMutationResult = NonNullable<Awaited<ReturnType<typeof heartbeatGame>>>
+    export type HeartbeatGameMutationBody = BodyType<HeartbeatInput>
+    export type HeartbeatGameMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Bump the in-progress game's last-activity timestamp
+ */
+export const useHeartbeatGame = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof heartbeatGame>>, TError,{data: BodyType<HeartbeatInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof heartbeatGame>>,
+        TError,
+        {data: BodyType<HeartbeatInput>},
+        TContext
+      > => {
+      return useMutation(getHeartbeatGameMutationOptions(options));
     }
 
 export const getSaveGameUrl = () => {

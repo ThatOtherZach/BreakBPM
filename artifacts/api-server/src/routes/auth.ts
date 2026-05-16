@@ -6,14 +6,14 @@ import {
   UpdateScreenNameBody,
   UpdateScreenNameResponse,
 } from "@workspace/api-zod";
-import { authProvider, getOrCreateUser, needsOnboarding } from "../lib/auth";
+import { getVerifiedSubject, getOrCreateUser, needsOnboarding } from "../lib/auth";
 import { computeEntitlement, getActivePasses } from "../lib/entitlement";
 
 const router: IRouter = Router();
 
 router.get("/auth/me", async (req, res): Promise<void> => {
-  const identity = await authProvider.getIdentity(req);
-  if (!identity) {
+  const verified = await getVerifiedSubject(req);
+  if (!verified) {
     res.json(
       GetMeResponse.parse({
         signedIn: false,

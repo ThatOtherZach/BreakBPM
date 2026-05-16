@@ -1,25 +1,46 @@
 import type { Request } from "express";
 
 /**
- * Generic auth provider seam. The rest of the app talks to this interface,
- * never to Clerk directly. To swap providers, write a new adapter and change
- * the singleton in `./auth.ts`.
+ * Generic auth provider seam. Routes never import a backend SDK directly —
+ * they go through the singleton in `./auth.ts` (which composes these calls).
+ *
+ * Two-step contract on purpose:
+ *
+ *   verifyToken(req)        — cheap, sync-friendly, request-scoped credential
+ *                             check. Returns just the stable subject id.
+ *   getUserInfo(subject)    — async lookup against the provider's user
+ *                             directory; returns email + default name.
+ *
+ * Splitting the two lets routes that only need to know "is this a real
+ * signed-in user?" skip the directory hit, and keeps the contract thin
+ * enough that swapping providers (Auth0, Cognito, Replit Auth, etc.) is a
+ * one-file change.
  */
-export interface ExternalIdentity {
-  /** Stable provider name, e.g. "clerk". Stored on the user row. */
+export interface VerifiedToken {
+  /** Stable provider name, e.g. "clerk". Persisted on the user row. */
   provider: string;
-  /** Provider-side user id (e.g. Clerk user id). Stored on the user row. */
+  /** Provider-side user id (e.g. Clerk user id). Persisted on the user row. */
   subject: string;
-  /** Optional email from the provider, surfaced in the account UI. */
+}
+
+export interface UserInfo {
   email?: string | null;
-  /** Optional default screen name (e.g. first name) for new accounts. */
   defaultScreenName?: string | null;
 }
 
+export interface ExternalIdentity extends VerifiedToken, UserInfo {}
+
 export interface AuthProvider {
   /**
-   * Inspect the request and return the authenticated identity, or null if
-   * the caller is anonymous.
+   * Cheap credential check — return the verified subject for a request, or
+   * null if the caller is anonymous. Must NOT call out to the provider's
+   * user-directory API.
    */
-  getIdentity(req: Request): Promise<ExternalIdentity | null> | ExternalIdentity | null;
+  verifyToken(req: Request): Promise<VerifiedToken | null> | VerifiedToken | null;
+
+  /**
+   * Look up extended user info (email, name) for a verified subject. May
+   * call out to the provider; tolerated to fail (returns nulls).
+   */
+  getUserInfo(subject: string): Promise<UserInfo>;
 }

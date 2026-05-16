@@ -51,14 +51,14 @@ function createInitialGameState(gameType: GameType, players: Player[]): GameStat
  * /games/history queries don't leak across accounts.
  */
 function CacheInvalidator() {
-  const { isSignedIn, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const qc = useQueryClient();
   const prev = useRef<boolean | null>(null);
   useEffect(() => {
     if (isLoading) return;
-    if (prev.current !== null && prev.current !== isSignedIn) qc.clear();
-    prev.current = isSignedIn;
-  }, [isSignedIn, isLoading, qc]);
+    if (prev.current !== null && prev.current !== isAuthenticated) qc.clear();
+    prev.current = isAuthenticated;
+  }, [isAuthenticated, isLoading, qc]);
   return null;
 }
 
@@ -66,6 +66,9 @@ function MainApp() {
   const [, setLocation] = useLocation();
   const [view, setView] = useState<AppView>("setup");
   const [gameState, setGameState] = useState<GameState | null>(null);
+  // Server-issued in-progress game id (signed-in users only). Held outside
+  // the URL-shared GameState so it isn't leaked via share links.
+  const [serverGameId, setServerGameId] = useState<string | null>(null);
   const me = useGetMe();
 
   useEffect(() => {
@@ -95,8 +98,9 @@ function MainApp() {
     return <OnboardingGate />;
   }
 
-  function handleStart(gameType: GameType, players: Player[]) {
+  function handleStart(gameType: GameType, players: Player[], gameId: string | null) {
     setGameState(createInitialGameState(gameType, players));
+    setServerGameId(gameId);
     setView("game");
     const url = new URL(window.location.href);
     url.searchParams.delete("state");
@@ -105,6 +109,7 @@ function MainApp() {
   }
   function handleNewGame() {
     setGameState(null);
+    setServerGameId(null);
     setView("setup");
     const url = new URL(window.location.href);
     url.searchParams.delete("state");
@@ -129,6 +134,7 @@ function MainApp() {
       <GameScreen
         key={gameState.shareCode}
         initialState={gameState}
+        serverGameId={serverGameId}
         onNewGame={handleNewGame}
         onAbout={() => setView("about")}
         onAccount={() => setView("account")}

@@ -131,6 +131,23 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/CooldownError" }
 
+  /games/heartbeat:
+    post:
+      operationId: heartbeatGame
+      tags: [games]
+      summary: Bump the in-progress game's last-activity timestamp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HeartbeatInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HeartbeatResult" }
+
   /games/save:
     post:
       operationId: saveGame
@@ -275,6 +292,26 @@ components:
         allowed: { type: boolean }
         tier: { type: string, enum: [public, account, pass] }
         cooldownSecondsRemaining: { type: ["integer", "null"] }
+        # Server-issued game id (signed-in users only). Use it for
+        # /games/heartbeat and to update the same row on /games/save.
+        gameId: { type: ["string", "null"] }
+        # How long the server will tolerate inactivity before auto-forfeit.
+        inactivityTimeoutMs: { type: integer }
+
+    HeartbeatInput:
+      type: object
+      required: [gameId]
+      properties:
+        gameId: { type: string }
+
+    HeartbeatResult:
+      type: object
+      required: [alive]
+      properties:
+        # False if the game was already auto-forfeited or no longer exists.
+        # The client should stop heartbeating and surface a forfeit screen.
+        alive: { type: boolean }
+        message: { type: string }
 
     CooldownError:
       type: object
@@ -285,8 +322,13 @@ components:
 
     GameSaveInput:
       type: object
-      required: [shareCode, gameType, durationMs, sunkBallsCount, outcome, gameState, startedAt]
+      required: [shareCode, gameType, durationMs, sunkBallsCount, outcome, gameState, startedAt, deviceId]
       properties:
+        # Device id for the cooldown record (anonymous tier records the
+        # cooldown on save, not on start).
+        deviceId: { type: string, minLength: 8, maxLength: 128 }
+        # If set, finalize this in-progress server-side game row.
+        gameId: { type: ["string", "null"] }
         shareCode: { type: string }
         gameType: { type: string, enum: [8ball, 9ball, practice] }
         winner: { type: ["string", "null"] }
