@@ -131,22 +131,16 @@ export const VerifyPassCheckoutResponse = zod.object({
 /**
  * @summary Check whether the caller may start a new game
  */
-export const startGameBodyDeviceIdMin = 8;
-export const startGameBodyDeviceIdMax = 128;
-
-
-
 export const StartGameBody = zod.object({
-  "deviceId": zod.string().min(startGameBodyDeviceIdMin).max(startGameBodyDeviceIdMax),
   "gameType": zod.enum(['8ball', '9ball', 'practice'])
 })
 
 export const StartGameResponse = zod.object({
   "allowed": zod.boolean(),
   "tier": zod.enum(['public', 'account', 'pass']),
-  "cooldownSecondsRemaining": zod.number().nullish(),
   "gameId": zod.string().nullish(),
-  "inactivityTimeoutMs": zod.number().optional()
+  "inactivityTimeoutMs": zod.number().optional(),
+  "maxGameDurationMs": zod.number().nullish()
 })
 
 
@@ -168,9 +162,6 @@ export const RecordGameActivityResponse = zod.object({
 /**
  * @summary Persist a completed game (signed-in users only)
  */
-export const saveGameBodyDeviceIdMin = 8;
-export const saveGameBodyDeviceIdMax = 128;
-
 export const saveGameBodyDurationMsMin = 0;
 
 export const saveGameBodySunkBallsCountMin = 0;
@@ -178,7 +169,6 @@ export const saveGameBodySunkBallsCountMin = 0;
 
 
 export const SaveGameBody = zod.object({
-  "deviceId": zod.string().min(saveGameBodyDeviceIdMin).max(saveGameBodyDeviceIdMax),
   "gameId": zod.string().nullish(),
   "shareCode": zod.string(),
   "gameType": zod.enum(['8ball', '9ball', 'practice']),

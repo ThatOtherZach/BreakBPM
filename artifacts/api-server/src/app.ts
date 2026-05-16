@@ -7,10 +7,9 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
-// We always sit behind the Replit shared reverse proxy, so honor a single
-// hop of forwarding headers when populating req.ip / req.protocol. Without
-// this, the cooldown lookup would either always see the proxy IP or trust
-// an attacker-controlled X-Forwarded-For header.
+// We always sit behind the Replit shared reverse proxy. Honor a single
+// hop of forwarding headers so req.ip / req.protocol reflect the real
+// client rather than the proxy.
 app.set("trust proxy", 1);
 
 app.use(

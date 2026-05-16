@@ -69,6 +69,9 @@ function MainApp() {
   // Server-issued in-progress game id (signed-in users only). Held outside
   // the URL-shared GameState so it isn't leaked via share links.
   const [serverGameId, setServerGameId] = useState<string | null>(null);
+  // Hard wall-clock cap for anonymous play (server returns 1 hr); null
+  // for signed-in users.
+  const [maxGameDurationMs, setMaxGameDurationMs] = useState<number | null>(null);
   const me = useGetMe();
 
   useEffect(() => {
@@ -98,9 +101,10 @@ function MainApp() {
     return <OnboardingGate />;
   }
 
-  function handleStart(gameType: GameType, players: Player[], gameId: string | null) {
+  function handleStart(gameType: GameType, players: Player[], gameId: string | null, maxMs: number | null) {
     setGameState(createInitialGameState(gameType, players));
     setServerGameId(gameId);
+    setMaxGameDurationMs(maxMs);
     setView("game");
     const url = new URL(window.location.href);
     url.searchParams.delete("state");
@@ -110,6 +114,7 @@ function MainApp() {
   function handleNewGame() {
     setGameState(null);
     setServerGameId(null);
+    setMaxGameDurationMs(null);
     setView("setup");
     const url = new URL(window.location.href);
     url.searchParams.delete("state");
@@ -135,6 +140,7 @@ function MainApp() {
         key={gameState.shareCode}
         initialState={gameState}
         serverGameId={serverGameId}
+        maxGameDurationMs={maxGameDurationMs}
         onNewGame={handleNewGame}
         onAbout={() => setView("about")}
         onAccount={() => setView("account")}

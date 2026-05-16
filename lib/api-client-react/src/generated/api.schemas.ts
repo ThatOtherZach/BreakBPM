@@ -124,11 +124,6 @@ export const StartGameInputGameType = {
 } as const;
 
 export interface StartGameInput {
-  /**
-     * @minLength 8
-     * @maxLength 128
-     */
-  deviceId: string;
   gameType: StartGameInputGameType;
 }
 
@@ -145,10 +140,10 @@ export interface StartGameResult {
   allowed: boolean;
   tier: StartGameResultTier;
   /** @nullable */
-  cooldownSecondsRemaining?: number | null;
-  /** @nullable */
   gameId?: string | null;
   inactivityTimeoutMs?: number;
+  /** @nullable */
+  maxGameDurationMs?: number | null;
 }
 
 export interface GameActivityInput {
@@ -158,11 +153,6 @@ export interface GameActivityInput {
 export interface GameActivityResult {
   alive: boolean;
   message?: string;
-}
-
-export interface CooldownError {
-  error: string;
-  cooldownSecondsRemaining: number;
 }
 
 export type GameSaveInputGameType = typeof GameSaveInputGameType[keyof typeof GameSaveInputGameType];
@@ -185,11 +175,6 @@ export const GameSaveInputOutcome = {
 } as const;
 
 export interface GameSaveInput {
-  /**
-     * @minLength 8
-     * @maxLength 128
-     */
-  deviceId: string;
   /** @nullable */
   gameId?: string | null;
   shareCode: string;

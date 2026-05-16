@@ -12,25 +12,26 @@ import {
 } from "@workspace/api-zod";
 import { getOrCreateUser, getVerifiedSubject } from "../lib/auth";
 import { computeEntitlement } from "../lib/entitlement";
-import {
-  checkPublicFreeCooldown,
-  recordPublicFreeGameEnd,
-  getRequestIp,
-} from "../lib/cooldown";
 import { sweepStaleGames, INACTIVITY_FORFEIT_MS } from "../lib/forfeit";
 import { newId } from "../lib/ids";
 
 const router: IRouter = Router();
 
 /**
+ * Hard wall-clock cap for anonymous play. They get unlimited games but
+ * each session has to wrap up within an hour — enforced client-side
+ * (anonymous play never round-trips after /games/start).
+ */
+const ANONYMOUS_MAX_GAME_DURATION_MS = 60 * 60 * 1000;
+
+/**
  * Begin a game.
- * - Public tier: cooldown is *checked* here, not recorded — recording happens
- *   at /games/save so the user only burns their free game on completion.
- * - Signed-in tier: provisions an in-progress row (endedAt = null) so the
- *   server can heartbeat / forfeit it. Anonymous users don't get a row.
- *
- * Also lazily sweeps the user's stale in-progress games (60min inactive →
- * auto-forfeit) so reconciliation doesn't need a background job.
+ * - Anonymous: no rate limiting, no DB row, no cooldown — the response
+ *   carries `maxGameDurationMs` so the client can self-enforce the
+ *   1-hour session cap.
+ * - Signed-in: provisions an in-progress row (endedAt = null) so the
+ *   server can record activity / forfeit it. Lazily sweeps the user's
+ *   stale in-progress games.
  */
 router.post("/games/start", async (req, res): Promise<void> => {
   const parsed = StartGameBody.safeParse(req.body);
@@ -42,24 +43,13 @@ router.post("/games/start", async (req, res): Promise<void> => {
   const verified = await getVerifiedSubject(req);
 
   if (!verified) {
-    // Anonymous flow: just check cooldown.
-    const ip = getRequestIp(req);
-    const status = await checkPublicFreeCooldown(ip, parsed.data.deviceId);
-    if (!status.allowed) {
-      const remainingSec = Math.ceil(status.remainingMs / 1000);
-      res.status(429).json({
-        error: "Free game cooldown active. Sign in for unlimited play.",
-        cooldownSecondsRemaining: remainingSec,
-      });
-      return;
-    }
     res.json(
       StartGameResponse.parse({
         allowed: true,
         tier: "public",
-        cooldownSecondsRemaining: null,
         gameId: null,
         inactivityTimeoutMs: INACTIVITY_FORFEIT_MS,
+        maxGameDurationMs: ANONYMOUS_MAX_GAME_DURATION_MS,
       }),
     );
     return;
@@ -78,8 +68,7 @@ router.post("/games/start", async (req, res): Promise<void> => {
   await db.insert(gamesTable).values({
     id,
     userId: user.id,
-    // Real gameType — the inactivity sweep relies on this to exempt
-    // practice mode. Overwritten on /games/save with the same value.
+    // Real gameType so the inactivity sweep can exempt practice mode.
     gameType: parsed.data.gameType,
     shareCode: "",            // overwritten on /games/save
     gameState: {},
@@ -92,9 +81,9 @@ router.post("/games/start", async (req, res): Promise<void> => {
     StartGameResponse.parse({
       allowed: true,
       tier: entitlement.tier,
-      cooldownSecondsRemaining: null,
       gameId: id,
       inactivityTimeoutMs: INACTIVITY_FORFEIT_MS,
+      maxGameDurationMs: null,
     }),
   );
 });
@@ -103,9 +92,7 @@ router.post("/games/start", async (req, res): Promise<void> => {
  * Record a logged in-game action — bumps lastActivityAt for an in-progress
  * game. Called by the client after every sink/miss/foul/safety, NOT on a
  * timer, so the inactivity forfeit reflects gameplay rather than tab
- * liveness. Returns `alive: false` if the row was already finalized
- * (typically by the forfeit sweep) so the client can stop calling and
- * surface the forfeit state.
+ * liveness. Returns `alive: false` if the row was already finalized.
  */
 router.post("/games/activity", async (req, res): Promise<void> => {
   const parsed = RecordGameActivityBody.safeParse(req.body);
@@ -144,10 +131,10 @@ router.post("/games/activity", async (req, res): Promise<void> => {
 
 /**
  * Persist a completed game.
- * - Anonymous: ignored for storage, but RECORDS the public-free cooldown
- *   here (game-end timing, per the spec).
- * - Signed-in: finalizes the in-progress row created at /games/start. If no
- *   gameId is supplied or the row already ended, falls back to a fresh insert.
+ * - Anonymous: no-op. We don't store anonymous play at all.
+ * - Signed-in: finalize the in-progress row created at /games/start.
+ *   Falls back to a fresh insert if the original row is missing or
+ *   already ended.
  */
 router.post("/games/save", async (req, res): Promise<void> => {
   const parsed = SaveGameBody.safeParse(req.body);
@@ -158,9 +145,6 @@ router.post("/games/save", async (req, res): Promise<void> => {
   const verified = await getVerifiedSubject(req);
 
   if (!verified) {
-    // Game-end is when the public cooldown clock starts.
-    const ip = getRequestIp(req);
-    await recordPublicFreeGameEnd(ip, parsed.data.deviceId);
     res.json(
       SaveGameResponse.parse({ saved: false, message: "Anonymous — game not saved" }),
     );
@@ -235,7 +219,6 @@ router.get("/games/history", async (req, res): Promise<void> => {
   await sweepStaleGames(user.id);
 
   const entitlement = await computeEntitlement(user);
-  // Only ended games show up in history.
   const all = await db
     .select()
     .from(gamesTable)

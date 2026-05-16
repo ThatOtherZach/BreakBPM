@@ -22,7 +22,6 @@ import type {
 import type {
   Account,
   CheckoutResult,
-  CooldownError,
   DiscountRedeemInput,
   GameActivityInput,
   GameActivityResult,
@@ -516,7 +515,7 @@ export const startGame = async (startGameInput: StartGameInput, options?: Reques
 
 
 
-export const getStartGameMutationOptions = <TError = ErrorType<CooldownError>,
+export const getStartGameMutationOptions = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startGame>>, TError,{data: BodyType<StartGameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof startGame>>, TError,{data: BodyType<StartGameInput>}, TContext> => {
 
@@ -545,12 +544,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type StartGameMutationResult = NonNullable<Awaited<ReturnType<typeof startGame>>>
     export type StartGameMutationBody = BodyType<StartGameInput>
-    export type StartGameMutationError = ErrorType<CooldownError>
+    export type StartGameMutationError = ErrorType<unknown>
 
     /**
  * @summary Check whether the caller may start a new game
  */
-export const useStartGame = <TError = ErrorType<CooldownError>,
+export const useStartGame = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startGame>>, TError,{data: BodyType<StartGameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof startGame>>,

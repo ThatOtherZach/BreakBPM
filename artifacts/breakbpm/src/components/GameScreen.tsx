@@ -9,12 +9,16 @@ import {
 } from '../lib/gameLogic';
 import { useSaveGame, useRecordGameActivity } from '@workspace/api-client-react';
 import { FORFEIT_INACTIVITY_MS } from '../lib/forfeit';
-import { getDeviceId } from '../lib/device';
 
 interface Props {
   initialState: GameState;
   /** Server-issued in-progress game id (null for anonymous play). */
   serverGameId: string | null;
+  /**
+   * Hard wall-clock cap from the server. Set for anonymous play (1 hr);
+   * null for signed-in users (who use the inactivity timeout instead).
+   */
+  maxGameDurationMs: number | null;
   onNewGame: () => void;
   onAbout: () => void;
   onAccount: () => void;
@@ -40,7 +44,7 @@ function ballClass(ball: number, legal: number[], sunk: number[], _gameType: str
   return base;
 }
 
-export default function GameScreen({ initialState, serverGameId, onNewGame, onAbout, onAccount, onSignIn }: Props) {
+export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, onNewGame, onAbout, onAccount, onSignIn }: Props) {
   const saveGame = useSaveGame();
   const recordActivity = useRecordGameActivity();
   const savedRef = useRef(false);
@@ -108,9 +112,8 @@ export default function GameScreen({ initialState, serverGameId, onNewGame, onAb
       : null;
     saveGame.mutate({
       data: {
-        // Anonymous tier records the public-free cooldown on save (game-end).
-        deviceId: getDeviceId(),
-        // If signed-in, finalize the in-progress server-side row.
+        // If signed-in, finalize the in-progress server-side row. Anonymous
+        // play is dropped on the server side (no row stored).
         gameId: serverGameId,
         gameType: state.gameType,
         shareCode: state.shareCode,
@@ -166,6 +169,31 @@ export default function GameScreen({ initialState, serverGameId, onNewGame, onAb
     }, ms);
     return () => clearTimeout(id);
   }, [state.phase, state.lastActionTime, state.gameStartTime, state.currentPlayerIndex, state.gameType, state.players, paused]);
+
+  // Hard wall-clock cap for anonymous play. Server returns 1hr in
+  // maxGameDurationMs; once we hit it, the game ends as a forfeit so the
+  // session can't run forever. Practice mode is exempt (no opponent).
+  useEffect(() => {
+    if (state.phase !== 'playing' || paused) return;
+    if (maxGameDurationMs == null || state.gameType === 'practice') return;
+    const ms = state.gameStartTime + maxGameDurationMs - Date.now();
+    const fire = () => {
+      forfeitedRef.current = true;
+      const winnerName = state.players.length > 1
+        ? state.players[(state.currentPlayerIndex + 1) % state.players.length].name
+        : null;
+      setState(s => ({
+        ...s,
+        phase: 'ended',
+        winner: winnerName,
+        winMessage: `Session ended — anonymous games are capped at ${Math.round(maxGameDurationMs / 60000)} minutes. Sign in to play longer.`,
+        lastActionTime: Date.now(),
+      }));
+    };
+    if (ms <= 0) { fire(); return; }
+    const id = setTimeout(fire, ms);
+    return () => clearTimeout(id);
+  }, [state.phase, state.gameStartTime, state.gameType, state.players, state.currentPlayerIndex, paused, maxGameDurationMs]);
 
   // Server activity ping — fires only when the player logs an action
   // (sink/miss/foul/safety bumps state.lastActionTime). Deliberately NOT

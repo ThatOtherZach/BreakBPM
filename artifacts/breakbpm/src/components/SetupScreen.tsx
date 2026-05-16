@@ -2,9 +2,7 @@ import { useState } from 'react';
 import type { GameType, Player } from '../lib/gameLogic';
 import ballImg from '/eightball_nobg.png';
 import Navbar from './Navbar';
-import CooldownDialog from './CooldownDialog';
 import { useStartGame } from '@workspace/api-client-react';
-import { getDeviceId } from '../lib/device';
 
 const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
   { id: '8ball', label: '8-Ball', desc: 'Solids vs Stripes' },
@@ -15,7 +13,7 @@ const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
 const DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
 
 interface Props {
-  onStart: (gt: GameType, players: Player[], serverGameId: string | null) => void;
+  onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null) => void;
   onAbout: () => void;
   onAccount: () => void;
   onSignIn: () => void;
@@ -23,7 +21,6 @@ interface Props {
 
 export default function SetupScreen({ onStart, onAbout, onAccount, onSignIn }: Props) {
   const startGame = useStartGame();
-  const [cooldownSec, setCooldownSec] = useState<number | null>(null);
   const [startError, setStartError] = useState('');
   const [gameType, setGameType] = useState<GameType>('8ball');
   const [playerCount, setPlayerCount] = useState(2);
@@ -45,20 +42,11 @@ export default function SetupScreen({ onStart, onAbout, onAccount, onSignIn }: P
       return p;
     });
     try {
-      const res = await startGame.mutateAsync({ data: { deviceId: getDeviceId(), gameType } });
-      onStart(gameType, players, res.gameId ?? null);
+      const res = await startGame.mutateAsync({ data: { gameType } });
+      onStart(gameType, players, res.gameId ?? null, res.maxGameDurationMs ?? null);
     } catch (e: unknown) {
-      // customFetch throws ApiError with the parsed body on `data` (not
-      // `response.data`). On 429 the body includes the authoritative
-      // cooldownSecondsRemaining — use it so the modal shows the right
-      // countdown instead of falling back to the 5-min default.
-      const err = e as { status?: number; data?: { cooldownSecondsRemaining?: number; error?: string } };
-      const data = err?.data;
-      if (err?.status === 429 || data?.cooldownSecondsRemaining) {
-        setCooldownSec(data?.cooldownSecondsRemaining ?? 300);
-      } else {
-        setStartError(data?.error ?? (e instanceof Error ? e.message : 'Could not start game'));
-      }
+      const err = e as { data?: { error?: string } };
+      setStartError(err?.data?.error ?? (e instanceof Error ? e.message : 'Could not start game'));
     }
   }
 
@@ -239,14 +227,6 @@ export default function SetupScreen({ onStart, onAbout, onAccount, onSignIn }: P
         <div className="statusbar-item" style={{ flex: 1 }}>READY</div>
         <div className="statusbar-item">BREAKBPM SYS v1.0</div>
       </div>
-
-      {cooldownSec !== null && (
-        <CooldownDialog
-          cooldownSecondsRemaining={cooldownSec}
-          onDismiss={() => setCooldownSec(null)}
-          onSignIn={onSignIn}
-        />
-      )}
     </div>
   );
 }

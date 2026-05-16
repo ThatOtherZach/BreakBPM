@@ -125,11 +125,6 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/StartGameResult" }
-        "429":
-          description: Rate-limited (cooldown)
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/CooldownError" }
 
   /games/activity:
     post:
@@ -285,9 +280,8 @@ components:
 
     StartGameInput:
       type: object
-      required: [deviceId, gameType]
+      required: [gameType]
       properties:
-        deviceId: { type: string, minLength: 8, maxLength: 128 }
         # Stored on the in-progress row so the inactivity sweep can exempt
         # practice mode (no opponent, no win condition → no forfeit).
         gameType: { type: string, enum: [8ball, 9ball, practice] }
@@ -298,12 +292,15 @@ components:
       properties:
         allowed: { type: boolean }
         tier: { type: string, enum: [public, account, pass] }
-        cooldownSecondsRemaining: { type: ["integer", "null"] }
         # Server-issued game id (signed-in users only). Use it for
-        # /games/heartbeat and to update the same row on /games/save.
+        # /games/activity and to update the same row on /games/save.
         gameId: { type: ["string", "null"] }
-        # How long the server will tolerate inactivity before auto-forfeit.
+        # How long the server will tolerate inactivity before auto-forfeit
+        # (signed-in users). Anonymous play has its own client-side cap.
         inactivityTimeoutMs: { type: integer }
+        # Hard wall-clock cap for anonymous play. Null for signed-in users
+        # (who use the inactivity timeout instead).
+        maxGameDurationMs: { type: ["integer", "null"] }
 
     GameActivityInput:
       type: object
@@ -320,20 +317,10 @@ components:
         alive: { type: boolean }
         message: { type: string }
 
-    CooldownError:
-      type: object
-      required: [error, cooldownSecondsRemaining]
-      properties:
-        error: { type: string }
-        cooldownSecondsRemaining: { type: integer }
-
     GameSaveInput:
       type: object
-      required: [shareCode, gameType, durationMs, sunkBallsCount, outcome, gameState, startedAt, deviceId]
+      required: [shareCode, gameType, durationMs, sunkBallsCount, outcome, gameState, startedAt]
       properties:
-        # Device id for the cooldown record (anonymous tier records the
-        # cooldown on save, not on start).
-        deviceId: { type: string, minLength: 8, maxLength: 128 }
         # If set, finalize this in-progress server-side game row.
         gameId: { type: ["string", "null"] }
         shareCode: { type: string }

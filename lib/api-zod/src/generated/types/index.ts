@@ -8,7 +8,6 @@
 
 export * from './account';
 export * from './checkoutResult';
-export * from './cooldownError';
 export * from './discountRedeemInput';
 export * from './entitlement';
 export * from './entitlementTier';

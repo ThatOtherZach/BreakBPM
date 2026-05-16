@@ -8,10 +8,5 @@
 import type { StartGameInputGameType } from './startGameInputGameType';
 
 export interface StartGameInput {
-  /**
-     * @minLength 8
-     * @maxLength 128
-     */
-  deviceId: string;
   gameType: StartGameInputGameType;
 }
