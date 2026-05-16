@@ -8,55 +8,61 @@ From the opening break to the final 8-ball — log every shot, watch your pace, 
 
 ## Current Version: v0.5 (React Edition)
 
-This is a **React + Vite + TypeScript** web app that feels like a genuine 1998 Windows program.
+A fully functional **React + Vite + TypeScript** web app styled like genuine 1998 Windows software. Built mobile-first (optimized for 412px width) with a complete Windows 98 design system.
 
 ### Key Features
-- **Full Windows 98 UI** — Classic gray 3D buttons, navy title bars, inset/outset borders, MS Sans Serif font, teal desktop background.
-- **Simplified ball system** — Balls shown as `(1)(3)(8)(2)` text.
-- **Smart ball selector** — Only shows legal/available balls based on game rules and team assignment.
-- **Ball Return terminal** — Green-on-black readout showing sunk balls in chronological order.
-- **8-Ball & 9-Ball support** — Proper win conditions (must clear your group before 8-ball; 9-ball wins on the 9).
-- **Team assignment** — Solids vs Stripes for 8-ball games.
-- **4-digit share code** — Easy-to-say code + full URL with game state.
-- **Live BPM + Timer** — Calculated from actual sunk balls.
-- **Multiplayer (async)** — Share the link or code.
-- **Practice Mode** — Solo drills.
-- **Golden Break, foul detection, undo** — Full action history.
 
-## Licensing & Monetization
+**UI & Experience**
+- Authentic Windows 98 aesthetic (3D buttons, sunken inputs, beveled panels, MS Sans Serif font, custom scrollbars)
+- Green CRT terminal-style game area
+- Clean, satisfying retro interface
 
-BreakBPM is available under **two licensing options**:
+**Game Modes**
+- **8-Ball**: Full rules with Solids vs Stripes, Golden Break, foul-on-8 loss
+- **9-Ball**: Lowest ball first, sink the 9 to win
+- **Practice Mode**: Solo drills with no win conditions
 
-### Free / Open Source
-- Licensed under the **MIT License**
-- Free for personal use, open source projects, and non-commercial use
-- Must include attribution
+**Gameplay**
+- Up to 4 players with team assignment (solids/stripes)
+- Smart ball selector — only shows legal/available balls
+- Live BPM + timer (calculated from actual sunk balls)
+- Foul detection, undo, shot history
+- Win screen with final stats
 
-### Commercial / Paid
-- **Day Pass**: $1.99
-- **Annual Pass**: $12.99
-- **Lifetime Pass**: $24.99
+**Sharing**
+- 4-digit share code (easy to read out loud)
+- Full game state encoded in URL for instant multiplayer
 
-Paid users receive a **Commercial License** that removes MIT obligations and allows use in closed-source or commercial products.
-
-See [LICENSE](LICENSE) for full details.
+**Monetization**
+- Free version available
+- Paid commercial licenses: Day Pass ($1.99), Annual ($12.99), Lifetime ($24.99)
 
 ## How to Run
 
-Just open `index.html` in any modern browser, or run the React dev server with `pnpm dev`.
+```bash
+pnpm install
+pnpm --filter @workspace/breakbpm run dev
+```
 
-## Project Files
+Or just open `index.html` in any browser for the static preview.
 
-- `index.html` / React app
-- `README.md` — You're here
-- `SCHEMA.md` — Data model
-- `CONTRIBUTING.md` — Development guidelines
-- `CHANGELOG.md` — Version history
-- `LICENSE` — MIT + Commercial options
+## Project Structure
+
+- `lib/gameLogic.ts` — Core rules, state management, and win conditions (pure TypeScript)
+- `components/` — React components (GameScreen, SetupScreen, Navbar, etc.)
+- `artifacts/breakbpm/public/` — Game icons and assets
+
+## License
+
+**Dual Licensing:**
+- **MIT License** — Free for personal and open source use
+- **Commercial License** — Day Pass $1.99 / Annual $12.99 / Lifetime $24.99
+
+See [LICENSE](LICENSE) for full details.
 
 ## Credits
 
-Built with Grok (xAI) + connected GitHub tools.
-Original idea by @ThatOtherZach (Zachary Jordan).
+Built with Grok (xAI), Claude (Anthropic), and Replit Agent.
+Original idea by [@ThatOtherZach](https://x.com/ThatOtherZach)
 
 *Let's keep the BreakBPM high.* 🎱
