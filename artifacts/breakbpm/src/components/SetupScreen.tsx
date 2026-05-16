@@ -2,6 +2,9 @@ import { useState } from 'react';
 import type { GameType, Player } from '../lib/gameLogic';
 import ballImg from '/eightball_nobg.png';
 import Navbar from './Navbar';
+import CooldownDialog from './CooldownDialog';
+import { useStartGame } from '@workspace/api-client-react';
+import { getDeviceId } from '../lib/device';
 
 const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
   { id: '8ball', label: '8-Ball', desc: 'Solids vs Stripes' },
@@ -11,9 +14,17 @@ const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
 
 const DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
 
-interface Props { onStart: (gt: GameType, players: Player[]) => void; onAbout: () => void; }
+interface Props {
+  onStart: (gt: GameType, players: Player[]) => void;
+  onAbout: () => void;
+  onAccount: () => void;
+  onSignIn: () => void;
+}
 
-export default function SetupScreen({ onStart, onAbout }: Props) {
+export default function SetupScreen({ onStart, onAbout, onAccount, onSignIn }: Props) {
+  const startGame = useStartGame();
+  const [cooldownSec, setCooldownSec] = useState<number | null>(null);
+  const [startError, setStartError] = useState('');
   const [gameType, setGameType] = useState<GameType>('8ball');
   const [playerCount, setPlayerCount] = useState(2);
   const [names, setNames] = useState(['', '', '', '']);
@@ -24,7 +35,8 @@ export default function SetupScreen({ onStart, onAbout }: Props) {
   const isPractice = gameType === 'practice';
   const count = isPractice ? 1 : playerCount;
 
-  function handleStart() {
+  async function handleStart() {
+    setStartError('');
     const players: Player[] = Array.from({ length: count }, (_, i) => {
       const p: Player = { id: i, name: names[i] || DEFAULT_NAMES[i] };
       if (gameType === '8ball' && !autoTeam && manualTeams[i]) {
@@ -32,7 +44,20 @@ export default function SetupScreen({ onStart, onAbout }: Props) {
       }
       return p;
     });
-    onStart(gameType, players);
+    try {
+      await startGame.mutateAsync({ data: { deviceId: getDeviceId() } });
+      onStart(gameType, players);
+    } catch (e: unknown) {
+      // useStartGame surfaces a fetch error with the response status; on 429 we
+      // also get back cooldownSecondsRemaining in the body.
+      const err = e as { status?: number; response?: { data?: { cooldownSecondsRemaining?: number; error?: string } } };
+      const data = err?.response?.data;
+      if (err?.status === 429 || data?.cooldownSecondsRemaining) {
+        setCooldownSec(data?.cooldownSecondsRemaining ?? 300);
+      } else {
+        setStartError(data?.error ?? (e instanceof Error ? e.message : 'Could not start game'));
+      }
+    }
   }
 
   function handleJoin() {
@@ -53,7 +78,7 @@ export default function SetupScreen({ onStart, onAbout }: Props) {
   return (
     <div className="app-window">
       {/* Title bar */}
-      <Navbar onAbout={onAbout} />
+      <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
       {/* ── PC-98 Splash Panel ── */}
       <div className="splash-panel">
         {/* Left: 8-ball art in a CRT-style frame */}
@@ -168,8 +193,17 @@ export default function SetupScreen({ onStart, onAbout }: Props) {
         )}
 
         {/* Start */}
-        <button className="btn btn-primary btn-big btn-full" onClick={handleStart}>
-          ▶ {isPractice ? 'START PRACTICE' : 'START GAME'}
+        {startError && (
+          <div className="notice" style={{ color: '#c00' }}>
+            <span>!</span><span>{startError}</span>
+          </div>
+        )}
+        <button
+          className="btn btn-primary btn-big btn-full"
+          onClick={handleStart}
+          disabled={startGame.isPending}
+        >
+          ▶ {startGame.isPending ? 'STARTING…' : isPractice ? 'START PRACTICE' : 'START GAME'}
         </button>
 
         <hr className="sep" />
@@ -203,6 +237,14 @@ export default function SetupScreen({ onStart, onAbout }: Props) {
         <div className="statusbar-item" style={{ flex: 1 }}>READY</div>
         <div className="statusbar-item">BREAKBPM SYS v1.0</div>
       </div>
+
+      {cooldownSec !== null && (
+        <CooldownDialog
+          cooldownSecondsRemaining={cooldownSec}
+          onDismiss={() => setCooldownSec(null)}
+          onSignIn={onSignIn}
+        />
+      )}
     </div>
   );
 }

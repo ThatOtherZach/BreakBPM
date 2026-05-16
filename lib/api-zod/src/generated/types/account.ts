@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface Account {
+  id: string;
+  screenName: string;
+  /** @nullable */
+  email?: string | null;
+  createdAt: Date;
 }

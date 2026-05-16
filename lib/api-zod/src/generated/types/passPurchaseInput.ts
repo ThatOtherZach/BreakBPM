@@ -5,7 +5,9 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { PassPurchaseInputKind } from './passPurchaseInputKind';
 
-export interface HealthStatus {
-  status: string;
+export interface PassPurchaseInput {
+  kind: PassPurchaseInputKind;
+  paymentToken?: string;
 }

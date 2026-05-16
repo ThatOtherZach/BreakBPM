@@ -3,34 +3,295 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: BreakBPM API — accounts, passes, and game persistence
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Identity, screen name
+  - name: passes
+    description: Pass purchases, discount codes, entitlements
+  - name: games
+    description: Game start gating and history
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/HealthStatus"
+              schema: { $ref: "#/components/schemas/HealthStatus" }
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Current account state (or null if signed-out)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeResponse" }
+
+  /auth/screen-name:
+    patch:
+      operationId: updateScreenName
+      tags: [auth]
+      summary: Update the signed-in user's screen name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScreenNameUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Account" }
+
+  /passes/redeem:
+    post:
+      operationId: redeemDiscountCode
+      tags: [passes]
+      summary: Redeem a discount code (issues a pass)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DiscountRedeemInput" }
+      responses:
+        "200":
+          description: Redeemed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RedeemResult" }
+
+  /passes/purchase:
+    post:
+      operationId: purchasePass
+      tags: [passes]
+      summary: Purchase a pass (payment provider seam — no real charge yet)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PassPurchaseInput" }
+      responses:
+        "200":
+          description: Purchased
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseResult" }
+
+  /games/start:
+    post:
+      operationId: startGame
+      tags: [games]
+      summary: Check whether the caller may start a new game
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StartGameInput" }
+      responses:
+        "200":
+          description: Allowed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StartGameResult" }
+        "429":
+          description: Rate-limited (cooldown)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CooldownError" }
+
+  /games/save:
+    post:
+      operationId: saveGame
+      tags: [games]
+      summary: Persist a completed game (signed-in users only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GameSaveInput" }
+      responses:
+        "200":
+          description: Saved (or skipped for anonymous users)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SaveGameResult" }
+
+  /games/history:
+    get:
+      operationId: getGameHistory
+      tags: [games]
+      summary: List the caller's saved games (gated by tier)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameHistoryResponse" }
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
-        status:
-          type: string
-      required:
-        - status
+        status: { type: string }
 
+    Account:
+      type: object
+      required: [id, screenName, createdAt]
+      properties:
+        id: { type: string }
+        screenName: { type: string }
+        email: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+
+    PassSummary:
+      type: object
+      required: [kind, startedAt, expiresAt, isLifetime]
+      properties:
+        kind: { type: string, enum: [day, year, lifetime] }
+        startedAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        isLifetime: { type: boolean }
+
+    Entitlement:
+      type: object
+      required: [tier, hasActivePass, historyVisibleLimit]
+      properties:
+        tier: { type: string, enum: [public, account, pass] }
+        hasActivePass: { type: boolean }
+        # null means no cap (full history). Number means cap to N most recent.
+        historyVisibleLimit: { type: ["integer", "null"] }
+        activePass: { $ref: "#/components/schemas/PassSummary" }
+
+    MeResponse:
+      type: object
+      required: [signedIn, entitlement]
+      properties:
+        signedIn: { type: boolean }
+        account: { $ref: "#/components/schemas/Account" }
+        entitlement: { $ref: "#/components/schemas/Entitlement" }
+        passes:
+          type: array
+          items: { $ref: "#/components/schemas/PassSummary" }
+
+    ScreenNameUpdate:
+      type: object
+      required: [screenName]
+      properties:
+        screenName: { type: string, minLength: 1, maxLength: 32 }
+
+    DiscountRedeemInput:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, minLength: 1, maxLength: 64 }
+
+    RedeemResult:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        pass: { $ref: "#/components/schemas/PassSummary" }
+
+    PassPurchaseInput:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [day, year, lifetime] }
+        # Optional in stub mode; real provider would require a payment token.
+        paymentToken: { type: string }
+
+    PurchaseResult:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        pass: { $ref: "#/components/schemas/PassSummary" }
+
+    StartGameInput:
+      type: object
+      required: [deviceId]
+      properties:
+        deviceId: { type: string, minLength: 8, maxLength: 128 }
+
+    StartGameResult:
+      type: object
+      required: [allowed, tier]
+      properties:
+        allowed: { type: boolean }
+        tier: { type: string, enum: [public, account, pass] }
+        cooldownSecondsRemaining: { type: ["integer", "null"] }
+
+    CooldownError:
+      type: object
+      required: [error, cooldownSecondsRemaining]
+      properties:
+        error: { type: string }
+        cooldownSecondsRemaining: { type: integer }
+
+    GameSaveInput:
+      type: object
+      required: [shareCode, gameType, durationMs, sunkBallsCount, outcome, gameState, startedAt]
+      properties:
+        shareCode: { type: string }
+        gameType: { type: string, enum: [8ball, 9ball, practice] }
+        winner: { type: ["string", "null"] }
+        bpm: { type: ["number", "null"] }
+        durationMs: { type: integer, minimum: 0 }
+        sunkBallsCount: { type: integer, minimum: 0 }
+        outcome: { type: string, enum: [won, lost, forfeit, completed] }
+        gameState: {}
+        startedAt: { type: string, format: date-time }
+
+    SaveGameResult:
+      type: object
+      required: [saved]
+      properties:
+        saved: { type: boolean }
+        gameId: { type: string }
+        message: { type: string }
+
+    GameHistoryEntry:
+      type: object
+      required: [id, gameType, outcome, durationMs, sunkBallsCount, endedAt]
+      properties:
+        id: { type: string }
+        gameType: { type: string }
+        winner: { type: ["string", "null"] }
+        bpm: { type: ["number", "null"] }
+        durationMs: { type: integer }
+        sunkBallsCount: { type: integer }
+        outcome: { type: string }
+        shareCode: { type: string }
+        endedAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time }
+
+    GameHistoryResponse:
+      type: object
+      required: [tier, totalCount, visibleCount, games, truncated]
+      properties:
+        tier: { type: string, enum: [public, account, pass] }
+        totalCount: { type: integer }
+        visibleCount: { type: integer }
+        truncated: { type: boolean }
+        games:
+          type: array
+          items: { $ref: "#/components/schemas/GameHistoryEntry" }

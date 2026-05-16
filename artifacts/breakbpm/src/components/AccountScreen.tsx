@@ -1,0 +1,219 @@
+import { useState, useEffect } from "react";
+import { useClerk } from "@clerk/react";
+import {
+  useGetMe,
+  useUpdateScreenName,
+  useGetGameHistory,
+  getGetMeQueryKey,
+  getGetGameHistoryQueryKey,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import Navbar from "./Navbar";
+
+interface Props {
+  onBack: () => void;
+  onPasses: () => void;
+}
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+function fmtMs(ms: number): string {
+  const total = Math.round(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+function fmtDate(d: Date | string): string {
+  const date = d instanceof Date ? d : new Date(d);
+  return date.toLocaleString();
+}
+
+export default function AccountScreen({ onBack, onPasses }: Props) {
+  const { signOut } = useClerk();
+  const qc = useQueryClient();
+  const me = useGetMe();
+  const history = useGetGameHistory();
+  const updateName = useUpdateScreenName();
+
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (me.data?.account?.screenName) setName(me.data.account.screenName);
+  }, [me.data?.account?.screenName]);
+
+  if (me.isLoading) {
+    return (
+      <div className="app-window">
+        <Navbar onBack={onBack} />
+        <div className="app-body">
+          <p style={{ fontFamily: "VT323", fontSize: 18 }}>Loading…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!me.data?.signedIn) {
+    return (
+      <div className="app-window">
+        <Navbar onBack={onBack} />
+        <div className="app-body">
+          <div className="panel">
+            <div className="panel-header"><span>Account</span></div>
+            <div className="panel-body">
+              <p style={{ fontSize: 13, marginBottom: 10 }}>You're not signed in.</p>
+              <button
+                className="btn btn-primary btn-big w-full"
+                onClick={() => { window.location.href = `${basePath}/sign-in`; }}
+              >
+                Sign In
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const account = me.data.account!;
+  const ent = me.data.entitlement;
+  const passes = me.data.passes ?? [];
+
+  async function handleSaveName() {
+    setError("");
+    const trimmed = name.trim();
+    if (!trimmed) { setError("Screen name required"); return; }
+    try {
+      await updateName.mutateAsync({ data: { screenName: trimmed } });
+      qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      setEditing(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Update failed");
+    }
+  }
+
+  async function handleSignOut() {
+    await signOut();
+    qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+    qc.invalidateQueries({ queryKey: getGetGameHistoryQueryKey() });
+    onBack();
+  }
+
+  const tierLabel =
+    ent.tier === "pass" ? "Pass Holder ★"
+    : ent.tier === "account" ? "Free Account"
+    : "Public";
+
+  return (
+    <div className="app-window">
+      <Navbar onBack={onBack} />
+      <div className="app-body">
+
+        {/* Identity panel */}
+        <div className="panel">
+          <div className="panel-header"><span>👤 Identity</span></div>
+          <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 11, color: "#444" }}>SCREEN NAME</div>
+            {editing ? (
+              <div style={{ display: "flex", gap: 6 }}>
+                <input
+                  className="input"
+                  value={name}
+                  maxLength={32}
+                  onChange={(e) => setName(e.target.value)}
+                />
+                <button className="btn btn-primary" disabled={updateName.isPending} onClick={handleSaveName}>Save</button>
+                <button className="btn" onClick={() => { setEditing(false); setName(account.screenName); }}>Cancel</button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <span style={{ fontFamily: "VT323", fontSize: 22, color: "#000080" }}>{account.screenName}</span>
+                <button className="btn" style={{ marginLeft: "auto" }} onClick={() => setEditing(true)}>Edit</button>
+              </div>
+            )}
+            {error && <div style={{ color: "#c00", fontSize: 12 }}>{error}</div>}
+            {account.email && (
+              <div style={{ fontSize: 11, color: "#444" }}>
+                EMAIL — <span style={{ color: "#000" }}>{account.email}</span>
+              </div>
+            )}
+            <div style={{ fontSize: 11, color: "#444" }}>
+              ID — <code style={{ fontSize: 10 }}>{account.id}</code>
+            </div>
+          </div>
+        </div>
+
+        {/* Tier panel */}
+        <div className="panel">
+          <div className="panel-header"><span>🎟 Tier</span></div>
+          <div className="panel-body">
+            <div style={{ fontFamily: "VT323", fontSize: 24, color: ent.tier === "pass" ? "#006400" : "#000080" }}>
+              {tierLabel}
+            </div>
+            {ent.activePass && (
+              <div style={{ fontSize: 12, marginTop: 4 }}>
+                {ent.activePass.isLifetime
+                  ? "Lifetime — never expires"
+                  : `Expires ${fmtDate(ent.activePass.expiresAt)}`}
+              </div>
+            )}
+            {passes.length > 1 && (
+              <div style={{ fontSize: 11, color: "#444", marginTop: 4 }}>
+                {passes.length} active passes (stacked)
+              </div>
+            )}
+            <button className="btn btn-primary w-full" style={{ marginTop: 10 }} onClick={onPasses}>
+              {ent.tier === "pass" ? "Manage Passes" : "Get a Pass"}
+            </button>
+          </div>
+        </div>
+
+        {/* History panel */}
+        <div className="panel">
+          <div className="panel-header"><span>📋 Recent Games {history.data ? `(${history.data.visibleCount}/${history.data.totalCount})` : ""}</span></div>
+          <div className="panel-body">
+            {history.isLoading && <p style={{ fontSize: 12 }}>Loading…</p>}
+            {history.data && history.data.games.length === 0 && (
+              <p style={{ fontSize: 12, color: "#444" }}>No games saved yet. Play one!</p>
+            )}
+            {history.data?.games.map((g) => (
+              <div
+                key={g.id}
+                style={{
+                  borderTop: "1px solid #aaa",
+                  padding: "6px 0",
+                  fontSize: 12,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontWeight: "bold" }}>
+                    {g.gameType.toUpperCase()} · {g.outcome}
+                  </span>
+                  <span style={{ color: "#444" }}>{fmtMs(g.durationMs)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", color: "#444", fontSize: 11 }}>
+                  <span>{g.winner ? `winner: ${g.winner}` : "—"}</span>
+                  <span>{g.bpm != null ? `${g.bpm.toFixed(1)} BPM` : ""}</span>
+                </div>
+                <div style={{ fontSize: 10, color: "#666" }}>{fmtDate(g.endedAt)}</div>
+              </div>
+            ))}
+            {history.data?.truncated && (
+              <div className="notice" style={{ marginTop: 8, fontSize: 11 }}>
+                <span>💡</span>
+                <span>
+                  Showing your most recent {history.data.visibleCount}. Get a pass to unlock full history.
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <button className="btn btn-big w-full" onClick={handleSignOut}>
+          Sign Out
+        </button>
+      </div>
+    </div>
+  );
+}

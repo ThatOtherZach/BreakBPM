@@ -1,12 +1,25 @@
 import { useState } from 'react';
+import { Show } from '@clerk/react';
+import { useGetMe } from '@workspace/api-client-react';
 
 interface NavbarProps {
   onAbout?: () => void;
   onBack?: () => void;
+  onAccount?: () => void;
+  onSignIn?: () => void;
 }
 
-export default function Navbar({ onAbout, onBack }: NavbarProps) {
+export default function Navbar({ onAbout, onBack, onAccount, onSignIn }: NavbarProps) {
   const [open, setOpen] = useState(false);
+  const me = useGetMe();
+
+  const tier = me.data?.entitlement?.tier;
+  const tierBadge =
+    tier === 'pass' ? '★'
+    : tier === 'account' ? '●'
+    : null;
+
+  const showHamburger = !!(onAbout || onAccount || onSignIn);
 
   return (
     <>
@@ -18,10 +31,22 @@ export default function Navbar({ onAbout, onBack }: NavbarProps) {
             <>
               <img src="/eightball_nobg.png" alt="8-ball" className="navbar-icon-img" />
               <span className="navbar-title">BreakBPM</span>
+              {tierBadge && (
+                <span
+                  title={tier === 'pass' ? 'Pass holder' : 'Signed in'}
+                  style={{
+                    fontSize: 14,
+                    color: tier === 'pass' ? '#ffd700' : '#aaffaa',
+                    marginLeft: 4,
+                  }}
+                >
+                  {tierBadge}
+                </span>
+              )}
             </>
           )}
         </div>
-        {onAbout && (
+        {showHamburger && (
           <button
             className={`navbar-hamburger${open ? ' is-open' : ''}`}
             onClick={() => setOpen(o => !o)}
@@ -34,14 +59,27 @@ export default function Navbar({ onAbout, onBack }: NavbarProps) {
         )}
       </div>
 
-      {open && onAbout && (
+      {open && showHamburger && (
         <div className="navbar-menu">
-          <button
-            className="navbar-menu-item"
-            onClick={() => { setOpen(false); onAbout(); }}
-          >
-            About
-          </button>
+          {onAbout && (
+            <button className="navbar-menu-item" onClick={() => { setOpen(false); onAbout(); }}>
+              About
+            </button>
+          )}
+          <Show when="signed-in">
+            {onAccount && (
+              <button className="navbar-menu-item" onClick={() => { setOpen(false); onAccount(); }}>
+                Account
+              </button>
+            )}
+          </Show>
+          <Show when="signed-out">
+            {onSignIn && (
+              <button className="navbar-menu-item" onClick={() => { setOpen(false); onSignIn(); }}>
+                Sign In
+              </button>
+            )}
+          </Show>
         </div>
       )}
     </>

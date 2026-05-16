@@ -5,7 +5,10 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { PassSummary } from './passSummary';
 
-export interface HealthStatus {
-  status: string;
+export interface PurchaseResult {
+  success: boolean;
+  message: string;
+  pass?: PassSummary;
 }

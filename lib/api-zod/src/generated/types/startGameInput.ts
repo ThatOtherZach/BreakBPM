@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface StartGameInput {
+  /**
+     * @minLength 8
+     * @maxLength 128
+     */
+  deviceId: string;
 }

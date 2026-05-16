@@ -7,11 +7,15 @@ import {
   encodeGameState, getTeamLabel, ballLabel,
   SOLIDS, STRIPES, EIGHT_BALL, getLowestBall,
 } from '../lib/gameLogic';
+import { useSaveGame } from '@workspace/api-client-react';
+import { FORFEIT_INACTIVITY_MS } from '../lib/forfeit';
 
 interface Props {
   initialState: GameState;
   onNewGame: () => void;
   onAbout: () => void;
+  onAccount: () => void;
+  onSignIn: () => void;
 }
 
 const BALL_COLORS: Record<number, string> = {
@@ -32,7 +36,10 @@ function ballClass(ball: number, legal: number[], sunk: number[], _gameType: str
   return base;
 }
 
-export default function GameScreen({ initialState, onNewGame, onAbout }: Props) {
+export default function GameScreen({ initialState, onNewGame, onAbout, onAccount, onSignIn }: Props) {
+  const saveGame = useSaveGame();
+  const savedRef = useRef(false);
+  const forfeitedRef = useRef(false);
   const [state, setState] = useState<GameState>(initialState);
   const [elapsed, setElapsed] = useState(0);
 
@@ -85,6 +92,71 @@ export default function GameScreen({ initialState, onNewGame, onAbout }: Props) 
 
   // Sync URL on state change
   useEffect(() => { syncUrl(state); }, [state, syncUrl]);
+
+  // Auto-save the game once when it ends. Anonymous calls return saved:false
+  // and are silently ignored — saved games show up in the user's history.
+  useEffect(() => {
+    if (state.phase !== 'ended' || savedRef.current) return;
+    savedRef.current = true;
+    const finalBpmSnap = state.firstActionTime
+      ? calculateBPM(state.sunkBalls.length, state.firstActionTime, state.lastActionTime ?? Date.now())
+      : null;
+    saveGame.mutate({
+      data: {
+        gameType: state.gameType,
+        shareCode: state.shareCode,
+        winner: state.winner,
+        bpm: finalBpmSnap,
+        durationMs: Math.max(0, Date.now() - state.gameStartTime - pausedDuration),
+        sunkBallsCount: state.sunkBalls.length,
+        outcome: forfeitedRef.current ? 'forfeit' : (state.winner ? 'won' : 'completed'),
+        gameState: state as unknown as Record<string, unknown>,
+        startedAt: new Date(state.gameStartTime).toISOString(),
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase]);
+
+  // Forfeit timer — if no action for FORFEIT_INACTIVITY_MS (60min) the game is
+  // automatically ended as a forfeit by the current player. Practice mode is
+  // exempt (it has manual pause). Pauses suspend the timer.
+  useEffect(() => {
+    if (state.phase !== 'playing' || state.gameType === 'practice' || paused) return;
+    const lastAction = state.lastActionTime ?? state.gameStartTime;
+    const deadline = lastAction + FORFEIT_INACTIVITY_MS;
+    const ms = deadline - Date.now();
+    if (ms <= 0) {
+      // Already past the deadline — forfeit immediately
+      forfeitedRef.current = true;
+      const now = Date.now();
+      const winnerName = state.players.length > 1
+        ? state.players[(state.currentPlayerIndex + 1) % state.players.length].name
+        : null;
+      setState(s => ({
+        ...s,
+        phase: 'ended',
+        winner: winnerName,
+        winMessage: `${s.players[s.currentPlayerIndex].name} forfeited (60min inactivity)`,
+        lastActionTime: now,
+      }));
+      return;
+    }
+    const id = setTimeout(() => {
+      forfeitedRef.current = true;
+      const now = Date.now();
+      const winnerName = state.players.length > 1
+        ? state.players[(state.currentPlayerIndex + 1) % state.players.length].name
+        : null;
+      setState(s => ({
+        ...s,
+        phase: 'ended',
+        winner: winnerName,
+        winMessage: `${s.players[s.currentPlayerIndex].name} forfeited (60min inactivity)`,
+        lastActionTime: now,
+      }));
+    }, ms);
+    return () => clearTimeout(id);
+  }, [state.phase, state.lastActionTime, state.gameStartTime, state.currentPlayerIndex, state.gameType, state.players, paused]);
 
   // Auto-scroll log
   useEffect(() => {
@@ -312,7 +384,7 @@ export default function GameScreen({ initialState, onNewGame, onAbout }: Props) 
 
   return (
     <div className="app-window">
-      <Navbar onAbout={onAbout} />
+      <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
 
       {/* ── Dark HUD panel (matches splash aesthetic) ── */}
       <div className="hud-panel">
