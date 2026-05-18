@@ -75,6 +75,9 @@ function MainApp() {
   // Hard wall-clock cap for anonymous play (server returns 1 hr); null
   // for signed-in users.
   const [maxGameDurationMs, setMaxGameDurationMs] = useState<number | null>(null);
+  // Pause accumulator carried over from a restored in-progress game (so the
+  // elapsed clock stays accurate across refresh). 0 for fresh games.
+  const [initialPausedDuration, setInitialPausedDuration] = useState(0);
 
   useEffect(() => {
     // Primary recovery path: localStorage holds the full in-progress game
@@ -85,6 +88,7 @@ function MainApp() {
       setGameState(persisted.state);
       setServerGameId(persisted.serverGameId);
       setMaxGameDurationMs(persisted.maxGameDurationMs);
+      setInitialPausedDuration(persisted.pausedDuration ?? 0);
       setView("game");
       return;
     }
@@ -118,6 +122,24 @@ function MainApp() {
     setGameState(createInitialGameState(gameType, players));
     setServerGameId(gameId);
     setMaxGameDurationMs(maxMs);
+    setInitialPausedDuration(0);
+    setView("game");
+    const url = new URL(window.location.href);
+    url.searchParams.delete("state");
+    url.searchParams.delete("game");
+    window.history.replaceState(null, "", url.toString());
+  }
+  /**
+   * Resume an existing game (from the server-side `/games/resume` prompt).
+   * Unlike handleStart, this preserves the full passed-in state — shotLog,
+   * sunkBalls, currentPlayerIndex, timers, shareCode, etc — so the game
+   * picks up exactly where it left off.
+   */
+  function handleResume(state: GameState, gameId: string | null, maxMs: number | null, pausedDuration: number) {
+    setGameState(state);
+    setServerGameId(gameId);
+    setMaxGameDurationMs(maxMs);
+    setInitialPausedDuration(pausedDuration);
     setView("game");
     const url = new URL(window.location.href);
     url.searchParams.delete("state");
@@ -129,6 +151,7 @@ function MainApp() {
     setGameState(null);
     setServerGameId(null);
     setMaxGameDurationMs(null);
+    setInitialPausedDuration(0);
     setView("setup");
     const url = new URL(window.location.href);
     url.searchParams.delete("state");
@@ -147,6 +170,7 @@ function MainApp() {
         initialState={gameState}
         serverGameId={serverGameId}
         maxGameDurationMs={maxGameDurationMs}
+        initialPausedDuration={initialPausedDuration}
         onNewGame={handleNewGame}
         onAbout={goAbout}
         onAccount={goAccount}
@@ -157,6 +181,7 @@ function MainApp() {
   return (
     <SetupScreen
       onStart={handleStart}
+      onResume={handleResume}
       onAbout={goAbout}
       onAccount={goAccount}
       onSignIn={goSignIn}

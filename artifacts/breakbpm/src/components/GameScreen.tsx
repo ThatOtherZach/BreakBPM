@@ -20,6 +20,12 @@ interface Props {
    * null for signed-in users (who use the inactivity timeout instead).
    */
   maxGameDurationMs: number | null;
+  /**
+   * Accumulated paused-time (practice mode) carried over from a restored
+   * in-progress game so the elapsed-time clock stays exact across
+   * refresh. Defaults to 0 for fresh games.
+   */
+  initialPausedDuration?: number;
   onNewGame: () => void;
   onAbout: () => void;
   onAccount: () => void;
@@ -45,7 +51,7 @@ function ballClass(ball: number, legal: number[], sunk: number[], _gameType: str
   return base;
 }
 
-export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, onNewGame, onAbout, onAccount, onSignIn }: Props) {
+export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, initialPausedDuration = 0, onNewGame, onAbout, onAccount, onSignIn }: Props) {
   const saveGame = useSaveGame();
   const recordActivity = useRecordGameActivity();
   const savedRef = useRef(false);
@@ -68,9 +74,10 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const [logOpen, setLogOpen] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
-  // Practice-mode pause
+  // Practice-mode pause. Seed pausedDuration from a restored in-progress
+  // game so the elapsed clock continues from where it left off.
   const [paused, setPaused] = useState(false);
-  const [pausedDuration, setPausedDuration] = useState(0); // total ms spent paused
+  const [pausedDuration, setPausedDuration] = useState(initialPausedDuration);
   const [pauseStart, setPauseStart] = useState<number | null>(null);
 
   const syncUrl = useCallback((s: GameState) => {

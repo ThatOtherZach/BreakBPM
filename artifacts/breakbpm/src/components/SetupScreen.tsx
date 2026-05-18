@@ -19,12 +19,14 @@ const DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
 
 interface Props {
   onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null) => void;
+  /** Resume an existing game from the server-side in-progress snapshot. */
+  onResume: (state: GameState, serverGameId: string | null, maxGameDurationMs: number | null, pausedDuration: number) => void;
   onAbout: () => void;
   onAccount: () => void;
   onSignIn: () => void;
 }
 
-export default function SetupScreen({ onStart, onAbout, onAccount, onSignIn }: Props) {
+export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onSignIn }: Props) {
   const startGame = useStartGame();
   const abandonGame = useAbandonGame();
   // SetupScreen only mounts when localStorage has no in-progress game
@@ -62,8 +64,8 @@ export default function SetupScreen({ onStart, onAbout, onAccount, onSignIn }: P
       gameStartTime: gs.gameStartTime ?? new Date(offered.startedAt).getTime(),
       firstActionTime: gs.firstActionTime ?? null,
       lastActionTime: gs.lastActionTime ?? null,
-      winner: null,
-      winMessage: '',
+      winner: gs.winner ?? null,
+      winMessage: gs.winMessage ?? '',
       shareCode: gs.shareCode ?? '',
       teamAssigned: gs.teamAssigned ?? false,
     };
@@ -75,7 +77,9 @@ export default function SetupScreen({ onStart, onAbout, onAccount, onSignIn }: P
       pausedDuration: 0,
       savedAt: Date.now(),
     });
-    onStart(rehydrated.gameType, rehydrated.players, offered.gameId, null);
+    // Hand off via onResume (NOT onStart) so App.tsx preserves the full
+    // rehydrated state instead of overwriting it with a fresh game.
+    onResume(rehydrated, offered.gameId, null, 0);
   }
 
   async function handleDiscardResume() {
