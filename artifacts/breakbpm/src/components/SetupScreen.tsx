@@ -46,19 +46,32 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
   function handleResume() {
     const offered = resumable.data?.game;
     if (!offered) return;
-    const gs = offered.gameState as Partial<GameState> | null;
-    // Server snapshot must have enough to actually play. If it's empty
-    // (no activity ever logged) we can't resurrect it — abandon the
-    // orphan row so it doesn't linger until the inactivity sweep, then
-    // fall back to a fresh setup.
-    if (!gs || !Array.isArray(gs.players) || gs.players.length === 0) {
-      void handleDiscardResume();
-      return;
+    const gs = (offered.gameState ?? {}) as Partial<GameState>;
+    // Best-effort rehydration: if players are missing (older row, server
+    // snapshot never received, etc.) fall back to placeholders so the
+    // game is still playable rather than silently destroyed. We log what
+    // was missing so we can diagnose future issues.
+    const missing: string[] = [];
+    let players = Array.isArray(gs.players) ? gs.players : [];
+    if (players.length === 0) {
+      missing.push('players');
+      // Two-player placeholder is the sane default — the user can rename
+      // by editing the names in-game (future work) or start fresh.
+      players = [
+        { id: 0, name: 'Player 1' },
+        { id: 1, name: 'Player 2' },
+      ];
+    }
+    if (!gs.shareCode) missing.push('shareCode');
+    if (!gs.gameStartTime) missing.push('gameStartTime');
+    if (missing.length > 0) {
+      // eslint-disable-next-line no-console
+      console.warn('[resume] snapshot missing fields, using fallbacks:', missing);
     }
     const rehydrated: GameState = {
       phase: 'playing',
       gameType: gs.gameType ?? offered.gameType,
-      players: gs.players,
+      players,
       currentPlayerIndex: gs.currentPlayerIndex ?? 0,
       sunkBalls: gs.sunkBalls ?? [],
       shotLog: gs.shotLog ?? [],

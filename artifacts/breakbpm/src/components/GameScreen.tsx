@@ -230,14 +230,14 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     return () => clearTimeout(id);
   }, [state.phase, state.gameStartTime, state.gameType, state.players, state.currentPlayerIndex, paused, maxGameDurationMs]);
 
-  // Server activity ping — fires only when the player logs an action
-  // (sink/miss/foul/safety bumps state.lastActionTime). Deliberately NOT
-  // a periodic heartbeat: that would let users dodge the 60-min inactivity
-  // forfeit just by leaving the tab open. Only signed-in users have a
-  // server-side row to update.
+  // Server activity ping — fires on every logged action
+  // (sink/miss/foul/safety bumps state.lastActionTime) AND once on mount
+  // so /games/resume has a full snapshot from the very first moment.
+  // Deliberately NOT a periodic heartbeat: that would let users dodge the
+  // 60-min inactivity forfeit just by leaving the tab open. Only
+  // signed-in users have a server-side row to update.
   useEffect(() => {
     if (!serverGameId || state.phase !== 'playing') return;
-    if (state.lastActionTime == null) return;
     // Piggy-back the full client-side snapshot so /games/resume can offer
     // this game on a different device or after localStorage is cleared.
     recordActivity.mutate({

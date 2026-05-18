@@ -74,7 +74,11 @@ router.post("/games/start", async (req, res): Promise<void> => {
     // Real gameType so the inactivity sweep can exempt practice mode.
     gameType: parsed.data.gameType,
     shareCode: "",            // overwritten on /games/save
-    gameState: {},
+    // Seed a minimal snapshot so /games/resume can offer the row from the
+    // very first moment, before the client has logged any shots. The
+    // client's first /games/activity ping (fired on mount) will replace
+    // this with the full state including players + share code.
+    gameState: { gameType: parsed.data.gameType, startedAt: new Date().toISOString() },
     startedAt: new Date(),
     lastActivityAt: new Date(),
     endedAt: null,
