@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import {
   useUpdateScreenName,
   useGetMe,
@@ -6,6 +7,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../lib/authClient";
+import Navbar from "./Navbar";
 
 /**
  * Mandatory first-login screen-name picker. Mounted by App when
@@ -17,6 +19,7 @@ export default function OnboardingGate() {
   const updateName = useUpdateScreenName();
   const qc = useQueryClient();
   const { logout: signOut } = useAuth();
+  const [, setLocation] = useLocation();
 
   const suggested = me.data?.account?.screenName ?? "";
   const [name, setName] = useState(suggested.startsWith("Player_") ? "" : suggested);
@@ -39,12 +42,10 @@ export default function OnboardingGate() {
 
   return (
     <div className="app-window">
-      <div className="navbar">
-        <div className="navbar-left">
-          <img src="/eightball_nobg.png" alt="8-ball" className="navbar-icon-img" />
-          <span className="navbar-title">BreakBPM</span>
-        </div>
-      </div>
+      <Navbar
+        onAbout={() => setLocation("/about")}
+        onAccount={() => setLocation("/account")}
+      />
       <div className="app-body">
         <div className="panel">
           <div
