@@ -277,8 +277,9 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
               </div>
             ))}
 
-            {/* Pass holder pagination controls */}
-            {history.data && history.data.totalPages > 1 && (
+            {/* Pass holder pagination controls — shown for any pass holder,
+                with Prev/Next disabled at boundaries */}
+            {history.data && ent.hasActivePass && (
               <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 10 }}>
                 <button
                   className="btn"
