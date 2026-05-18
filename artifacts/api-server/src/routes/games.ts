@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, count, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import { db, gamesTable } from "@workspace/db";
 import {
   StartGameBody,
@@ -226,32 +226,43 @@ router.get("/games/history", async (req, res): Promise<void> => {
   await sweepStaleGames(user.id);
 
   const entitlement = await computeEntitlement(user);
-  const all = await db
-    .select()
-    .from(gamesTable)
-    .where(and(eq(gamesTable.userId, user.id)))
-    .orderBy(desc(gamesTable.endedAt));
-  const ended = all.filter((g) => g.endedAt !== null);
-
   const limit = entitlement.historyVisibleLimit;
 
-  let visible: typeof ended;
+  // Count ended games server-side — needed for pagination metadata and the
+  // free-tier "upgrade to see all N" CTA regardless of tier.
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(gamesTable)
+    .where(and(eq(gamesTable.userId, user.id), isNotNull(gamesTable.endedAt)));
+  const totalCount = total;
+
   let page: number;
   let totalPages: number;
+  let rowLimit: number;
+  let offset: number;
 
   if (limit === null) {
     // Pass holder — paginate at HISTORY_PAGE_SIZE_PASS rows per page.
     const rawPage = parseInt(String(req.query.page ?? "1"), 10);
-    totalPages = Math.max(1, Math.ceil(ended.length / HISTORY_PAGE_SIZE_PASS));
+    totalPages = Math.max(1, Math.ceil(totalCount / HISTORY_PAGE_SIZE_PASS));
     page = Math.min(Math.max(1, isNaN(rawPage) ? 1 : rawPage), totalPages);
-    const offset = (page - 1) * HISTORY_PAGE_SIZE_PASS;
-    visible = ended.slice(offset, offset + HISTORY_PAGE_SIZE_PASS);
+    rowLimit = HISTORY_PAGE_SIZE_PASS;
+    offset = (page - 1) * HISTORY_PAGE_SIZE_PASS;
   } else {
     // Free account — always first N, no pagination.
-    visible = ended.slice(0, limit);
+    rowLimit = limit;
+    offset = 0;
     page = 1;
     totalPages = 1;
   }
+
+  const visible = await db
+    .select()
+    .from(gamesTable)
+    .where(and(eq(gamesTable.userId, user.id), isNotNull(gamesTable.endedAt)))
+    .orderBy(desc(gamesTable.endedAt))
+    .limit(rowLimit)
+    .offset(offset);
 
   const games = visible.map((g) => ({
     id: g.id,
@@ -269,9 +280,9 @@ router.get("/games/history", async (req, res): Promise<void> => {
   res.json(
     GetGameHistoryResponse.parse({
       tier: entitlement.tier,
-      totalCount: ended.length,
-      visibleCount: visible.length,
-      truncated: limit !== null && ended.length > visible.length,
+      totalCount,
+      visibleCount: games.length,
+      truncated: limit !== null && totalCount > games.length,
       page,
       totalPages,
       games,
