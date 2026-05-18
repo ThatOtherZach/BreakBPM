@@ -4,7 +4,7 @@ import Navbar from './Navbar';
 import {
   getLegalBalls, getRemainingBalls, checkSinkResult,
   assignTeams, shouldAssignTeams, calculateBPM, formatTime,
-  encodeGameState, getTeamLabel, ballLabel,
+  getTeamLabel, ballLabel,
   SOLIDS, STRIPES, EIGHT_BALL, getLowestBall,
   saveInProgressGame, clearInProgressGame,
 } from '../lib/gameLogic';
@@ -80,10 +80,14 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const [pausedDuration, setPausedDuration] = useState(initialPausedDuration);
   const [pauseStart, setPauseStart] = useState<number | null>(null);
 
+  // URL now carries only the join `?game=` share code. The full encoded
+  // `?state=` payload is no longer written on every change — localStorage
+  // is the source of truth for refresh recovery, and the old `?state=`
+  // path is decode-only for legacy share links (handled in App.tsx).
   const syncUrl = useCallback((s: GameState) => {
     try {
       const url = new URL(window.location.href);
-      url.searchParams.set('state', encodeGameState(s));
+      url.searchParams.delete('state');
       url.searchParams.set('game', s.shareCode);
       window.history.replaceState(null, '', url.toString());
     } catch { /* noop */ }

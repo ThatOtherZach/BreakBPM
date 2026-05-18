@@ -82,17 +82,25 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
     onResume(rehydrated, offered.gameId, null, 0);
   }
 
+  const [discardError, setDiscardError] = useState('');
   async function handleDiscardResume() {
     const offered = resumable.data?.game;
-    if (offered) {
-      try {
-        await abandonGame.mutateAsync({ data: { gameId: offered.gameId } });
-      } catch {
-        /* server already cleaned up — fine */
-      }
+    if (!offered) {
+      setResumeDismissed(true);
+      return;
     }
-    clearInProgressGame();
-    setResumeDismissed(true);
+    setDiscardError('');
+    try {
+      await abandonGame.mutateAsync({ data: { gameId: offered.gameId } });
+      clearInProgressGame();
+      setResumeDismissed(true);
+    } catch (err) {
+      // Surface the failure so the user can retry — don't silently
+      // dismiss, otherwise the orphan row lingers until the inactivity
+      // sweep and the prompt comes back next visit.
+      const msg = err instanceof Error ? err.message : 'Network error';
+      setDiscardError(`Couldn't discard: ${msg}. Try again.`);
+    }
   }
 
   const isPractice = gameType === 'practice';
@@ -175,9 +183,12 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
                 ▶ Resume
               </button>
               <button className="btn" style={{ flex: 1 }} onClick={handleDiscardResume} disabled={abandonGame.isPending}>
-                Start fresh
+                {abandonGame.isPending ? '…' : 'Start fresh'}
               </button>
             </div>
+            {discardError && (
+              <div style={{ color: '#c33', fontSize: 11 }}>{discardError}</div>
+            )}
           </div>
         )}
 
