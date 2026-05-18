@@ -66,7 +66,13 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           ];
     }
     if (!gs.shareCode) missing.push('shareCode');
-    if (!gs.gameStartTime) missing.push('gameStartTime');
+    // Validate gameStartTime fallback — NaN here would break the elapsed-
+    // time clock. Use now() as a last-resort floor.
+    const parsedStarted = new Date(offered.startedAt).getTime();
+    const fallbackStart = Number.isFinite(parsedStarted) ? parsedStarted : Date.now();
+    const safeGameStartTime = typeof gs.gameStartTime === 'number' && Number.isFinite(gs.gameStartTime)
+      ? gs.gameStartTime
+      : (missing.push('gameStartTime'), fallbackStart);
     if (missing.length > 0) {
       // eslint-disable-next-line no-console
       console.warn('[resume] snapshot missing fields, using fallbacks:', missing);
@@ -78,7 +84,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
       currentPlayerIndex: gs.currentPlayerIndex ?? 0,
       sunkBalls: gs.sunkBalls ?? [],
       shotLog: gs.shotLog ?? [],
-      gameStartTime: gs.gameStartTime ?? new Date(offered.startedAt).getTime(),
+      gameStartTime: safeGameStartTime,
       firstActionTime: gs.firstActionTime ?? null,
       lastActionTime: gs.lastActionTime ?? null,
       winner: gs.winner ?? null,
