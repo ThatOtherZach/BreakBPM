@@ -193,17 +193,30 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
 
         {/* Resume in-progress game (signed-in users whose localStorage was
             cleared — different device, new browser, etc.) */}
-        {!resumeDismissed && resumable.data?.resumable && resumable.data.game && (
+        {!resumeDismissed && resumable.data?.resumable && resumable.data.game && (() => {
+          const offered = resumable.data.game;
+          const gs = (offered.gameState ?? {}) as Partial<GameState>;
+          // "Degraded" means we'd have to rehydrate with placeholder players
+          // because the server snapshot is incomplete. We still let the user
+          // resume, but warn them explicitly so they don't see surprise
+          // "Player 1 / Player 2" names without consent.
+          const degraded = !Array.isArray(gs.players) || gs.players.length === 0;
+          return (
           <div className="notice" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
             <div>
-              <strong>Resume game in progress?</strong>
+              <strong>{degraded ? "Couldn't fully restore this game" : 'Resume game in progress?'}</strong>
               <div style={{ fontSize: 11, marginTop: 2, opacity: 0.8 }}>
-                {resumable.data.game.gameType.toUpperCase()} — started {new Date(resumable.data.game.startedAt).toLocaleString()}
+                {offered.gameType.toUpperCase()} — started {new Date(offered.startedAt).toLocaleString()}
               </div>
+              {degraded && (
+                <div style={{ fontSize: 11, marginTop: 4, color: '#c70' }}>
+                  Player names couldn't be recovered. Resume with placeholders, or start fresh.
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleResume}>
-                ▶ Resume
+                {degraded ? '▶ Resume anyway' : '▶ Resume'}
               </button>
               <button className="btn" style={{ flex: 1 }} onClick={handleDiscardResume} disabled={abandonGame.isPending}>
                 {abandonGame.isPending ? '…' : 'Start fresh'}
@@ -213,7 +226,8 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
               <div style={{ color: '#c33', fontSize: 11 }}>{discardError}</div>
             )}
           </div>
-        )}
+          );
+        })()}
 
         {/* Game type */}
         <div>
