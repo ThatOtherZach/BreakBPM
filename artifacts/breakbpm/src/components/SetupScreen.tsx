@@ -210,10 +210,14 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           const offered = resumable.data.game;
           const gs = (offered.gameState ?? {}) as Partial<GameState>;
           // "Degraded" means we'd have to rehydrate with placeholder players
-          // because the server snapshot is incomplete. We still let the user
-          // resume, but warn them explicitly so they don't see surprise
-          // "Player 1 / Player 2" names without consent.
-          const degraded = !Array.isArray(gs.players) || gs.players.length === 0;
+          // because the server snapshot is incomplete or malformed. Mirror
+          // the same validation handleResume() uses so the UI never claims
+          // "Resume game in progress?" when names will actually be lost.
+          const rawPlayers = Array.isArray(gs.players) ? gs.players : [];
+          const allValid = rawPlayers.length > 0 && rawPlayers.every(p =>
+            !!p && typeof p === 'object' && typeof (p as Player).id === 'number' && typeof (p as Player).name === 'string',
+          );
+          const degraded = !allValid;
           return (
           <div className="notice" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
             <div>
