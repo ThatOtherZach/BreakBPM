@@ -167,11 +167,44 @@ export const StartGameResponse = zod.object({
  * @summary Record a logged in-game action (resets the inactivity clock)
  */
 export const RecordGameActivityBody = zod.object({
-  "gameId": zod.string()
+  "gameId": zod.string(),
+  "gameState": zod.unknown().optional()
 })
 
 export const RecordGameActivityResponse = zod.object({
   "alive": zod.boolean(),
+  "message": zod.string().optional()
+})
+
+
+/**
+ * Used on first mount when localStorage is empty (e.g. different device, cleared browser) so signed-in users can pick the game they had open back up. Sweeps stale games first so a long-idle row is auto-forfeited rather than offered for resume.
+
+ * @summary Return the caller's most recent in-progress game, if any
+ */
+export const GetResumableGameResponse = zod.object({
+  "resumable": zod.boolean(),
+  "game": zod.object({
+  "gameId": zod.string(),
+  "gameType": zod.enum(['8ball', '9ball', 'practice']),
+  "startedAt": zod.coerce.date(),
+  "lastActivityAt": zod.coerce.date(),
+  "gameState": zod.unknown()
+}).optional()
+})
+
+
+/**
+ * Called when the user explicitly declines to resume an offered in-progress game, so the row doesn't linger waiting for the inactivity sweep.
+
+ * @summary Mark an in-progress game as abandoned (forfeit)
+ */
+export const AbandonGameBody = zod.object({
+  "gameId": zod.string()
+})
+
+export const AbandonGameResponse = zod.object({
+  "abandoned": zod.boolean(),
   "message": zod.string().optional()
 })
 

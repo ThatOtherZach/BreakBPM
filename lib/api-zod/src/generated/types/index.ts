@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './abandonGameInput';
+export * from './abandonGameResult';
 export * from './account';
 export * from './checkoutResult';
 export * from './devGrantLifetimeResult';
@@ -28,6 +30,9 @@ export * from './passCheckoutInputKind';
 export * from './passSummary';
 export * from './passSummaryKind';
 export * from './redeemResult';
+export * from './resumableGame';
+export * from './resumableGameGameType';
+export * from './resumableGameResponse';
 export * from './saveGameResult';
 export * from './screenNameUpdate';
 export * from './startGameInput';

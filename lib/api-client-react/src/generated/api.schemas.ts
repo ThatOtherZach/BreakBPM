@@ -156,6 +156,38 @@ export interface StartGameResult {
 
 export interface GameActivityInput {
   gameId: string;
+  gameState?: unknown;
+}
+
+export type ResumableGameGameType = typeof ResumableGameGameType[keyof typeof ResumableGameGameType];
+
+
+export const ResumableGameGameType = {
+  '8ball': '8ball',
+  '9ball': '9ball',
+  practice: 'practice',
+} as const;
+
+export interface ResumableGame {
+  gameId: string;
+  gameType: ResumableGameGameType;
+  startedAt: string;
+  lastActivityAt: string;
+  gameState: unknown;
+}
+
+export interface ResumableGameResponse {
+  resumable: boolean;
+  game?: ResumableGame;
+}
+
+export interface AbandonGameInput {
+  gameId: string;
+}
+
+export interface AbandonGameResult {
+  abandoned: boolean;
+  message?: string;
 }
 
 export interface GameActivityResult {

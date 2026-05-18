@@ -9,6 +9,9 @@ import {
   SaveGameBody,
   SaveGameResponse,
   GetGameHistoryResponse,
+  GetResumableGameResponse,
+  AbandonGameBody,
+  AbandonGameResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser, getVerifiedSubject } from "../lib/auth";
 import { computeEntitlement } from "../lib/entitlement";
@@ -106,9 +109,19 @@ router.post("/games/activity", async (req, res): Promise<void> => {
     return;
   }
   await sweepStaleGames(user.id);
+  // When the client ships a snapshot, persist it on the row so
+  // /games/resume can hand back the exact in-progress state on a
+  // different device / cleared browser. Omitting the snapshot leaves
+  // the previous one intact (don't blank it).
+  const setFields: { lastActivityAt: Date; gameState?: Record<string, unknown> } = {
+    lastActivityAt: new Date(),
+  };
+  if (parsed.data.gameState !== undefined && parsed.data.gameState !== null) {
+    setFields.gameState = parsed.data.gameState as Record<string, unknown>;
+  }
   const updated = await db
     .update(gamesTable)
-    .set({ lastActivityAt: new Date() })
+    .set(setFields)
     .where(
       and(
         eq(gamesTable.id, parsed.data.gameId),
@@ -196,6 +209,83 @@ router.post("/games/save", async (req, res): Promise<void> => {
 
   req.log.info({ userId: user.id, gameId: id, outcome: parsed.data.outcome }, "Game saved");
   res.json(SaveGameResponse.parse({ saved: true, gameId: id, message: "Game saved" }));
+});
+
+/**
+ * Most-recent in-progress game for the signed-in caller, if any. Used by
+ * the client as a fallback recovery path when localStorage is empty
+ * (different device, cleared browser). Sweeps stale rows first so a
+ * long-idle game is auto-forfeited rather than offered for resume.
+ */
+router.get("/games/resume", async (req, res): Promise<void> => {
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.json(GetResumableGameResponse.parse({ resumable: false }));
+    return;
+  }
+  await sweepStaleGames(user.id);
+  const rows = await db
+    .select()
+    .from(gamesTable)
+    .where(and(eq(gamesTable.userId, user.id), isNull(gamesTable.endedAt)))
+    .orderBy(desc(gamesTable.lastActivityAt))
+    .limit(1);
+  if (rows.length === 0) {
+    res.json(GetResumableGameResponse.parse({ resumable: false }));
+    return;
+  }
+  const row = rows[0];
+  res.json(
+    GetResumableGameResponse.parse({
+      resumable: true,
+      game: {
+        gameId: row.id,
+        gameType: row.gameType,
+        startedAt: row.startedAt.toISOString(),
+        lastActivityAt: row.lastActivityAt.toISOString(),
+        gameState: (row.gameState as unknown) ?? {},
+      },
+    }),
+  );
+});
+
+/**
+ * Explicitly abandon an in-progress game (the user declined a resume
+ * prompt). Marks the row as a forfeit so it doesn't linger.
+ */
+router.post("/games/abandon", async (req, res): Promise<void> => {
+  const parsed = AbandonGameBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Sign in required" });
+    return;
+  }
+  const updated = await db
+    .update(gamesTable)
+    .set({ endedAt: new Date(), outcome: "forfeit" })
+    .where(
+      and(
+        eq(gamesTable.id, parsed.data.gameId),
+        eq(gamesTable.userId, user.id),
+        isNull(gamesTable.endedAt),
+      ),
+    )
+    .returning({ id: gamesTable.id });
+  if (updated.length === 0) {
+    res.json(
+      AbandonGameResponse.parse({
+        abandoned: false,
+        message: "Game not found or already ended",
+      }),
+    );
+    return;
+  }
+  req.log.info({ userId: user.id, gameId: parsed.data.gameId }, "Game abandoned");
+  res.json(AbandonGameResponse.parse({ abandoned: true }));
 });
 
 const HISTORY_PAGE_SIZE_PASS = 10;

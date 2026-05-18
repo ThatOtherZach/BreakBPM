@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AbandonGameInput,
+  AbandonGameResult,
   Account,
   CheckoutResult,
   DevGrantLifetimeResult,
@@ -33,6 +35,7 @@ import type {
   MeResponse,
   PassCheckoutInput,
   RedeemResult,
+  ResumableGameResponse,
   SaveGameResult,
   ScreenNameUpdate,
   StartGameInput,
@@ -703,6 +706,158 @@ export const useRecordGameActivity = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getRecordGameActivityMutationOptions(options));
+    }
+
+export const getGetResumableGameUrl = () => {
+
+
+
+
+  return `/api/games/resume`
+}
+
+/**
+ * Used on first mount when localStorage is empty (e.g. different device, cleared browser) so signed-in users can pick the game they had open back up. Sweeps stale games first so a long-idle row is auto-forfeited rather than offered for resume.
+
+ * @summary Return the caller's most recent in-progress game, if any
+ */
+export const getResumableGame = async ( options?: RequestInit): Promise<ResumableGameResponse> => {
+
+  return customFetch<ResumableGameResponse>(getGetResumableGameUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetResumableGameQueryKey = () => {
+    return [
+    `/api/games/resume`
+    ] as const;
+    }
+
+
+export const getGetResumableGameQueryOptions = <TData = Awaited<ReturnType<typeof getResumableGame>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getResumableGame>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetResumableGameQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getResumableGame>>> = ({ signal }) => getResumableGame({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getResumableGame>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetResumableGameQueryResult = NonNullable<Awaited<ReturnType<typeof getResumableGame>>>
+export type GetResumableGameQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Return the caller's most recent in-progress game, if any
+ */
+
+export function useGetResumableGame<TData = Awaited<ReturnType<typeof getResumableGame>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getResumableGame>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetResumableGameQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAbandonGameUrl = () => {
+
+
+
+
+  return `/api/games/abandon`
+}
+
+/**
+ * Called when the user explicitly declines to resume an offered in-progress game, so the row doesn't linger waiting for the inactivity sweep.
+
+ * @summary Mark an in-progress game as abandoned (forfeit)
+ */
+export const abandonGame = async (abandonGameInput: AbandonGameInput, options?: RequestInit): Promise<AbandonGameResult> => {
+
+  return customFetch<AbandonGameResult>(getAbandonGameUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      abandonGameInput,)
+  }
+);}
+
+
+
+
+export const getAbandonGameMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof abandonGame>>, TError,{data: BodyType<AbandonGameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof abandonGame>>, TError,{data: BodyType<AbandonGameInput>}, TContext> => {
+
+const mutationKey = ['abandonGame'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof abandonGame>>, {data: BodyType<AbandonGameInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  abandonGame(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AbandonGameMutationResult = NonNullable<Awaited<ReturnType<typeof abandonGame>>>
+    export type AbandonGameMutationBody = BodyType<AbandonGameInput>
+    export type AbandonGameMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mark an in-progress game as abandoned (forfeit)
+ */
+export const useAbandonGame = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof abandonGame>>, TError,{data: BodyType<AbandonGameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof abandonGame>>,
+        TError,
+        {data: BodyType<AbandonGameInput>},
+        TContext
+      > => {
+      return useMutation(getAbandonGameMutationOptions(options));
     }
 
 export const getSaveGameUrl = () => {

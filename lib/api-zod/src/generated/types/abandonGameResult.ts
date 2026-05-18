@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface GameActivityInput {
-  gameId: string;
-  gameState?: unknown;
+export interface AbandonGameResult {
+  abandoned: boolean;
+  message?: string;
 }

@@ -213,6 +213,7 @@ export function encodeGameState(state: GameState): string {
       wm: state.winMessage,
       sc: state.shareCode,
       ta: state.teamAssigned,
+      sl: state.shotLog,
     };
     return btoa(JSON.stringify(compact));
   } catch {
@@ -236,10 +237,58 @@ export function decodeGameState(encoded: string): Partial<GameState> | null {
       winMessage: d.wm,
       shareCode: d.sc,
       teamAssigned: d.ta,
-      shotLog: [],
+      shotLog: Array.isArray(d.sl) ? d.sl : [],
     };
   } catch {
     return null;
+  }
+}
+
+/**
+ * Local persistence of an in-progress game. Source of truth for refresh /
+ * tab-close recovery. Holds the full GameState plus the server-issued
+ * gameId (so /games/activity and /games/save continue updating the same
+ * row across refreshes) and the wall-clock cap for anonymous play.
+ *
+ * Cleared whenever the game ends, the user starts a new one, or an
+ * explicit abandon happens.
+ */
+const INPROGRESS_KEY = 'breakbpm:inprogress:v1';
+
+export interface PersistedInProgressGame {
+  state: GameState;
+  serverGameId: string | null;
+  maxGameDurationMs: number | null;
+  pausedDuration: number;
+  savedAt: number;
+}
+
+export function saveInProgressGame(p: PersistedInProgressGame): void {
+  try {
+    localStorage.setItem(INPROGRESS_KEY, JSON.stringify(p));
+  } catch {
+    /* quota / private mode — best-effort only */
+  }
+}
+
+export function loadInProgressGame(): PersistedInProgressGame | null {
+  try {
+    const raw = localStorage.getItem(INPROGRESS_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as PersistedInProgressGame;
+    if (!p || !p.state || p.state.phase !== 'playing') return null;
+    if (!Array.isArray(p.state.players) || p.state.players.length === 0) return null;
+    return p;
+  } catch {
+    return null;
+  }
+}
+
+export function clearInProgressGame(): void {
+  try {
+    localStorage.removeItem(INPROGRESS_KEY);
+  } catch {
+    /* noop */
   }
 }
 

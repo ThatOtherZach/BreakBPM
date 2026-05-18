@@ -9,7 +9,12 @@ import AccountScreen from "./components/AccountScreen";
 import PassesScreen from "./components/PassesScreen";
 import { SignInPage, SignUpPage } from "./components/SignInPage";
 import type { GameType, GameState, Player } from "./lib/gameLogic";
-import { generateShareCode, decodeGameState } from "./lib/gameLogic";
+import {
+  generateShareCode,
+  decodeGameState,
+  loadInProgressGame,
+  clearInProgressGame,
+} from "./lib/gameLogic";
 import { queryClient } from "./lib/queryClient";
 import { AuthProvider, useAuth } from "./lib/authClient";
 
@@ -72,6 +77,19 @@ function MainApp() {
   const [maxGameDurationMs, setMaxGameDurationMs] = useState<number | null>(null);
 
   useEffect(() => {
+    // Primary recovery path: localStorage holds the full in-progress game
+    // (including shotLog and the server-issued gameId) so a refresh, tab
+    // close, or connection drop can resume the exact same game.
+    const persisted = loadInProgressGame();
+    if (persisted) {
+      setGameState(persisted.state);
+      setServerGameId(persisted.serverGameId);
+      setMaxGameDurationMs(persisted.maxGameDurationMs);
+      setView("game");
+      return;
+    }
+    // Fallback: legacy URL-encoded share links. Lossy for shotLog/serverGameId
+    // but kept so old `?state=` links still open something playable.
     const restored = loadStateFromUrl();
     if (restored && restored.phase && restored.players && restored.players.length > 0) {
       setGameState({
@@ -94,6 +112,9 @@ function MainApp() {
   }, []);
 
   function handleStart(gameType: GameType, players: Player[], gameId: string | null, maxMs: number | null) {
+    // Explicit fresh start — wipe any stale in-progress checkpoint so we
+    // don't immediately resurrect the previous game on the next mount.
+    clearInProgressGame();
     setGameState(createInitialGameState(gameType, players));
     setServerGameId(gameId);
     setMaxGameDurationMs(maxMs);
@@ -104,6 +125,7 @@ function MainApp() {
     window.history.replaceState(null, "", url.toString());
   }
   function handleNewGame() {
+    clearInProgressGame();
     setGameState(null);
     setServerGameId(null);
     setMaxGameDurationMs(null);

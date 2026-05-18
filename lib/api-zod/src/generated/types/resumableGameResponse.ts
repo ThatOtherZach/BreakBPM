@@ -5,8 +5,9 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { ResumableGame } from './resumableGame';
 
-export interface GameActivityInput {
-  gameId: string;
-  gameState?: unknown;
+export interface ResumableGameResponse {
+  resumable: boolean;
+  game?: ResumableGame;
 }

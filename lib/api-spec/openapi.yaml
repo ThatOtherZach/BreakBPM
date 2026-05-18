@@ -161,6 +161,44 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/GameActivityResult" }
 
+  /games/resume:
+    get:
+      operationId: getResumableGame
+      tags: [games]
+      summary: Return the caller's most recent in-progress game, if any
+      description: >
+        Used on first mount when localStorage is empty (e.g. different
+        device, cleared browser) so signed-in users can pick the game
+        they had open back up. Sweeps stale games first so a long-idle
+        row is auto-forfeited rather than offered for resume.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ResumableGameResponse" }
+
+  /games/abandon:
+    post:
+      operationId: abandonGame
+      tags: [games]
+      summary: Mark an in-progress game as abandoned (forfeit)
+      description: >
+        Called when the user explicitly declines to resume an offered
+        in-progress game, so the row doesn't linger waiting for the
+        inactivity sweep.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AbandonGameInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AbandonGameResult" }
+
   /games/save:
     post:
       operationId: saveGame
@@ -345,6 +383,44 @@ components:
       required: [gameId]
       properties:
         gameId: { type: string }
+        # Optional snapshot of the current client-side game state. When
+        # provided, the server stashes it on the in-progress row so
+        # /games/resume can hand it back on a different device / cleared
+        # browser. Omit to leave the previous snapshot intact.
+        gameState: {}
+
+    ResumableGame:
+      type: object
+      required: [gameId, gameType, startedAt, lastActivityAt, gameState]
+      properties:
+        gameId: { type: string }
+        gameType: { type: string, enum: [8ball, 9ball, practice] }
+        startedAt: { type: string, format: date-time }
+        lastActivityAt: { type: string, format: date-time }
+        # Most recent client-side snapshot (whatever the client last
+        # posted via /games/activity). May be an empty object if no
+        # snapshot has been recorded yet.
+        gameState: {}
+
+    ResumableGameResponse:
+      type: object
+      required: [resumable]
+      properties:
+        resumable: { type: boolean }
+        game: { $ref: "#/components/schemas/ResumableGame" }
+
+    AbandonGameInput:
+      type: object
+      required: [gameId]
+      properties:
+        gameId: { type: string }
+
+    AbandonGameResult:
+      type: object
+      required: [abandoned]
+      properties:
+        abandoned: { type: boolean }
+        message: { type: string }
 
     GameActivityResult:
       type: object

@@ -6,6 +6,7 @@ import {
   assignTeams, shouldAssignTeams, calculateBPM, formatTime,
   encodeGameState, getTeamLabel, ballLabel,
   SOLIDS, STRIPES, EIGHT_BALL, getLowestBall,
+  saveInProgressGame, clearInProgressGame,
 } from '../lib/gameLogic';
 import { useSaveGame, useRecordGameActivity } from '@workspace/api-client-react';
 import { FORFEIT_INACTIVITY_MS } from '../lib/forfeit';
@@ -102,6 +103,21 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   // Sync URL on state change
   useEffect(() => { syncUrl(state); }, [state, syncUrl]);
 
+  // Persist the full in-progress game (state + server gameId + wall-clock
+  // cap + pause accumulator) to localStorage on every change so a refresh
+  // / tab-close / connection drop can rehydrate it on the next mount.
+  // Cleared as soon as the game ends (post-save).
+  useEffect(() => {
+    if (state.phase !== 'playing') return;
+    saveInProgressGame({
+      state,
+      serverGameId,
+      maxGameDurationMs,
+      pausedDuration,
+      savedAt: Date.now(),
+    });
+  }, [state, serverGameId, maxGameDurationMs, pausedDuration]);
+
   // Auto-save the game once when it ends. Anonymous calls return saved:false
   // and are silently ignored — saved games show up in the user's history.
   useEffect(() => {
@@ -110,22 +126,30 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     const finalBpmSnap = state.firstActionTime
       ? calculateBPM(state.sunkBalls.length, state.firstActionTime, state.lastActionTime ?? Date.now())
       : null;
-    saveGame.mutate({
-      data: {
-        // If signed-in, finalize the in-progress server-side row. Anonymous
-        // play is dropped on the server side (no row stored).
-        gameId: serverGameId,
-        gameType: state.gameType,
-        shareCode: state.shareCode,
-        winner: state.winner,
-        bpm: finalBpmSnap,
-        durationMs: Math.max(0, Date.now() - state.gameStartTime - pausedDuration),
-        sunkBallsCount: state.sunkBalls.length,
-        outcome: forfeitedRef.current ? 'forfeit' : (state.winner ? 'won' : 'completed'),
-        gameState: state as unknown as Record<string, unknown>,
-        startedAt: new Date(state.gameStartTime).toISOString(),
+    saveGame.mutate(
+      {
+        data: {
+          // If signed-in, finalize the in-progress server-side row. Anonymous
+          // play is dropped on the server side (no row stored).
+          gameId: serverGameId,
+          gameType: state.gameType,
+          shareCode: state.shareCode,
+          winner: state.winner,
+          bpm: finalBpmSnap,
+          durationMs: Math.max(0, Date.now() - state.gameStartTime - pausedDuration),
+          sunkBallsCount: state.sunkBalls.length,
+          outcome: forfeitedRef.current ? 'forfeit' : (state.winner ? 'won' : 'completed'),
+          gameState: state as unknown as Record<string, unknown>,
+          startedAt: new Date(state.gameStartTime).toISOString(),
+        },
       },
-    });
+      {
+        // Drop the in-progress checkpoint once the game is finalized so a
+        // refresh from the end-screen lands on the setup screen, not a
+        // resurrected just-saved game.
+        onSettled: () => clearInProgressGame(),
+      },
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);
 
@@ -203,7 +227,14 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   useEffect(() => {
     if (!serverGameId || state.phase !== 'playing') return;
     if (state.lastActionTime == null) return;
-    recordActivity.mutate({ data: { gameId: serverGameId } });
+    // Piggy-back the full client-side snapshot so /games/resume can offer
+    // this game on a different device or after localStorage is cleared.
+    recordActivity.mutate({
+      data: {
+        gameId: serverGameId,
+        gameState: state as unknown as Record<string, unknown>,
+      },
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverGameId, state.lastActionTime, state.phase]);
 

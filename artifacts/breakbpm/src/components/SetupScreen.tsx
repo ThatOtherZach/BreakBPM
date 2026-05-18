@@ -1,8 +1,13 @@
 import { useState } from 'react';
-import type { GameType, Player } from '../lib/gameLogic';
+import type { GameType, GameState, Player } from '../lib/gameLogic';
 import ballImg from '/eightball_nobg.png';
 import Navbar from './Navbar';
-import { useStartGame } from '@workspace/api-client-react';
+import {
+  useStartGame,
+  useGetResumableGame,
+  useAbandonGame,
+} from '@workspace/api-client-react';
+import { saveInProgressGame, clearInProgressGame } from '../lib/gameLogic';
 
 const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
   { id: '8ball', label: '8-Ball', desc: 'Solids vs Stripes' },
@@ -21,6 +26,13 @@ interface Props {
 
 export default function SetupScreen({ onStart, onAbout, onAccount, onSignIn }: Props) {
   const startGame = useStartGame();
+  const abandonGame = useAbandonGame();
+  // SetupScreen only mounts when localStorage has no in-progress game
+  // (App.tsx routes straight to GameScreen otherwise), so this fetch is
+  // already the "fallback path" — different device / cleared browser.
+  const resumable = useGetResumableGame();
+  const [resumeDismissed, setResumeDismissed] = useState(false);
+
   const [startError, setStartError] = useState('');
   const [gameType, setGameType] = useState<GameType>('8ball');
   const [playerCount, setPlayerCount] = useState(2);
@@ -28,6 +40,56 @@ export default function SetupScreen({ onStart, onAbout, onAccount, onSignIn }: P
   const [autoTeam, setAutoTeam] = useState(true);
   const [manualTeams, setManualTeams] = useState<('solids' | 'stripes' | '')[]>(['', '', '', '']);
   const [joinCode, setJoinCode] = useState('');
+
+  function handleResume() {
+    const offered = resumable.data?.game;
+    if (!offered) return;
+    const gs = offered.gameState as Partial<GameState> | null;
+    // Server snapshot must have enough to actually play. If it's empty
+    // (no activity ever logged) we can't resurrect it — fall back to a
+    // fresh setup.
+    if (!gs || !Array.isArray(gs.players) || gs.players.length === 0) {
+      setResumeDismissed(true);
+      return;
+    }
+    const rehydrated: GameState = {
+      phase: 'playing',
+      gameType: gs.gameType ?? offered.gameType,
+      players: gs.players,
+      currentPlayerIndex: gs.currentPlayerIndex ?? 0,
+      sunkBalls: gs.sunkBalls ?? [],
+      shotLog: gs.shotLog ?? [],
+      gameStartTime: gs.gameStartTime ?? new Date(offered.startedAt).getTime(),
+      firstActionTime: gs.firstActionTime ?? null,
+      lastActionTime: gs.lastActionTime ?? null,
+      winner: null,
+      winMessage: '',
+      shareCode: gs.shareCode ?? '',
+      teamAssigned: gs.teamAssigned ?? false,
+    };
+    // Seed localStorage so the next refresh resumes from local too.
+    saveInProgressGame({
+      state: rehydrated,
+      serverGameId: offered.gameId,
+      maxGameDurationMs: null,
+      pausedDuration: 0,
+      savedAt: Date.now(),
+    });
+    onStart(rehydrated.gameType, rehydrated.players, offered.gameId, null);
+  }
+
+  async function handleDiscardResume() {
+    const offered = resumable.data?.game;
+    if (offered) {
+      try {
+        await abandonGame.mutateAsync({ data: { gameId: offered.gameId } });
+      } catch {
+        /* server already cleaned up — fine */
+      }
+    }
+    clearInProgressGame();
+    setResumeDismissed(true);
+  }
 
   const isPractice = gameType === 'practice';
   const count = isPractice ? 1 : playerCount;
@@ -93,6 +155,27 @@ export default function SetupScreen({ onStart, onAbout, onAccount, onSignIn }: P
       </div>
       {/* ── Menu body ── */}
       <div className="app-body">
+
+        {/* Resume in-progress game (signed-in users whose localStorage was
+            cleared — different device, new browser, etc.) */}
+        {!resumeDismissed && resumable.data?.resumable && resumable.data.game && (
+          <div className="notice" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+            <div>
+              <strong>Resume game in progress?</strong>
+              <div style={{ fontSize: 11, marginTop: 2, opacity: 0.8 }}>
+                {resumable.data.game.gameType.toUpperCase()} — started {new Date(resumable.data.game.startedAt).toLocaleString()}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleResume}>
+                ▶ Resume
+              </button>
+              <button className="btn" style={{ flex: 1 }} onClick={handleDiscardResume} disabled={abandonGame.isPending}>
+                Start fresh
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Game type */}
         <div>
