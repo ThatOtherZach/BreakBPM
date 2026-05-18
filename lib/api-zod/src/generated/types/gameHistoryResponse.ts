@@ -13,5 +13,7 @@ export interface GameHistoryResponse {
   totalCount: number;
   visibleCount: number;
   truncated: boolean;
+  page: number;
+  totalPages: number;
   games: GameHistoryEntry[];
 }

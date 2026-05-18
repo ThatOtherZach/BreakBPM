@@ -208,11 +208,21 @@ export const SaveGameResponse = zod.object({
 /**
  * @summary List the caller's saved games (gated by tier)
  */
+export const getGameHistoryQueryPageDefault = 1;
+
+
+
+export const GetGameHistoryQueryParams = zod.object({
+  "page": zod.coerce.number().min(1).default(getGameHistoryQueryPageDefault).describe('Page number (1-indexed). Only respected for pass holders; free accounts always receive their fixed 3-game slice.\n')
+})
+
 export const GetGameHistoryResponse = zod.object({
   "tier": zod.enum(['public', 'account', 'pass']),
   "totalCount": zod.number(),
   "visibleCount": zod.number(),
   "truncated": zod.boolean(),
+  "page": zod.number(),
+  "totalPages": zod.number(),
   "games": zod.array(zod.object({
   "id": zod.string(),
   "gameType": zod.string(),

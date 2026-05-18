@@ -32,17 +32,19 @@ function fmtDate(d: Date | string): string {
 export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: Props) {
   const { logout: signOut } = useAuth();
   const qc = useQueryClient();
-  const me = useGetMe();
-  const history = useGetGameHistory();
-  const updateName = useUpdateScreenName();
-  // TODO(remove-before-launch): dev-only free Lifetime upgrade hook.
-  const devGrant = useDevGrantLifetime();
 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   // TODO(remove-before-launch): paired with the dev upgrade button below.
   const [devGrantError, setDevGrantError] = useState("");
+  const [historyPage, setHistoryPage] = useState(1);
+
+  const me = useGetMe();
+  const history = useGetGameHistory({ page: historyPage });
+  const updateName = useUpdateScreenName();
+  // TODO(remove-before-launch): dev-only free Lifetime upgrade hook.
+  const devGrant = useDevGrantLifetime();
 
   useEffect(() => {
     if (me.data?.account?.screenName) setName(me.data.account.screenName);
@@ -237,7 +239,16 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
 
         {/* History panel */}
         <div className="panel">
-          <div className="panel-header"><span>📋 Recent Games {history.data ? `(${history.data.visibleCount}/${history.data.totalCount})` : ""}</span></div>
+          <div className="panel-header">
+            <span>
+              📋 Recent Games
+              {history.data && history.data.totalPages > 1
+                ? ` — Page ${history.data.page}/${history.data.totalPages}`
+                : history.data
+                ? ` (${history.data.visibleCount}/${history.data.totalCount})`
+                : ""}
+            </span>
+          </div>
           <div className="panel-body">
             {history.isLoading && <p style={{ fontSize: 12 }}>Loading…</p>}
             {history.data && history.data.games.length === 0 && (
@@ -265,13 +276,48 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
                 <div style={{ fontSize: 10, color: "#666" }}>{fmtDate(g.endedAt)}</div>
               </div>
             ))}
-            {history.data?.truncated && (
-              <div className="notice" style={{ marginTop: 8, fontSize: 11 }}>
-                <span>💡</span>
-                <span>
-                  Showing your most recent {history.data.visibleCount}. Get a pass to unlock full history.
+
+            {/* Pass holder pagination controls */}
+            {history.data && history.data.totalPages > 1 && (
+              <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 10 }}>
+                <button
+                  className="btn"
+                  disabled={history.data.page <= 1}
+                  onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                >
+                  ← Prev
+                </button>
+                <span style={{ flex: 1, textAlign: "center", fontSize: 12, color: "#444" }}>
+                  {history.data.page} / {history.data.totalPages}
                 </span>
+                <button
+                  className="btn"
+                  disabled={history.data.page >= history.data.totalPages}
+                  onClick={() => setHistoryPage((p) => p + 1)}
+                >
+                  Next →
+                </button>
               </div>
+            )}
+
+            {/* Free-tier upgrade CTA */}
+            {history.data?.truncated && (
+              <button
+                className="btn w-full"
+                style={{
+                  marginTop: 10,
+                  textAlign: "left",
+                  fontSize: 12,
+                  color: "#000080",
+                  background: "#f0f0f0",
+                  border: "1px solid #aaa",
+                  padding: "6px 8px",
+                  cursor: "pointer",
+                }}
+                onClick={onPasses}
+              >
+                💡 Showing your {history.data.visibleCount} most recent games. Upgrade to see all {history.data.totalCount} →
+              </button>
             )}
           </div>
         </div>

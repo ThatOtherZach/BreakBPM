@@ -183,6 +183,14 @@ paths:
       operationId: getGameHistory
       tags: [games]
       summary: List the caller's saved games (gated by tier)
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+          description: >
+            Page number (1-indexed). Only respected for pass holders;
+            free accounts always receive their fixed 3-game slice.
       responses:
         "200":
           description: OK
@@ -388,12 +396,16 @@ components:
 
     GameHistoryResponse:
       type: object
-      required: [tier, totalCount, visibleCount, games, truncated]
+      required: [tier, totalCount, visibleCount, games, truncated, page, totalPages]
       properties:
         tier: { type: string, enum: [public, account, pass] }
         totalCount: { type: integer }
         visibleCount: { type: integer }
         truncated: { type: boolean }
+        # Current page number (always 1 for free accounts).
+        page: { type: integer }
+        # Total number of pages (always 1 for free accounts).
+        totalPages: { type: integer }
         games:
           type: array
           items: { $ref: "#/components/schemas/GameHistoryEntry" }

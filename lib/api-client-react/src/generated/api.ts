@@ -28,6 +28,7 @@ import type {
   GameActivityResult,
   GameHistoryResponse,
   GameSaveInput,
+  GetGameHistoryParams,
   HealthStatus,
   MeResponse,
   PassCheckoutInput,
@@ -775,20 +776,27 @@ export const useSaveGame = <TError = ErrorType<unknown>,
       return useMutation(getSaveGameMutationOptions(options));
     }
 
-export const getGetGameHistoryUrl = () => {
+export const getGetGameHistoryUrl = (params?: GetGameHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/games/history`
+  return stringifiedParams.length > 0 ? `/api/games/history?${stringifiedParams}` : `/api/games/history`
 }
 
 /**
  * @summary List the caller's saved games (gated by tier)
  */
-export const getGameHistory = async ( options?: RequestInit): Promise<GameHistoryResponse> => {
+export const getGameHistory = async (params?: GetGameHistoryParams, options?: RequestInit): Promise<GameHistoryResponse> => {
 
-  return customFetch<GameHistoryResponse>(getGetGameHistoryUrl(),
+  return customFetch<GameHistoryResponse>(getGetGameHistoryUrl(params),
   {
     ...options,
     method: 'GET'
@@ -801,23 +809,23 @@ export const getGameHistory = async ( options?: RequestInit): Promise<GameHistor
 
 
 
-export const getGetGameHistoryQueryKey = () => {
+export const getGetGameHistoryQueryKey = (params?: GetGameHistoryParams,) => {
     return [
-    `/api/games/history`
+    `/api/games/history`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetGameHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getGameHistory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGameHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetGameHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getGameHistory>>, TError = ErrorType<unknown>>(params?: GetGameHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGameHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetGameHistoryQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetGameHistoryQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGameHistory>>> = ({ signal }) => getGameHistory({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGameHistory>>> = ({ signal }) => getGameHistory(params, { signal, ...requestOptions });
 
 
 
@@ -835,11 +843,11 @@ export type GetGameHistoryQueryError = ErrorType<unknown>
  */
 
 export function useGetGameHistory<TData = Awaited<ReturnType<typeof getGameHistory>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGameHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: GetGameHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGameHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetGameHistoryQueryOptions(options)
+  const queryOptions = getGetGameHistoryQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

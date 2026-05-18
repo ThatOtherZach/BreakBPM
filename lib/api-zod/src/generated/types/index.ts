@@ -20,6 +20,7 @@ export * from './gameHistoryResponseTier';
 export * from './gameSaveInput';
 export * from './gameSaveInputGameType';
 export * from './gameSaveInputOutcome';
+export * from './getGameHistoryParams';
 export * from './healthStatus';
 export * from './meResponse';
 export * from './passCheckoutInput';

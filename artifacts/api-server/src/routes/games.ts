@@ -198,9 +198,14 @@ router.post("/games/save", async (req, res): Promise<void> => {
   res.json(SaveGameResponse.parse({ saved: true, gameId: id, message: "Game saved" }));
 });
 
+const HISTORY_PAGE_SIZE_PASS = 10;
+
 /**
  * Game history. Tier gates the *view*, not the storage. Sweeps stale
  * in-progress rows first so they appear with their final forfeit status.
+ *
+ * Free accounts: always return the 3 most recent games (truncated=true when
+ * more exist). Pass holders: paginate at 10 per page via ?page= (1-indexed).
  */
 router.get("/games/history", async (req, res): Promise<void> => {
   const user = await getOrCreateUser(req);
@@ -211,6 +216,8 @@ router.get("/games/history", async (req, res): Promise<void> => {
         totalCount: 0,
         visibleCount: 0,
         truncated: false,
+        page: 1,
+        totalPages: 1,
         games: [],
       }),
     );
@@ -227,7 +234,25 @@ router.get("/games/history", async (req, res): Promise<void> => {
   const ended = all.filter((g) => g.endedAt !== null);
 
   const limit = entitlement.historyVisibleLimit;
-  const visible = limit === null ? ended : ended.slice(0, limit);
+
+  let visible: typeof ended;
+  let page: number;
+  let totalPages: number;
+
+  if (limit === null) {
+    // Pass holder — paginate at HISTORY_PAGE_SIZE_PASS rows per page.
+    const rawPage = parseInt(String(req.query.page ?? "1"), 10);
+    totalPages = Math.max(1, Math.ceil(ended.length / HISTORY_PAGE_SIZE_PASS));
+    page = Math.min(Math.max(1, isNaN(rawPage) ? 1 : rawPage), totalPages);
+    const offset = (page - 1) * HISTORY_PAGE_SIZE_PASS;
+    visible = ended.slice(offset, offset + HISTORY_PAGE_SIZE_PASS);
+  } else {
+    // Free account — always first N, no pagination.
+    visible = ended.slice(0, limit);
+    page = 1;
+    totalPages = 1;
+  }
+
   const games = visible.map((g) => ({
     id: g.id,
     gameType: g.gameType,
@@ -247,6 +272,8 @@ router.get("/games/history", async (req, res): Promise<void> => {
       totalCount: ended.length,
       visibleCount: visible.length,
       truncated: limit !== null && ended.length > visible.length,
+      page,
+      totalPages,
       games,
     }),
   );

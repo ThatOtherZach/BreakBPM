@@ -235,6 +235,17 @@ export interface GameHistoryResponse {
   totalCount: number;
   visibleCount: number;
   truncated: boolean;
+  page: number;
+  totalPages: number;
   games: GameHistoryEntry[];
 }
+
+export type GetGameHistoryParams = {
+/**
+ * Page number (1-indexed). Only respected for pass holders; free accounts always receive their fixed 3-game slice.
+
+ * @minimum 1
+ */
+page?: number;
+};
 
