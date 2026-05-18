@@ -123,19 +123,9 @@ function MainApp() {
   }
 
   const goSignIn = () => setLocation("/sign-in");
+  const goAbout = () => setLocation("/about");
+  const goAccount = () => setLocation("/account");
 
-  if (view === "about") return <AboutScreen onBack={() => setView(gameState ? "game" : "setup")} />;
-  if (view === "account") {
-    return (
-      <AccountScreen
-        onBack={() => setView(gameState ? "game" : "setup")}
-        onPasses={() => setView("passes")}
-        onAbout={() => setView("about")}
-        onSignIn={goSignIn}
-      />
-    );
-  }
-  if (view === "passes") return <PassesScreen onBack={() => setView("account")} />;
   if (view === "game" && gameState) {
     return (
       <GameScreen
@@ -144,8 +134,8 @@ function MainApp() {
         serverGameId={serverGameId}
         maxGameDurationMs={maxGameDurationMs}
         onNewGame={handleNewGame}
-        onAbout={() => setView("about")}
-        onAccount={() => setView("account")}
+        onAbout={goAbout}
+        onAccount={goAccount}
         onSignIn={goSignIn}
       />
     );
@@ -153,11 +143,33 @@ function MainApp() {
   return (
     <SetupScreen
       onStart={handleStart}
-      onAbout={() => setView("about")}
-      onAccount={() => setView("account")}
+      onAbout={goAbout}
+      onAccount={goAccount}
       onSignIn={goSignIn}
     />
   );
+}
+
+function AccountRoute() {
+  const [, setLocation] = useLocation();
+  return (
+    <AccountScreen
+      onBack={() => setLocation("/")}
+      onPasses={() => setLocation("/passes")}
+      onAbout={() => setLocation("/about")}
+      onSignIn={() => setLocation("/sign-in")}
+    />
+  );
+}
+
+function AboutRoute() {
+  const [, setLocation] = useLocation();
+  return <AboutScreen onBack={() => setLocation("/")} />;
+}
+
+function PassesRoute() {
+  const [, setLocation] = useLocation();
+  return <PassesScreen onBack={() => setLocation("/account")} />;
 }
 
 function Routes() {
@@ -166,6 +178,9 @@ function Routes() {
     <Switch>
       <Route path="/sign-in/*?" component={() => <SignInPage onBack={() => setLocation("/")} />} />
       <Route path="/sign-up/*?" component={() => <SignUpPage onBack={() => setLocation("/")} />} />
+      <Route path="/account" component={AccountRoute} />
+      <Route path="/about" component={AboutRoute} />
+      <Route path="/passes" component={PassesRoute} />
       <Route component={MainApp} />
     </Switch>
   );
