@@ -53,7 +53,14 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
     // was missing so we can diagnose future issues.
     const missing: string[] = [];
     const resolvedGameType = gs.gameType ?? offered.gameType;
-    let players = Array.isArray(gs.players) ? gs.players : [];
+    // Validate each player object — a malformed snapshot (missing id/name)
+    // would crash GameScreen on first render. Discard the whole array if
+    // any entry is bad and fall back to placeholders.
+    const rawPlayers = Array.isArray(gs.players) ? gs.players : [];
+    const validPlayers = rawPlayers.filter((p): p is Player =>
+      !!p && typeof p === 'object' && typeof (p as Player).id === 'number' && typeof (p as Player).name === 'string',
+    );
+    let players: Player[] = validPlayers.length === rawPlayers.length ? validPlayers : [];
     if (players.length === 0) {
       missing.push('players');
       // Placeholders sized by game type — practice is solo, 8/9-ball
@@ -65,6 +72,12 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
             { id: 1, name: 'Player 2' },
           ];
     }
+    // Clamp currentPlayerIndex into the valid range so a stale/corrupted
+    // index can't index past the (possibly-fallback) players array.
+    const rawIndex = gs.currentPlayerIndex ?? 0;
+    const safeCurrentPlayerIndex = Number.isFinite(rawIndex)
+      ? Math.max(0, Math.min(players.length - 1, Math.floor(rawIndex)))
+      : 0;
     if (!gs.shareCode) missing.push('shareCode');
     // Validate gameStartTime fallback — NaN here would break the elapsed-
     // time clock. Use now() as a last-resort floor.
@@ -81,7 +94,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
       phase: 'playing',
       gameType: resolvedGameType,
       players,
-      currentPlayerIndex: gs.currentPlayerIndex ?? 0,
+      currentPlayerIndex: safeCurrentPlayerIndex,
       sunkBalls: gs.sunkBalls ?? [],
       shotLog: gs.shotLog ?? [],
       gameStartTime: safeGameStartTime,
