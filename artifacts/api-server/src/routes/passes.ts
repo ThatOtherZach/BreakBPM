@@ -13,10 +13,12 @@ import {
   CreatePassCheckoutResponse,
   VerifyPassCheckoutBody,
   VerifyPassCheckoutResponse,
+  DevGrantLifetimeResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser } from "../lib/auth";
 import { issuePassTx } from "../lib/passes";
-import { paymentProvider } from "../lib/paymentProvider";
+import { getActivePasses } from "../lib/entitlement";
+import { paymentProvider, DEV_FREE_UPGRADE_ENABLED } from "../lib/paymentProvider";
 import { newId } from "../lib/ids";
 
 const router: IRouter = Router();
@@ -192,6 +194,66 @@ router.post("/passes/verify", async (req, res): Promise<void> => {
       success: true,
       message: verify.message,
       pass: passToSummary(pass),
+    }),
+  );
+});
+
+// TODO(remove-before-launch): dev-only free Lifetime upgrade. Returns 404
+// when DEV_FREE_UPGRADE_ENABLED is false so the endpoint disappears for
+// production. Rip out together with the flag in paymentProvider.ts and the
+// button in AccountScreen.tsx.
+router.post("/passes/dev-grant-lifetime", async (req, res): Promise<void> => {
+  if (!DEV_FREE_UPGRADE_ENABLED) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Sign in first" });
+    return;
+  }
+  // Race-safe issuance: serialize concurrent requests for the same user via a
+  // per-user advisory lock, then re-check inside the same transaction before
+  // inserting. Two double-clicks can't both insert a lifetime pass.
+  type PassSummaryShape = { kind: string; startedAt: Date; expiresAt: Date; isLifetime: boolean };
+  type DevGrantOutcome =
+    | { alreadyHad: true; summary: PassSummaryShape }
+    | { alreadyHad: false; summary: PassSummaryShape };
+  const outcome: DevGrantOutcome = await db.transaction(async (tx): Promise<DevGrantOutcome> => {
+    // pg_advisory_xact_lock takes a bigint; hash the user id into one.
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${user.id}, 0))`);
+    const existing = await getActivePasses(user.id);
+    const existingLifetime = existing.find((p) => p.isLifetime);
+    if (existingLifetime) return { alreadyHad: true, summary: existingLifetime };
+    const issued = await issuePassTx(tx, {
+      userId: user.id,
+      kind: "lifetime",
+      source: "grant",
+      sourceRef: "dev_free_upgrade",
+    });
+    return { alreadyHad: false, summary: passToSummary(issued) };
+  });
+  if (outcome.alreadyHad) {
+    res.json(
+      DevGrantLifetimeResponse.parse({
+        success: true,
+        message: "You already have a Lifetime pass.",
+        alreadyHad: true,
+        pass: outcome.summary,
+      }),
+    );
+    return;
+  }
+  req.log.warn(
+    { userId: user.id },
+    "DEV: free Lifetime pass granted via /passes/dev-grant-lifetime",
+  );
+  res.json(
+    DevGrantLifetimeResponse.parse({
+      success: true,
+      message: "Lifetime pass granted. Enjoy!",
+      alreadyHad: false,
+      pass: outcome.summary,
     }),
   );
 });

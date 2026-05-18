@@ -10,6 +10,12 @@
  * directly in /passes/redeem.
  */
 
+// TODO(remove-before-launch): dev-only flag that exposes the free Lifetime
+// upgrade button on the Account screen and the matching POST
+// /passes/dev-grant-lifetime route. Set to false (or rip out together with
+// the route + the AccountScreen button) before going live.
+export const DEV_FREE_UPGRADE_ENABLED = true;
+
 export type PassKind = "day" | "year" | "lifetime";
 
 export interface PriceInfo {

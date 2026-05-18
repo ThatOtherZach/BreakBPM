@@ -56,6 +56,7 @@ export interface MeResponse {
   account?: Account;
   entitlement: Entitlement;
   passes?: PassSummary[];
+  devFreeUpgradeEnabled?: boolean;
 }
 
 export interface ScreenNameUpdate {
@@ -111,6 +112,13 @@ export interface VerifyCheckoutInput {
 export interface VerifyResult {
   success: boolean;
   message: string;
+  pass?: PassSummary;
+}
+
+export interface DevGrantLifetimeResult {
+  success: boolean;
+  message: string;
+  alreadyHad: boolean;
   pass?: PassSummary;
 }
 

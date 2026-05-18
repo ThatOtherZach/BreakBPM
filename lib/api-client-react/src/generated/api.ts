@@ -22,6 +22,7 @@ import type {
 import type {
   Account,
   CheckoutResult,
+  DevGrantLifetimeResult,
   DiscountRedeemInput,
   GameActivityInput,
   GameActivityResult,
@@ -487,6 +488,76 @@ export const useVerifyPassCheckout = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getVerifyPassCheckoutMutationOptions(options));
+    }
+
+export const getDevGrantLifetimeUrl = () => {
+
+
+
+
+  return `/api/passes/dev-grant-lifetime`
+}
+
+/**
+ * @summary (DEV ONLY) Grant the signed-in user a Lifetime pass for free
+ */
+export const devGrantLifetime = async ( options?: RequestInit): Promise<DevGrantLifetimeResult> => {
+
+  return customFetch<DevGrantLifetimeResult>(getDevGrantLifetimeUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDevGrantLifetimeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof devGrantLifetime>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof devGrantLifetime>>, TError,void, TContext> => {
+
+const mutationKey = ['devGrantLifetime'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof devGrantLifetime>>, void> = () => {
+
+
+          return  devGrantLifetime(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DevGrantLifetimeMutationResult = NonNullable<Awaited<ReturnType<typeof devGrantLifetime>>>
+
+    export type DevGrantLifetimeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary (DEV ONLY) Grant the signed-in user a Lifetime pass for free
+ */
+export const useDevGrantLifetime = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof devGrantLifetime>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof devGrantLifetime>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDevGrantLifetimeMutationOptions(options));
     }
 
 export const getStartGameUrl = () => {

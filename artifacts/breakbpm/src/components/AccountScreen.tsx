@@ -4,6 +4,7 @@ import {
   useGetMe,
   useUpdateScreenName,
   useGetGameHistory,
+  useDevGrantLifetime,
   getGetMeQueryKey,
   getGetGameHistoryQueryKey,
 } from "@workspace/api-client-react";
@@ -34,10 +35,14 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
   const me = useGetMe();
   const history = useGetGameHistory();
   const updateName = useUpdateScreenName();
+  // TODO(remove-before-launch): dev-only free Lifetime upgrade hook.
+  const devGrant = useDevGrantLifetime();
 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
   const [error, setError] = useState("");
+  // TODO(remove-before-launch): paired with the dev upgrade button below.
+  const [devGrantError, setDevGrantError] = useState("");
 
   useEffect(() => {
     if (me.data?.account?.screenName) setName(me.data.account.screenName);
@@ -91,6 +96,17 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
       setEditing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Update failed");
+    }
+  }
+
+  // TODO(remove-before-launch): dev-only free Lifetime upgrade handler.
+  async function handleDevGrant() {
+    setDevGrantError("");
+    try {
+      await devGrant.mutateAsync();
+      qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+    } catch (e) {
+      setDevGrantError(e instanceof Error ? e.message : "Upgrade failed");
     }
   }
 
@@ -190,6 +206,32 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
             <button className="btn btn-primary w-full" style={{ marginTop: 10 }} onClick={onPasses}>
               {ent.tier === "pass" ? "Manage Passes" : "Get a Pass"}
             </button>
+            {/* TODO(remove-before-launch): dev-only free Lifetime upgrade button.
+                Rip out together with useDevGrantLifetime import, devGrant state,
+                handleDevGrant, and the server-side DEV_FREE_UPGRADE_ENABLED flag.
+                Visibility mirrors the server flag exposed on /auth/me. */}
+            {!canEditName && me.data.devFreeUpgradeEnabled && (
+              <>
+                <button
+                  className="btn btn-big w-full"
+                  style={{
+                    marginTop: 8,
+                    background: "#90ee90",
+                    color: "#003200",
+                    fontWeight: "bold",
+                  }}
+                  disabled={devGrant.isPending}
+                  onClick={handleDevGrant}
+                >
+                  {devGrant.isPending ? "Upgrading…" : "🎉 Upgrade for Free! (dev)"}
+                </button>
+                {devGrantError && (
+                  <div style={{ color: "#c00", fontSize: 12, marginTop: 4 }}>
+                    {devGrantError}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
 

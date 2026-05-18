@@ -8,6 +8,9 @@ import {
 } from "@workspace/api-zod";
 import { getVerifiedSubject, getOrCreateUser, needsOnboarding } from "../lib/auth";
 import { computeEntitlement, getActivePasses } from "../lib/entitlement";
+// TODO(remove-before-launch): exposed on /auth/me so the Account screen can
+// hide the free-upgrade button when the server-side flag is off.
+import { DEV_FREE_UPGRADE_ENABLED } from "../lib/paymentProvider";
 
 async function hasLifetimePass(userId: string): Promise<boolean> {
   const passes = await getActivePasses(userId);
@@ -25,6 +28,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
         needsOnboarding: false,
         entitlement: { tier: "public", hasActivePass: false, historyVisibleLimit: 0 },
         passes: [],
+        devFreeUpgradeEnabled: DEV_FREE_UPGRADE_ENABLED,
       }),
     );
     return;
@@ -48,6 +52,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
       },
       entitlement,
       passes,
+      devFreeUpgradeEnabled: DEV_FREE_UPGRADE_ENABLED,
     }),
   );
 });

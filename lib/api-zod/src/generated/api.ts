@@ -44,7 +44,8 @@ export const GetMeResponse = zod.object({
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
   "isLifetime": zod.boolean()
-})).optional()
+})).optional(),
+  "devFreeUpgradeEnabled": zod.boolean().optional()
 })
 
 
@@ -119,6 +120,22 @@ export const VerifyPassCheckoutBody = zod.object({
 export const VerifyPassCheckoutResponse = zod.object({
   "success": zod.boolean(),
   "message": zod.string(),
+  "pass": zod.object({
+  "kind": zod.enum(['day', 'year', 'lifetime']),
+  "startedAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date(),
+  "isLifetime": zod.boolean()
+}).optional()
+})
+
+
+/**
+ * @summary (DEV ONLY) Grant the signed-in user a Lifetime pass for free
+ */
+export const DevGrantLifetimeResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "alreadyHad": zod.boolean(),
   "pass": zod.object({
   "kind": zod.enum(['day', 'year', 'lifetime']),
   "startedAt": zod.coerce.date(),
