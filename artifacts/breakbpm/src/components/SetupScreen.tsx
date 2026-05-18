@@ -52,15 +52,18 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
     // game is still playable rather than silently destroyed. We log what
     // was missing so we can diagnose future issues.
     const missing: string[] = [];
+    const resolvedGameType = gs.gameType ?? offered.gameType;
     let players = Array.isArray(gs.players) ? gs.players : [];
     if (players.length === 0) {
       missing.push('players');
-      // Two-player placeholder is the sane default — the user can rename
-      // by editing the names in-game (future work) or start fresh.
-      players = [
-        { id: 0, name: 'Player 1' },
-        { id: 1, name: 'Player 2' },
-      ];
+      // Placeholders sized by game type — practice is solo, 8/9-ball
+      // need at least two. The user can rename or start fresh.
+      players = resolvedGameType === 'practice'
+        ? [{ id: 0, name: 'Player 1' }]
+        : [
+            { id: 0, name: 'Player 1' },
+            { id: 1, name: 'Player 2' },
+          ];
     }
     if (!gs.shareCode) missing.push('shareCode');
     if (!gs.gameStartTime) missing.push('gameStartTime');
@@ -70,7 +73,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
     }
     const rehydrated: GameState = {
       phase: 'playing',
-      gameType: gs.gameType ?? offered.gameType,
+      gameType: resolvedGameType,
       players,
       currentPlayerIndex: gs.currentPlayerIndex ?? 0,
       sunkBalls: gs.sunkBalls ?? [],
