@@ -79,6 +79,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
   const account = me.data.account!;
   const ent = me.data.entitlement;
   const passes = me.data.passes ?? [];
+  const canEditName = passes.some((p) => p.isLifetime);
 
   async function handleSaveName() {
     setError("");
@@ -129,7 +130,30 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
             ) : (
               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                 <span style={{ fontFamily: "VT323", fontSize: 22, color: "#000080" }}>{account.screenName}</span>
-                <button className="btn" style={{ marginLeft: "auto" }} onClick={() => setEditing(true)}>Edit</button>
+                {canEditName && (
+                  <button className="btn" style={{ marginLeft: "auto" }} onClick={() => setEditing(true)}>Edit</button>
+                )}
+              </div>
+            )}
+            {!canEditName && !editing && (
+              <div style={{ fontSize: 11, color: "#444" }}>
+                <button
+                  className="link-btn"
+                  onClick={onPasses}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    color: "#000080",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                    fontSize: 11,
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Upgrade to Lifetime
+                </button>
+                {" to customise your screen name."}
               </div>
             )}
             {error && <div style={{ color: "#c00", fontSize: 12 }}>{error}</div>}

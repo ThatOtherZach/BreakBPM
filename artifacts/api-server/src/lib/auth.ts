@@ -4,6 +4,7 @@ import { db, usersTable, type User } from "@workspace/db";
 import { ClerkAuthProvider } from "./clerkAuthProvider";
 import type { AuthProvider, ExternalIdentity, VerifiedToken } from "./authProvider";
 import { newId } from "./ids";
+import { generateUniqueScreenName } from "./screenNameGenerator";
 
 /** Single point at which we choose the auth backend. */
 export const authProvider: AuthProvider = new ClerkAuthProvider();
@@ -52,17 +53,29 @@ export async function upsertUserFromIdentity(identity: ExternalIdentity): Promis
     .limit(1);
 
   if (existing) {
+    const patch: Partial<typeof usersTable.$inferInsert> = {};
     if (identity.email && identity.email !== existing.email) {
-      await db
+      patch.email = identity.email;
+    }
+    // One-time backfill for legacy users still on a `Player_xxxxx` placeholder
+    // (or who never completed the old onboarding gate). Mark onboarding
+    // complete at the same time so the gate never fires for them again.
+    if (/^Player_/.test(existing.screenName) || existing.onboardingCompletedAt == null) {
+      patch.screenName = await generateUniqueScreenName();
+      patch.onboardingCompletedAt = new Date();
+    }
+    if (Object.keys(patch).length > 0) {
+      const [updated] = await db
         .update(usersTable)
-        .set({ email: identity.email })
-        .where(eq(usersTable.id, existing.id));
-      existing.email = identity.email;
+        .set(patch)
+        .where(eq(usersTable.id, existing.id))
+        .returning();
+      return updated;
     }
     return existing;
   }
 
-  const placeholderName = `Player_${Math.random().toString(36).slice(2, 7)}`;
+  const generatedName = await generateUniqueScreenName();
 
   const [created] = await db
     .insert(usersTable)
@@ -70,14 +83,19 @@ export async function upsertUserFromIdentity(identity: ExternalIdentity): Promis
       id: newId(),
       authProvider: identity.provider,
       authSubject: identity.subject,
-      screenName: placeholderName,
+      screenName: generatedName,
       email: identity.email ?? null,
-      onboardingCompletedAt: null,
+      // Auto-assigned at signup — no onboarding gate.
+      onboardingCompletedAt: new Date(),
     })
     .returning();
   return created;
 }
 
-export function needsOnboarding(user: User): boolean {
-  return user.onboardingCompletedAt == null;
+/**
+ * Always false now that screen names are auto-assigned at signup. Kept for
+ * API backwards-compat (the `needsOnboarding` field still ships on /auth/me).
+ */
+export function needsOnboarding(_user: User): boolean {
+  return false;
 }

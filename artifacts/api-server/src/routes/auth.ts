@@ -9,6 +9,11 @@ import {
 import { getVerifiedSubject, getOrCreateUser, needsOnboarding } from "../lib/auth";
 import { computeEntitlement, getActivePasses } from "../lib/entitlement";
 
+async function hasLifetimePass(userId: string): Promise<boolean> {
+  const passes = await getActivePasses(userId);
+  return passes.some((p) => p.isLifetime);
+}
+
 const router: IRouter = Router();
 
 router.get("/auth/me", async (req, res): Promise<void> => {
@@ -56,6 +61,12 @@ router.patch("/auth/screen-name", async (req, res): Promise<void> => {
   const user = await getOrCreateUser(req);
   if (!user) {
     res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  if (!(await hasLifetimePass(user.id))) {
+    res.status(403).json({
+      error: "Custom screen names are a Lifetime pass perk. Upgrade to customise.",
+    });
     return;
   }
   const trimmed = parsed.data.screenName.trim();

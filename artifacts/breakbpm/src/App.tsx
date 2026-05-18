@@ -1,14 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
-import { useGetMe } from "@workspace/api-client-react";
 
 import SetupScreen from "./components/SetupScreen";
 import GameScreen from "./components/GameScreen";
 import AboutScreen from "./components/AboutScreen";
 import AccountScreen from "./components/AccountScreen";
 import PassesScreen from "./components/PassesScreen";
-import OnboardingGate from "./components/OnboardingGate";
 import { SignInPage, SignUpPage } from "./components/SignInPage";
 import type { GameType, GameState, Player } from "./lib/gameLogic";
 import { generateShareCode, decodeGameState } from "./lib/gameLogic";
@@ -72,7 +70,6 @@ function MainApp() {
   // Hard wall-clock cap for anonymous play (server returns 1 hr); null
   // for signed-in users.
   const [maxGameDurationMs, setMaxGameDurationMs] = useState<number | null>(null);
-  const me = useGetMe();
 
   useEffect(() => {
     const restored = loadStateFromUrl();
@@ -95,11 +92,6 @@ function MainApp() {
       setView("game");
     }
   }, []);
-
-  // Mandatory onboarding for first-login users.
-  if (me.data?.signedIn && me.data.needsOnboarding) {
-    return <OnboardingGate />;
-  }
 
   function handleStart(gameType: GameType, players: Player[], gameId: string | null, maxMs: number | null) {
     setGameState(createInitialGameState(gameType, players));
