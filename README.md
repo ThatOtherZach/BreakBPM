@@ -6,6 +6,8 @@ From the opening break to the final 8-ball — log every shot, watch your pace, 
 
 > *"BreakBPM — the score that starts at the break and ends when you win."*
 
+**Copyright © 2026 Zachary Jordan. I am the sole copyright holder of BreakBPM. All rights not explicitly granted under the AGPL-3.0 are reserved.**
+
 ## Current Version: v0.5 (React Edition)
 
 A fully functional **React + Vite + TypeScript** web app styled like genuine 1998 Windows software. Built mobile-first (optimized for 412px width) with a complete Windows 98 design system.
@@ -54,11 +56,18 @@ Or just open `index.html` in any browser for the static preview.
 
 ## License
 
-**Dual Licensing:**
-- **MIT License** — Free for personal and open source use
-- **Commercial License** — Day Pass $1.99 / Annual $12.99 / Lifetime $24.99
+BreakBPM is open-source software licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
 
-See [LICENSE](LICENSE) for full details.
+This license ensures full transparency: the source code is public, and anyone who modifies and runs it as a network service (web app, hosted tool, etc.) must make their modifications available under the same license.
+
+**Commercial / Closed-Source Use**  
+If you want to use BreakBPM (or a modified version) in a commercial product **without** the AGPL copyleft obligations, paid commercial licenses are available:
+
+- Day Pass: $1.99  
+- Annual Pass: $12.99  
+- Lifetime Pass: $24.99  
+
+See the [LICENSE](./LICENSE) file or contact me directly (@ThatOtherZach on GitHub or X) for details.
 
 ## Credits
 
