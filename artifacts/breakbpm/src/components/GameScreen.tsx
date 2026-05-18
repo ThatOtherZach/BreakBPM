@@ -155,10 +155,10 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         },
       },
       {
-        // Drop the in-progress checkpoint once the game is finalized so a
-        // refresh from the end-screen lands on the setup screen, not a
-        // resurrected just-saved game.
-        onSettled: () => clearInProgressGame(),
+        // Drop the in-progress checkpoint only on successful save. On
+        // failure (network/server) we keep the checkpoint so a retry on
+        // the next mount can replay the finalize against the same row.
+        onSuccess: () => clearInProgressGame(),
       },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -48,10 +48,11 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
     if (!offered) return;
     const gs = offered.gameState as Partial<GameState> | null;
     // Server snapshot must have enough to actually play. If it's empty
-    // (no activity ever logged) we can't resurrect it — fall back to a
-    // fresh setup.
+    // (no activity ever logged) we can't resurrect it — abandon the
+    // orphan row so it doesn't linger until the inactivity sweep, then
+    // fall back to a fresh setup.
     if (!gs || !Array.isArray(gs.players) || gs.players.length === 0) {
-      setResumeDismissed(true);
+      void handleDiscardResume();
       return;
     }
     const rehydrated: GameState = {
