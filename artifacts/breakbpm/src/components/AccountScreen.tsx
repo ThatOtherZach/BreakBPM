@@ -223,7 +223,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
                   disabled={devGrant.isPending}
                   onClick={handleDevGrant}
                 >
-                  {devGrant.isPending ? "Upgrading…" : "🎉 Upgrade for Free! (dev)"}
+                  {devGrant.isPending ? "Upgrading…" : "🎉 Upgrade for Free!"}
                 </button>
                 {devGrantError && (
                   <div style={{ color: "#c00", fontSize: 12, marginTop: 4 }}>
