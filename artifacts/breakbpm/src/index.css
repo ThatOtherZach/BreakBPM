@@ -723,7 +723,7 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-.log-entry { padding: 1px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log-entry { padding: 1px 0; white-space: normal; word-break: break-word; }
 .log-entry.foul { color: #ff4444; }
 .log-entry.safety { color: #aaaaff; }
 .log-entry.miss { color: #888; }
