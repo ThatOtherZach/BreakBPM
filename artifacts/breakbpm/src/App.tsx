@@ -130,6 +130,8 @@ function MainApp() {
       <AccountScreen
         onBack={() => setView(gameState ? "game" : "setup")}
         onPasses={() => setView("passes")}
+        onAbout={() => setView("about")}
+        onSignIn={goSignIn}
       />
     );
   }

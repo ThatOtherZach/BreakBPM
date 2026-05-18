@@ -46,6 +46,7 @@ export default function Navbar({ onAbout, onBack, onAccount, onSignIn }: NavbarP
             </>
           )}
         </div>
+        {/* Hamburger always shows when menu items exist, even alongside back btn */}
         {showHamburger && (
           <button
             className={`navbar-hamburger${open ? ' is-open' : ''}`}

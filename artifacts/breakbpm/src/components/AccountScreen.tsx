@@ -13,6 +13,8 @@ import Navbar from "./Navbar";
 interface Props {
   onBack: () => void;
   onPasses: () => void;
+  onAbout: () => void;
+  onSignIn: () => void;
 }
 
 function fmtMs(ms: number): string {
@@ -26,7 +28,7 @@ function fmtDate(d: Date | string): string {
   return date.toLocaleString();
 }
 
-export default function AccountScreen({ onBack, onPasses }: Props) {
+export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: Props) {
   const { logout: signOut } = useAuth();
   const qc = useQueryClient();
   const me = useGetMe();
@@ -44,7 +46,7 @@ export default function AccountScreen({ onBack, onPasses }: Props) {
   if (me.isLoading) {
     return (
       <div className="app-window">
-        <Navbar onBack={onBack} />
+        <Navbar onBack={onBack} onAbout={onAbout} onSignIn={onSignIn} />
         <div className="app-body">
           <p style={{ fontFamily: "VT323", fontSize: 18 }}>Loading…</p>
         </div>
@@ -55,7 +57,7 @@ export default function AccountScreen({ onBack, onPasses }: Props) {
   if (!me.data?.signedIn) {
     return (
       <div className="app-window">
-        <Navbar onBack={onBack} />
+        <Navbar onBack={onBack} onAbout={onAbout} onSignIn={onSignIn} />
         <div className="app-body">
           <div className="panel">
             <div className="panel-header"><span>Account</span></div>
@@ -105,7 +107,7 @@ export default function AccountScreen({ onBack, onPasses }: Props) {
 
   return (
     <div className="app-window">
-      <Navbar onBack={onBack} />
+      <Navbar onBack={onBack} onAbout={onAbout} onSignIn={onSignIn} />
       <div className="app-body">
 
         {/* Identity panel */}
