@@ -17,7 +17,7 @@ const ADJECTIVES = [
   "Nimble", "Noble", "Proud", "Quick", "Quiet", "Rapid", "Royal", "Sharp",
   "Silent", "Sleek", "Smooth", "Sneaky", "Steady", "Stoic", "Strong", "Sunny",
   "Tough", "Vivid", "Wild", "Wise", "Witty", "Zesty", "Lively", "Merry",
-  "Jolly", "Frosty", "Stormy", "Sunny", "Cosmic", "Lunar", "Solar", "Mystic",
+  "Jolly", "Frosty", "Stormy", "Breezy", "Cosmic", "Lunar", "Solar", "Mystic",
   "Epic", "Prime",
 ];
 

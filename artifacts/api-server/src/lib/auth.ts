@@ -57,11 +57,15 @@ export async function upsertUserFromIdentity(identity: ExternalIdentity): Promis
     if (identity.email && identity.email !== existing.email) {
       patch.email = identity.email;
     }
-    // One-time backfill for legacy users still on a `Player_xxxxx` placeholder
-    // (or who never completed the old onboarding gate). Mark onboarding
-    // complete at the same time so the gate never fires for them again.
-    if (/^Player_/.test(existing.screenName) || existing.onboardingCompletedAt == null) {
+    // One-time backfill for legacy users still on a `Player_xxxxx` placeholder.
+    // Also stamp onboardingCompletedAt so the (now-deprecated) gate logic
+    // never trips for them again.
+    if (/^Player_/.test(existing.screenName)) {
       patch.screenName = await generateUniqueScreenName();
+      patch.onboardingCompletedAt = new Date();
+    } else if (existing.onboardingCompletedAt == null) {
+      // Returning user with a chosen name but no completion stamp (old
+      // onboarding flow). Just close the gate; don't touch their name.
       patch.onboardingCompletedAt = new Date();
     }
     if (Object.keys(patch).length > 0) {
