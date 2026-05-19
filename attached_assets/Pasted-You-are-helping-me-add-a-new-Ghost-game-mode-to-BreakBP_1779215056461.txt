@@ -1,0 +1,42 @@
+You are helping me add a new "Ghost" game mode to BreakBPM (the Win98-style 8-ball / 9-ball / practice scorer).
+
+### Feature: Ghost Mode + Aggression Toggle
+- **Game Type**: Solo 8-ball vs. an invisible "Ghost" player (no real second player).
+- **Core Rules** (keep dead simple):
+  - Full 15-ball rack, all balls legal the entire game (exactly like Practice mode).
+  - You (the only real player) shoot.
+  - Sink a ball → it counts for you (normal sunkBalls).
+  - Miss → the Ghost steals one random remaining ball (remove it from the table, increment ghostSunkBalls). Do NOT remove the 8-ball this way.
+  - Foul → no steal (fouls are already punishing).
+  - Game ends when you sink the 8-ball.
+  - Win screen shows your Balls-Per-Shot. If > 1.0, show “🎉 You BEAT THE GHOST!” otherwise “Ghost got you this time — try for >1 ball/shot next time.”
+- **New: Ghost Aggression Toggle** (this is the key addition you want)
+  - When Ghost mode is selected in SetupScreen, show a small Win98-style toggle/segmented control right below the game description:
+    • Normal (default) → Ghost steals only on pure “Miss”
+    • Hard → Ghost steals on “Miss OR Foul”
+  - Store the choice in game state as `ghostAggression: 'normal' | 'hard'`.
+  - The toggle only appears for Ghost mode (hide it for all other modes).
+  - Default to 'normal' so new players aren't overwhelmed.
+- **UI/UX requirements**:
+  - Add to GAME_TYPES in SetupScreen.tsx with label “👻 Ghost” and short description “8-ball solo vs the invisible Ghost — every miss helps the Ghost steal a ball. Beat it by averaging >1 ball per shot.”
+  - Force 1 player, hide player-count selector when Ghost is chosen.
+  - In GameScreen, show a small “Ghost: X balls” counter (next to your sunk count or in the stats bar).
+  - On miss/foul, automatically apply the ghost steal **only** if the current aggression setting allows it.
+  - Keep existing shot log, timer, BPM, and Win98 styling untouched.
+
+### Technical Constraints (follow these exactly)
+- Reuse as much existing logic as possible from Practice and 8-ball modes.
+- Make minimal, clean changes — prefer adding one small helper function over big refactors.
+- Update only these files (create new ones only if absolutely needed):
+  1. lib/gameLogic.ts → add 'ghost' to GameType, add `ghostSunkBalls` and `ghostAggression` to GameState, add a tiny helper `applyGhostMiss()`, update shot-result logic to respect the aggression toggle.
+  2. SetupScreen.tsx → add the game type option + the conditional aggression toggle UI + pass the setting when starting the game.
+  3. GameScreen.tsx (or wherever the miss/foul handlers live) → add the ghost steal logic based on the toggle.
+- Do NOT change any other files unless you explain why.
+- Keep everything TypeScript-strict and match the existing code style (no new dependencies).
+
+### Your task
+1. First, reply with a short **implementation plan** (list of exact changes per file, ~8-12 lines total).
+2. Then, after I approve the plan, implement the changes with proper commits.
+3. After implementation, test it in the dev preview and tell me if anything feels off or too punishing.
+
+Start by showing me the implementation plan only. Do not edit any files yet.
