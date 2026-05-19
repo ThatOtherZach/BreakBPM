@@ -11,7 +11,7 @@ BreakBPM tracks every ball, every shot, and your live **Balls Per Minute** — a
 - **8-Ball** — Solids vs Stripes. Full rules including Golden Break and foul-on-8.
 - **9-Ball** — Sink the 9 to win. That's it.
 - **Practice** — Solo drills with unlimited racks. Watch your BPM improve session over session.
-- **👻 Ghost (1P 8-Ball)** — Solo 8-ball vs an invisible Ghost opponent. See below.
+- **🦈 Shark (1P 8-Ball)** — Solo 8-ball vs an invisible Shark opponent. See below.
 
 ## Play anywhere, with anyone
 
@@ -33,27 +33,27 @@ Pool isn't just about who wins — it's about *how* you play. A 12 BPM game agai
 - Share code + shareable URL
 - Works on any phone, no install required
 
-## 👻 Ghost Mode
+## 🦈 Shark Mode
 
-Pick **8-Ball** and set the player count to **1** — Ghost Mode kicks in automatically.
+Pick **8-Ball** and set the player count to **1** — Shark Mode kicks in automatically.
 
-You're playing solo against an invisible opponent. All 15 balls are legal the entire game (no solids/stripes), and you win by sinking the 8 — but every miss gives the Ghost a chance to steal a ball off the table.
+You're playing solo against an invisible opponent. All 15 balls are legal the entire game (no solids/stripes), and you win by sinking the 8 — but every miss gives the Shark a chance to steal a ball off the table.
 
 **The rules:**
 
 - **Sink a ball** → it counts for you.
-- **Miss** → the Ghost steals a random remaining ball (never the 8).
-- **Foul** → no steal on Normal aggression. On Hard, the Ghost steals here too.
+- **Miss** → the Shark steals a random remaining ball (never the 8).
+- **Foul** → no steal on Normal aggression. On Hard, the Shark steals here too.
 - **Safety** → never triggers a steal. It's a valid tactical play.
-- **Only the 8 left + you miss or foul** → Ghost wins outright.
-- **Sink the 8** → game ends. You win if you averaged **more than 1 ball per shot**; otherwise the Ghost wins.
+- **Only the 8 left + you miss or foul** → Shark wins outright.
+- **Sink the 8** → game ends. You win if you averaged **more than 1 ball per shot**; otherwise the Shark wins.
 
 **Aggression toggle (set during setup):**
 
-- **Normal** — Ghost steals only on a clean miss.
-- **Hard** — Ghost steals on every miss *and* every foul.
+- **Normal** — Shark steals only on a clean miss.
+- **Hard** — Shark steals on every miss *and* every foul.
 
-Your final verdict is based on **Balls-Per-Shot** (your sinks ÷ all your shots, including misses, fouls, and safeties). Beating the Ghost means staying efficient, not just fast.
+Your final verdict is based on **Balls-Per-Shot** (your sinks ÷ all your shots, including misses, fouls, and safeties). Beating the Shark means staying efficient, not just fast.
 
 ---
 

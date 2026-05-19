@@ -7,7 +7,7 @@ import {
   getTeamLabel, ballLabel,
   SOLIDS, STRIPES, EIGHT_BALL, getLowestBall,
   saveInProgressGame, clearInProgressGame,
-  isGhostGame, applyGhostMiss,
+  isSharkGame, applySharkMiss,
 } from '../lib/gameLogic';
 import { useSaveGame, useRecordGameActivity } from '@workspace/api-client-react';
 import { FORFEIT_INACTIVITY_MS } from '../lib/forfeit';
@@ -169,9 +169,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   // automatically ended as a forfeit by the current player. Practice mode is
   // exempt (it has manual pause). Pauses suspend the timer.
   useEffect(() => {
-    // Ghost mode is solo (no opponent waiting on you) — treat it like
+    // Shark mode is solo (no opponent waiting on you) — treat it like
     // practice and skip the 60-min inactivity forfeit.
-    if (state.phase !== 'playing' || state.gameType === 'practice' || isGhostGame(state) || paused) return;
+    if (state.phase !== 'playing' || state.gameType === 'practice' || isSharkGame(state) || paused) return;
     const lastAction = state.lastActionTime ?? state.gameStartTime;
     const deadline = lastAction + FORFEIT_INACTIVITY_MS;
     const ms = deadline - Date.now();
@@ -213,7 +213,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   // session can't run forever. Practice mode is exempt (no opponent).
   useEffect(() => {
     if (state.phase !== 'playing' || paused) return;
-    if (maxGameDurationMs == null || state.gameType === 'practice' || isGhostGame(state)) return;
+    if (maxGameDurationMs == null || state.gameType === 'practice' || isSharkGame(state)) return;
     const ms = state.gameStartTime + maxGameDurationMs - Date.now();
     const fire = () => {
       forfeitedRef.current = true;
@@ -311,21 +311,21 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
     if (result.win) {
       next.phase = 'ended';
-      // Ghost mode: verdict is decided by Balls-Per-Shot.
-      //   yourSinks = every ball sunk that the Ghost didn't steal (includes the 8 you just sunk)
-      //   yourShots = every shot-log entry NOT made by the Ghost, +1 for this final winning sink
-      if (isGhostGame(next)) {
-        const ghostBalls = next.ghostSunkBalls ?? [];
-        const yourSinks = next.sunkBalls.filter(b => !ghostBalls.includes(b)).length;
-        const yourShots = next.shotLog.filter(e => e.playerName !== '👻 Ghost').length + 1;
+      // Shark mode: verdict is decided by Balls-Per-Shot.
+      //   yourSinks = every ball sunk that the Shark didn't steal (includes the 8 you just sunk)
+      //   yourShots = every shot-log entry NOT made by the Shark, +1 for this final winning sink
+      if (isSharkGame(next)) {
+        const sharkBalls = next.sharkSunkBalls ?? [];
+        const yourSinks = next.sunkBalls.filter(b => !sharkBalls.includes(b)).length;
+        const yourShots = next.shotLog.filter(e => e.playerName !== '🦈 Shark').length + 1;
         const bps = yourShots > 0 ? yourSinks / yourShots : 0;
         const bpsStr = bps.toFixed(2);
         if (bps > 1) {
           next.winner = cur.name;
-          next.winMessage = `🎉 You BEAT THE GHOST! (${bpsStr} balls/shot)`;
+          next.winMessage = `🎉 You BEAT THE SHARK! (${bpsStr} balls/shot)`;
         } else {
-          next.winner = '👻 Ghost';
-          next.winMessage = `Ghost got you this time — aim for >1 ball/shot next time. (${bpsStr} balls/shot)`;
+          next.winner = '🦈 Shark';
+          next.winMessage = `Shark got you this time — aim for >1 ball/shot next time. (${bpsStr} balls/shot)`;
         }
       } else {
         next.winner = cur.name;
@@ -372,8 +372,8 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       const groupCleared = myGroup.every(b => state.sunkBalls.includes(b));
       if (groupCleared) {
         const winnerIdx = state.players.findIndex((_, i) => i !== state.currentPlayerIndex);
-        const winnerName = isGhostGame(state)
-          ? '👻 Ghost'
+        const winnerName = isSharkGame(state)
+          ? '🦈 Shark'
           : (winnerIdx >= 0 ? state.players[winnerIdx].name : 'Opponent');
         const entry: ShotLogEntry = {
           type: 'lose', playerName: cur.name,
@@ -408,12 +408,12 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       shotLog: [...state.shotLog, entry],
     };
 
-    // Ghost mode: after recording the player's miss/foul, let the Ghost
+    // Shark mode: after recording the player's miss/foul, let the Shark
     // steal a random ball (Normal = miss only; Hard = miss + foul). This
     // may also end the game if the only ball left was the 8.
     // Safeties never trigger a steal — they're a valid tactical play.
-    if (isGhostGame(next) && (type === 'miss' || type === 'foul')) {
-      next = applyGhostMiss(next, type);
+    if (isSharkGame(next) && (type === 'miss' || type === 'foul')) {
+      next = applySharkMiss(next, type);
     }
 
     // BPM doesn't change on miss/foul/safety (no balls sunk) — but freeze the display
@@ -563,16 +563,16 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           {state.sunkBalls.length === 0
             ? <span className="hud-terminal-idle">&gt;awaiting first shot</span>
             : state.sunkBalls.map((b, i) => {
-              const stolenByGhost = (state.ghostSunkBalls ?? []).includes(b);
+              const stolenByShark = (state.sharkSunkBalls ?? []).includes(b);
               return (
                 <span
                   key={i}
                   className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}`}
                   style={{
                     '--chip-color': BALL_COLORS[b],
-                    ...(stolenByGhost ? { opacity: 0.45, textDecoration: 'line-through' } : {}),
+                    ...(stolenByShark ? { opacity: 0.45, textDecoration: 'line-through' } : {}),
                   } as React.CSSProperties}
-                  title={stolenByGhost ? 'Stolen by the Ghost' : undefined}
+                  title={stolenByShark ? 'Stolen by the Shark' : undefined}
                 >
                   {b}
                 </span>
@@ -581,17 +581,17 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           }
         </div>
 
-        {/* Ghost score — only shown in ghost mode */}
-        {isGhostGame(state) && (
+        {/* Shark score — only shown in shark mode */}
+        {isSharkGame(state) && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '4px 8px', marginTop: 4,
             background: '#1a0a2e', border: '1px solid #5a2a8a',
             fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
           }}>
-            <span>👻 GHOST</span>
+            <img src="/shark-icon.png" alt="" style={{ width: 16, height: 16, imageRendering: "pixelated" }} /><span>SHARK</span>
             <span style={{ marginLeft: 'auto', fontWeight: 'bold' }}>
-              {(state.ghostSunkBalls ?? []).length} stolen
+              {(state.sharkSunkBalls ?? []).length} stolen
             </span>
           </div>
         )}
@@ -664,7 +664,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 </button>
               ))}
             </div>
-            {state.gameType === '8ball' && !state.teamAssigned && !isGhostGame(state) && (
+            {state.gameType === '8ball' && !state.teamAssigned && !isSharkGame(state) && (
               <div className="notice" style={{ marginTop: 6 }}>
                 <span>💡</span>
                 <span style={{ fontSize: 11 }}>First ball sunk assigns Solids (1-7) or Stripes (9-15)</span>

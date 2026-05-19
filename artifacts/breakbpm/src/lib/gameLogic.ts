@@ -17,7 +17,7 @@ export interface ShotLogEntry {
   note?: string;
 }
 
-export type GhostAggression = 'normal' | 'hard';
+export type SharkAggression = 'normal' | 'hard';
 
 export interface GameState {
   phase: 'setup' | 'playing' | 'ended';
@@ -36,17 +36,17 @@ export interface GameState {
   shareCode: string;
   teamAssigned: boolean;
   /**
-   * Ghost mode (8-ball + 1 player). Presence of `ghostAggression` is the
-   * canonical signal that this is a ghost game; `ghostSunkBalls` tracks
+   * Shark mode (8-ball + 1 player). Presence of `sharkAggression` is the
+   * canonical signal that this is a shark game; `sharkSunkBalls` tracks
    * which balls the invisible opponent has stolen.
    */
-  ghostAggression?: GhostAggression;
-  ghostSunkBalls?: number[];
+  sharkAggression?: SharkAggression;
+  sharkSunkBalls?: number[];
 }
 
-/** True when this is the solo-vs-Ghost flavor of 8-ball. */
-export function isGhostGame(state: Pick<GameState, 'gameType' | 'players' | 'ghostAggression'>): boolean {
-  return state.gameType === '8ball' && state.players.length === 1 && state.ghostAggression !== undefined;
+/** True when this is the solo-vs-Shark flavor of 8-ball. */
+export function isSharkGame(state: Pick<GameState, 'gameType' | 'players' | 'sharkAggression'>): boolean {
+  return state.gameType === '8ball' && state.players.length === 1 && state.sharkAggression !== undefined;
 }
 
 export const SOLIDS = [1, 2, 3, 4, 5, 6, 7];
@@ -81,7 +81,7 @@ export function getLegalBalls(
   }
 
   // 8-ball
-  // Ghost mode (8-ball solo): all 15 balls are legal the entire game, like
+  // Shark mode (8-ball solo): all 15 balls are legal the entire game, like
   // practice. No solids/stripes assignment ever happens.
   if (gameType === '8ball' && players.length === 1) {
     return remaining;
@@ -129,8 +129,8 @@ export function checkSinkResult(
     const newSunk = [...sunkBalls, ballSunk];
 
     if (ballSunk === EIGHT_BALL) {
-      // Ghost mode: sinking the 8 ends the game. Win/lose verdict is decided
-      // in GameScreen based on Balls-Per-Shot (>1 = beat the Ghost). Here we
+      // Shark mode: sinking the 8 ends the game. Win/lose verdict is decided
+      // in GameScreen based on Balls-Per-Shot (>1 = beat the Shark). Here we
       // just signal that the game is over.
       if (players.length === 1) {
         return { win: true, lose: false, message: '', switchTurn: false };
@@ -168,7 +168,7 @@ export function shouldAssignTeams(
   ballSunk: number
 ): boolean {
   if (gameType !== '8ball') return false;
-  // Ghost mode (solo 8-ball): no solids/stripes — all balls are legal the entire game.
+  // Shark mode (solo 8-ball): no solids/stripes — all balls are legal the entire game.
   if (players.length === 1) return false;
   if (teamAssigned) return false;
   if (ballSunk === EIGHT_BALL) return false;
@@ -176,38 +176,38 @@ export function shouldAssignTeams(
 }
 
 /**
- * Ghost steals a random remaining non-8 ball after a player miss/foul,
+ * Shark steals a random remaining non-8 ball after a player miss/foul,
  * per the current aggression setting:
  *   - 'normal' → steal only on 'miss'
  *   - 'hard'   → steal on 'miss' or 'foul'
  *
- * The stolen ball is appended to BOTH `ghostSunkBalls` (Ghost's score)
+ * The stolen ball is appended to BOTH `sharkSunkBalls` (Shark's score)
  * and `sunkBalls` (so the ball selector grays it out and the rack stays
  * consistent). A shot-log entry is added so History shows what happened.
  *
- * Special case: if the only ball left on the table is the 8, the Ghost
+ * Special case: if the only ball left on the table is the 8, the Shark
  * wins the game outright instead of stealing — the player can no longer
  * recover.
  *
  * Returns the state unchanged if the aggression setting blocks this
  * event type, or if nothing is available to steal.
  */
-export function applyGhostMiss(
+export function applySharkMiss(
   state: GameState,
   eventType: 'miss' | 'foul',
 ): GameState {
-  if (!isGhostGame(state)) return state;
-  const allowed = state.ghostAggression === 'hard' || eventType === 'miss';
+  if (!isSharkGame(state)) return state;
+  const allowed = state.sharkAggression === 'hard' || eventType === 'miss';
   if (!allowed) return state;
 
   const remaining = getRemainingBalls(state.sunkBalls, '8ball');
-  const ghostSunk = state.ghostSunkBalls ?? [];
-  const candidates = remaining.filter(b => b !== EIGHT_BALL && !ghostSunk.includes(b));
+  const sharkSunk = state.sharkSunkBalls ?? [];
+  const candidates = remaining.filter(b => b !== EIGHT_BALL && !sharkSunk.includes(b));
 
   const now = Date.now();
   const gameTime = now - state.gameStartTime;
 
-  // Only the 8 remains and the player just missed/fouled → Ghost wins.
+  // Only the 8 remains and the player just missed/fouled → Shark wins.
   if (candidates.length === 0 && remaining.includes(EIGHT_BALL)) {
     const reason = eventType === 'foul' ? 'fouled on the 8-ball' : 'missed the 8-ball';
     const entry: ShotLogEntry = {
@@ -215,13 +215,13 @@ export function applyGhostMiss(
       playerName: state.players[0]?.name ?? 'Player',
       timestamp: now,
       gameTime,
-      note: `Ghost wins — ${reason}`,
+      note: `Shark wins — ${reason}`,
     };
     return {
       ...state,
       phase: 'ended',
-      winner: '👻 Ghost',
-      winMessage: `Ghost wins — you ${reason}.`,
+      winner: '🦈 Shark',
+      winMessage: `Shark wins — you ${reason}.`,
       lastActionTime: now,
       shotLog: [...state.shotLog, entry],
     };
@@ -230,21 +230,21 @@ export function applyGhostMiss(
   if (candidates.length === 0) return state;
 
   const stolen = candidates[Math.floor(Math.random() * candidates.length)];
-  const ghostEntry: ShotLogEntry = {
+  const sharkEntry: ShotLogEntry = {
     type: 'sink',
-    playerName: '👻 Ghost',
+    playerName: '🦈 Shark',
     ball: stolen,
     timestamp: now,
     gameTime,
-    note: `Ghost steals ball ${stolen}`,
+    note: `Shark steals ball ${stolen}`,
   };
 
   return {
     ...state,
     sunkBalls: [...state.sunkBalls, stolen],
-    ghostSunkBalls: [...ghostSunk, stolen],
+    sharkSunkBalls: [...sharkSunk, stolen],
     lastActionTime: now,
-    shotLog: [...state.shotLog, ghostEntry],
+    shotLog: [...state.shotLog, sharkEntry],
   };
 }
 
@@ -315,8 +315,8 @@ export function encodeGameState(state: GameState): string {
       sc: state.shareCode,
       ta: state.teamAssigned,
       sl: state.shotLog,
-      ga: state.ghostAggression,
-      gsb: state.ghostSunkBalls,
+      ga: state.sharkAggression,
+      gsb: state.sharkSunkBalls,
     };
     return btoa(JSON.stringify(compact));
   } catch {
@@ -341,8 +341,8 @@ export function decodeGameState(encoded: string): Partial<GameState> | null {
       shareCode: d.sc,
       teamAssigned: d.ta,
       shotLog: Array.isArray(d.sl) ? d.sl : [],
-      ghostAggression: d.ga,
-      ghostSunkBalls: Array.isArray(d.gsb) ? d.gsb : undefined,
+      sharkAggression: d.ga,
+      sharkSunkBalls: Array.isArray(d.gsb) ? d.gsb : undefined,
     };
   } catch {
     return null;

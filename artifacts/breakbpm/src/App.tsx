@@ -8,7 +8,7 @@ import AboutScreen from "./components/AboutScreen";
 import AccountScreen from "./components/AccountScreen";
 import PassesScreen from "./components/PassesScreen";
 import { SignInPage, SignUpPage } from "./components/SignInPage";
-import type { GameType, GameState, Player, GhostAggression } from "./lib/gameLogic";
+import type { GameType, GameState, Player, SharkAggression } from "./lib/gameLogic";
 import {
   generateShareCode,
   decodeGameState,
@@ -35,12 +35,12 @@ function loadStateFromUrl(): Partial<GameState> | null {
 function createInitialGameState(
   gameType: GameType,
   players: Player[],
-  ghostAggression?: GhostAggression,
+  sharkAggression?: SharkAggression,
 ): GameState {
-  // Ghost mode is solo 8-ball with an opponent steal mechanic. Only seed
-  // the ghost fields when the combo actually matches — keeps state shape
-  // clean for the 99% of games that aren't ghost.
-  const isGhost = gameType === "8ball" && players.length === 1 && ghostAggression !== undefined;
+  // Shark mode is solo 8-ball with an opponent steal mechanic. Only seed
+  // the shark fields when the combo actually matches — keeps state shape
+  // clean for the 99% of games that aren't shark.
+  const isShark = gameType === "8ball" && players.length === 1 && sharkAggression !== undefined;
   return {
     phase: "playing",
     gameType,
@@ -55,8 +55,8 @@ function createInitialGameState(
     winMessage: "",
     shareCode: generateShareCode(),
     teamAssigned: players.some((p) => p.team !== undefined),
-    ghostAggression: isGhost ? ghostAggression : undefined,
-    ghostSunkBalls: isGhost ? [] : undefined,
+    sharkAggression: isShark ? sharkAggression : undefined,
+    sharkSunkBalls: isShark ? [] : undefined,
   };
 }
 
@@ -122,9 +122,9 @@ function MainApp() {
         winMessage: restored.winMessage ?? "",
         shareCode: restored.shareCode ?? generateShareCode(),
         teamAssigned: restored.teamAssigned ?? false,
-        // Preserve ghost identity across legacy ?state= share links.
-        ghostAggression: restored.ghostAggression,
-        ghostSunkBalls: restored.ghostSunkBalls,
+        // Preserve shark identity across legacy ?state= share links.
+        sharkAggression: restored.sharkAggression,
+        sharkSunkBalls: restored.sharkSunkBalls,
       });
       setView("game");
     }
@@ -135,12 +135,12 @@ function MainApp() {
     players: Player[],
     gameId: string | null,
     maxMs: number | null,
-    ghostAggression?: GhostAggression,
+    sharkAggression?: SharkAggression,
   ) {
     // Explicit fresh start — wipe any stale in-progress checkpoint so we
     // don't immediately resurrect the previous game on the next mount.
     clearInProgressGame();
-    setGameState(createInitialGameState(gameType, players, ghostAggression));
+    setGameState(createInitialGameState(gameType, players, sharkAggression));
     setServerGameId(gameId);
     setMaxGameDurationMs(maxMs);
     setInitialPausedDuration(0);
