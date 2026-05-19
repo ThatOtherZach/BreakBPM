@@ -17,6 +17,7 @@ import {
 } from "./lib/gameLogic";
 import { queryClient } from "./lib/queryClient";
 import { AuthProvider, useAuth } from "./lib/authClient";
+import { useAbandonGame } from "@workspace/api-client-react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -69,6 +70,7 @@ function MainApp() {
   const [, setLocation] = useLocation();
   const [view, setView] = useState<AppView>("setup");
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const abandonGame = useAbandonGame();
   // Server-issued in-progress game id (signed-in users only). Held outside
   // the URL-shared GameState so it isn't leaked via share links.
   const [serverGameId, setServerGameId] = useState<string | null>(null);
@@ -148,6 +150,9 @@ function MainApp() {
   }
   function handleNewGame() {
     clearInProgressGame();
+    if (serverGameId) {
+      abandonGame.mutate({ data: { gameId: serverGameId } });
+    }
     setGameState(null);
     setServerGameId(null);
     setMaxGameDurationMs(null);
