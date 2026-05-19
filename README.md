@@ -2,7 +2,7 @@
 
 **A retro Windows 98-style pool & billiards scorer with live Balls-Per-Minute (BPM) tracking.**
 
-From the opening break to the final 8-ball — log every shot, watch your pace, play with friends via 4-digit code or shareable link, or grind solo practice.
+From the opening break to the final 8-ball — log every shot, watch your pace, play with friends via 4-digit code or shareable link, or grind solo practice with **Shark Mode** — the ultimate solo 8-ball challenge where an invisible predator steals balls on your mistakes.
 
 > *"BreakBPM — the score that starts at the break and ends when you win."*
 
@@ -22,7 +22,7 @@ A fully functional **React + Vite + TypeScript** web app styled like genuine 199
 **Game Modes**
 - **8-Ball**: Full rules with Solids vs Stripes, Golden Break, foul-on-8 loss
 - **9-Ball**: Lowest ball first, sink the 9 to win
-- **Shark Mode**: Solo 8-ball vs the invisible Shark. Miss and it steals a ball (Normal: only on miss | Hard: miss or foul). Sink the 8-ball with >1.0 balls per shot to outswim it. (A "shark" is also what you call a pool player hiding their true skill 🦈)
+- **Shark Mode** 🦈: Solo 8-ball vs the invisible Shark. Miss (or foul on Hard) and it steals a random ball. Sink the 8-ball with >1.0 balls per shot to outswim it. (A "shark" is also what you call a pool player hiding their true skill level.)
 - **Practice Mode**: Solo drills with no win conditions
 
 **Gameplay**
