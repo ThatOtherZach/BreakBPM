@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { GameType, GameState, Player } from '../lib/gameLogic';
+import type { GameType, GameState, Player, GhostAggression } from '../lib/gameLogic';
 import ballImg from '/eightball_nobg.png';
 import Navbar from './Navbar';
 import {
@@ -18,7 +18,7 @@ const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
 const DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
 
 interface Props {
-  onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null) => void;
+  onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, ghostAggression?: GhostAggression) => void;
   /** Resume an existing game from the server-side in-progress snapshot. */
   onResume: (state: GameState, serverGameId: string | null, maxGameDurationMs: number | null, pausedDuration: number) => void;
   onAbout: () => void;
@@ -42,6 +42,9 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
   const [autoTeam, setAutoTeam] = useState(true);
   const [manualTeams, setManualTeams] = useState<('solids' | 'stripes' | '')[]>(['', '', '', '']);
   const [joinCode, setJoinCode] = useState('');
+  // Ghost mode (8-ball + 1P) aggression toggle. Default to 'normal' so new
+  // players aren't overwhelmed. Only sent to onStart when the combo matches.
+  const [ghostAggression, setGhostAggression] = useState<GhostAggression>('normal');
 
   function handleResume() {
     const offered = resumable.data?.game;
@@ -104,6 +107,10 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
       winMessage: gs.winMessage ?? '',
       shareCode: gs.shareCode ?? '',
       teamAssigned: gs.teamAssigned ?? false,
+      // Preserve ghost identity across resume — otherwise a restored Ghost
+      // game silently degrades into a non-ghost solo 8-ball (no steals).
+      ghostAggression: gs.ghostAggression,
+      ghostSunkBalls: gs.ghostSunkBalls,
     };
     // Seed localStorage so the next refresh resumes from local too.
     saveInProgressGame({
@@ -141,19 +148,31 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
 
   const isPractice = gameType === 'practice';
   const count = isPractice ? 1 : playerCount;
+  // Ghost mode is the 1-player flavor of 8-ball — no solids/stripes,
+  // every miss/foul lets the invisible Ghost steal a ball.
+  const isGhost = gameType === '8ball' && playerCount === 1;
 
   async function handleStart() {
     setStartError('');
     const players: Player[] = Array.from({ length: count }, (_, i) => {
       const p: Player = { id: i, name: names[i] || DEFAULT_NAMES[i] };
-      if (gameType === '8ball' && !autoTeam && manualTeams[i]) {
+      // Manual team assignment is only relevant for multiplayer 8-ball.
+      if (gameType === '8ball' && !isGhost && !autoTeam && manualTeams[i]) {
         p.team = manualTeams[i] as 'solids' | 'stripes';
       }
       return p;
     });
     try {
+      // Server enum only knows '8ball'/'9ball'/'practice'; ghost is a
+      // client-side variant of 8-ball, so the API call stays as '8ball'.
       const res = await startGame.mutateAsync({ data: { gameType } });
-      onStart(gameType, players, res.gameId ?? null, res.maxGameDurationMs ?? null);
+      onStart(
+        gameType,
+        players,
+        res.gameId ?? null,
+        res.maxGameDurationMs ?? null,
+        isGhost ? ghostAggression : undefined,
+      );
     } catch (e: unknown) {
       const err = e as { data?: { error?: string } };
       setStartError(err?.data?.error ?? (e instanceof Error ? e.message : 'Could not start game'));
@@ -296,7 +315,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
                   placeholder={DEFAULT_NAMES[i]}
                   maxLength={16}
                 />
-                {gameType === '8ball' && !autoTeam && (
+                {gameType === '8ball' && !isGhost && !autoTeam && (
                   <select
                     className="input"
                     style={{ width: 'auto', minWidth: 110, flex: '0 0 auto' }}
@@ -312,7 +331,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
             ))}
           </div>
 
-          {gameType === '8ball' && !isPractice && (
+          {gameType === '8ball' && !isPractice && !isGhost && (
             <div style={{ marginTop: 10 }}>
               <div className="menu-section-label">▶ TEAM ASSIGNMENT</div>
               <label className="checkbox-label">
@@ -331,6 +350,42 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           <div className="notice">
             <span>ℹ</span>
             <span>Solo mode — no win conditions. Track every ball and watch your BPM improve.</span>
+          </div>
+        )}
+
+        {isGhost && (
+          <div>
+            <div className="menu-section-label">▶ 👻 GHOST MODE</div>
+            <div className="notice" style={{ marginBottom: 8 }}>
+              <span>👻</span>
+              <span style={{ fontSize: 11 }}>
+                Solo 8-ball vs the invisible Ghost. All 15 balls are legal — every miss
+                helps the Ghost steal a ball. Beat it by averaging &gt; 1 ball per shot.
+              </span>
+            </div>
+            <div className="menu-section-label" style={{ marginTop: 4 }}>▶ GHOST AGGRESSION</div>
+            <div className="flex gap-1">
+              <button
+                className={`btn ${ghostAggression === 'normal' ? 'selected' : ''}`}
+                style={{ flex: 1, fontWeight: 'bold', minHeight: 40 }}
+                onClick={() => setGhostAggression('normal')}
+              >
+                Normal
+                <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>
+                  Steals on miss
+                </span>
+              </button>
+              <button
+                className={`btn ${ghostAggression === 'hard' ? 'selected' : ''}`}
+                style={{ flex: 1, fontWeight: 'bold', minHeight: 40 }}
+                onClick={() => setGhostAggression('hard')}
+              >
+                Hard
+                <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>
+                  Steals on miss + foul
+                </span>
+              </button>
+            </div>
           </div>
         )}
 

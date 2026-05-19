@@ -8,7 +8,7 @@ import AboutScreen from "./components/AboutScreen";
 import AccountScreen from "./components/AccountScreen";
 import PassesScreen from "./components/PassesScreen";
 import { SignInPage, SignUpPage } from "./components/SignInPage";
-import type { GameType, GameState, Player } from "./lib/gameLogic";
+import type { GameType, GameState, Player, GhostAggression } from "./lib/gameLogic";
 import {
   generateShareCode,
   decodeGameState,
@@ -32,7 +32,15 @@ function loadStateFromUrl(): Partial<GameState> | null {
   return null;
 }
 
-function createInitialGameState(gameType: GameType, players: Player[]): GameState {
+function createInitialGameState(
+  gameType: GameType,
+  players: Player[],
+  ghostAggression?: GhostAggression,
+): GameState {
+  // Ghost mode is solo 8-ball with an opponent steal mechanic. Only seed
+  // the ghost fields when the combo actually matches — keeps state shape
+  // clean for the 99% of games that aren't ghost.
+  const isGhost = gameType === "8ball" && players.length === 1 && ghostAggression !== undefined;
   return {
     phase: "playing",
     gameType,
@@ -47,6 +55,8 @@ function createInitialGameState(gameType: GameType, players: Player[]): GameStat
     winMessage: "",
     shareCode: generateShareCode(),
     teamAssigned: players.some((p) => p.team !== undefined),
+    ghostAggression: isGhost ? ghostAggression : undefined,
+    ghostSunkBalls: isGhost ? [] : undefined,
   };
 }
 
@@ -112,16 +122,25 @@ function MainApp() {
         winMessage: restored.winMessage ?? "",
         shareCode: restored.shareCode ?? generateShareCode(),
         teamAssigned: restored.teamAssigned ?? false,
+        // Preserve ghost identity across legacy ?state= share links.
+        ghostAggression: restored.ghostAggression,
+        ghostSunkBalls: restored.ghostSunkBalls,
       });
       setView("game");
     }
   }, []);
 
-  function handleStart(gameType: GameType, players: Player[], gameId: string | null, maxMs: number | null) {
+  function handleStart(
+    gameType: GameType,
+    players: Player[],
+    gameId: string | null,
+    maxMs: number | null,
+    ghostAggression?: GhostAggression,
+  ) {
     // Explicit fresh start — wipe any stale in-progress checkpoint so we
     // don't immediately resurrect the previous game on the next mount.
     clearInProgressGame();
-    setGameState(createInitialGameState(gameType, players));
+    setGameState(createInitialGameState(gameType, players, ghostAggression));
     setServerGameId(gameId);
     setMaxGameDurationMs(maxMs);
     setInitialPausedDuration(0);

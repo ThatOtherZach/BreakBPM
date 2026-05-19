@@ -17,6 +17,8 @@ export interface ShotLogEntry {
   note?: string;
 }
 
+export type GhostAggression = 'normal' | 'hard';
+
 export interface GameState {
   phase: 'setup' | 'playing' | 'ended';
   gameType: GameType;
@@ -33,6 +35,18 @@ export interface GameState {
   winMessage: string;
   shareCode: string;
   teamAssigned: boolean;
+  /**
+   * Ghost mode (8-ball + 1 player). Presence of `ghostAggression` is the
+   * canonical signal that this is a ghost game; `ghostSunkBalls` tracks
+   * which balls the invisible opponent has stolen.
+   */
+  ghostAggression?: GhostAggression;
+  ghostSunkBalls?: number[];
+}
+
+/** True when this is the solo-vs-Ghost flavor of 8-ball. */
+export function isGhostGame(state: Pick<GameState, 'gameType' | 'players' | 'ghostAggression'>): boolean {
+  return state.gameType === '8ball' && state.players.length === 1 && state.ghostAggression !== undefined;
 }
 
 export const SOLIDS = [1, 2, 3, 4, 5, 6, 7];
@@ -67,6 +81,11 @@ export function getLegalBalls(
   }
 
   // 8-ball
+  // Ghost mode (8-ball solo): all 15 balls are legal the entire game, like
+  // practice. No solids/stripes assignment ever happens.
+  if (gameType === '8ball' && players.length === 1) {
+    return remaining;
+  }
   // The 8-ball is always a legal tap until it's sunk — the game logic handles
   // the consequence (loss or win) based on context. Never lock it out in the UI.
   if (!currentPlayer.team) {
@@ -110,6 +129,13 @@ export function checkSinkResult(
     const newSunk = [...sunkBalls, ballSunk];
 
     if (ballSunk === EIGHT_BALL) {
+      // Ghost mode: sinking the 8 ends the game. Win/lose verdict is decided
+      // in GameScreen based on Balls-Per-Shot (>1 = beat the Ghost). Here we
+      // just signal that the game is over.
+      if (players.length === 1) {
+        return { win: true, lose: false, message: '', switchTurn: false };
+      }
+
       // Golden Break: 8-ball sunk as the very first ball on the break → instant win
       if (sunkBalls.length === 0) {
         return { win: true, lose: false, message: `GOLDEN BREAK! ${currentPlayer.name} sinks the 8 on the break — WINNER!`, switchTurn: false };
@@ -142,9 +168,84 @@ export function shouldAssignTeams(
   ballSunk: number
 ): boolean {
   if (gameType !== '8ball') return false;
+  // Ghost mode (solo 8-ball): no solids/stripes — all balls are legal the entire game.
+  if (players.length === 1) return false;
   if (teamAssigned) return false;
   if (ballSunk === EIGHT_BALL) return false;
   return true;
+}
+
+/**
+ * Ghost steals a random remaining non-8 ball after a player miss/foul,
+ * per the current aggression setting:
+ *   - 'normal' → steal only on 'miss'
+ *   - 'hard'   → steal on 'miss' or 'foul'
+ *
+ * The stolen ball is appended to BOTH `ghostSunkBalls` (Ghost's score)
+ * and `sunkBalls` (so the ball selector grays it out and the rack stays
+ * consistent). A shot-log entry is added so History shows what happened.
+ *
+ * Special case: if the only ball left on the table is the 8, the Ghost
+ * wins the game outright instead of stealing — the player can no longer
+ * recover.
+ *
+ * Returns the state unchanged if the aggression setting blocks this
+ * event type, or if nothing is available to steal.
+ */
+export function applyGhostMiss(
+  state: GameState,
+  eventType: 'miss' | 'foul',
+): GameState {
+  if (!isGhostGame(state)) return state;
+  const allowed = state.ghostAggression === 'hard' || eventType === 'miss';
+  if (!allowed) return state;
+
+  const remaining = getRemainingBalls(state.sunkBalls, '8ball');
+  const ghostSunk = state.ghostSunkBalls ?? [];
+  const candidates = remaining.filter(b => b !== EIGHT_BALL && !ghostSunk.includes(b));
+
+  const now = Date.now();
+  const gameTime = now - state.gameStartTime;
+
+  // Only the 8 remains and the player just missed/fouled → Ghost wins.
+  if (candidates.length === 0 && remaining.includes(EIGHT_BALL)) {
+    const reason = eventType === 'foul' ? 'fouled on the 8-ball' : 'missed the 8-ball';
+    const entry: ShotLogEntry = {
+      type: 'lose',
+      playerName: state.players[0]?.name ?? 'Player',
+      timestamp: now,
+      gameTime,
+      note: `Ghost wins — ${reason}`,
+    };
+    return {
+      ...state,
+      phase: 'ended',
+      winner: '👻 Ghost',
+      winMessage: `Ghost wins — you ${reason}.`,
+      lastActionTime: now,
+      shotLog: [...state.shotLog, entry],
+    };
+  }
+
+  if (candidates.length === 0) return state;
+
+  const stolen = candidates[Math.floor(Math.random() * candidates.length)];
+  const ghostEntry: ShotLogEntry = {
+    type: 'sink',
+    playerName: '👻 Ghost',
+    ball: stolen,
+    timestamp: now,
+    gameTime,
+    note: `Ghost steals ball ${stolen}`,
+  };
+
+  return {
+    ...state,
+    sunkBalls: [...state.sunkBalls, stolen],
+    ghostSunkBalls: [...ghostSunk, stolen],
+    lastActionTime: now,
+    shotLog: [...state.shotLog, ghostEntry],
+  };
 }
 
 export function assignTeams(
@@ -214,6 +315,8 @@ export function encodeGameState(state: GameState): string {
       sc: state.shareCode,
       ta: state.teamAssigned,
       sl: state.shotLog,
+      ga: state.ghostAggression,
+      gsb: state.ghostSunkBalls,
     };
     return btoa(JSON.stringify(compact));
   } catch {
@@ -238,6 +341,8 @@ export function decodeGameState(encoded: string): Partial<GameState> | null {
       shareCode: d.sc,
       teamAssigned: d.ta,
       shotLog: Array.isArray(d.sl) ? d.sl : [],
+      ghostAggression: d.ga,
+      ghostSunkBalls: Array.isArray(d.gsb) ? d.gsb : undefined,
     };
   } catch {
     return null;
