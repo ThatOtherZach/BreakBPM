@@ -377,7 +377,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
       {/* Status bar */}
       <div className="statusbar">
         <div className="statusbar-item" style={{ flex: 1 }}>READY</div>
-        <div className="statusbar-item">BREAKBPM SYS v1.0</div>
+        <div className="statusbar-item"><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v1.0</a></div>
       </div>
     </div>
   );
