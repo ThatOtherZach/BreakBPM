@@ -511,7 +511,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             <div className="hud-right-row">
               <span className="hud-meta-label">TIME</span>
               <span className={`hud-timer${paused ? ' hud-timer-paused' : ''}`}>{formatTime(dispTime)}</span>
-              <span className="hud-timer-indicator">{paused ? '⏸' : '▶'}</span>
+              <span className="hud-timer-indicator">{paused ? '⏸️' : '▶️'}</span>
             </div>
             <div className="hud-right-row" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span className="hud-meta-label">CODE</span>
@@ -626,7 +626,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             <button className="btn btn-big" onClick={() => turnAction('miss')}><img src="/miss-icon.png" alt="Miss" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Miss</button>
             <button className="btn btn-big btn-danger" onClick={() => turnAction('foul', 'Ball to opponent')}><img src="/foul-icon.png" alt="Foul" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Foul</button>
             {state.gameType === 'practice'
-              ? <button className={`btn btn-big${paused ? ' btn-primary' : ''}`} onClick={handlePause}>{paused ? '▶ Resume' : '⏸ Pause'}</button>
+              ? <button className={`btn btn-big${paused ? ' btn-primary' : ''}`} onClick={handlePause}>{paused ? '▶️ Resume' : '⏸️ Pause'}</button>
               : <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')}><img src="/safety-icon.png" alt="Safety" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Safety</button>
             }
             <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}><img src="/undo-icon.png" alt="Undo" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Undo</button>
