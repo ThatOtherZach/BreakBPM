@@ -390,7 +390,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           <div>
             <div className="menu-section-label">▶ SHARK MODE</div>
             <div className="notice" style={{ marginBottom: 8 }}>
-              <span><img src="/shark-icon.png" alt="Shark" style={{ width: 20, height: 'auto', imageRendering: 'pixelated' }} /></span>
+              <span><img src="/shark-icon.png" alt="Shark" style={{ width: 30, height: 'auto', imageRendering: 'pixelated' }} /></span>
               <span style={{ fontSize: 11 }}>
                 Solo 8-ball vs the invisible Shark. Your first sink locks in solids or
                 stripes; the other group goes to the Shark. Clear your group and sink
