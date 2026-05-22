@@ -182,9 +182,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
                 EMAIL — <span style={{ color: "#000" }}>{account.email}</span>
               </div>
             )}
-            <div style={{ fontSize: 11, color: "#444", wordBreak: "break-all", overflowWrap: "anywhere" }}>
-              ID — <code style={{ fontSize: 10 }}>{account.id}</code>
-            </div>
           </div>
         </div>
 
