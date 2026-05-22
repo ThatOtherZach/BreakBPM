@@ -395,7 +395,6 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           </div>
         )}
 
-        {isShark && <hr className="sep" />}
         {isShark && (
           <div>
             <div className="menu-section-label">▶ SHARK MODE</div>
