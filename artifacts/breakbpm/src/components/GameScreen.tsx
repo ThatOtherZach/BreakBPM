@@ -577,7 +577,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             <div className="hud-right-row">
               <span className="hud-meta-label">TIME</span>
               <span className={`hud-timer${paused ? ' hud-timer-paused' : ''}`}>{formatTime(dispTime)}</span>
-              <span className="hud-timer-indicator">{paused ? '⏸️' : '▶️'}</span>
             </div>
             <div className="hud-right-row" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span className="hud-meta-label">CODE</span>
