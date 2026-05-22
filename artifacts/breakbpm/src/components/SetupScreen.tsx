@@ -279,7 +279,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
               <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleResume}>
                 {degraded ? '▶ Resume anyway' : '▶ Resume'}
               </button>
-              <button className="btn" style={{ flex: 1 }} onClick={handleDiscardResume} disabled={abandonGame.isPending}>
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleDiscardResume} disabled={abandonGame.isPending}>
                 {abandonGame.isPending ? '…' : 'Start fresh'}
               </button>
             </div>
