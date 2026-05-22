@@ -317,7 +317,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
         </div>
 
         {/* Player count */}
-        {!isPractice && <hr className="sep" />}
+        {!isPractice && <hr className="sep mt-[1px] mb-[1px]" />}
         {!isPractice && (
           <div>
             <div className="flex gap-1">
