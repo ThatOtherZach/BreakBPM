@@ -388,7 +388,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
 
         {isShark && (
           <div>
-            <div className="menu-section-label">▶ 🦈 SHARK MODE</div>
+            <div className="menu-section-label">▶ SHARK MODE</div>
             <div className="notice" style={{ marginBottom: 8 }}>
               <span>🦈</span>
               <span style={{ fontSize: 11 }}>
