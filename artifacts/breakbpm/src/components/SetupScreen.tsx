@@ -401,7 +401,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
               >
                 Normal
                 <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>
-                  Steals on miss
+                  Steals on foul
                 </span>
               </button>
               <button

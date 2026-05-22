@@ -224,7 +224,7 @@ export function resolveSharkPick(state: GameState, ball: number): GameState {
 /**
  * Marks a Shark sink as pending after a player miss/foul, per the current
  * aggression setting:
- *   - 'normal' → trigger on 'miss' only
+ *   - 'normal' → trigger on 'foul' only
  *   - 'hard'   → trigger on 'miss' or 'foul'
  *
  * Sets `pendingSharkPick = true` so the UI can prompt the player to tap
@@ -242,7 +242,7 @@ export function applySharkMiss(
   eventType: 'miss' | 'foul',
 ): GameState {
   if (!isSharkGame(state)) return state;
-  const allowed = state.sharkAggression === 'hard' || eventType === 'miss';
+  const allowed = state.sharkAggression === 'hard' || eventType === 'foul';
   if (!allowed) return state;
 
   const remaining = getRemainingBalls(state.sunkBalls, '8ball');
