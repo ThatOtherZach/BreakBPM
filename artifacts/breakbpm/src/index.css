@@ -268,6 +268,18 @@ body {
 .about-markdown strong { font-weight: bold; }
 .about-markdown em { font-style: italic; }
 .about-markdown hr { border: none; border-top: 1px solid #ccc; margin: 12px 0; }
+.about-shark-icon {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+  vertical-align: -2px;
+  display: inline-block;
+}
+.about-shark-icon-lg {
+  width: 24px;
+  height: 24px;
+  vertical-align: -3px;
+}
 .about-markdown blockquote {
   border-left: 3px solid var(--navy);
   padding-left: 10px;

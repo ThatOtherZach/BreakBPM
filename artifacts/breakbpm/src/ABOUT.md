@@ -13,7 +13,7 @@ BPM is calculated per-player, anchored at your first pocket of the game, so it r
 - **8-Ball** — Solids vs Stripes. Full rules including Golden Break and foul-on-8.
 - **9-Ball** — Sink the 9 to win. That's it.
 - **Practice** — Solo drills with unlimited racks. Watch your BPM improve session over session.
-- **🦈 Shark (1P 8-Ball)** — Solo 8-ball vs an invisible Shark opponent. See below.
+- **<img src="/shark-icon.png" alt="" class="about-shark-icon" /> Shark (1P 8-Ball)** — Solo 8-ball vs an invisible Shark opponent. See below.
 
 ## Play anywhere, with anyone
 
@@ -38,7 +38,7 @@ Pool isn't just about who wins — it's about *how* you play. A 12 BPM game agai
 - Sign-in with account — resume games across devices, view history
 - Works on any phone, no install required
 
-## 🦈 Shark Mode
+## <img src="/shark-icon.png" alt="" class="about-shark-icon about-shark-icon-lg" /> Shark Mode
 
 Pick **8-Ball** and set the player count to **1** — Shark Mode kicks in automatically.
 
