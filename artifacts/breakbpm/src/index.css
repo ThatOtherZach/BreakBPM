@@ -1002,6 +1002,7 @@ body {
 .hud-timer-paused {
   color: #664400;
   text-shadow: none;
+  animation: blink 1s step-end infinite;
 }
 
 .hud-share-btn {
