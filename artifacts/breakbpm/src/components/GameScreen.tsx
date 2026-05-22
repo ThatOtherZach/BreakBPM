@@ -544,7 +544,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   return (
     <div className="app-window">
       <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
-
       {/* ── Dark HUD panel (matches splash aesthetic) ── */}
       <div className="hud-panel">
 
@@ -647,7 +646,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           </div>
         )}
       </div>
-
       <div className="app-body">
 
         {/* Win screen action buttons */}
@@ -784,7 +782,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         )}
 
       </div>
-
       {/* Status bar */}
       <div className="statusbar">
         <div className="statusbar-item" style={{ flex: 2 }}>
@@ -797,7 +794,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         </div>
         <div className="statusbar-item">{clock}</div>
       </div>
-
       {/* Confirm dialog */}
       {confirmNew && (
         <div className="dialog-overlay" onClick={() => setConfirmNew(false)}>
@@ -805,7 +801,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             <div style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'flex-start' }}>
               <img src="/foul-icon.png" alt="Warning" style={{ width: 28, height: 28, imageRendering: 'pixelated', flexShrink: 0 }} />
               <div>
-                <div style={{ fontWeight: 'bold', marginBottom: 4 }}>End current game?</div>
+                <div style={{ fontWeight: 'bold', marginBottom: 4 }} className="text-[18px]">End current game?</div>
                 {!hasActivePass && (
                   <div style={{ fontSize: 12, color: '#444' }}>All progress will be lost.</div>
                 )}
