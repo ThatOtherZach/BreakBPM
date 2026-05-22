@@ -31,6 +31,47 @@ function fmtDate(d: Date | string): string {
   return date.toLocaleString();
 }
 
+const GAME_TYPE_LABEL: Record<string, string> = {
+  "8ball": "8-Ball",
+  "9ball": "9-Ball",
+  practice: "Practice",
+};
+
+type OutcomeStyle = { label: string; bg: string; fg: string; border: string; title?: string };
+const OUTCOME_STYLE: Record<string, OutcomeStyle> = {
+  won: { label: "WIN", bg: "#2e7d32", fg: "#fff", border: "#1b5e20" },
+  lost: { label: "LOSS", bg: "#c62828", fg: "#fff", border: "#8e1b1b" },
+  forfeit: {
+    label: "DNF",
+    bg: "#dddddd",
+    fg: "#444",
+    border: "#999",
+    title: "Forfeit — Did Not Finish",
+  },
+  completed: { label: "DONE", bg: "#c0c0c0", fg: "#000080", border: "#808080" },
+};
+
+function ResultBadge({ outcome }: { outcome: string }) {
+  const s = OUTCOME_STYLE[outcome] ?? OUTCOME_STYLE.completed;
+  return (
+    <span
+      title={s.title}
+      style={{
+        display: "inline-block",
+        fontSize: 10,
+        fontWeight: "bold",
+        letterSpacing: 0.5,
+        padding: "1px 6px",
+        background: s.bg,
+        color: s.fg,
+        border: `1px solid ${s.border}`,
+      }}
+    >
+      {s.label}
+    </span>
+  );
+}
+
 export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: Props) {
   const { logout: signOut } = useAuth();
   const qc = useQueryClient();
@@ -256,35 +297,55 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
             {history.data && history.data.games.length === 0 && (
               <p style={{ fontSize: 12, color: "#444" }}>No games saved yet. Play one!</p>
             )}
-            {history.data?.games.map((g) => (
-              <div
-                key={g.id}
-                style={{
-                  borderTop: "1px solid #aaa",
-                  padding: "6px 0",
-                  fontSize: 12,
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ fontWeight: "bold" }}>
-                    {g.gameType.toUpperCase()} · {g.outcome}
-                  </span>
-                  <span style={{ color: "#444" }}>{fmtMs(g.durationMs)}</span>
+            {history.data?.games.map((g) => {
+              const modeLabel = GAME_TYPE_LABEL[g.gameType] ?? g.gameType;
+              const hasBpm = g.bpm != null;
+              return (
+                <div
+                  key={g.id}
+                  style={{
+                    borderTop: "1px solid #aaa",
+                    padding: "6px 0",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  {/* Left: mode + result + winner */}
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+                    <span style={{ fontWeight: "bold", fontSize: 13 }}>{modeLabel}</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#444", fontSize: 11 }}>
+                      <ResultBadge outcome={g.outcome} />
+                      {g.winner && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
+                          {g.winner === SHARK_PLAYER_NAME && <SharkIcon size={12} />}
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {g.winner}
+                          </span>
+                        </span>
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Right: BPM hero + time · date */}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                    <span
+                      style={{
+                        fontFamily: "VT323",
+                        fontSize: 26,
+                        lineHeight: 1,
+                        color: hasBpm ? "#000080" : "#999",
+                      }}
+                    >
+                      ⚡ {hasBpm ? `${g.bpm!.toFixed(1)} BPM` : "— BPM"}
+                    </span>
+                    <span style={{ fontSize: 10, color: "#666" }}>
+                      🕐 {fmtMs(g.durationMs)} · {fmtDate(g.endedAt)}
+                    </span>
+                  </div>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", color: "#444", fontSize: 11 }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    {g.winner ? (
-                      <>
-                        winner: {g.winner === SHARK_PLAYER_NAME && <SharkIcon size={12} />}
-                        {g.winner}
-                      </>
-                    ) : "—"}
-                  </span>
-                  <span>{g.bpm != null ? `${g.bpm.toFixed(1)} BPM` : ""}</span>
-                </div>
-                <div style={{ fontSize: 10, color: "#666" }}>{fmtDate(g.endedAt)}</div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Pass holder pagination controls — shown for any pass holder,
                 with Prev/Next disabled at boundaries */}
