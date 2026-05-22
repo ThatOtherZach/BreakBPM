@@ -157,7 +157,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           bpm: finalBpmSnap,
           durationMs: Math.max(0, Date.now() - state.gameStartTime - pausedDuration),
           sunkBallsCount: state.sunkBalls.length,
-          outcome: forfeitedRef.current ? 'forfeit' : (state.winner ? 'won' : 'completed'),
+          outcome: forfeitedRef.current
+            ? 'forfeit'
+            : (state.winner
+                ? (state.winner === SHARK_PLAYER_NAME ? 'lost' : 'won')
+                : 'completed'),
           gameState: state as unknown as Record<string, unknown>,
           startedAt: new Date(state.gameStartTime).toISOString(),
         },

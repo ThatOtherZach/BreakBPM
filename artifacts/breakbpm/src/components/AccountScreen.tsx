@@ -320,7 +320,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
                           {g.winner === SHARK_PLAYER_NAME && <SharkIcon size={12} />}
                           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {g.winner}
+                            {g.winner === SHARK_PLAYER_NAME ? "Shark'd" : g.winner}
                           </span>
                         </span>
                       )}
