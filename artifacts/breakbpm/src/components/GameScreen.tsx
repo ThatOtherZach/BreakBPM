@@ -537,7 +537,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   if (pendingSharkPick) selectorHint = 'Tap the ball you removed from the table';
   else if (state.gameType === '9ball') selectorHint = `Hit (${lowest9}) first`;
   else if (state.gameType === '8ball') {
-    if (!state.teamAssigned) selectorHint = 'First sink assigns team';
+    if (!state.teamAssigned) selectorHint = 'First ball assigns group ';
     else selectorHint = cur.team ? getTeamLabel(cur.team) : '';
   }
 
