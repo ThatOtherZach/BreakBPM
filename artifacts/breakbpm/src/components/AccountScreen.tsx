@@ -242,8 +242,8 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
         {/* History panel */}
         <div className="panel">
           <div className="panel-header">
-            <span>
-              📋 Recent Games
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <img src="/history-icon.png" alt="" style={{ width: 13, height: 13, imageRendering: "pixelated", display: "block" }} />Recent Games
               {history.data && history.data.totalPages > 1
                 ? ` — Page ${history.data.page}/${history.data.totalPages}`
                 : history.data
