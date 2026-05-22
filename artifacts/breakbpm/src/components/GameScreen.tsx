@@ -534,7 +534,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   }
 
   let selectorHint: React.ReactNode = '';
-  if (pendingSharkPick) selectorHint = <><SharkIcon size={14} /> Tap the ball you removed from the table</>;
+  if (pendingSharkPick) selectorHint = 'Tap the ball you removed from the table';
   else if (state.gameType === '9ball') selectorHint = `Hit (${lowest9}) first`;
   else if (state.gameType === '8ball') {
     if (!state.teamAssigned) selectorHint = 'First sink assigns team';
