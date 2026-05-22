@@ -401,9 +401,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
                 onClick={() => setSharkAggression('normal')}
               >
                 Normal
-                <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>
-                  Steals on foul
-                </span>
+                <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>Removes on foul</span>
               </button>
               <button
                 className={`btn ${sharkAggression === 'hard' ? 'selected' : ''}`}
