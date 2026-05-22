@@ -15,6 +15,12 @@ export interface ShotLogEntry {
   timestamp: number;
   gameTime: number;
   note?: string;
+  /**
+   * Per-player BPM snapshot at the moment this pocket happened. Only set on
+   * pocketing entries (sink / terminal win / terminal lose that pocketed a
+   * ball). Missing on miss/foul/safety and on Shark steals.
+   */
+  bpm?: number;
 }
 
 export type SharkAggression = 'normal' | 'hard';

@@ -323,6 +323,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       gameTime: now - state.gameStartTime,
       note: result.message || undefined,
     };
+    // Stamp the player's per-player BPM at the moment of this pocket. We
+    // pass the about-to-be-pushed log so this entry is included in the
+    // calculation (otherwise the very first sink wouldn't anchor).
+    const entryBpm = calculatePlayerBPM([...next.shotLog, entry], cur.name);
+    if (entryBpm !== null) entry.bpm = entryBpm;
 
     if (result.win) {
       next.phase = 'ended';
@@ -501,6 +506,24 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     : null;
   const dispTime = state.phase === 'playing' ? elapsed : (Date.now() - state.gameStartTime - pausedDuration);
 
+  // Sublabel under the hero BPM: how many balls the shooter still needs to
+  // pocket. In 8-ball (and Shark) after teams are assigned, this is the
+  // current player's own group (or "8-BALL TO WIN" once their group is
+  // cleared). Otherwise it's the table total.
+  let remainingSubLabel = '';
+  if (state.gameType === '8ball' && state.teamAssigned && cur?.team) {
+    const myGroup = cur.team === 'solids' ? SOLIDS : STRIPES;
+    const myLeft = myGroup.filter(b => !state.sunkBalls.includes(b)).length;
+    if (myLeft === 0) {
+      remainingSubLabel = '8-BALL TO WIN';
+    } else {
+      remainingSubLabel = `${myLeft} ${cur.team === 'solids' ? 'SOLIDS' : 'STRIPES'} LEFT`;
+    }
+  } else {
+    const left = getRemainingBalls(state.sunkBalls, state.gameType).length;
+    remainingSubLabel = `${left} BALLS LEFT`;
+  }
+
   let selectorHint = '';
   if (pendingSharkPick) selectorHint = '🦈 Tap the ball you removed from the table';
   else if (state.gameType === '9ball') selectorHint = `Hit (${lowest9}) first`;
@@ -526,7 +549,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
               {dispBpm !== null ? dispBpm.toFixed(1) : '--.-'}
             </div>
             <div className="hud-bpm-sub">
-              {dispBpm === null ? 'AWAITING PLAY' : `${state.sunkBalls.length} SUNK`}
+              {dispBpm === null ? 'AWAITING PLAY' : remainingSubLabel}
             </div>
           </div>
 
@@ -722,9 +745,10 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                   else if (e.type === 'miss') line = `[${t}] ${e.playerName} » MISS`;
                   else if (e.type === 'win') line = `[${t}] ${e.playerName} » WIN! ${e.ball ? ballLabel(e.ball) : ''}`;
                   else if (e.type === 'lose') line = `[${t}] ${e.playerName} » LOSS`;
+                  const bpmTag = e.bpm !== undefined ? ` · ${e.bpm.toFixed(1)} BPM` : '';
                   return (
                     <div key={i} className={`log-entry ${e.type}`}>
-                      {line}{e.note ? ` — ${e.note}` : ''}
+                      {line}{bpmTag}{e.note ? ` — ${e.note}` : ''}
                     </div>
                   );
                 })
