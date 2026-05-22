@@ -332,13 +332,13 @@ export function calculatePlayerBPM(
   // 'win'/'lose' but still pocket a ball — so we key off `ball !== undefined`
   // rather than the type alone. Misses, fouls, safeties, and the Shark's
   // foul-on-8 'lose' entry have no `ball` and are excluded.
-  const sinkCount = mine.filter(e => e.ball !== undefined).length;
-  if (sinkCount === 0) return 0;
-  const firstAt = mine[0].timestamp;
+  const sinks = mine.filter(e => e.ball !== undefined);
+  if (sinks.length === 0) return null;
+  const firstSinkAt = sinks[0].timestamp;
   const lastAt = mine[mine.length - 1].timestamp;
-  const elapsed = (lastAt - firstAt) / 60000;
+  const elapsed = (lastAt - firstSinkAt) / 60000;
   if (elapsed < 0.001) return 0;
-  return Math.round((sinkCount / elapsed) * 10) / 10;
+  return Math.round((sinks.length / elapsed) * 10) / 10;
 }
 
 export function formatTime(ms: number): string {
