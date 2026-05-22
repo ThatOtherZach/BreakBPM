@@ -198,7 +198,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
             {ent.activePass && (
               <div style={{ fontSize: 12, marginTop: 4 }}>
                 {ent.activePass.isLifetime
-                  ? "Lifetime — never expires"
+                  ? "Never Expires :)"
                   : `Expires ${fmtDate(ent.activePass.expiresAt)}`}
               </div>
             )}
