@@ -230,7 +230,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           <div className="splash-title-sub">BILLIARDS SCORE SYSTEM</div>
           <div className="splash-title-rule" />
           <div className="splash-meta">
-            <span>VER 1.00</span>
+            <span>VER 0.6</span>
             <span>© 2026 Saym Services Inc.</span>
           </div>
           <div className="splash-tagline text-left">
@@ -461,7 +461,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
       {/* Status bar */}
       <div className="statusbar">
         <div className="statusbar-item" style={{ flex: 1 }}>READY</div>
-        <div className="statusbar-item"><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v1.0</a></div>
+        <div className="statusbar-item"><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v0.6</a></div>
       </div>
     </div>
   );

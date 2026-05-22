@@ -26,7 +26,7 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
               <div className="splash-title-sub">BILLIARDS SCORE SYSTEM</div>
               <div className="splash-title-rule" />
               <div className="splash-meta">
-                <span>VER 1.00</span>
+                <span>VER 0.6</span>
                 <span>© 2026 Saym Services Inc.</span>
               </div>
               <div className="splash-tagline text-left">
@@ -45,7 +45,7 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
       </div>
 
       <div className="statusbar">
-        <span><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v1.0</a> - Saym Services Inc.</span>
+        <span><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v0.6</a> - Saym Services Inc.</span>
       </div>
     </div>
   );
