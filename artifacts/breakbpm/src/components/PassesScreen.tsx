@@ -28,7 +28,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
 
   if (!me.data?.signedIn) {
     return (
-      <div className="app-window">
+      <div className="app-window app-window--page">
         <Navbar onBack={onBack} />
         <div className="app-body">
           <div className="panel">
@@ -92,7 +92,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <div className="app-window">
+    <div className="app-window app-window--page">
       <Navbar onBack={onBack} />
       <div className="app-body">
 

@@ -54,7 +54,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
 
   if (me.isLoading) {
     return (
-      <div className="app-window">
+      <div className="app-window app-window--page">
         <Navbar onBack={onBack} onAbout={onAbout} onSignIn={onSignIn} />
         <div className="app-body">
           <p style={{ fontFamily: "VT323", fontSize: 18 }}>Loading…</p>
@@ -65,7 +65,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
 
   if (!me.data?.signedIn) {
     return (
-      <div className="app-window">
+      <div className="app-window app-window--page">
         <Navbar onBack={onBack} onAbout={onAbout} onSignIn={onSignIn} />
         <div className="app-body">
           <div className="panel">
@@ -127,7 +127,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
     : "Public";
 
   return (
-    <div className="app-window">
+    <div className="app-window app-window--page">
       <Navbar onBack={onBack} onAbout={onAbout} onSignIn={onSignIn} />
       <div className="app-body">
 
@@ -182,7 +182,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
                 EMAIL — <span style={{ color: "#000" }}>{account.email}</span>
               </div>
             )}
-            <div style={{ fontSize: 11, color: "#444" }}>
+            <div style={{ fontSize: 11, color: "#444", wordBreak: "break-all", overflowWrap: "anywhere" }}>
               ID — <code style={{ fontSize: 10 }}>{account.id}</code>
             </div>
           </div>
@@ -332,7 +332,11 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
           </div>
         </div>
 
-        <button className="btn btn-big w-full" onClick={handleSignOut}>
+        <button
+          className="btn btn-big w-full"
+          style={{ marginTop: 8, marginBottom: 16 }}
+          onClick={handleSignOut}
+        >
           Sign Out
         </button>
       </div>
