@@ -9,6 +9,7 @@ import {
 } from '@workspace/api-client-react';
 import { saveInProgressGame, clearInProgressGame } from '../lib/gameLogic';
 import { useAuth } from '../lib/authClient';
+import { APP_VERSION } from '../lib/version';
 
 const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
   { id: '8ball', label: '8-Ball', desc: 'Solids vs Stripes' },
@@ -230,7 +231,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           <div className="splash-title-sub">BILLIARDS SCORE SYSTEM</div>
           <div className="splash-title-rule" />
           <div className="splash-meta">
-            <span>VER 0.6</span>
+            <span>VER {APP_VERSION}</span>
             <span>© 2026 Saym Services Inc.</span>
           </div>
           <div className="splash-tagline text-left">
@@ -461,7 +462,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
       {/* Status bar */}
       <div className="statusbar">
         <div className="statusbar-item" style={{ flex: 1 }}>READY</div>
-        <div className="statusbar-item"><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v0.6</a></div>
+        <div className="statusbar-item"><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v{APP_VERSION}</a></div>
       </div>
     </div>
   );
