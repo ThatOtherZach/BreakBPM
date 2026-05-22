@@ -5,6 +5,30 @@ All notable changes to BreakBPM will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-05-22
+
+### Added
+- **Per-player BPM in shot log** — every pocketing entry (sink, win, lose-with-ball) is stamped with the shooter's BPM at that moment. Miss, foul, safety, and Shark steal entries are left unstamped. Lets you trace pace shot by shot.
+- **Player 1 name lock** — when signed in, the Player 1 name field is pre-filled with the account's screen name and made read-only across all game modes (8-ball 1–4P, Shark, 9-ball, Practice). Prevents stat pollution. Slots 2–4 remain editable.
+- **Improved HUD sublabel** — replaced the table-wide "X SUNK" label under the hero BPM with a per-shooter remaining-balls readout:
+  - 8-ball (teams assigned, including Shark): "N SOLIDS LEFT" / "N STRIPES LEFT" — count includes both the shooter's group balls *and* the 8-ball so the number reflects everything they still need to pocket.
+  - Once the shooter's group is fully cleared: "8-BALL TO WIN".
+  - 8-ball pre-assignment, 9-ball, Practice: "N BALLS LEFT" (table total).
+
+### Fixed
+- HUD sublabel was showing a table-wide sunk count next to a per-player BPM figure, making BPM look like a team or table stat rather than an individual one.
+- 8-ball/Shark remaining count now correctly includes the 8-ball so the readout never undercounts by 1 mid-game.
+
+## [0.5.1] - 2026-05-21
+
+### Added
+- **User accounts** — Clerk authentication: sign-in, sign-up, screen name, email.
+- **Game persistence** — in-progress games synced to server; cross-device resume prompt on the Setup screen.
+- **Game history** — saved per-account; visible in Account screen. Free users see a limited window; pass holders see full history.
+- **Passes & checkout** — Day ($1.99), Annual ($12.99), Lifetime ($24.99) passes via Stripe or redemption code.
+- **Account screen** — profile management, pass status, purchase / redeem flow, history log.
+- **Auto-forfeit sweep** — server-side inactivity detection via `/games/activity` heartbeat.
+
 ## [0.5.0] - 2026-05-15
 
 Major rewrite migrating from a single `index.html` file to a full React + Vite + TypeScript pnpm monorepo. Complete Win98 UI overhaul using the 98.css box-shadow specification.
@@ -76,8 +100,10 @@ Major rewrite migrating from a single `index.html` file to a full React + Vite +
 - Multiplayer via link (async state sharing)
 - Shot logging and undo
 
-[0.5.0]: https://github.com/ThatOtherZach/dont-break-the-bpm/compare/v0.4.0...v0.5.0
-[0.4.0]: https://github.com/ThatOtherZach/dont-break-the-bpm/compare/v0.3.0...v0.4.0
-[0.3.0]: https://github.com/ThatOtherZach/dont-break-the-bpm/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/ThatOtherZach/dont-break-the-bpm/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/ThatOtherZach/dont-break-the-bpm/releases/tag/v0.1.0
+[0.6.0]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.5.1...v0.6.0
+[0.5.1]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/ThatOtherZach/BreakBPM/releases/tag/v0.1.0
