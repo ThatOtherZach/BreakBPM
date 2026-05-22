@@ -26,6 +26,7 @@
 
 html, body, #root {
   height: 100%;
+  height: 100dvh;
 }
 
 body {
@@ -34,6 +35,7 @@ body {
   background: var(--teal);
   overflow: hidden; /* single window fills screen */
   height: 100%;
+  height: 100dvh;
 }
 
 /* ── Single App Window ── */
@@ -41,6 +43,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
+  height: 100dvh;
   max-width: 480px;
   margin: 0 auto;
   background: var(--silver);
