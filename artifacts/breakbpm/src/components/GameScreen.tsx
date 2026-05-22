@@ -12,7 +12,7 @@ import {
   SHARK_PLAYER_NAME,
 } from '../lib/gameLogic';
 import SharkIcon from './SharkIcon';
-import { useSaveGame, useRecordGameActivity } from '@workspace/api-client-react';
+import { useSaveGame, useRecordGameActivity, useGetMe } from '@workspace/api-client-react';
 import { FORFEIT_INACTIVITY_MS } from '../lib/forfeit';
 
 interface Props {
@@ -59,6 +59,8 @@ function ballClass(ball: number, legal: number[], sunk: number[], _gameType: str
 export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, initialPausedDuration = 0, onNewGame, onAbout, onAccount, onSignIn }: Props) {
   const saveGame = useSaveGame();
   const recordActivity = useRecordGameActivity();
+  const me = useGetMe();
+  const hasActivePass = me.data?.entitlement?.hasActivePass ?? false;
   const savedRef = useRef(false);
   const forfeitedRef = useRef(false);
   const [state, setState] = useState<GameState>(initialState);
@@ -801,14 +803,16 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         <div className="dialog-overlay" onClick={() => setConfirmNew(false)}>
           <div className="dialog-box" onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'flex-start' }}>
-              <span style={{ fontSize: 28 }}>⚠</span>
+              <img src="/foul-icon.png" alt="Warning" style={{ width: 28, height: 28, imageRendering: 'pixelated', flexShrink: 0 }} />
               <div>
                 <div style={{ fontWeight: 'bold', marginBottom: 4 }}>End current game?</div>
-                <div style={{ fontSize: 12, color: '#444' }}>All progress will be lost.</div>
+                {!hasActivePass && (
+                  <div style={{ fontSize: 12, color: '#444' }}>All progress will be lost.</div>
+                )}
               </div>
             </div>
             <div className="grid-2">
-              <button className="btn btn-primary btn-big" onClick={onNewGame}>Yes, end it</button>
+              <button className="btn btn-primary btn-big" onClick={onNewGame}>Yes</button>
               <button className="btn btn-big" onClick={() => setConfirmNew(false)}>Cancel</button>
             </div>
           </div>
