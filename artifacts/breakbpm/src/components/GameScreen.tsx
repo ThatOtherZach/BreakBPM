@@ -139,7 +139,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       ? state.players[0]?.name ?? ''
       : (state.winner ?? state.players[state.currentPlayerIndex]?.name ?? '');
     const finalBpmSnap = bpmPlayerName
-      ? calculatePlayerBPM(state.shotLog, bpmPlayerName, state.lastActionTime ?? Date.now())
+      ? calculatePlayerBPM(state.shotLog, bpmPlayerName)
       : null;
     saveGame.mutate(
       {
@@ -354,7 +354,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     } else if (state.gameType === 'practice' && remaining.length === 1) {
       next.phase = 'ended';
       next.winner = cur.name;
-      const finalBpm = calculatePlayerBPM([...next.shotLog, entry], cur.name, now) ?? 0;
+      const finalBpm = calculatePlayerBPM([...next.shotLog, entry], cur.name) ?? 0;
       next.winMessage = `Table cleared! Final BPM: ${finalBpm.toFixed(1)}`;
     }
 
@@ -488,16 +488,16 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     applyState(fresh);
   }
 
-  // BPM is per-player and derived from the shot log. During play the HUD
-  // shows the current shooter's BPM; at game end it shows the winner's
-  // (or the human's in Shark Mode). The anchor time is `lastActionTime`
-  // so the number freezes between shots instead of drifting in real time.
-  const bpmAtTime = state.lastActionTime ?? Date.now();
+  // BPM is per-player and derived entirely from the shot log. During play
+  // the HUD shows the current shooter's BPM; at game end it shows the
+  // winner's (or the human's in Shark Mode). The endpoint is each player's
+  // own most recent log entry, so the number stays frozen between their
+  // shots and isn't extended by the opponent (or by Shark steals).
   const dispPlayerName = state.phase === 'ended'
     ? (isSharkGame(state) ? state.players[0]?.name : (state.winner ?? cur?.name))
     : cur?.name;
   const dispBpm = dispPlayerName
-    ? calculatePlayerBPM(state.shotLog, dispPlayerName, bpmAtTime)
+    ? calculatePlayerBPM(state.shotLog, dispPlayerName)
     : null;
   const dispTime = state.phase === 'playing' ? elapsed : (Date.now() - state.gameStartTime - pausedDuration);
 
