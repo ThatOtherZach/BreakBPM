@@ -186,7 +186,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
 
         {/* Tier panel */}
         <div className="panel">
-          <div className="panel-header"><span>🎟 Tier</span></div>
+          <div className="panel-header"><span><img src="/tier-icon.png" alt="" style={{ width: 13, height: 13, imageRendering: "pixelated", verticalAlign: "middle", marginRight: 4 }} />Tier</span></div>
           <div className="panel-body">
             <div style={{ fontFamily: "VT323", fontSize: 24, color: ent.tier === "pass" ? "#006400" : "#000080" }}>
               {tierLabel}
