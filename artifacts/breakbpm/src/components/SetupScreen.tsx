@@ -393,7 +393,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
             <div className="notice" style={{ marginBottom: 8 }}>
               <span style={{ fontSize: 11 }}>Solo 8-ball an invisible Shark player. Your first ball locks in solids or stripes; the other group goes to the Shark. Clear your group and sink the 8 ball to win. Misses and fouls feed balls to the Shark.</span>
             </div>
-            <div className="menu-section-label" style={{ marginTop: 4 }}>▶ SHARK AGGRESSION</div>
+            <div className="menu-section-label" style={{ marginTop: 4 }}>▶ AGGRESSION</div>
             <div className="flex gap-1">
               <button
                 className={`btn ${sharkAggression === 'normal' ? 'selected' : ''}`}
