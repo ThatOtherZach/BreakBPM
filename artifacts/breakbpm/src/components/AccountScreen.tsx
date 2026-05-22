@@ -10,6 +10,8 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "./Navbar";
+import SharkIcon from "./SharkIcon";
+import { SHARK_PLAYER_NAME } from "../lib/gameLogic";
 
 interface Props {
   onBack: () => void;
@@ -270,7 +272,14 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
                   <span style={{ color: "#444" }}>{fmtMs(g.durationMs)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", color: "#444", fontSize: 11 }}>
-                  <span>{g.winner ? `winner: ${g.winner}` : "—"}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    {g.winner ? (
+                      <>
+                        winner: {g.winner === SHARK_PLAYER_NAME && <SharkIcon size={12} />}
+                        {g.winner}
+                      </>
+                    ) : "—"}
+                  </span>
                   <span>{g.bpm != null ? `${g.bpm.toFixed(1)} BPM` : ""}</span>
                 </div>
                 <div style={{ fontSize: 10, color: "#666" }}>{fmtDate(g.endedAt)}</div>

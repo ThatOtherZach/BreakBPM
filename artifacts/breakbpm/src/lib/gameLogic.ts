@@ -61,6 +61,13 @@ export function isSharkGame(state: Pick<GameState, 'gameType' | 'players' | 'sha
   return state.gameType === '8ball' && state.players.length === 1 && state.sharkAggression !== undefined;
 }
 
+/**
+ * Canonical identity string for the invisible Shark opponent. Used as
+ * `playerName` on Shark shot-log entries and as the `winner` value when
+ * the Shark wins. The visual is rendered separately via <SharkIcon />.
+ */
+export const SHARK_PLAYER_NAME = 'Shark';
+
 export const SOLIDS = [1, 2, 3, 4, 5, 6, 7];
 export const STRIPES = [9, 10, 11, 12, 13, 14, 15];
 export const EIGHT_BALL = 8;
@@ -205,7 +212,7 @@ export function resolveSharkPick(state: GameState, ball: number): GameState {
   const sharkSunk = state.sharkSunkBalls ?? [];
   const entry: ShotLogEntry = {
     type: 'sink',
-    playerName: '🦈 Shark',
+    playerName: SHARK_PLAYER_NAME,
     ball,
     timestamp: now,
     gameTime: now - state.gameStartTime,
@@ -261,7 +268,7 @@ export function applySharkMiss(
     return {
       ...state,
       phase: 'ended',
-      winner: '🦈 Shark',
+      winner: SHARK_PLAYER_NAME,
       winMessage: `Shark wins — you ${reason}.`,
       lastActionTime: now,
       shotLog: [...state.shotLog, entry],
@@ -324,7 +331,7 @@ export function calculateBPM(
  * null if the player hasn't done anything yet.
  *
  * Deriving both endpoints from the player's own entries means another
- * player's actions — and Shark steals (logged under '🦈 Shark') — never
+ * player's actions — and Shark steals (logged under SHARK_PLAYER_NAME) — never
  * inflate or extend the human's clock or sink count.
  */
 export function calculatePlayerBPM(
@@ -446,6 +453,24 @@ export function loadInProgressGame(): PersistedInProgressGame | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Migration helper: older snapshots (localStorage, server-resume rows,
+ * legacy ?state= share links) used '🦈 Shark' as the canonical Shark
+ * identity. Rewrites in place to SHARK_PLAYER_NAME so downstream filters
+ * (per-player BPM, BPS counters, winner-icon checks) keep matching.
+ * Safe to call on partial states.
+ */
+export function normalizeSharkIdentity<T extends Partial<GameState>>(s: T): T {
+  const LEGACY = '🦈 Shark';
+  if (s.winner === LEGACY) s.winner = SHARK_PLAYER_NAME;
+  if (Array.isArray(s.shotLog)) {
+    for (const e of s.shotLog) {
+      if (e && e.playerName === LEGACY) e.playerName = SHARK_PLAYER_NAME;
+    }
+  }
+  return s;
 }
 
 export function clearInProgressGame(): void {

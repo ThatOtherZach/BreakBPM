@@ -9,7 +9,9 @@ import {
   saveInProgressGame, clearInProgressGame,
   isSharkGame, applySharkMiss,
   getSharkPickCandidates, resolveSharkPick,
+  SHARK_PLAYER_NAME,
 } from '../lib/gameLogic';
+import SharkIcon from './SharkIcon';
 import { useSaveGame, useRecordGameActivity } from '@workspace/api-client-react';
 import { FORFEIT_INACTIVITY_MS } from '../lib/forfeit';
 
@@ -337,7 +339,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       if (isSharkGame(next)) {
         const sharkBalls = next.sharkSunkBalls ?? [];
         const yourSinks = next.sunkBalls.filter(b => !sharkBalls.includes(b)).length;
-        const yourShots = next.shotLog.filter(e => e.playerName !== '🦈 Shark').length + 1;
+        const yourShots = next.shotLog.filter(e => e.playerName !== SHARK_PLAYER_NAME).length + 1;
         const bps = yourShots > 0 ? yourSinks / yourShots : 0;
         next.winMessage = `🎉 ${result.message} (${bps.toFixed(2)} balls/shot)`;
       }
@@ -346,10 +348,10 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       next.winMessage = result.message;
       if (isSharkGame(next)) {
         // Shark mode: the Shark is the only opponent. Append BPS as a stat.
-        next.winner = '🦈 Shark';
+        next.winner = SHARK_PLAYER_NAME;
         const sharkBalls = next.sharkSunkBalls ?? [];
         const yourSinks = next.sunkBalls.filter(b => !sharkBalls.includes(b)).length;
-        const yourShots = next.shotLog.filter(e => e.playerName !== '🦈 Shark').length + 1;
+        const yourShots = next.shotLog.filter(e => e.playerName !== SHARK_PLAYER_NAME).length + 1;
         const bps = yourShots > 0 ? yourSinks / yourShots : 0;
         next.winMessage = `${result.message} (${bps.toFixed(2)} balls/shot)`;
       } else {
@@ -390,7 +392,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       if (groupCleared) {
         const winnerIdx = state.players.findIndex((_, i) => i !== state.currentPlayerIndex);
         const winnerName = isSharkGame(state)
-          ? '🦈 Shark'
+          ? SHARK_PLAYER_NAME
           : (winnerIdx >= 0 ? state.players[winnerIdx].name : 'Opponent');
         const entry: ShotLogEntry = {
           type: 'lose', playerName: cur.name,
@@ -529,8 +531,8 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     remainingSubLabel = `${left} BALLS LEFT`;
   }
 
-  let selectorHint = '';
-  if (pendingSharkPick) selectorHint = '🦈 Tap the ball you removed from the table';
+  let selectorHint: React.ReactNode = '';
+  if (pendingSharkPick) selectorHint = <><SharkIcon size={14} /> Tap the ball you removed from the table</>;
   else if (state.gameType === '9ball') selectorHint = `Hit (${lowest9}) first`;
   else if (state.gameType === '8ball') {
     if (!state.teamAssigned) selectorHint = 'First sink assigns team';
@@ -622,7 +624,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             background: '#1a0a2e', border: '1px solid #5a2a8a',
             fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
           }}>
-            <img src="/shark-icon.png" alt="" style={{ width: 16, height: 16, imageRendering: "pixelated" }} /><span>SHARK</span>
+            <SharkIcon size={16} /><span>SHARK</span>
             <span style={{ marginLeft: 'auto', fontWeight: 'bold' }}>
               {(state.sharkSunkBalls ?? []).length} stolen
             </span>
@@ -699,7 +701,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             </div>
             {pendingSharkPick && (
               <div className="notice" style={{ marginTop: 6, background: '#1a0a2e', color: '#d8b4ff', borderColor: '#5a2a8a' }}>
-                <span>🦈</span>
+                <SharkIcon size={16} />
                 <span style={{ fontSize: 11 }}>
                   The Shark sinks a ball — remove one from the table and tap it above.
                 </span>

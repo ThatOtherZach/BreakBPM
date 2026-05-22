@@ -14,6 +14,7 @@ import {
   decodeGameState,
   loadInProgressGame,
   clearInProgressGame,
+  normalizeSharkIdentity,
 } from "./lib/gameLogic";
 import { queryClient } from "./lib/queryClient";
 import { AuthProvider, useAuth } from "./lib/authClient";
@@ -97,6 +98,7 @@ function MainApp() {
     // close, or connection drop can resume the exact same game.
     const persisted = loadInProgressGame();
     if (persisted) {
+      normalizeSharkIdentity(persisted.state);
       setGameState(persisted.state);
       setServerGameId(persisted.serverGameId);
       setMaxGameDurationMs(persisted.maxGameDurationMs);
@@ -108,6 +110,7 @@ function MainApp() {
     // but kept so old `?state=` links still open something playable.
     const restored = loadStateFromUrl();
     if (restored && restored.phase && restored.players && restored.players.length > 0) {
+      normalizeSharkIdentity(restored);
       setGameState({
         phase: restored.phase!,
         gameType: restored.gameType ?? "8ball",

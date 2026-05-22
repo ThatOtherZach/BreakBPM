@@ -7,7 +7,8 @@ import {
   useGetResumableGame,
   useAbandonGame,
 } from '@workspace/api-client-react';
-import { saveInProgressGame, clearInProgressGame } from '../lib/gameLogic';
+import { saveInProgressGame, clearInProgressGame, normalizeSharkIdentity } from '../lib/gameLogic';
+import SharkIcon from './SharkIcon';
 import { useAuth } from '../lib/authClient';
 import { APP_VERSION } from '../lib/version';
 import { pickTagline } from '../lib/taglines';
@@ -72,7 +73,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
   function handleResume() {
     const offered = resumable.data?.game;
     if (!offered) return;
-    const gs = (offered.gameState ?? {}) as Partial<GameState>;
+    const gs = normalizeSharkIdentity((offered.gameState ?? {}) as Partial<GameState>);
     // Best-effort rehydration: if players are missing (older row, server
     // snapshot never received, etc.) fall back to placeholders so the
     // game is still playable rather than silently destroyed. We log what
@@ -318,7 +319,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
                   style={{ flex: 1, fontSize: 13, fontWeight: 'bold', minHeight: 44 }}
                   onClick={() => setPlayerCount(n)}
                 >
-                  {n === 1 ? 'Shark Mode' : n === 2 ? 'Singles' : 'Doubles'}
+                  {n === 1 ? <><SharkIcon size={14} style={{ marginRight: 4 }} />Shark Mode</> : n === 2 ? 'Singles' : 'Doubles'}
                 </button>
               ))}
             </div>
