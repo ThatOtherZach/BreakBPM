@@ -23,11 +23,19 @@ import { newId } from "../lib/ids";
 
 const router: IRouter = Router();
 
-function passToSummary(pass: { kind: string; startedAt: Date; durationSeconds: number }) {
+// See entitlement.ts for the canonical lifetime expiry sentinel. We
+// duplicate the literal here to keep this helper free of cross-module
+// coupling; if you change one, change both.
+const LIFETIME_EXPIRES_AT = new Date("9999-12-31T23:59:59.999Z");
+
+function passToSummary(pass: { kind: string; startedAt: Date; durationSeconds: number | null }) {
   return {
     kind: pass.kind as PassKind,
     startedAt: pass.startedAt,
-    expiresAt: new Date(pass.startedAt.getTime() + pass.durationSeconds * 1000),
+    expiresAt:
+      pass.durationSeconds === null
+        ? LIFETIME_EXPIRES_AT
+        : new Date(pass.startedAt.getTime() + pass.durationSeconds * 1000),
     isLifetime: pass.kind === "lifetime",
   };
 }
@@ -66,7 +74,7 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
     constructor(public reason: string) { super(reason); }
   }
 
-  type Pass = { kind: string; startedAt: Date; durationSeconds: number };
+  type Pass = { kind: string; startedAt: Date; durationSeconds: number | null };
 
   let pass: Pass;
   try {

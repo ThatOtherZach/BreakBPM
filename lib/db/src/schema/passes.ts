@@ -4,10 +4,13 @@ import { z } from "zod/v4";
 import { usersTable } from "./users";
 
 /**
- * Passes are stored as start-datetime + duration. A user is "active" if any
- * pass satisfies `startedAt <= now < startedAt + durationSeconds`. Lifetime
- * passes are encoded as a 999-year duration. Multiple passes can stack —
- * we never modify or extend an existing row; we only insert new ones.
+ * Passes are stored as start-datetime + duration. A user is "active" if a
+ * pass satisfies `startedAt <= now` AND either `durationSeconds IS NULL`
+ * (lifetime — never expires) OR `now < startedAt + durationSeconds`.
+ * Lifetime passes are modeled as an issued ticket with no expiry: the
+ * `duration_seconds` column is NULL, not a sentinel value. Multiple passes
+ * can stack — we never modify or extend an existing row; we only insert
+ * new ones.
  */
 export const passKindEnum = ["day", "year", "lifetime"] as const;
 export type PassKind = (typeof passKindEnum)[number];
@@ -15,10 +18,10 @@ export type PassKind = (typeof passKindEnum)[number];
 const SECONDS_DAY = 24 * 60 * 60;
 const SECONDS_YEAR = 365 * SECONDS_DAY;
 
-export const PASS_DURATIONS_SECONDS: Record<PassKind, number> = {
+export const PASS_DURATIONS_SECONDS: Record<PassKind, number | null> = {
   day: SECONDS_DAY,
   year: SECONDS_YEAR,
-  lifetime: 999 * SECONDS_YEAR,
+  lifetime: null,
 };
 
 export const passesTable = pgTable(
@@ -30,7 +33,7 @@ export const passesTable = pgTable(
       .references(() => usersTable.id, { onDelete: "cascade" }),
     kind: text("kind").notNull(), // "day" | "year" | "lifetime"
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
-    durationSeconds: integer("duration_seconds").notNull(),
+    durationSeconds: integer("duration_seconds"), // NULL = lifetime (no expiry)
     source: text("source").notNull(), // "purchase" | "discount_code" | "grant"
     sourceRef: text("source_ref"),    // discount code id, payment intent id, etc.
     priceCents: integer("price_cents"),
