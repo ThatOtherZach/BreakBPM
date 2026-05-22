@@ -288,11 +288,24 @@ export function assignTeams(
 ): Player[] {
   const updated = players.map(p => ({ ...p }));
   const isStripe = STRIPES.includes(ballSunk);
-  updated[currentPlayerIndex].team = isStripe ? 'stripes' : 'solids';
+  const sinkerTeam: Team = isStripe ? 'stripes' : 'solids';
+  const opposingTeam: Team = isStripe ? 'solids' : 'stripes';
+  updated[currentPlayerIndex].team = sinkerTeam;
 
   if (players.length === 2) {
     const opponentIndex = currentPlayerIndex === 0 ? 1 : 0;
-    updated[opponentIndex].team = isStripe ? 'solids' : 'stripes';
+    updated[opponentIndex].team = opposingTeam;
+  } else if (players.length === 4) {
+    // Doubles: standard pool seating — seats 0+2 vs 1+3 (alternating turn
+    // order). The sinker's partner inherits the sinker's group; the other
+    // pair gets the opposite group.
+    const partnerIndex = (currentPlayerIndex + 2) % 4;
+    updated[partnerIndex].team = sinkerTeam;
+    for (let i = 0; i < 4; i++) {
+      if (i !== currentPlayerIndex && i !== partnerIndex) {
+        updated[i].team = opposingTeam;
+      }
+    }
   }
 
   return updated;
