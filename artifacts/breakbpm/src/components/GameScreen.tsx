@@ -693,14 +693,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                   : `${cur.name.toUpperCase()}'S TURN`}
               {selectorHint && <span style={{ fontWeight: 'normal', marginLeft: 8, letterSpacing: 0, textTransform: 'none', color: '#555' }}>{selectorHint}</span>}
             </div>
-            {pendingSharkPick && (
-              <div className="notice" style={{ marginBottom: 6, background: '#1a0a2e', color: '#d8b4ff', borderColor: '#5a2a8a' }}>
-                <SharkIcon size={16} />
-                <span style={{ fontSize: 11 }}>
-                  The Shark sinks a ball — remove one from the table and tap it above.
-                </span>
-              </div>
-            )}
             <div className="ball-grid">
               {allBalls.map(ball => (
                 <button
