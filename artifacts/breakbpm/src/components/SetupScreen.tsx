@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { GameType, GameState, Player, SharkAggression } from '../lib/gameLogic';
 import ballImg from '/eightball_nobg.png';
 import Navbar from './Navbar';
@@ -8,6 +8,7 @@ import {
   useAbandonGame,
 } from '@workspace/api-client-react';
 import { saveInProgressGame, clearInProgressGame } from '../lib/gameLogic';
+import { useAuth } from '../lib/authClient';
 
 const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
   { id: '8ball', label: '8-Ball', desc: 'Solids vs Stripes' },
@@ -29,6 +30,11 @@ interface Props {
 export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onSignIn }: Props) {
   const startGame = useStartGame();
   const abandonGame = useAbandonGame();
+  const { user } = useAuth();
+  // Signed-in users always play as themselves in slot 1 — their screen
+  // name is prefilled and the input is locked so they can't masquerade
+  // as someone else (which would also pollute their own BPM history).
+  const lockedPlayer1Name = user?.screenName ?? null;
   // SetupScreen only mounts when localStorage has no in-progress game
   // (App.tsx routes straight to GameScreen otherwise), so this fetch is
   // already the "fallback path" — different device / cleared browser.
@@ -45,6 +51,19 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
   // Shark mode (8-ball + 1P) aggression toggle. Default to 'normal' so new
   // players aren't overwhelmed. Only sent to onStart when the combo matches.
   const [sharkAggression, setSharkAggression] = useState<SharkAggression>('normal');
+
+  // Keep slot 1 in sync with the signed-in user's screen name. Runs when
+  // auth resolves (login mid-session, page reload, etc.) so the field
+  // doesn't lag behind the locked state.
+  useEffect(() => {
+    if (lockedPlayer1Name === null) return;
+    setNames(prev => {
+      if (prev[0] === lockedPlayer1Name) return prev;
+      const next = [...prev];
+      next[0] = lockedPlayer1Name;
+      return next;
+    });
+  }, [lockedPlayer1Name]);
 
   function handleResume() {
     const offered = resumable.data?.game;
@@ -305,15 +324,23 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
         <div>
           <div className="menu-section-label">▶ {isPractice ? 'YOUR NAME' : 'PLAYER NAMES'}</div>
           <div className="flex flex-col gap-2">
-            {Array.from({ length: count }).map((_, i) => (
+            {Array.from({ length: count }).map((_, i) => {
+              // Slot 1 is locked to the signed-in user so they can't
+              // play under someone else's name and skew their stats.
+              const isLockedSlot = i === 0 && lockedPlayer1Name !== null;
+              return (
               <div key={i} className="player-row">
                 <span className="player-num">{i + 1}.</span>
                 <input
                   className="input"
-                  value={names[i]}
+                  value={isLockedSlot ? lockedPlayer1Name : names[i]}
                   onChange={e => setName(i, e.target.value)}
                   placeholder={DEFAULT_NAMES[i]}
                   maxLength={16}
+                  readOnly={isLockedSlot}
+                  aria-readonly={isLockedSlot || undefined}
+                  title={isLockedSlot ? 'Signed in — name locked to your account' : undefined}
+                  style={isLockedSlot ? { opacity: 0.85, cursor: 'not-allowed' } : undefined}
                 />
                 {gameType === '8ball' && !isShark && !autoTeam && (
                   <select
@@ -328,7 +355,8 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
                   </select>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {gameType === '8ball' && !isPractice && !isShark && (
