@@ -390,11 +390,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           <div>
             <div className="menu-section-label">▶ SHARK MODE</div>
             <div className="notice" style={{ marginBottom: 8 }}>
-              <span style={{ fontSize: 11 }}>
-                Solo 8-ball vs the invisible Shark. Your first sink locks in solids or
-                stripes; the other group goes to the Shark. Clear your group and sink
-                the 8 to win. Misses and fouls feed balls to the Shark.
-              </span>
+              <span style={{ fontSize: 11 }}>Solo 8-ball vs the invisible Shark. Your first ball locks in solids or stripes; the other group goes to the Shark. Clear your group and sink the 8 to win. Misses and fouls feed balls to the Shark.</span>
             </div>
             <div className="menu-section-label" style={{ marginTop: 4 }}>▶ SHARK AGGRESSION</div>
             <div className="flex gap-1">
