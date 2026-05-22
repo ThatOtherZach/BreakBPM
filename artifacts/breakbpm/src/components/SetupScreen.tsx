@@ -10,6 +10,9 @@ import {
 import { saveInProgressGame, clearInProgressGame } from '../lib/gameLogic';
 import { useAuth } from '../lib/authClient';
 import { APP_VERSION } from '../lib/version';
+import { pickTagline } from '../lib/taglines';
+
+const tagline = pickTagline();
 
 const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
   { id: '8ball', label: '8-Ball', desc: 'Solids vs Stripes' },
@@ -235,8 +238,9 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
             <span>©Saym Services 2026</span>
           </div>
           <div className="splash-tagline text-left">
-            PLAY FAST,<br />
-            TRACK STATS
+            {tagline.split('\n').map((line, i, arr) => (
+              <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+            ))}
           </div>
         </div>
       </div>

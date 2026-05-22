@@ -4,6 +4,9 @@ import Navbar from './Navbar';
 import ballImg from '/eightball_nobg.png';
 import aboutMd from '../ABOUT.md?raw';
 import { APP_VERSION } from '../lib/version';
+import { pickTagline } from '../lib/taglines';
+
+const tagline = pickTagline();
 
 interface AboutScreenProps {
   onBack: () => void;
@@ -31,7 +34,9 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
                 <span>© 2026 Saym Services Inc.</span>
               </div>
               <div className="splash-tagline text-left">
-                PLAY FAST,<br />TRACK STATS
+                {tagline.split('\n').map((line, i, arr) => (
+                  <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+                ))}
               </div>
             </div>
           </div>
