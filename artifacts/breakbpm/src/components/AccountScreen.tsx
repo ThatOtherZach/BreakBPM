@@ -248,9 +248,11 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
                 {passes.length} active passes (stacked)
               </div>
             )}
-            <button className="btn btn-primary w-full" style={{ marginTop: 10 }} onClick={onPasses}>
-              {ent.tier === "pass" ? "Manage Passes" : "Get a Pass"}
-            </button>
+            {!ent.activePass?.isLifetime && (
+              <button className="btn btn-primary w-full" style={{ marginTop: 10 }} onClick={onPasses}>
+                {ent.tier === "pass" ? "Manage Passes" : "Get a Pass"}
+              </button>
+            )}
             {/* TODO(remove-before-launch): dev-only free Lifetime upgrade button.
                 Rip out together with useDevGrantLifetime import, devGrant state,
                 handleDevGrant, and the server-side DEV_FREE_UPGRADE_ENABLED flag.
