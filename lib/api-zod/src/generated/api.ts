@@ -266,7 +266,8 @@ export const GetGameHistoryResponse = zod.object({
   "outcome": zod.string(),
   "shareCode": zod.string().optional(),
   "endedAt": zod.coerce.date(),
-  "startedAt": zod.coerce.date().optional()
+  "startedAt": zod.coerce.date().optional(),
+  "sharkMode": zod.boolean()
 }))
 })
 

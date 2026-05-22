@@ -358,18 +358,22 @@ router.get("/games/history", async (req, res): Promise<void> => {
     .limit(rowLimit)
     .offset(offset);
 
-  const games = visible.map((g) => ({
-    id: g.id,
-    gameType: g.gameType,
-    winner: g.winner,
-    bpm: g.bpm == null ? null : g.bpm / 10,
-    durationMs: g.durationMs,
-    sunkBallsCount: g.sunkBallsCount,
-    outcome: g.outcome ?? "completed",
-    shareCode: g.shareCode,
-    endedAt: g.endedAt!,
-    startedAt: g.startedAt,
-  }));
+  const games = visible.map((g) => {
+    const gs = g.gameState as Record<string, unknown> | null;
+    return {
+      id: g.id,
+      gameType: g.gameType,
+      winner: g.winner,
+      bpm: g.bpm == null ? null : g.bpm / 10,
+      durationMs: g.durationMs,
+      sunkBallsCount: g.sunkBallsCount,
+      outcome: g.outcome ?? "completed",
+      shareCode: g.shareCode,
+      endedAt: g.endedAt!,
+      startedAt: g.startedAt,
+      sharkMode: !!(gs && gs["sharkAggression"]),
+    };
+  });
 
   res.json(
     GetGameHistoryResponse.parse({

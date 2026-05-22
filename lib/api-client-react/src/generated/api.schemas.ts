@@ -251,6 +251,7 @@ export interface GameHistoryEntry {
   shareCode?: string;
   endedAt: string;
   startedAt?: string;
+  sharkMode: boolean;
 }
 
 export type GameHistoryResponseTier = typeof GameHistoryResponseTier[keyof typeof GameHistoryResponseTier];

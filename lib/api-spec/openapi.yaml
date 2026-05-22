@@ -457,7 +457,7 @@ components:
 
     GameHistoryEntry:
       type: object
-      required: [id, gameType, outcome, durationMs, sunkBallsCount, endedAt]
+      required: [id, gameType, outcome, durationMs, sunkBallsCount, endedAt, sharkMode]
       properties:
         id: { type: string }
         gameType: { type: string }
@@ -469,6 +469,7 @@ components:
         shareCode: { type: string }
         endedAt: { type: string, format: date-time }
         startedAt: { type: string, format: date-time }
+        sharkMode: { type: boolean }
 
     GameHistoryResponse:
       type: object

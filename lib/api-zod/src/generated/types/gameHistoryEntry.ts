@@ -19,4 +19,5 @@ export interface GameHistoryEntry {
   shareCode?: string;
   endedAt: Date;
   startedAt?: Date;
+  sharkMode: boolean;
 }
