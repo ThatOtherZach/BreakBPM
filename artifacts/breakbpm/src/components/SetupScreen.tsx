@@ -336,7 +336,6 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
         )}
 
         {/* Player names — hidden in Shark Mode (solo, no need to name) */}
-        {!isShark && <hr className="sep" />}
         {!isShark && (<div>
           <div className="menu-section-label">▶ {isPractice ? 'YOUR NAME' : 'PLAYER NAMES'}</div>
           <div className="flex flex-col gap-2">
