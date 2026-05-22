@@ -337,7 +337,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
                         color: hasBpm ? "#000080" : "#999",
                       }}
                     >
-                      ⚡ {hasBpm ? `${g.bpm!.toFixed(1)} BPM` : "— BPM"}
+                      {hasBpm ? `${g.bpm!.toFixed(1)} BPM` : "— BPM"}
                     </span>
                     <span style={{ fontSize: 10, color: "#666" }}>
                       🕐 {fmtMs(g.durationMs)} · {fmtDate(g.endedAt)}
