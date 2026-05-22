@@ -686,9 +686,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         {/* ── Ball selector ── */}
         {state.phase !== 'ended' && (
           <div>
-            <div className="menu-section-label" style={{ marginBottom: 6 }}>
+            <div className="menu-section-label" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               {state.gameType === 'practice' ? 'BALL SELECTOR'
-                : `${cur.name.toUpperCase()}'S TURN`}
+                : pendingSharkPick
+                  ? <><SharkIcon size={14} /><span>SHARK'S TURN</span></>
+                  : `${cur.name.toUpperCase()}'S TURN`}
               {selectorHint && <span style={{ fontWeight: 'normal', marginLeft: 8, letterSpacing: 0, textTransform: 'none', color: '#555' }}>{selectorHint}</span>}
             </div>
             {pendingSharkPick && (
