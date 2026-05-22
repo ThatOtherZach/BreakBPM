@@ -311,25 +311,34 @@ export function calculateBPM(
 }
 
 /**
- * Per-player BPM: only counts that player's own sinks, anchored from their
- * own first sink, with the endpoint being that player's most recent action
- * (sink/miss/foul/safety). Returns null if the player hasn't sunk anything
- * yet. The endpoint is derived from the shot log — not from the global
- * `lastActionTime` — so another player's actions (and in Shark Mode, Shark
- * sinks) don't extend the human's clock.
+ * Per-player BPM: counts a player's pocketed balls (any shot-log entry
+ * where they pocketed something — type 'sink', or the terminal 'win'/'lose'
+ * entries that also pocket a ball), anchored from that player's very first
+ * action, with the endpoint being their most recent log entry. Returns
+ * null if the player hasn't done anything yet.
+ *
+ * Deriving both endpoints from the player's own entries means another
+ * player's actions — and Shark steals (logged under '🦈 Shark') — never
+ * inflate or extend the human's clock or sink count.
  */
 export function calculatePlayerBPM(
   shotLog: ShotLogEntry[],
   playerName: string,
 ): number | null {
   const mine = shotLog.filter(e => e.playerName === playerName);
-  const mySinks = mine.filter(e => e.type === 'sink');
-  if (mySinks.length === 0) return null;
-  const firstSinkAt = mySinks[0].timestamp;
-  const lastActionAt = mine[mine.length - 1].timestamp;
-  const elapsed = (lastActionAt - firstSinkAt) / 60000;
+  if (mine.length === 0) return null;
+  // A "pocketed" entry is any one where a ball was sunk. Terminal shots
+  // (winning by pocketing the 8, scratching on the 8) are logged as
+  // 'win'/'lose' but still pocket a ball — so we key off `ball !== undefined`
+  // rather than the type alone. Misses, fouls, safeties, and the Shark's
+  // foul-on-8 'lose' entry have no `ball` and are excluded.
+  const sinkCount = mine.filter(e => e.ball !== undefined).length;
+  if (sinkCount === 0) return 0;
+  const firstAt = mine[0].timestamp;
+  const lastAt = mine[mine.length - 1].timestamp;
+  const elapsed = (lastAt - firstAt) / 60000;
   if (elapsed < 0.001) return 0;
-  return Math.round((mySinks.length / elapsed) * 10) / 10;
+  return Math.round((sinkCount / elapsed) * 10) / 10;
 }
 
 export function formatTime(ms: number): string {
