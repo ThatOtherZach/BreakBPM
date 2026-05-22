@@ -291,7 +291,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
 
         {/* Game type */}
         <div>
-          <div className="menu-section-label">▶ SELECT GAME TYPE</div>
+          <div className="menu-section-label">▶ GAME TYPE</div>
           <div className="game-type-grid">
             {GAME_TYPES.map(gt => (
               <button
@@ -309,7 +309,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
         {/* Player count */}
         {!isPractice && (
           <div>
-            <div className="menu-section-label">▶ NUMBER OF PLAYERS</div>
+            <div className="menu-section-label">▶ PLAYERS</div>
             <div className="flex gap-1">
               {[1, 2, 4].map(n => (
                 <button
