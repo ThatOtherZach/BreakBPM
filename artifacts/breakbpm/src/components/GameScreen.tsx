@@ -3,7 +3,7 @@ import type { GameState, ShotLogEntry } from '../lib/gameLogic';
 import Navbar from './Navbar';
 import {
   getLegalBalls, getRemainingBalls, checkSinkResult,
-  assignTeams, shouldAssignTeams, calculateBPM, formatTime,
+  assignTeams, shouldAssignTeams, calculatePlayerBPM, formatTime,
   getTeamLabel, ballLabel,
   SOLIDS, STRIPES, EIGHT_BALL, getLowestBall,
   saveInProgressGame, clearInProgressGame,
@@ -62,13 +62,8 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const [state, setState] = useState<GameState>(initialState);
   const [elapsed, setElapsed] = useState(0);
 
-  // BPM is a snapshot — only updated at the moment of each action, not in real-time.
-  // This ensures it reflects pace during active play, not idle time.
-  const [bpm, setBpm] = useState<number | null>(
-    initialState.firstActionTime !== null
-      ? calculateBPM(initialState.sunkBalls.length, initialState.firstActionTime, initialState.lastActionTime ?? Date.now())
-      : null
-  );
+  // BPM is per-player and derived from the shot log + lastActionTime
+  // (see `dispBpm` below). No standalone bpm state is kept.
 
   const [toast, setToast] = useState('');
   const [undoStack, setUndoStack] = useState<GameState[]>([]);
@@ -137,8 +132,14 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   useEffect(() => {
     if (state.phase !== 'ended' || savedRef.current) return;
     savedRef.current = true;
-    const finalBpmSnap = state.firstActionTime
-      ? calculateBPM(state.sunkBalls.length, state.firstActionTime, state.lastActionTime ?? Date.now())
+    // Saved BPM is the winning player's per-player BPM. In Shark Mode we
+    // always save the human's BPM regardless of who won (Shark has no
+    // meaningful pace metric).
+    const bpmPlayerName = isSharkGame(state)
+      ? state.players[0]?.name ?? ''
+      : (state.winner ?? state.players[state.currentPlayerIndex]?.name ?? '');
+    const finalBpmSnap = bpmPlayerName
+      ? calculatePlayerBPM(state.shotLog, bpmPlayerName, state.lastActionTime ?? Date.now())
       : null;
     saveGame.mutate(
       {
@@ -277,14 +278,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
   function applyState(next: GameState) { setState(next); syncUrl(next); }
 
-  /**
-   * Snap BPM at a specific moment in time.
-   * Always called right after an action so the number freezes until the next one.
-   */
-  function snapBpm(sunkCount: number, firstActionTime: number, atTime: number) {
-    setBpm(calculateBPM(sunkCount, firstActionTime, atTime));
-  }
-
   function sinkBall(ball: number) {
     if (state.phase !== 'playing' || state.sunkBalls.includes(ball)) return;
 
@@ -295,7 +288,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       const candidates = getSharkPickCandidates(state);
       if (!candidates.includes(ball)) return;
       const next = resolveSharkPick(state, ball);
-      snapBpm(next.sunkBalls.length, next.firstActionTime ?? Date.now(), next.lastActionTime ?? Date.now());
       applyState(next);
       return;
     }
@@ -362,14 +354,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     } else if (state.gameType === 'practice' && remaining.length === 1) {
       next.phase = 'ended';
       next.winner = cur.name;
-      const finalBpm = calculateBPM(next.sunkBalls.length, next.firstActionTime!, now);
+      const finalBpm = calculatePlayerBPM([...next.shotLog, entry], cur.name, now) ?? 0;
       next.winMessage = `Table cleared! Final BPM: ${finalBpm.toFixed(1)}`;
     }
 
     next.shotLog = [...next.shotLog, entry];
-
-    // Snap BPM at the exact moment of this action
-    snapBpm(next.sunkBalls.length, next.firstActionTime!, now);
 
     applyState(next);
   }
@@ -412,7 +401,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           lastActionTime: now,
           shotLog: [...state.shotLog, entry],
         };
-        snapBpm(next.sunkBalls.length, firstActionTime, now);
         applyState(next);
         return;
       }
@@ -439,10 +427,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       next = applySharkMiss(next, type);
     }
 
-    // BPM doesn't change on miss/foul/safety (no balls sunk) — but freeze the display
-    // at this moment so it doesn't drift while the next player deliberates
-    snapBpm(next.sunkBalls.length, firstActionTime, now);
-
+    // BPM is derived from the shot log + lastActionTime, so no snapshot needed.
     applyState(next);
   }
 
@@ -450,14 +435,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     if (!undoStack.length) return;
     const prev = undoStack[undoStack.length - 1];
     setUndoStack(s => s.slice(0, -1));
-
-    // Restore BPM to the snapshot at the time of that previous state's last action
-    if (prev.firstActionTime) {
-      setBpm(calculateBPM(prev.sunkBalls.length, prev.firstActionTime, prev.lastActionTime ?? Date.now()));
-    } else {
-      setBpm(null);
-    }
-
     applyState(prev);
   }
 
@@ -504,7 +481,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       winMessage: '',
     };
     setUndoStack([]);
-    setBpm(null);
     setElapsed(0);
     setPaused(false);
     setPausedDuration(0);
@@ -512,12 +488,17 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     applyState(fresh);
   }
 
-  // Final BPM: snapshot at the last action, not at game-end time
-  const finalBpm = state.firstActionTime
-    ? calculateBPM(state.sunkBalls.length, state.firstActionTime, state.lastActionTime ?? Date.now())
+  // BPM is per-player and derived from the shot log. During play the HUD
+  // shows the current shooter's BPM; at game end it shows the winner's
+  // (or the human's in Shark Mode). The anchor time is `lastActionTime`
+  // so the number freezes between shots instead of drifting in real time.
+  const bpmAtTime = state.lastActionTime ?? Date.now();
+  const dispPlayerName = state.phase === 'ended'
+    ? (isSharkGame(state) ? state.players[0]?.name : (state.winner ?? cur?.name))
+    : cur?.name;
+  const dispBpm = dispPlayerName
+    ? calculatePlayerBPM(state.shotLog, dispPlayerName, bpmAtTime)
     : null;
-
-  const dispBpm = state.phase === 'ended' ? finalBpm : bpm;
   const dispTime = state.phase === 'playing' ? elapsed : (Date.now() - state.gameStartTime - pausedDuration);
 
   let selectorHint = '';

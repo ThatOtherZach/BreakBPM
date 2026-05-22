@@ -310,6 +310,25 @@ export function calculateBPM(
   return Math.round((sunkCount / elapsed) * 10) / 10;
 }
 
+/**
+ * Per-player BPM: only counts that player's own sinks, anchored from their
+ * own first sink. Returns null if the player hasn't sunk anything yet.
+ * In Shark Mode the Shark logs entries under playerName '🦈 Shark', so
+ * passing the human player's name automatically excludes Shark sinks.
+ */
+export function calculatePlayerBPM(
+  shotLog: ShotLogEntry[],
+  playerName: string,
+  atTime: number = Date.now()
+): number | null {
+  const mySinks = shotLog.filter(e => e.playerName === playerName && e.type === 'sink');
+  if (mySinks.length === 0) return null;
+  const firstSinkAt = mySinks[0].timestamp;
+  const elapsed = (atTime - firstSinkAt) / 60000;
+  if (elapsed < 0.001) return 0;
+  return Math.round((mySinks.length / elapsed) * 10) / 10;
+}
+
 export function formatTime(ms: number): string {
   const totalSec = Math.floor(ms / 1000);
   const h = Math.floor(totalSec / 3600);
