@@ -42,16 +42,14 @@ const BALL_COLORS: Record<number, string> = {
   13: '#F27C1D', 14: '#276B40', 15: '#6B1F2A',
 };
 
-function ballClass(ball: number, legal: number[], sunk: number[], _gameType: string, foulable: number[] = []) {
+function ballClass(ball: number, legal: number[], sunk: number[], _gameType: string) {
   if (sunk.includes(ball)) return 'ball-btn sunk';
   const ok = legal.includes(ball);
-  const isFoulable = !ok && foulable.includes(ball);
   let base = 'ball-btn';
   if (ball === EIGHT_BALL) base += ' eight';
   else if (SOLIDS.includes(ball)) base += ' solid';
   else base += ' stripe';
   if (ok) base += ' legal';
-  else if (isFoulable) base += ' foulable';
   else base += ' illegal';
   return base;
 }
@@ -269,11 +267,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     : pendingSharkPick
       ? sharkPickCandidates
       : getLegalBalls(state.gameType, state.players, state.currentPlayerIndex, state.sunkBalls);
-  // In shark mode after assignment, opposite-group balls remain tappable so
-  // an accidental sink can be routed as a foul (the ball goes to the Shark).
-  const foulableBalls = (!pendingSharkPick && isSharkGame(state) && state.teamAssigned && cur?.team)
-    ? (cur.team === 'solids' ? STRIPES : SOLIDS).filter(b => !state.sunkBalls.includes(b))
-    : [];
   const allBalls = state.gameType === '9ball'
     ? [1, 2, 3, 4, 5, 6, 7, 8, 9]
     : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
@@ -307,45 +300,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       return;
     }
 
-    // Shark mode after team assignment: tapping one of the Shark's group
-    // balls means it dropped on the player's shot — counts as a foul. The
-    // ball goes to the Shark's pile, and the existing shark-miss flow runs
-    // on a 'foul' event (which on Hard aggression triggers another Shark
-    // sink prompt; on Normal it just ends the turn).
-    if (
-      isSharkGame(state) &&
-      state.teamAssigned &&
-      cur.team &&
-      ball !== EIGHT_BALL
-    ) {
-      const sharkGroup = cur.team === 'solids' ? STRIPES : SOLIDS;
-      if (sharkGroup.includes(ball)) {
-        resumeIfPaused();
-        pushUndo(state);
-        const now = Date.now();
-        const firstActionTime = state.firstActionTime ?? now;
-        const entry: ShotLogEntry = {
-          type: 'foul',
-          playerName: cur.name,
-          ball,
-          timestamp: now,
-          gameTime: now - state.gameStartTime,
-          note: `Sank a ${sharkGroup === STRIPES ? 'stripe' : 'solid'} — goes to Shark`,
-        };
-        let next: GameState = {
-          ...state,
-          sunkBalls: [...state.sunkBalls, ball],
-          sharkSunkBalls: [...(state.sharkSunkBalls ?? []), ball],
-          firstActionTime,
-          lastActionTime: now,
-          shotLog: [...state.shotLog, entry],
-        };
-        next = applySharkMiss(next, 'foul');
-        snapBpm(next.sunkBalls.length, firstActionTime, now);
-        applyState(next);
-        return;
-      }
-    }
+    // Note: in Shark mode, the Shark's group balls are filtered out by
+    // getLegalBalls after team assignment, and the selector's illegal styling
+    // prevents taps — same as 2P 8-ball. There's no foul-routing branch here.
 
     resumeIfPaused();
     pushUndo(state);
@@ -723,7 +680,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
               {allBalls.map(ball => (
                 <button
                   key={ball}
-                  className={ballClass(ball, legalBalls, state.sunkBalls, state.gameType, foulableBalls)}
+                  className={ballClass(ball, legalBalls, state.sunkBalls, state.gameType)}
                   onClick={() => sinkBall(ball)}
                   style={{ '--ball-color': BALL_COLORS[ball] } as React.CSSProperties}
                 >
