@@ -133,7 +133,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
 
         {/* Identity panel */}
         <div className="panel">
-          <div className="panel-header"><span><img src="/identity-icon.png" alt="" style={{ width: 13, height: 13, imageRendering: "pixelated", verticalAlign: "middle", marginRight: 4 }} />Identity</span></div>
+          <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><img src="/identity-icon.png" alt="" style={{ width: 13, height: 13, imageRendering: "pixelated", display: "block" }} />Identity</span></div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {editing ? (
               <div style={{ display: "flex", gap: 6 }}>
@@ -186,7 +186,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
 
         {/* Tier panel */}
         <div className="panel">
-          <div className="panel-header"><span><img src="/tier-icon.png" alt="" style={{ width: 13, height: 13, imageRendering: "pixelated", verticalAlign: "middle", marginRight: 4 }} />Tier</span></div>
+          <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><img src="/tier-icon.png" alt="" style={{ width: 13, height: 13, imageRendering: "pixelated", display: "block" }} />Tier</span></div>
           <div className="panel-body">
             <div style={{ fontFamily: "VT323", fontSize: 24, color: ent.tier === "pass" ? "#006400" : "#000080" }}>
               {tierLabel}
