@@ -626,7 +626,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           }}>
             <SharkIcon size={14} /><span>SHARK</span>
             <span style={{ marginLeft: 'auto', fontWeight: 'bold' }}>
-              {(state.sharkSunkBalls ?? []).length} stolen
+              {(state.sharkSunkBalls ?? []).length} sunk
             </span>
           </div>
         )}
