@@ -122,7 +122,11 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
   }
 
   const tierLabel =
-    ent.tier === "pass" ? "Pass Holder ★"
+    ent.tier === "pass"
+      ? ent.activePass?.kind === "lifetime" ? "Lifetime Pass ★"
+        : ent.activePass?.kind === "year" ? "Year Pass ★"
+        : ent.activePass?.kind === "day" ? "Day Pass ★"
+        : "Pass Holder ★"
     : ent.tier === "account" ? "Free Account"
     : "Public";
 
