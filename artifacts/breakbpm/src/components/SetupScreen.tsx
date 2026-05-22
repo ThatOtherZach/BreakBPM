@@ -325,8 +325,8 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           </div>
         )}
 
-        {/* Player names */}
-        <div>
+        {/* Player names — hidden in Shark Mode (solo, no need to name) */}
+        {!isShark && <div>
           <div className="menu-section-label">▶ {isPractice ? 'YOUR NAME' : 'PLAYER NAMES'}</div>
           <div className="flex flex-col gap-2">
             {Array.from({ length: count }).map((_, i) => {
@@ -377,7 +377,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
               </label>
             </div>
           )}
-        </div>
+        </div>}
 
         {isPractice && (
           <div className="notice">
