@@ -409,9 +409,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
                 onClick={() => setSharkAggression('hard')}
               >
                 Hard
-                <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>
-                  Steals on miss + foul
-                </span>
+                <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>Removes on miss & foul</span>
               </button>
             </div>
           </div>
