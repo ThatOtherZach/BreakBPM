@@ -42,6 +42,12 @@ export interface GameState {
    */
   sharkAggression?: SharkAggression;
   sharkSunkBalls?: number[];
+  /**
+   * Shark mode: a miss/foul has triggered a Shark sink and the UI is waiting
+   * for the player to tap which ball came off the table. Blocks normal play
+   * until resolved via resolveSharkPick().
+   */
+  pendingSharkPick?: boolean;
 }
 
 /** True when this is the solo-vs-Shark flavor of 8-ball. */
@@ -81,13 +87,11 @@ export function getLegalBalls(
   }
 
   // 8-ball
-  // Shark mode (8-ball solo): all 15 balls are legal the entire game, like
-  // practice. No solids/stripes assignment ever happens.
-  if (gameType === '8ball' && players.length === 1) {
-    return remaining;
-  }
   // The 8-ball is always a legal tap until it's sunk — the game logic handles
   // the consequence (loss or win) based on context. Never lock it out in the UI.
+  // Shark mode (solo) starts open: any non-8 ball is legal until the first
+  // player sink locks in a team, then this falls through to the assigned-team
+  // logic below.
   if (!currentPlayer.team) {
     return remaining; // no group assigned yet — all balls reachable
   }
@@ -168,29 +172,67 @@ export function shouldAssignTeams(
   ballSunk: number
 ): boolean {
   if (gameType !== '8ball') return false;
-  // Shark mode (solo 8-ball): no solids/stripes — all balls are legal the entire game.
-  if (players.length === 1) return false;
   if (teamAssigned) return false;
   if (ballSunk === EIGHT_BALL) return false;
   return true;
 }
 
 /**
- * Shark steals a random remaining non-8 ball after a player miss/foul,
- * per the current aggression setting:
- *   - 'normal' → steal only on 'miss'
- *   - 'hard'   → steal on 'miss' or 'foul'
+ * In Shark Mode, returns the set of balls the Shark is allowed to take when
+ * the player misses/fouls. Before team assignment the table is open (any
+ * remaining non-8 ball, minus any the Shark already has). Once teams are
+ * locked in, the Shark may only take from its own group — the player's
+ * group is safe from steals.
+ */
+export function getSharkPickCandidates(state: GameState): number[] {
+  const remaining = getRemainingBalls(state.sunkBalls, '8ball');
+  const sharkSunk = state.sharkSunkBalls ?? [];
+  let candidates = remaining.filter(b => b !== EIGHT_BALL && !sharkSunk.includes(b));
+  const player = state.players[0];
+  if (state.teamAssigned && player?.team) {
+    const sharkGroup = player.team === 'solids' ? STRIPES : SOLIDS;
+    candidates = candidates.filter(b => sharkGroup.includes(b));
+  }
+  return candidates;
+}
+
+/** Resolves a pending Shark sink: the chosen ball goes to the Shark's pile. */
+export function resolveSharkPick(state: GameState, ball: number): GameState {
+  const now = Date.now();
+  const sharkSunk = state.sharkSunkBalls ?? [];
+  const entry: ShotLogEntry = {
+    type: 'sink',
+    playerName: '🦈 Shark',
+    ball,
+    timestamp: now,
+    gameTime: now - state.gameStartTime,
+    note: `Shark sinks ball ${ball}`,
+  };
+  return {
+    ...state,
+    sunkBalls: [...state.sunkBalls, ball],
+    sharkSunkBalls: [...sharkSunk, ball],
+    pendingSharkPick: false,
+    lastActionTime: now,
+    shotLog: [...state.shotLog, entry],
+  };
+}
+
+/**
+ * Marks a Shark sink as pending after a player miss/foul, per the current
+ * aggression setting:
+ *   - 'normal' → trigger on 'miss' only
+ *   - 'hard'   → trigger on 'miss' or 'foul'
  *
- * The stolen ball is appended to BOTH `sharkSunkBalls` (Shark's score)
- * and `sunkBalls` (so the ball selector grays it out and the rack stays
- * consistent). A shot-log entry is added so History shows what happened.
+ * Sets `pendingSharkPick = true` so the UI can prompt the player to tap
+ * the ball they removed from the table. Use `resolveSharkPick()` once the
+ * player makes a selection.
  *
- * Special case: if the only ball left on the table is the 8, the Shark
- * wins the game outright instead of stealing — the player can no longer
- * recover.
+ * Special case: if the only ball remaining is the 8, the Shark wins
+ * outright (player cannot recover) — no pick is needed.
  *
  * Returns the state unchanged if the aggression setting blocks this
- * event type, or if nothing is available to steal.
+ * event type, or if the Shark has nothing legal to take.
  */
 export function applySharkMiss(
   state: GameState,
@@ -201,20 +243,16 @@ export function applySharkMiss(
   if (!allowed) return state;
 
   const remaining = getRemainingBalls(state.sunkBalls, '8ball');
-  const sharkSunk = state.sharkSunkBalls ?? [];
-  const candidates = remaining.filter(b => b !== EIGHT_BALL && !sharkSunk.includes(b));
 
-  const now = Date.now();
-  const gameTime = now - state.gameStartTime;
-
-  // Only the 8 remains and the player just missed/fouled → Shark wins.
-  if (candidates.length === 0 && remaining.includes(EIGHT_BALL)) {
+  // Only the 8 remains overall → player can't recover, Shark wins outright.
+  if (remaining.length === 1 && remaining[0] === EIGHT_BALL) {
+    const now = Date.now();
     const reason = eventType === 'foul' ? 'fouled on the 8-ball' : 'missed the 8-ball';
     const entry: ShotLogEntry = {
       type: 'lose',
       playerName: state.players[0]?.name ?? 'Player',
       timestamp: now,
-      gameTime,
+      gameTime: now - state.gameStartTime,
       note: `Shark wins — ${reason}`,
     };
     return {
@@ -227,25 +265,10 @@ export function applySharkMiss(
     };
   }
 
+  const candidates = getSharkPickCandidates(state);
   if (candidates.length === 0) return state;
 
-  const stolen = candidates[Math.floor(Math.random() * candidates.length)];
-  const sharkEntry: ShotLogEntry = {
-    type: 'sink',
-    playerName: '🦈 Shark',
-    ball: stolen,
-    timestamp: now,
-    gameTime,
-    note: `Shark steals ball ${stolen}`,
-  };
-
-  return {
-    ...state,
-    sunkBalls: [...state.sunkBalls, stolen],
-    sharkSunkBalls: [...sharkSunk, stolen],
-    lastActionTime: now,
-    shotLog: [...state.shotLog, sharkEntry],
-  };
+  return { ...state, pendingSharkPick: true };
 }
 
 export function assignTeams(
@@ -317,6 +340,7 @@ export function encodeGameState(state: GameState): string {
       sl: state.shotLog,
       ga: state.sharkAggression,
       gsb: state.sharkSunkBalls,
+      psp: state.pendingSharkPick,
     };
     return btoa(JSON.stringify(compact));
   } catch {
@@ -343,6 +367,7 @@ export function decodeGameState(encoded: string): Partial<GameState> | null {
       shotLog: Array.isArray(d.sl) ? d.sl : [],
       sharkAggression: d.ga,
       sharkSunkBalls: Array.isArray(d.gsb) ? d.gsb : undefined,
+      pendingSharkPick: d.psp ?? false,
     };
   } catch {
     return null;

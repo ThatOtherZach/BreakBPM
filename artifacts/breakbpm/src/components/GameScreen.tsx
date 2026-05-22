@@ -8,6 +8,7 @@ import {
   SOLIDS, STRIPES, EIGHT_BALL, getLowestBall,
   saveInProgressGame, clearInProgressGame,
   isSharkGame, applySharkMiss,
+  getSharkPickCandidates, resolveSharkPick,
 } from '../lib/gameLogic';
 import { useSaveGame, useRecordGameActivity } from '@workspace/api-client-react';
 import { FORFEIT_INACTIVITY_MS } from '../lib/forfeit';
@@ -41,14 +42,17 @@ const BALL_COLORS: Record<number, string> = {
   13: '#F27C1D', 14: '#276B40', 15: '#6B1F2A',
 };
 
-function ballClass(ball: number, legal: number[], sunk: number[], _gameType: string) {
+function ballClass(ball: number, legal: number[], sunk: number[], _gameType: string, foulable: number[] = []) {
   if (sunk.includes(ball)) return 'ball-btn sunk';
   const ok = legal.includes(ball);
+  const isFoulable = !ok && foulable.includes(ball);
   let base = 'ball-btn';
   if (ball === EIGHT_BALL) base += ' eight';
   else if (SOLIDS.includes(ball)) base += ' solid';
   else base += ' stripe';
-  base += ok ? ' legal' : ' illegal';
+  if (ok) base += ' legal';
+  else if (isFoulable) base += ' foulable';
+  else base += ' illegal';
   return base;
 }
 
@@ -258,8 +262,17 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   }, [state.shotLog]);
 
   const cur = state.players[state.currentPlayerIndex];
-  const legalBalls = state.phase === 'playing'
-    ? getLegalBalls(state.gameType, state.players, state.currentPlayerIndex, state.sunkBalls)
+  const pendingSharkPick = state.phase === 'playing' && !!state.pendingSharkPick;
+  const sharkPickCandidates = pendingSharkPick ? getSharkPickCandidates(state) : [];
+  const legalBalls = state.phase !== 'playing'
+    ? []
+    : pendingSharkPick
+      ? sharkPickCandidates
+      : getLegalBalls(state.gameType, state.players, state.currentPlayerIndex, state.sunkBalls);
+  // In shark mode after assignment, opposite-group balls remain tappable so
+  // an accidental sink can be routed as a foul (the ball goes to the Shark).
+  const foulableBalls = (!pendingSharkPick && isSharkGame(state) && state.teamAssigned && cur?.team)
+    ? (cur.team === 'solids' ? STRIPES : SOLIDS).filter(b => !state.sunkBalls.includes(b))
     : [];
   const allBalls = state.gameType === '9ball'
     ? [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -281,6 +294,59 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
   function sinkBall(ball: number) {
     if (state.phase !== 'playing' || state.sunkBalls.includes(ball)) return;
+
+    // Resolving a pending Shark sink — player tapped the ball they removed
+    // from the table. No new undo entry: undoing rolls back to before the
+    // miss/foul that triggered the pending state.
+    if (state.pendingSharkPick) {
+      const candidates = getSharkPickCandidates(state);
+      if (!candidates.includes(ball)) return;
+      const next = resolveSharkPick(state, ball);
+      snapBpm(next.sunkBalls.length, next.firstActionTime ?? Date.now(), next.lastActionTime ?? Date.now());
+      applyState(next);
+      return;
+    }
+
+    // Shark mode after team assignment: tapping one of the Shark's group
+    // balls means it dropped on the player's shot — counts as a foul. The
+    // ball goes to the Shark's pile, and the existing shark-miss flow runs
+    // on a 'foul' event (which on Hard aggression triggers another Shark
+    // sink prompt; on Normal it just ends the turn).
+    if (
+      isSharkGame(state) &&
+      state.teamAssigned &&
+      cur.team &&
+      ball !== EIGHT_BALL
+    ) {
+      const sharkGroup = cur.team === 'solids' ? STRIPES : SOLIDS;
+      if (sharkGroup.includes(ball)) {
+        resumeIfPaused();
+        pushUndo(state);
+        const now = Date.now();
+        const firstActionTime = state.firstActionTime ?? now;
+        const entry: ShotLogEntry = {
+          type: 'foul',
+          playerName: cur.name,
+          ball,
+          timestamp: now,
+          gameTime: now - state.gameStartTime,
+          note: `Sank a ${sharkGroup === STRIPES ? 'stripe' : 'solid'} — goes to Shark`,
+        };
+        let next: GameState = {
+          ...state,
+          sunkBalls: [...state.sunkBalls, ball],
+          sharkSunkBalls: [...(state.sharkSunkBalls ?? []), ball],
+          firstActionTime,
+          lastActionTime: now,
+          shotLog: [...state.shotLog, entry],
+        };
+        next = applySharkMiss(next, 'foul');
+        snapBpm(next.sunkBalls.length, firstActionTime, now);
+        applyState(next);
+        return;
+      }
+    }
+
     resumeIfPaused();
     pushUndo(state);
 
@@ -498,7 +564,8 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const dispTime = state.phase === 'playing' ? elapsed : (Date.now() - state.gameStartTime - pausedDuration);
 
   let selectorHint = '';
-  if (state.gameType === '9ball') selectorHint = `Hit (${lowest9}) first`;
+  if (pendingSharkPick) selectorHint = '🦈 Tap the ball you removed from the table';
+  else if (state.gameType === '9ball') selectorHint = `Hit (${lowest9}) first`;
   else if (state.gameType === '8ball') {
     if (!state.teamAssigned) selectorHint = 'First sink assigns team';
     else selectorHint = cur.team ? getTeamLabel(cur.team) : '';
@@ -563,16 +630,16 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           {state.sunkBalls.length === 0
             ? <span className="hud-terminal-idle">&gt;awaiting first shot</span>
             : state.sunkBalls.map((b, i) => {
-              const stolenByShark = (state.sharkSunkBalls ?? []).includes(b);
+              const sunkByShark = (state.sharkSunkBalls ?? []).includes(b);
               return (
                 <span
                   key={i}
                   className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}`}
                   style={{
                     '--chip-color': BALL_COLORS[b],
-                    ...(stolenByShark ? { opacity: 0.45, textDecoration: 'line-through' } : {}),
+                    ...(sunkByShark ? { opacity: 0.45 } : {}),
                   } as React.CSSProperties}
-                  title={stolenByShark ? 'Stolen by the Shark' : undefined}
+                  title={sunkByShark ? 'Sunk by the Shark' : undefined}
                 >
                   {b}
                 </span>
@@ -656,7 +723,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
               {allBalls.map(ball => (
                 <button
                   key={ball}
-                  className={ballClass(ball, legalBalls, state.sunkBalls, state.gameType)}
+                  className={ballClass(ball, legalBalls, state.sunkBalls, state.gameType, foulableBalls)}
                   onClick={() => sinkBall(ball)}
                   style={{ '--ball-color': BALL_COLORS[ball] } as React.CSSProperties}
                 >
@@ -664,7 +731,15 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 </button>
               ))}
             </div>
-            {state.gameType === '8ball' && !state.teamAssigned && !isSharkGame(state) && (
+            {pendingSharkPick && (
+              <div className="notice" style={{ marginTop: 6, background: '#1a0a2e', color: '#d8b4ff', borderColor: '#5a2a8a' }}>
+                <span>🦈</span>
+                <span style={{ fontSize: 11 }}>
+                  The Shark sinks a ball — remove one from the table and tap it above.
+                </span>
+              </div>
+            )}
+            {state.gameType === '8ball' && !state.teamAssigned && !pendingSharkPick && (
               <div className="notice" style={{ marginTop: 6 }}>
                 <span>💡</span>
                 <span style={{ fontSize: 11 }}>First ball sunk assigns Solids (1-7) or Stripes (9-15)</span>
@@ -676,11 +751,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         {/* ── Actions ── */}
         {state.phase === 'playing' && (
           <div className="action-grid">
-            <button className="btn btn-big" onClick={() => turnAction('miss')}><img src="/miss-icon.png" alt="Miss" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Miss</button>
-            <button className="btn btn-big btn-danger" onClick={() => turnAction('foul', 'Ball to opponent')}><img src="/foul-icon.png" alt="Foul" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Foul</button>
+            <button className="btn btn-big" onClick={() => turnAction('miss')} disabled={pendingSharkPick}><img src="/miss-icon.png" alt="Miss" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Miss</button>
+            <button className="btn btn-big btn-danger" onClick={() => turnAction('foul', 'Ball to opponent')} disabled={pendingSharkPick}><img src="/foul-icon.png" alt="Foul" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Foul</button>
             {state.gameType === 'practice'
               ? <button className={`btn btn-big${paused ? ' btn-primary' : ''}`} onClick={handlePause}>{paused ? '▶️ Resume' : '⏸️ Pause'}</button>
-              : <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')}><img src="/safety-icon.png" alt="Safety" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Safety</button>
+              : <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')} disabled={pendingSharkPick}><img src="/safety-icon.png" alt="Safety" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Safety</button>
             }
             <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}><img src="/undo-icon.png" alt="Undo" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Undo</button>
           </div>

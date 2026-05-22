@@ -690,6 +690,17 @@ body {
   filter: grayscale(1) brightness(0.7);
 }
 
+/* Foulable (shark mode, opposite group): dimmed but still tappable — sinking
+   one feeds the Shark instead of crediting the player. */
+.ball-btn.foulable {
+  opacity: 0.5;
+  filter: saturate(0.4);
+}
+.ball-btn.foulable:hover {
+  opacity: 0.75;
+  outline: 1px dashed #c33;
+}
+
 /* ── Player indicator ── */
 .current-player {
   background: #e8f0ff;
