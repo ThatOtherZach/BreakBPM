@@ -337,7 +337,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
 
         {/* Player names — hidden in Shark Mode (solo, no need to name) */}
         {!isShark && (<div>
-          <div className="menu-section-label">▶ {isPractice ? 'YOUR NAME' : 'PLAYER NAMES'}</div>
+          <div className="menu-section-label">▶ {isPractice ? 'YOUR NAME' : 'PLAYERS'}</div>
           <div className="flex flex-col gap-2">
             {Array.from({ length: count }).map((_, i) => {
               // Slot 1 is locked to the signed-in user so they can't
