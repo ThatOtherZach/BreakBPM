@@ -135,7 +135,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
         <div className="panel">
           <div className="panel-header"><span>👤 Identity</span></div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ fontSize: 11, color: "#444" }}>SCREEN NAME</div>
             {editing ? (
               <div style={{ display: "flex", gap: 6 }}>
                 <input
