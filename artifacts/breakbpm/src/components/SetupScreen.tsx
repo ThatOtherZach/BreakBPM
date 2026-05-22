@@ -377,7 +377,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           {gameType === '8ball' && !isPractice && !isShark && (
             <div style={{ marginTop: 10 }}>
               <div className="menu-section-label">▶ TEAM ASSIGNMENT</div>
-              <label className="checkbox-label">
+              <label className="checkbox-label text-left flex-row justify-end items-center gap-[5px]">
                 <input
                   type="checkbox"
                   checked={autoTeam}
