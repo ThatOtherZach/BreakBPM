@@ -771,11 +771,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         {state.phase === 'playing' && (
           <div style={{ display: 'flex', gap: 8 }}>
             {state.gameType === 'practice' && (
-              <button className="btn" style={{ flex: 1 }} onClick={handleReset}>
+              <button className="btn btn-big" style={{ flex: 1 }} onClick={handleReset}>
                 <img src="/reset-icon.png" alt="Reset" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Reset Table
               </button>
             )}
-            <button className="btn btn-danger" style={{ flex: 1 }} onClick={() => setConfirmNew(true)}>
+            <button className="btn btn-big btn-danger" style={{ flex: 1 }} onClick={() => setConfirmNew(true)}>
               <img src="/endgame-icon.png" alt="End Game" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />End Game / New Game
             </button>
           </div>
