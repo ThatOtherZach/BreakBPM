@@ -232,7 +232,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           <div className="splash-title-rule" />
           <div className="splash-meta">
             <span>v{APP_VERSION}</span>
-            <span>© 2026 Saym Services Inc.</span>
+            <span>©Saym Services 2026</span>
           </div>
           <div className="splash-tagline text-left">
             PLAY FAST,<br />
