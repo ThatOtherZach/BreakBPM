@@ -13,7 +13,15 @@ interface AboutScreenProps {
 }
 
 export default function AboutScreen({ onBack }: AboutScreenProps) {
-  const html = useMemo(() => marked(aboutMd) as string, []);
+  const html = useMemo(() => {
+    const raw = marked(aboutMd) as string;
+    // Replace 🦈 emoji with the canonical pixel-art shark icon so the
+    // About page stays consistent with the rest of the UI.
+    return raw.replaceAll(
+      '🦈',
+      '<img src="/shark-icon.png" alt="Shark" style="width:16px;height:16px;image-rendering:pixelated;vertical-align:middle;display:inline-block">',
+    );
+  }, []);
 
   return (
     <div className="app-window about-window">
