@@ -514,10 +514,15 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   if (state.gameType === '8ball' && state.teamAssigned && cur?.team) {
     const myGroup = cur.team === 'solids' ? SOLIDS : STRIPES;
     const myLeft = myGroup.filter(b => !state.sunkBalls.includes(b)).length;
+    const eightLeft = state.sunkBalls.includes(EIGHT_BALL) ? 0 : 1;
     if (myLeft === 0) {
+      // Group cleared — only the 8 stands between them and the win.
       remainingSubLabel = '8-BALL TO WIN';
     } else {
-      remainingSubLabel = `${myLeft} ${cur.team === 'solids' ? 'SOLIDS' : 'STRIPES'} LEFT`;
+      // Group balls still on the table — include the 8 in the count so
+      // the readout reflects everything this shooter still needs to pocket.
+      const total = myLeft + eightLeft;
+      remainingSubLabel = `${total} ${cur.team === 'solids' ? 'SOLIDS' : 'STRIPES'} LEFT`;
     }
   } else {
     const left = getRemainingBalls(state.sunkBalls, state.gameType).length;
