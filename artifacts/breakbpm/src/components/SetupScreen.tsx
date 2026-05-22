@@ -176,6 +176,15 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
   // every miss/foul lets the invisible Shark steal a ball.
   const isShark = gameType === '8ball' && playerCount === 1;
 
+  // 9-Ball has no solo/Shark variant. If the user is on Shark (1P) and
+  // switches to 9-Ball, bump them to Singles (2P) so the player-count
+  // selector doesn't show a stale/invalid selection.
+  useEffect(() => {
+    if (gameType === '9ball' && playerCount === 1) {
+      setPlayerCount(2);
+    }
+  }, [gameType, playerCount]);
+
   async function handleStart() {
     setStartError('');
     const players: Player[] = Array.from({ length: count }, (_, i) => {
@@ -312,7 +321,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           <div>
             <div className="menu-section-label">▶ PLAYERS</div>
             <div className="flex gap-1">
-              {[1, 2, 4].map(n => (
+              {(gameType === '9ball' ? [2, 4] : [1, 2, 4]).map(n => (
                 <button
                   key={n}
                   className={`btn ${playerCount === n ? 'selected' : ''}`}
@@ -391,7 +400,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           <div>
             <div className="menu-section-label">▶ SHARK MODE</div>
             <div className="notice" style={{ marginBottom: 8 }}>
-              <span style={{ fontSize: 11 }}>Solo 8-ball an invisible Shark player. Your first ball locks in solids or stripes; the other group goes to the Shark. Clear your group and sink the 8 ball to win. Misses and fouls feed balls to the Shark.</span>
+              <span style={{ fontSize: 11 }}>Solo 8-ball with an invisible Shark player. Your first ball locks in solids or stripes; the other group goes to the Shark. Clear your group and sink the 8 ball to win. Misses and fouls feed balls to the Shark.</span>
             </div>
             <div className="menu-section-label" style={{ marginTop: 4 }}>▶ AGGRESSION</div>
             <div className="flex gap-1">
