@@ -319,7 +319,6 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
         {/* Player count */}
         {!isPractice && (
           <div>
-            <div className="menu-section-label">▶ PLAYERS</div>
             <div className="flex gap-1">
               {(gameType === '9ball' ? [2, 4] : [1, 2, 4]).map(n => (
                 <button
