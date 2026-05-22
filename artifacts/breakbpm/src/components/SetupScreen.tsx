@@ -231,7 +231,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           <div className="splash-title-sub">BILLIARDS SCORE SYSTEM</div>
           <div className="splash-title-rule" />
           <div className="splash-meta">
-            <span>VER {APP_VERSION}</span>
+            <span>v{APP_VERSION}</span>
             <span>© 2026 Saym Services Inc.</span>
           </div>
           <div className="splash-tagline text-left">
