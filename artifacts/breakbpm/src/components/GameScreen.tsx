@@ -637,7 +637,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             <span className="hud-winner-text" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               {state.winner ? (
                 <>
-                  ★ {state.winner === SHARK_PLAYER_NAME && <SharkIcon size={18} />}
+                  ★ {state.winner === SHARK_PLAYER_NAME && <SharkIcon size={21} />}
                   {state.winner.toUpperCase()} WINS
                 </>
               ) : 'GAME OVER'}
