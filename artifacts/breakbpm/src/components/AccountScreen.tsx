@@ -133,7 +133,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
 
         {/* Identity panel */}
         <div className="panel">
-          <div className="panel-header"><span>👤 Identity</span></div>
+          <div className="panel-header"><span><img src="/identity-icon.png" alt="" style={{ width: 13, height: 13, imageRendering: "pixelated", verticalAlign: "middle", marginRight: 4 }} />Identity</span></div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {editing ? (
               <div style={{ display: "flex", gap: 6 }}>
