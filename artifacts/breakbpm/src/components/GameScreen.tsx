@@ -377,31 +377,31 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
     if (result.win) {
       next.phase = 'ended';
-      // Shark mode: verdict is decided by Balls-Per-Shot.
-      //   yourSinks = every ball sunk that the Shark didn't steal (includes the 8 you just sunk)
-      //   yourShots = every shot-log entry NOT made by the Shark, +1 for this final winning sink
+      next.winner = cur.name;
+      next.winMessage = result.message;
+      // Shark mode: append Balls-Per-Shot as a displayed stat (not a verdict).
       if (isSharkGame(next)) {
         const sharkBalls = next.sharkSunkBalls ?? [];
         const yourSinks = next.sunkBalls.filter(b => !sharkBalls.includes(b)).length;
         const yourShots = next.shotLog.filter(e => e.playerName !== '🦈 Shark').length + 1;
         const bps = yourShots > 0 ? yourSinks / yourShots : 0;
-        const bpsStr = bps.toFixed(2);
-        if (bps > 1) {
-          next.winner = cur.name;
-          next.winMessage = `🎉 You BEAT THE SHARK! (${bpsStr} balls/shot)`;
-        } else {
-          next.winner = '🦈 Shark';
-          next.winMessage = `Shark got you this time — aim for >1 ball/shot next time. (${bpsStr} balls/shot)`;
-        }
-      } else {
-        next.winner = cur.name;
-        next.winMessage = result.message;
+        next.winMessage = `🎉 ${result.message} (${bps.toFixed(2)} balls/shot)`;
       }
     } else if (result.lose) {
-      const winIdx = next.players.findIndex((_, i) => i !== next.currentPlayerIndex);
       next.phase = 'ended';
-      next.winner = winIdx >= 0 ? next.players[winIdx].name : 'Opponent';
       next.winMessage = result.message;
+      if (isSharkGame(next)) {
+        // Shark mode: the Shark is the only opponent. Append BPS as a stat.
+        next.winner = '🦈 Shark';
+        const sharkBalls = next.sharkSunkBalls ?? [];
+        const yourSinks = next.sunkBalls.filter(b => !sharkBalls.includes(b)).length;
+        const yourShots = next.shotLog.filter(e => e.playerName !== '🦈 Shark').length + 1;
+        const bps = yourShots > 0 ? yourSinks / yourShots : 0;
+        next.winMessage = `${result.message} (${bps.toFixed(2)} balls/shot)`;
+      } else {
+        const winIdx = next.players.findIndex((_, i) => i !== next.currentPlayerIndex);
+        next.winner = winIdx >= 0 ? next.players[winIdx].name : 'Opponent';
+      }
     } else if (state.gameType === 'practice' && remaining.length === 1) {
       next.phase = 'ended';
       next.winner = cur.name;

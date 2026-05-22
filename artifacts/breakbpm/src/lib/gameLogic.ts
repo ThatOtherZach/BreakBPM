@@ -133,12 +133,9 @@ export function checkSinkResult(
     const newSunk = [...sunkBalls, ballSunk];
 
     if (ballSunk === EIGHT_BALL) {
-      // Shark mode: sinking the 8 ends the game. Win/lose verdict is decided
-      // in GameScreen based on Balls-Per-Shot (>1 = beat the Shark). Here we
-      // just signal that the game is over.
-      if (players.length === 1) {
-        return { win: true, lose: false, message: '', switchTurn: false };
-      }
+      // Shark mode follows the same end-condition rules as 2-player 8-ball:
+      // Golden Break wins, early 8 loses, group-cleared + 8 wins. BPS is only
+      // a displayed stat in GameScreen, never the deciding factor.
 
       // Golden Break: 8-ball sunk as the very first ball on the break → instant win
       if (sunkBalls.length === 0) {
