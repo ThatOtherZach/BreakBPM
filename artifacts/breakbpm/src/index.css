@@ -1175,12 +1175,7 @@ html, #root {
   top: 50%;
   left: 0;
   right: 0;
-  /* Taller than the inner white circle (15px + 1.5px border = 18px
-     outer) so the colored band peeks above and below the number
-     circle. With only side-exposure (as the reference uses on a
-     bigger 32px ball) darker stripe colors at this small size read
-     as a black ball with a number. */
-  height: 20px;
+  height: 11px;
   background: var(--chip-color);
   transform: translateY(-50%);
   border-top: 1px solid var(--chip-ink);
