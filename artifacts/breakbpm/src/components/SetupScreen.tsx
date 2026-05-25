@@ -518,11 +518,6 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
             }}
           >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <img
-                src="/join-icon.png"
-                alt=""
-                style={{ width: 13, height: 13, imageRendering: 'pixelated', display: 'block' }}
-              />
               JOIN SHARED GAME
             </span>
             <span aria-hidden="true">{joinOpen ? '▼' : '▶'}</span>
