@@ -297,7 +297,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
         </div>
       </div>
       {/* ── Menu body ── */}
-      <div className="app-body">
+      <div className="app-body pb-[10px]">
 
         {/* Resume in-progress game (signed-in users whose localStorage was
             cleared — different device, new browser, etc.) */}
