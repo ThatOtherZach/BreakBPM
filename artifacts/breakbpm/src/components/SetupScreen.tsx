@@ -445,9 +445,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, flex: 1 }}>
                   <span style={{ fontWeight: 'bold', fontSize: 13 }}>Automatic team assignment</span>
-                  <span style={{ fontSize: 11, color: '#444' }}>
-                    First pocketed ball locks each player's group
-                  </span>
+                  <span style={{ fontSize: 11, color: '#444' }}>First ball locks player groups</span>
                 </span>
                 <div className="flex gap-1" style={{ flexShrink: 0 }}>
                   <button
