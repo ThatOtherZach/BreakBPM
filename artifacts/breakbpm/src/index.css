@@ -664,7 +664,7 @@ html, #root {
   cursor: pointer;
   user-select: none;
   touch-action: manipulation;
-  padding: 4px;
+  padding: 0;
   aspect-ratio: 1;
   display: flex;
   align-items: center;
@@ -677,18 +677,54 @@ html, #root {
   border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
 }
 
-/* Pixel-art ball sprite */
-.ball-sprite {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  display: block;
-  pointer-events: none;
+/* Solid balls: full ball color as background */
+.ball-btn.solid {
+  background: var(--ball-color);
 }
 
-/* Legal: full opacity — sprite shows naturally */
+/* 8-ball: black background */
+.ball-btn.eight {
+  background: #000;
+  border-color: #555 var(--dshadow) var(--dshadow) #555;
+}
+
+/* Stripe balls: white with a horizontal color band */
+.ball-btn.stripe {
+  background: #fff;
+}
+
+.ball-btn.stripe::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 48%;
+  background: var(--ball-color);
+  z-index: 0;
+}
+
+/* Number circle — sits on top of the stripe/color */
+.ball-num {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 900;
+  font-size: 12px;
+  color: #000;
+  line-height: 1;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+}
+
+/* Legal: full opacity — ball colors show naturally */
 .ball-btn.legal { /* default, no override */ }
 
 /* Illegal: dimmed and desaturated */
