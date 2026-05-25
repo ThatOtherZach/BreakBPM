@@ -261,7 +261,12 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
   }
 
   return (
-    <div className="app-window">
+    // app-window--page: lets the whole document scroll (splash + body
+    // together) instead of trapping scroll inside .app-body. The navbar
+    // stays sticky at the top. Matches the Account/About/Passes screens
+    // so the splash panel scrolls away on mobile when the keyboard
+    // appears for player-name input.
+    <div className="app-window app-window--page">
       {/* Title bar */}
       <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
       {/* ── PC-98 Splash Panel ── */}
