@@ -53,6 +53,10 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
   const [autoTeam, setAutoTeam] = useState(true);
   const [manualTeams, setManualTeams] = useState<('solids' | 'stripes' | '')[]>(['', '', '', '']);
   const [joinCode, setJoinCode] = useState('');
+  // Join Shared Game panel starts collapsed to keep the main menu short
+  // on mobile. Users who don't intend to join shouldn't have to scroll
+  // past the input. Not persisted — resets to collapsed on every visit.
+  const [joinOpen, setJoinOpen] = useState(false);
   // Shark mode (8-ball + 1P) aggression toggle. Default to 'normal' so new
   // players aren't overwhelmed. Only sent to onStart when the combo matches.
   const [sharkAggression, setSharkAggression] = useState<SharkAggression>('normal');
@@ -494,27 +498,57 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
 
         <hr className="sep" />
 
-        {/* Join shared game */}
-        <div>
-          <div className="menu-section-label">▶ JOIN SHARED GAME</div>
-          <div className="flex gap-2 items-center">
-            <input
-              className="input"
-              value={joinCode}
-              onChange={e => setJoinCode(e.target.value.toUpperCase())}
-              placeholder="4-DIGIT CODE"
-              maxLength={4}
-              style={{ fontFamily: "'VT323',monospace", fontSize: 20, letterSpacing: 6, flex: 1 }}
-            />
-            <button
-              className="btn"
-              onClick={handleJoin}
-              disabled={joinCode.trim().length < 1}
-              style={{ flexShrink: 0 }}
-            >
-              Join →
-            </button>
-          </div>
+        {/* Join shared game — collapsible panel.
+            Header mirrors AccountScreen's Recent Games panel (icon + label).
+            Body (input + Join button) is mounted only when expanded so the
+            input is fully removed from tab order / autofocus when closed. */}
+        <div className="panel">
+          <button
+            type="button"
+            className="panel-header"
+            onClick={() => setJoinOpen(o => !o)}
+            aria-expanded={joinOpen}
+            aria-controls="join-shared-body"
+            style={{
+              width: '100%',
+              border: 'none',
+              cursor: 'pointer',
+              font: 'inherit',
+              textAlign: 'left',
+            }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <img
+                src="/join-icon.png"
+                alt=""
+                style={{ width: 13, height: 13, imageRendering: 'pixelated', display: 'block' }}
+              />
+              JOIN SHARED GAME
+            </span>
+            <span aria-hidden="true">{joinOpen ? '▼' : '▶'}</span>
+          </button>
+          {joinOpen && (
+            <div className="panel-body" id="join-shared-body">
+              <div className="flex gap-2 items-center">
+                <input
+                  className="input"
+                  value={joinCode}
+                  onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                  placeholder="4-DIGIT CODE"
+                  maxLength={4}
+                  style={{ fontFamily: "'VT323',monospace", fontSize: 20, letterSpacing: 6, flex: 1 }}
+                />
+                <button
+                  className="btn"
+                  onClick={handleJoin}
+                  disabled={joinCode.trim().length < 1}
+                  style={{ flexShrink: 0 }}
+                >
+                  Join →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
