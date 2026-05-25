@@ -73,11 +73,13 @@ html, #root {
   position: sticky;
   top: 0;
 }
-/* Pin the statusbar to the viewport bottom on page-scroll screens so
-   it stays visible while the content above scrolls. Sticky works
-   because .app-window--page is min-height:100dvh — the statusbar's
-   containing block extends to (or past) the viewport bottom. */
+/* Pin the statusbar to the viewport bottom on page-scroll screens.
+   `margin-top: auto` pushes it to the end of the flex column
+   (.app-window is min-height:100dvh, so on short content this places
+   the statusbar at the viewport bottom). `position: sticky; bottom: 0`
+   keeps it pinned during scroll when content overflows the viewport. */
 .app-window.app-window--page .statusbar {
+  margin-top: auto;
   position: sticky;
   bottom: 0;
   z-index: 50;
