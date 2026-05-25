@@ -1123,36 +1123,19 @@ html, #root {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   background: #fffef2;
   border: 1.5px solid var(--chip-ink);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Arial Narrow', Arial, Helvetica, sans-serif;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
-  letter-spacing: 0;
-  line-height: 1;
-  text-align: center;
-  text-indent: 0;
-  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
   color: var(--chip-ink);
-  padding: 0;
   z-index: 2;
-}
-
-/* Two-digit balls (10–15) need a slightly smaller glyph to sit cleanly
-   inside the 15px circle without optical drift. */
-.hud-chip[data-number="10"]::after,
-.hud-chip[data-number="11"]::after,
-.hud-chip[data-number="12"]::after,
-.hud-chip[data-number="13"]::after,
-.hud-chip[data-number="14"]::after,
-.hud-chip[data-number="15"]::after {
-  font-size: 8px;
 }
 
 .hud-chip-solid {
