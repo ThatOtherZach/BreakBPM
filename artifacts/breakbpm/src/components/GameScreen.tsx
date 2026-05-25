@@ -96,14 +96,17 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   }, []);
 
   // Timer — only tracks elapsed time. BPM is NOT updated here.
+  // Anchored on timerStartTime (set on the first pocket) so break/racking
+  // doesn't inflate the visible clock. Stays at 0 until the first ball drops.
   // Stops when paused; pausedDuration is subtracted so the displayed time excludes idle pauses.
   useEffect(() => {
     if (state.phase !== 'playing' || paused) return;
+    if (state.timerStartTime == null) { setElapsed(0); return; }
     const id = setInterval(() => {
-      setElapsed(Date.now() - state.gameStartTime - pausedDuration);
+      setElapsed(Date.now() - state.timerStartTime! - pausedDuration);
     }, 1000);
     return () => clearInterval(id);
-  }, [state.phase, state.gameStartTime, paused, pausedDuration]);
+  }, [state.phase, state.timerStartTime, paused, pausedDuration]);
 
   // System clock
   useEffect(() => {
@@ -155,7 +158,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           shareCode: state.shareCode,
           winner: state.winner,
           bpm: finalBpmSnap,
-          durationMs: Math.max(0, Date.now() - state.gameStartTime - pausedDuration),
+          durationMs: state.timerStartTime != null
+            ? Math.max(0, Date.now() - state.timerStartTime - pausedDuration)
+            : 0,
           sunkBallsCount: state.sunkBalls.length,
           outcome: forfeitedRef.current
             ? 'forfeit'
@@ -313,6 +318,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     // Record first action time if this is the first event
     if (!next.firstActionTime) next.firstActionTime = now;
     next.lastActionTime = now;
+    // Pocketing event → start the pace clock if it hasn't started yet.
+    // The break and any pre-pocket misses/fouls/safeties leave it at null.
+    if (next.timerStartTime == null) next.timerStartTime = now;
 
     if (shouldAssignTeams(state.gameType, state.teamAssigned, state.players, state.currentPlayerIndex, ball)) {
       next.players = assignTeams(state.players, state.currentPlayerIndex, ball);
@@ -328,7 +336,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       playerName: cur.name,
       ball,
       timestamp: now,
-      gameTime: now - state.gameStartTime,
+      gameTime: now - next.timerStartTime,
       note: result.message || undefined,
     };
     // Stamp the player's per-player BPM at the moment of this pocket. We
@@ -383,6 +391,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
     const now = Date.now();
     const firstActionTime = state.firstActionTime ?? now;
+    // Pre-pocket entries (miss/foul/safety/foul-on-8) don't start the pace
+    // clock; their gameTime collapses to 0 if no ball has been sunk yet.
+    const gameTime = state.timerStartTime != null ? now - state.timerStartTime : 0;
 
     // Foul-on-8 rule: if the player fouls while the 8-ball is their only
     // remaining legal ball (group fully cleared), it's an instant loss.
@@ -402,7 +413,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           : (winnerIdx >= 0 ? state.players[winnerIdx].name : 'Opponent');
         const entry: ShotLogEntry = {
           type: 'lose', playerName: cur.name,
-          timestamp: now, gameTime: now - state.gameStartTime,
+          timestamp: now, gameTime,
           note: 'Foul on the 8-ball',
         };
         const next: GameState = {
@@ -422,7 +433,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     const nextIdx = (state.currentPlayerIndex + 1) % state.players.length;
     const entry: ShotLogEntry = {
       type, playerName: cur.name,
-      timestamp: now, gameTime: now - state.gameStartTime, note,
+      timestamp: now, gameTime, note,
     };
     let next: GameState = {
       ...state,
@@ -461,7 +472,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   function handlePause() {
     if (!paused) {
       // Freeze elapsed precisely at this moment before the interval stops
-      setElapsed(Date.now() - state.gameStartTime - pausedDuration);
+      setElapsed(state.timerStartTime != null
+        ? Date.now() - state.timerStartTime - pausedDuration
+        : 0);
       setPaused(true);
       setPauseStart(Date.now());
     } else {
@@ -488,6 +501,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       sunkBalls: [],
       shotLog: [],
       firstActionTime: null,
+      timerStartTime: null,
       lastActionTime: null,
       gameStartTime: now,
       winner: null,
@@ -512,7 +526,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const dispBpm = dispPlayerName
     ? calculatePlayerBPM(state.shotLog, dispPlayerName)
     : null;
-  const dispTime = state.phase === 'playing' ? elapsed : (Date.now() - state.gameStartTime - pausedDuration);
+  const dispTime = state.phase === 'playing'
+    ? elapsed
+    : (state.timerStartTime != null
+        ? Math.max(0, Date.now() - state.timerStartTime - pausedDuration)
+        : 0);
 
   // Sublabel under the hero BPM: how many balls the shooter still needs to
   // pocket. In 8-ball (and Shark) after teams are assigned, this is the

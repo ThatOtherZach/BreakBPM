@@ -35,6 +35,14 @@ export interface GameState {
   gameStartTime: number;
   /** Timestamp of the very first action (sink/miss/foul/safety). BPM is measured from here. */
   firstActionTime: number | null;
+  /**
+   * Pace clock anchor. Set the first time ANY ball is pocketed (sink, or a
+   * terminal win/lose entry that also pockets a ball). Null until then so
+   * the HUD shows 00:00 through the break, racking, and any pre-pocket
+   * misses/fouls/safeties. The visible elapsed clock and the saved
+   * durationMs are measured from here.
+   */
+  timerStartTime: number | null;
   /** Last action timestamp — used for the final BPM snapshot at game end. */
   lastActionTime: number | null;
   winner: string | null;
@@ -210,16 +218,19 @@ export function getSharkPickCandidates(state: GameState): number[] {
 export function resolveSharkPick(state: GameState, ball: number): GameState {
   const now = Date.now();
   const sharkSunk = state.sharkSunkBalls ?? [];
+  // Pocketing event → starts the pace clock if it hasn't started yet.
+  const timerStartTime = state.timerStartTime ?? now;
   const entry: ShotLogEntry = {
     type: 'sink',
     playerName: SHARK_PLAYER_NAME,
     ball,
     timestamp: now,
-    gameTime: now - state.gameStartTime,
+    gameTime: now - timerStartTime,
     note: `Shark sinks ball ${ball}`,
   };
   return {
     ...state,
+    timerStartTime,
     sunkBalls: [...state.sunkBalls, ball],
     sharkSunkBalls: [...sharkSunk, ball],
     pendingSharkPick: false,
@@ -262,7 +273,7 @@ export function applySharkMiss(
       type: 'lose',
       playerName: state.players[0]?.name ?? 'Player',
       timestamp: now,
-      gameTime: now - state.gameStartTime,
+      gameTime: state.timerStartTime != null ? now - state.timerStartTime : 0,
       note: `Shark wins — ${reason}`,
     };
     return {
@@ -386,6 +397,7 @@ export function encodeGameState(state: GameState): string {
       sb: state.sunkBalls,
       gst: state.gameStartTime,
       fat: state.firstActionTime,
+      tst: state.timerStartTime,
       lat: state.lastActionTime,
       w: state.winner,
       wm: state.winMessage,
@@ -413,6 +425,7 @@ export function decodeGameState(encoded: string): Partial<GameState> | null {
       sunkBalls: d.sb,
       gameStartTime: d.gst,
       firstActionTime: d.fat ?? null,
+      timerStartTime: d.tst ?? null,
       lastActionTime: d.lat ?? null,
       winner: d.w,
       winMessage: d.wm,

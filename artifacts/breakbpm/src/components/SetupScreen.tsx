@@ -126,6 +126,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
       shotLog: gs.shotLog ?? [],
       gameStartTime: safeGameStartTime,
       firstActionTime: gs.firstActionTime ?? null,
+      timerStartTime: gs.timerStartTime ?? null,
       lastActionTime: gs.lastActionTime ?? null,
       winner: gs.winner ?? null,
       winMessage: gs.winMessage ?? '',
