@@ -306,17 +306,23 @@ html, #root {
 .about-markdown strong { font-weight: bold; }
 .about-markdown em { font-style: italic; }
 .about-markdown hr { border: none; border-top: 1px solid #ccc; margin: 12px 0; }
-.about-shark-icon {
+/* Reusable CSS cue ball — used as the Foul button glyph. White ball with
+   a thin dark outline, a soft top-left highlight (the cue-ball shine),
+   and a small red dot in the center (the cue-ball-in-hand foul marker). */
+.cue-ball-icon {
+  display: inline-block;
   width: 16px;
   height: 16px;
-  image-rendering: pixelated;
-  vertical-align: -2px;
-  display: inline-block;
-}
-.about-shark-icon-lg {
-  width: 24px;
-  height: 24px;
   vertical-align: -3px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, #c8161d 0 2px, transparent 2.5px),
+    radial-gradient(circle at 32% 30%, #ffffff 0 3px, rgba(255,255,255,0) 6px),
+    radial-gradient(circle at 65% 70%, #c8c8c8 0%, #ffffff 60%);
+  box-shadow:
+    inset 0 0 0 1px #000,
+    inset -1px -1px 0 rgba(0,0,0,0.25);
+  flex-shrink: 0;
 }
 .about-markdown blockquote {
   border-left: 3px solid var(--navy);

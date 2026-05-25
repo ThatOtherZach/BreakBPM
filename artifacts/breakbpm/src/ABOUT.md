@@ -13,7 +13,7 @@ BPM is calculated per-player, anchored at your first pocket of the game, so it r
 - **8-Ball**: Solids vs Stripes. Full rules including Golden Break and foul-on-8.
 - **9-Ball**: Sink the 9 to win. That's it.
 - **Practice**: Solo drills with unlimited racks. Watch your BPM improve session over session.
-- **<img src="/shark-icon.png" alt="" class="about-shark-icon" /> Shark Mode (1P 8-Ball)**: Solo 8-ball vs an invisible Shark opponent. See below.
+- **🦈 Shark Mode (1P 8-Ball)**: Solo 8-ball vs an invisible Shark opponent. See below.
 
 ## Play anywhere, with anyone
 
@@ -39,7 +39,7 @@ Pool isn't just about who wins, it's about *how* you play. A 1.0 BPM game agains
 - Works on any phone, no install required
 - Free forever, but to save your stats you'll need an account ;)
 
-## <img src="/shark-icon.png" alt="" class="about-shark-icon about-shark-icon-lg" /> Shark Mode
+## 🦈 Shark Mode
 
 You're playing solo against an invisible opponent. Your first sink locks in your group (solids or stripes); the other goes to the Shark. Clear your group and sink the 8 to win, but every miss gives the Shark a chance to pocket a ball. It's an honor system, so you'll need to decide what ball could be sunk by a shark each time and then remove it from the table.
 

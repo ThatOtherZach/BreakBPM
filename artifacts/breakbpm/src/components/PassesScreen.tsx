@@ -97,7 +97,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
       <div className="app-body">
 
         <div className="panel">
-          <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><img src="/passes-icon.png" alt="" style={{ width: 13, height: 13, imageRendering: "pixelated", display: "block" }} />Get a Pass</span></div>
+          <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🎟️</span>Get a Pass</span></div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {TIERS.map((t) => (
               <div
@@ -132,7 +132,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
         </div>
 
         <div className="panel">
-          <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><img src="/redeem-icon.png" alt="" style={{ width: 13, height: 13, imageRendering: "pixelated", display: "block" }} />Redeem Code</span></div>
+          <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🎁</span>Redeem Code</span></div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <input
               className="input"

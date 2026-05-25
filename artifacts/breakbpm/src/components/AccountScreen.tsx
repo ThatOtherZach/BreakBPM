@@ -178,7 +178,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
 
         {/* Identity panel */}
         <div className="panel">
-          <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><img src="/identity-icon.png" alt="" style={{ width: 13, height: 13, imageRendering: "pixelated", display: "block" }} />Identity</span></div>
+          <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>👤</span>Identity</span></div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {editing ? (
               <div style={{ display: "flex", gap: 6 }}>
@@ -231,7 +231,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
 
         {/* Tier panel */}
         <div className="panel">
-          <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><img src="/tier-icon.png" alt="" style={{ width: 13, height: 13, imageRendering: "pixelated", display: "block" }} />Tier</span></div>
+          <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🎖️</span>Tier</span></div>
           <div className="panel-body">
             <div style={{ fontFamily: "VT323", fontSize: 24, color: ent.tier === "pass" ? "#006400" : "#000080" }}>
               {tierLabel}
@@ -286,7 +286,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
         <div className="panel">
           <div className="panel-header">
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <img src="/history-icon.png" alt="" style={{ width: 13, height: 13, imageRendering: "pixelated", display: "block" }} />Recent Games
+              <span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>📜</span>Recent Games
               {history.data && history.data.totalPages > 1
                 ? ` — Page ${history.data.page}/${history.data.totalPages}`
                 : history.data

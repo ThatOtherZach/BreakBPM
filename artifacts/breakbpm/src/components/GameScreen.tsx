@@ -608,8 +608,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 className="hud-copy-code-btn"
                 onClick={() => { navigator.clipboard.writeText(state.shareCode); }}
                 title="Copy code"
+                aria-label="Copy code"
               >
-                <img src="/copy-icon.png" alt="Copy code" style={{ height: 23, width: 'auto', display: 'block' }} />
+                <span aria-hidden="true" style={{ fontSize: 18, lineHeight: 1, display: 'block' }}>📋</span>
               </button>
             </div>
           </div>
@@ -739,13 +740,13 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         {/* ── Actions ── */}
         {state.phase === 'playing' && (
           <div className="action-grid">
-            <button className="btn btn-big" onClick={() => turnAction('miss')} disabled={pendingSharkPick}><img src="/miss-icon.png" alt="Miss" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Miss</button>
-            <button className="btn btn-big btn-danger" onClick={() => turnAction('foul', 'Ball to opponent')} disabled={pendingSharkPick}><img src="/foul-icon.png" alt="Foul" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Foul</button>
+            <button className="btn btn-big" onClick={() => turnAction('miss')} disabled={pendingSharkPick}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>❌</span>Miss</button>
+            <button className="btn btn-big btn-danger" onClick={() => turnAction('foul', 'Ball to opponent')} disabled={pendingSharkPick}><span className="cue-ball-icon" aria-hidden="true" style={{ marginRight: 5 }} />Foul</button>
             {state.gameType === 'practice'
               ? <button className={`btn btn-big${paused ? ' btn-primary' : ''}`} onClick={handlePause}>{paused ? '▶️ Resume' : '⏸️ Pause'}</button>
-              : <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')} disabled={pendingSharkPick}><img src="/safety-icon.png" alt="Safety" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Safety</button>
+              : <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')} disabled={pendingSharkPick}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🛡️</span>Safety</button>
             }
-            <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}><img src="/undo-icon.png" alt="Undo" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Undo</button>
+            <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo</button>
           </div>
         )}
 
@@ -756,7 +757,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             style={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'nowrap', minHeight: 32, fontSize: 12 }}
             onClick={() => setLogOpen(o => !o)}
           >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><img src="/history-icon.png" alt="History" style={{ width: 16, height: 16, flexShrink: 0 }} />Game History ({state.shotLog.length})</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span aria-hidden="true" style={{ fontSize: 14 }}>📜</span>Game History ({state.shotLog.length})</span>
             <span>{logOpen ? '▲' : '▼'}</span>
           </button>
           {logOpen && (
@@ -788,11 +789,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           <div style={{ display: 'flex', gap: 8 }}>
             {state.gameType === 'practice' && (
               <button className="btn btn-big" style={{ flex: 1 }} onClick={handleReset}>
-                <img src="/reset-icon.png" alt="Reset" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />Reset Table
+                <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🔄</span>Reset Table
               </button>
             )}
             <button className="btn btn-big btn-danger" style={{ flex: 1 }} onClick={() => setConfirmNew(true)}>
-              <img src="/endgame-icon.png" alt="End Game" style={{ width: 16, height: 16, marginRight: 5, verticalAlign: 'middle' }} />End Game / New Game
+              <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🏁</span>End Game / New Game
             </button>
           </div>
         )}
@@ -815,7 +816,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         <div className="dialog-overlay" onClick={() => setConfirmNew(false)}>
           <div className="dialog-box" onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'flex-start' }}>
-              <img src="/foul-icon.png" alt="Warning" style={{ width: 28, height: 28, imageRendering: 'pixelated', flexShrink: 0 }} />
+              <span aria-hidden="true" style={{ fontSize: 26, lineHeight: 1, flexShrink: 0 }}>⚠️</span>
               <div>
                 <div style={{ fontWeight: 'bold', marginBottom: 4 }} className="text-[18px]">End current game?</div>
                 {!hasActivePass && (
