@@ -186,8 +186,32 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
     }
   }, [gameType, playerCount]);
 
+  // Normalize manualTeams when entering Singles 8-ball manual mode. Doubles
+  // legally allows duplicates (3v1 splits), so the user can land here with
+  // both slot 0 and slot 1 on the same group after switching from Doubles
+  // → Singles. Clear slot 1 in that case so the invalid pairing can't
+  // survive a mode transition and get into handleStart.
+  useEffect(() => {
+    if (gameType !== '8ball' || playerCount !== 2 || autoTeam) return;
+    if (manualTeams[0] && manualTeams[0] === manualTeams[1]) {
+      const t = [...manualTeams] as ('solids' | 'stripes' | '')[];
+      t[1] = '';
+      setManualTeams(t);
+    }
+  }, [gameType, playerCount, autoTeam, manualTeams]);
+
   async function handleStart() {
     setStartError('');
+    // Defensive guard: in Singles 8-ball manual mode the two players must
+    // be on opposite groups. The dropdown UI already enforces this on
+    // change, but a mode transition (e.g. Doubles → Singles) could in
+    // theory leave a stale duplicate in state — refuse to start in that
+    // case rather than handing GameScreen an invalid pairing.
+    if (gameType === '8ball' && !isShark && !autoTeam && count === 2 &&
+        manualTeams[0] && manualTeams[0] === manualTeams[1]) {
+      setStartError('Players must be on opposite groups (Solids vs Stripes).');
+      return;
+    }
     const players: Player[] = Array.from({ length: count }, (_, i) => {
       const p: Player = { id: i, name: names[i] || DEFAULT_NAMES[i] };
       // Manual team assignment is only relevant for multiplayer 8-ball.
