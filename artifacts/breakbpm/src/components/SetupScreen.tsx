@@ -434,14 +434,29 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           </div>
 
           {gameType === '8ball' && !isPractice && !isShark && (
-            <div style={{ marginTop: 10 }}>
-              <label className="checkbox-label text-left justify-end items-center gap-[5px] flex-row mt-[0px] mb-[0px] pt-[1px] pb-[1px]">
+            <div
+              className="inset"
+              style={{
+                marginTop: 10,
+                padding: '6px 10px',
+                background: 'var(--silver)',
+              }}
+            >
+              <label
+                className="checkbox-label"
+                style={{ minHeight: 0, padding: 0, gap: 10, fontSize: 13 }}
+              >
                 <input
                   type="checkbox"
                   checked={autoTeam}
                   onChange={e => setAutoTeam(e.target.checked)}
                 />
-                Automatic team assignment
+                <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+                  <span style={{ fontWeight: 'bold' }}>Automatic team assignment</span>
+                  <span style={{ fontSize: 11, color: '#444' }}>
+                    First pocketed ball locks each player's group
+                  </span>
+                </span>
               </label>
             </div>
           )}
