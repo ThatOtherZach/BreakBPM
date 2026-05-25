@@ -47,13 +47,7 @@ const BALL_COLORS: Record<number, string> = {
 function ballClass(ball: number, legal: number[], sunk: number[], _gameType: string) {
   if (sunk.includes(ball)) return 'ball-btn sunk';
   const ok = legal.includes(ball);
-  let base = 'ball-btn';
-  if (ball === EIGHT_BALL) base += ' eight';
-  else if (SOLIDS.includes(ball)) base += ' solid';
-  else base += ' stripe';
-  if (ok) base += ' legal';
-  else base += ' illegal';
-  return base;
+  return ok ? 'ball-btn legal' : 'ball-btn illegal';
 }
 
 export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, initialPausedDuration = 0, onNewGame, onAbout, onAccount, onSignIn }: Props) {
@@ -721,9 +715,13 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                   key={ball}
                   className={ballClass(ball, legalBalls, state.sunkBalls, state.gameType)}
                   onClick={() => sinkBall(ball)}
-                  style={{ '--ball-color': BALL_COLORS[ball] } as React.CSSProperties}
                 >
-                  <span className="ball-num">{ball}</span>
+                  <img
+                    src={`/balls/${state.sunkBalls.includes(ball) ? 'empty' : ball}.png`}
+                    alt={String(ball)}
+                    className="ball-sprite"
+                    draggable={false}
+                  />
                 </button>
               ))}
             </div>
