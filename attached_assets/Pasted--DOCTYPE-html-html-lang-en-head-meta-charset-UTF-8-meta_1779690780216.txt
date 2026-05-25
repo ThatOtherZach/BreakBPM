@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>32×32px 8-Bit Billiard Balls — Pixel-Art Match</title>
+    <style>
+        /* ===============================================
+           UPDATED CSS: True 8-Bit Pixel-Art Style
+           Matches the reference image much closer:
+           • Flatter colors (no glossy 3D effects)
+           • Thicker black pixel border
+           • Horizontal stripe for striped balls (classic pixel style)
+           • Blockier number circle
+           • Monospace-style font for that retro feel
+           • Exactly 32×32px
+           =============================================== */
+
+        .billiard-ball {
+            --ball-color: #ffcc00;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            color: #1f1f1f;
+            border: 3px solid #1f1f1f;
+            overflow: hidden;
+            flex-shrink: 0;
+            background-color: var(--ball-color);
+            image-rendering: crisp-edges;
+            box-shadow: 3px 3px 0 #1f1f1f; /* subtle pixel shadow */
+        }
+
+        /* White center circle + number (both solid & striped) */
+        .billiard-ball::after {
+            content: attr(data-number);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 18px;
+            height: 18px;
+            background: #fffef2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 900;
+            border: 2px solid #1f1f1f;
+            z-index: 3;
+            box-shadow: 1px 1px 0 #1f1f1f;
+        }
+
+        /* ======================== SOLID ======================== */
+        .billiard-ball.solid {
+            background-color: var(--ball-color);
+        }
+
+        /* ======================== STRIPED ======================== */
+        /* Horizontal colored stripe – matches 8-bit reference better than diagonal */
+        .billiard-ball.striped {
+            background-color: #fffef2;
+        }
+
+        .billiard-ball.striped::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 13px;
+            background: var(--stripe-color);
+            transform: translateY(-50%);
+            z-index: 1;
+            box-shadow: 0 2px 0 #1f1f1f;
+        }
+
+        /* ======================== COLORS (exact match to reference) ======================== */
+        /* Solid */
+        .billiard-ball.solid.yellow   { --ball-color: #ffcc00; }
+        .billiard-ball.solid.blue     { --ball-color: #2b6fb0; }
+        .billiard-ball.solid.red      { --ball-color: #e81c2d; }
+        .billiard-ball.solid.purple   { --ball-color: #8e3a9e; }
+        .billiard-ball.solid.orange   { --ball-color: #f15a22; }
+        .billiard-ball.solid.green    { --ball-color: #00a64f; }
+        .billiard-ball.solid.maroon   { --ball-color: #c81e2e; }
+        .billiard-ball.solid.black    { --ball-color: #1f1f1f; }
+
+        /* Striped (stripe color only) */
+        .billiard-ball.striped.yellow { --stripe-color: #ffcc00; }
+        .billiard-ball.striped.blue   { --stripe-color: #2b6fb0; }
+        .billiard-ball.striped.red    { --stripe-color: #e81c2d; }
+        .billiard-ball.striped.purple { --stripe-color: #8e3a9e; }
+        .billiard-ball.striped.orange { --stripe-color: #f15a22; }
+        .billiard-ball.striped.green  { --stripe-color: #00a64f; }
+        .billiard-ball.striped.maroon { --stripe-color: #c81e2e; }
+
+        /* Cue ball */
+        .billiard-ball.cue {
+            background-color: #fffef2;
+        }
+        .billiard-ball.cue::after {
+            display: none;
+        }
+
+        /* ======================== DEMO LAYOUT ======================== */
+        body {
+            font-family: system-ui, -apple-system, Arial, sans-serif;
+            background: #222;
+            margin: 0;
+            padding: 40px;
+            color: #fff;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            color: #aaa;
+            margin-bottom: 40px;
+        }
+        .demo {
+            display: grid;
+            grid-template-columns: repeat(4, 80px);
+            gap: 32px 24px;
+            justify-content: center;
+            max-width: 520px;
+            margin: 0 auto;
+        }
+        .ball-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .label {
+            font-size: 12px;
+            font-family: monospace;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>32×32px 8-Bit Billiard Balls</h1>
+    <p class="subtitle">Now matches the reference image — flat pixel-art style + horizontal stripe</p>
+
+    <div class="demo">
+        <!-- Row 1 -->
+        <div class="ball-wrapper">
+            <div class="billiard-ball solid yellow" data-number="1"></div>
+            <span class="label">1 SOLID</span>
+        </div>
+        <div class="ball-wrapper">
+            <div class="billiard-ball solid blue" data-number="2"></div>
+            <span class="label">2 SOLID</span>
+        </div>
+        <div class="ball-wrapper">
+            <div class="billiard-ball solid red" data-number="3"></div>
+            <span class="label">3 SOLID</span>
+        </div>
+        <div class="ball-wrapper">
+            <div class="billiard-ball solid purple" data-number="4"></div>
+            <span class="label">4 SOLID</span>
+        </div>
+
+        <!-- Row 2 -->
+        <div class="ball-wrapper">
+            <div class="billiard-ball solid orange" data-number="5"></div>
+            <span class="label">5 SOLID</span>
+        </div>
+        <div class="ball-wrapper">
+            <div class="billiard-ball solid green" data-number="6"></div>
+            <span class="label">6 SOLID</span>
+        </div>
+        <div class="ball-wrapper">
+            <div class="billiard-ball solid maroon" data-number="7"></div>
+            <span class="label">7 SOLID</span>
+        </div>
+        <div class="ball-wrapper">
+            <div class="billiard-ball solid black" data-number="8"></div>
+            <span class="label">8 SOLID</span>
+        </div>
+
+        <!-- Row 3 -->
+        <div class="ball-wrapper">
+            <div class="billiard-ball striped yellow" data-number="9"></div>
+            <span class="label">9 STRIPED</span>
+        </div>
+        <div class="ball-wrapper">
+            <div class="billiard-ball striped blue" data-number="10"></div>
+            <span class="label">10 STRIPED</span>
+        </div>
+        <div class="ball-wrapper">
+            <div class="billiard-ball striped red" data-number="11"></div>
+            <span class="label">11 STRIPED</span>
+        </div>
+        <div class="ball-wrapper">
+            <div class="billiard-ball striped purple" data-number="12"></div>
+            <span class="label">12 STRIPED</span>
+        </div>
+
+        <!-- Row 4 -->
+        <div class="ball-wrapper">
+            <div class="billiard-ball striped orange" data-number="13"></div>
+            <span class="label">13 STRIPED</span>
+        </div>
+        <div class="ball-wrapper">
+            <div class="billiard-ball striped green" data-number="14"></div>
+            <span class="label">14 STRIPED</span>
+        </div>
+        <div class="ball-wrapper">
+            <div class="billiard-ball striped maroon" data-number="15"></div>
+            <span class="label">15 STRIPED</span>
+        </div>
+        <div class="ball-wrapper">
+            <div class="billiard-ball cue"></div>
+            <span class="label">CUE BALL</span>
+        </div>
+    </div>
+
+    <p style="margin-top: 50px; color: #888; font-size: 14px;">
+        Copy the entire code into an <strong>.html</strong> file and open it.<br>
+        These are now much closer to your reference image (flat, blocky, horizontal stripe).
+    </p>
+
+    <p style="margin-top: 20px; font-size: 13px; color: #666;">
+        Want any tweaks? (different stripe thickness, exact color tweak, vertical stripe, or a version with no border?)
+    </p>
+</body>
+</html>

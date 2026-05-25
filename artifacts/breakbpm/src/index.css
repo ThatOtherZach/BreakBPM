@@ -1086,36 +1086,84 @@ html, #root {
   50% { opacity: 0; }
 }
 
-/* Inline ball chips */
+/* Inline ball chips — 8-bit pixel-art billiard balls.
+   Per-ball color is supplied via the inline CSS variable `--chip-color`
+   set from BALL_COLORS in GameScreen.tsx. The chip is sized to ~26px
+   so it fits comfortably in .hud-terminal (min-height 36px). The
+   reference design lives in the attached asset
+   `Pasted--DOCTYPE-html-html-lang-en-head-meta-charset-UTF-8-meta_1779690780216.txt`. */
 .hud-chip {
+  --chip-size: 26px;
+  --chip-border: 2px;
+  --chip-ink: #1f1f1f;
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 3px;
-  font-family: Arial, Helvetica, sans-serif;
+  width: var(--chip-size);
+  height: var(--chip-size);
+  border-radius: 50%;
+  border: var(--chip-border) solid var(--chip-ink);
+  background: var(--chip-color);
+  font-family: 'Courier New', Courier, monospace;
   font-weight: 900;
-  font-size: 10px;
+  font-size: 0; /* hide the raw text node; number renders via ::after */
   line-height: 1;
+  color: var(--chip-ink);
   flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 2px 2px 0 var(--chip-ink);
+  image-rendering: pixelated;
+}
+
+/* White inner circle + ball number (rendered for solid + stripe). */
+.hud-chip::after {
+  content: attr(data-number);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background: #fffef2;
+  border: 1.5px solid var(--chip-ink);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: var(--chip-ink);
+  z-index: 2;
 }
 
 .hud-chip-solid {
   background: var(--chip-color);
-  color: #fff;
 }
 
 .hud-chip-eight {
-  background: #111;
-  color: #fff;
-  border: 1px solid #444;
+  background: var(--chip-ink);
 }
 
+/* Stripe: white background ball with a horizontal color band edged in
+   black, white center circle on top. */
 .hud-chip-stripe {
-  background: #fff;
-  color: #000;
-  border-left: 4px solid var(--chip-color);
+  background: #fffef2;
+}
+
+.hud-chip-stripe::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 11px;
+  background: var(--chip-color);
+  transform: translateY(-50%);
+  border-top: 1px solid var(--chip-ink);
+  border-bottom: 1px solid var(--chip-ink);
+  z-index: 1;
 }
 
 /* Win flash inside HUD */

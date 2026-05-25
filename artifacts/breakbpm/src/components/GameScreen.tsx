@@ -625,14 +625,14 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 <span
                   key={i}
                   className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}`}
+                  data-number={b}
                   style={{
                     '--chip-color': BALL_COLORS[b],
                     ...(sunkByShark ? { opacity: 0.45 } : {}),
                   } as React.CSSProperties}
                   title={sunkByShark ? 'Sunk by the Shark' : undefined}
-                >
-                  {b}
-                </span>
+                  aria-label={`Ball ${b}`}
+                />
               );
             })
           }
