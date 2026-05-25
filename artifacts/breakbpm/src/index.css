@@ -1112,7 +1112,6 @@ html, #root {
   color: var(--chip-ink);
   flex-shrink: 0;
   overflow: hidden;
-  box-shadow: 2px 2px 0 var(--chip-ink);
   image-rendering: pixelated;
 }
 
