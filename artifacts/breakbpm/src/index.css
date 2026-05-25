@@ -1144,7 +1144,6 @@ html, #root {
 
 .hud-chip-eight {
   background: var(--chip-ink);
-  border: 1px solid #fffef2;
 }
 
 /* Stripe: white background ball with a horizontal color band edged in
