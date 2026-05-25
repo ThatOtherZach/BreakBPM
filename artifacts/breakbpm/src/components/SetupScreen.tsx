@@ -401,7 +401,11 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
                   return (
                     <select
                       className="input"
-                      style={{ width: 'auto', minWidth: 110, flex: '0 0 auto' }}
+                      // Fixed width sized for the longer label "Stripes (9-15)"
+                      // so the dropdown doesn't shrink when "Stripes" is hidden
+                      // (because the other player took it). Keeps both rows
+                      // visually aligned.
+                      style={{ width: 130, flex: '0 0 auto' }}
                       value={manualTeams[i]}
                       onChange={e => setTeam(i, e.target.value)}
                     >
