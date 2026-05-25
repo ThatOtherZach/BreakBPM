@@ -717,7 +717,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                   onClick={() => sinkBall(ball)}
                 >
                   <img
-                    src={`/balls/${state.sunkBalls.includes(ball) ? 'empty' : ball}.png`}
+                    src={`/balls/${ball}.png`}
                     alt={String(ball)}
                     className="ball-sprite"
                     draggable={false}
