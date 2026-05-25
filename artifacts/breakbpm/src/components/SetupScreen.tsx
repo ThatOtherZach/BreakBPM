@@ -225,6 +225,14 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
   function setTeam(i: number, v: string) {
     const t = [...manualTeams] as ('solids' | 'stripes' | '')[];
     t[i] = v as 'solids' | 'stripes';
+    // Singles 8-ball: the two players must be on opposite groups. If the
+    // other slot already holds the value we just picked, clear it so the
+    // user is forced to re-pick (rather than silently flipping their
+    // group). Doubles (4P) deliberately allows duplicates — 3v1 splits.
+    if (count === 2 && v) {
+      const other = i === 0 ? 1 : 0;
+      if (t[other] === v) t[other] = '';
+    }
     setManualTeams(t);
   }
 
@@ -358,18 +366,31 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
                   title={isLockedSlot ? 'Signed in — name locked to your account' : undefined}
                   style={isLockedSlot ? { opacity: 0.85, cursor: 'not-allowed' } : undefined}
                 />
-                {gameType === '8ball' && !isShark && !autoTeam && (
-                  <select
-                    className="input"
-                    style={{ width: 'auto', minWidth: 110, flex: '0 0 auto' }}
-                    value={manualTeams[i]}
-                    onChange={e => setTeam(i, e.target.value)}
-                  >
-                    <option value="">-Select-</option>
-                    <option value="solids">Solids (1-7)</option>
-                    <option value="stripes">Stripes (9-15)</option>
-                  </select>
-                )}
+                {gameType === '8ball' && !isShark && !autoTeam && (() => {
+                  // Singles only: hide the group the other player has
+                  // already claimed so both players can't end up on the
+                  // same team. Doubles keeps both options for everyone
+                  // so 3v1 / 2v2 / 4v0 splits remain possible.
+                  const takenByOther = count === 2
+                    ? manualTeams[i === 0 ? 1 : 0]
+                    : '';
+                  return (
+                    <select
+                      className="input"
+                      style={{ width: 'auto', minWidth: 110, flex: '0 0 auto' }}
+                      value={manualTeams[i]}
+                      onChange={e => setTeam(i, e.target.value)}
+                    >
+                      <option value="">-Select-</option>
+                      {takenByOther !== 'solids' && (
+                        <option value="solids">Solids (1-7)</option>
+                      )}
+                      {takenByOther !== 'stripes' && (
+                        <option value="stripes">Stripes (9-15)</option>
+                      )}
+                    </select>
+                  );
+                })()}
               </div>
               );
             })}
