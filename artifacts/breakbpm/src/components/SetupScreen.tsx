@@ -442,22 +442,34 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
                 background: 'var(--silver)',
               }}
             >
-              <label
-                className="checkbox-label"
-                style={{ minHeight: 0, padding: 0, gap: 10, fontSize: 13 }}
-              >
-                <input
-                  type="checkbox"
-                  checked={autoTeam}
-                  onChange={e => setAutoTeam(e.target.checked)}
-                />
-                <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-                  <span style={{ fontWeight: 'bold' }}>Automatic team assignment</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, flex: 1 }}>
+                  <span style={{ fontWeight: 'bold', fontSize: 13 }}>Automatic team assignment</span>
                   <span style={{ fontSize: 11, color: '#444' }}>
                     First pocketed ball locks each player's group
                   </span>
                 </span>
-              </label>
+                <div className="flex gap-1" style={{ flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    className={`btn ${autoTeam ? 'selected' : ''}`}
+                    style={{ minWidth: 48, minHeight: 32, fontWeight: 'bold' }}
+                    onClick={() => setAutoTeam(true)}
+                    aria-pressed={autoTeam}
+                  >
+                    On
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn ${!autoTeam ? 'selected' : ''}`}
+                    style={{ minWidth: 48, minHeight: 32, fontWeight: 'bold' }}
+                    onClick={() => setAutoTeam(false)}
+                    aria-pressed={!autoTeam}
+                  >
+                    Off
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>)}
