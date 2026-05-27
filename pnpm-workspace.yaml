@@ -158,3 +158,8 @@ overrides:
   # drizzle-kit uses esbuild internally on an older version that's vulnerable, this overrides it
   "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0"
   esbuild: "0.27.3"
+  # Security patches — both come in transitively and have no breaking changes.
+  # js-cookie 3.0.5 → 3.0.7 fixes GHSA-qjx8-664m-686j (cookie integrity).
+  # qs 6.15.1 → 6.15.2 fixes GHSA-q8mj-m7cp-5q26 (prototype pollution / DoS).
+  js-cookie: "^3.0.7"
+  qs: "^6.15.2"
