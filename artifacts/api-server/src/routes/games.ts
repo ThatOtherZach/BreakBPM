@@ -15,7 +15,7 @@ import {
 } from "@workspace/api-zod";
 import { getOrCreateUser, getVerifiedSubject } from "../lib/auth";
 import { computeEntitlement } from "../lib/entitlement";
-import { sweepStaleGames, INACTIVITY_FORFEIT_MS } from "../lib/forfeit";
+import { sweepStaleGames, INACTIVITY_FORFEIT_MS, MAX_GAME_DURATION_MS } from "../lib/forfeit";
 import { newId } from "../lib/ids";
 
 const router: IRouter = Router();
@@ -191,20 +191,44 @@ router.post("/games/save", async (req, res): Promise<void> => {
     endedAt: new Date(),
   };
 
+  // Sweep first so any hard-cap / inactivity closures land before our
+  // upsert. The sweep may have just stamped this same row as
+  // `forfeit` / `expired` — we want an explicit client save to win
+  // over that server-side approximation (the client knows the real
+  // final score). But we must NOT let a stale client overwrite a
+  // legitimately completed game, so the update is constrained to
+  // either still-open rows or rows that were closed by the sweep
+  // (identified by the `forfeitReason` field the sweep stamps in).
+  await sweepStaleGames(user.id);
+
   let id = parsed.data.gameId ?? null;
   if (id) {
-    const updated = await db
-      .update(gamesTable)
-      .set(fields)
-      .where(
-        and(
-          eq(gamesTable.id, id),
-          eq(gamesTable.userId, user.id),
-          isNull(gamesTable.endedAt),
-        ),
-      )
-      .returning({ id: gamesTable.id });
-    if (updated.length === 0) id = null; // already-ended row → insert a fresh one
+    const existing = await db
+      .select()
+      .from(gamesTable)
+      .where(and(eq(gamesTable.id, id), eq(gamesTable.userId, user.id)))
+      .limit(1);
+    const row = existing[0];
+    if (!row) {
+      id = null; // row gone → insert a fresh one
+    } else {
+      const sweepClosed =
+        row.endedAt != null &&
+        typeof (row.gameState as { forfeitReason?: unknown } | null)?.forfeitReason ===
+          "string";
+      if (row.endedAt == null || sweepClosed) {
+        await db
+          .update(gamesTable)
+          .set(fields)
+          .where(and(eq(gamesTable.id, id), eq(gamesTable.userId, user.id)));
+      } else {
+        // Row already finalized by an earlier authoritative client save
+        // (won/lost/completed). Refuse to clobber it — insert a new row
+        // so the second snapshot is preserved as history instead.
+        id = newId();
+        await db.insert(gamesTable).values({ id, userId: user.id, ...fields });
+      }
+    }
   }
   if (!id) {
     id = newId();

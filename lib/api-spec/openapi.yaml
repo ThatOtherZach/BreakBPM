@@ -443,7 +443,10 @@ components:
         bpm: { type: ["number", "null"] }
         durationMs: { type: integer, minimum: 0 }
         sunkBallsCount: { type: integer, minimum: 0 }
-        outcome: { type: string, enum: [won, lost, forfeit, completed] }
+        # `expired` is used when a practice session hits the 1-hour hard
+        # wall-clock cap (no winner). Versus modes that hit the same cap
+        # use `forfeit` (with a winner derived from whose turn it was).
+        outcome: { type: string, enum: [won, lost, forfeit, completed, expired] }
         gameState: {}
         startedAt: { type: string, format: date-time }
 

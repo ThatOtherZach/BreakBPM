@@ -212,6 +212,7 @@ export const GameSaveInputOutcome = {
   lost: 'lost',
   forfeit: 'forfeit',
   completed: 'completed',
+  expired: 'expired',
 } as const;
 
 export interface GameSaveInput {

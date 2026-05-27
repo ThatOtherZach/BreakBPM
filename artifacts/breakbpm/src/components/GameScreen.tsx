@@ -13,7 +13,7 @@ import {
 } from '../lib/gameLogic';
 import SharkIcon from './SharkIcon';
 import { useSaveGame, useRecordGameActivity, useGetMe } from '@workspace/api-client-react';
-import { FORFEIT_INACTIVITY_MS } from '../lib/forfeit';
+import { FORFEIT_INACTIVITY_MS, MAX_GAME_DURATION_MS } from '../lib/forfeit';
 
 interface Props {
   initialState: GameState;
@@ -163,7 +163,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             : 0,
           sunkBallsCount: state.sunkBalls.length,
           outcome: forfeitedRef.current
-            ? 'forfeit'
+            ? (state.gameType === 'practice' ? 'expired' : 'forfeit')
             : (state.winner
                 ? (state.winner === SHARK_PLAYER_NAME ? 'lost' : 'won')
                 : 'completed'),
@@ -224,23 +224,39 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     return () => clearTimeout(id);
   }, [state.phase, state.lastActionTime, state.gameStartTime, state.currentPlayerIndex, state.gameType, state.players, paused]);
 
-  // Hard wall-clock cap for anonymous play. Server returns 1hr in
-  // maxGameDurationMs; once we hit it, the game ends as a forfeit so the
-  // session can't run forever. Practice mode is exempt (no opponent).
+  // Hard wall-clock cap from gameStartTime. Applies to ALL game modes
+  // (including practice and Shark, signed-in or not) so a reopened tab
+  // never shows a multi-hour timer. Versus modes end as a forfeit;
+  // practice ends with no winner (saved as `expired`).
+  // - Anonymous play: server-supplied `maxGameDurationMs` (1h).
+  // - Signed-in / no server value: client constant MAX_GAME_DURATION_MS (1h).
+  // Pause suspends the timer (a paused practice drill won't get killed
+  // mid-pause; the cap re-evaluates on resume and fires immediately if
+  // already past the wall-clock cap).
   useEffect(() => {
     if (state.phase !== 'playing' || paused) return;
-    if (maxGameDurationMs == null || state.gameType === 'practice' || isSharkGame(state)) return;
-    const ms = state.gameStartTime + maxGameDurationMs - Date.now();
+    const cap = maxGameDurationMs ?? MAX_GAME_DURATION_MS;
+    const ms = state.gameStartTime + cap - Date.now();
     const fire = () => {
       forfeitedRef.current = true;
-      const winnerName = state.players.length > 1
-        ? state.players[(state.currentPlayerIndex + 1) % state.players.length].name
-        : null;
+      const isPractice = state.gameType === 'practice';
+      const shark = isSharkGame(state);
+      const winnerName = isPractice
+        ? null
+        : shark
+          ? SHARK_PLAYER_NAME
+          : state.players.length > 1
+            ? state.players[(state.currentPlayerIndex + 1) % state.players.length].name
+            : null;
+      const capMin = Math.round(cap / 60000);
+      const msg = isPractice
+        ? `Session ended — practice sessions are capped at ${capMin} minutes.`
+        : `Session ended — games are capped at ${capMin} minutes.`;
       setState(s => ({
         ...s,
         phase: 'ended',
         winner: winnerName,
-        winMessage: `Session ended — anonymous games are capped at ${Math.round(maxGameDurationMs / 60000)} minutes. Sign in to play longer.`,
+        winMessage: msg,
         lastActionTime: Date.now(),
       }));
     };
@@ -259,12 +275,48 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     if (!serverGameId || state.phase !== 'playing') return;
     // Piggy-back the full client-side snapshot so /games/resume can offer
     // this game on a different device or after localStorage is cleared.
-    recordActivity.mutate({
-      data: {
-        gameId: serverGameId,
-        gameState: state as unknown as Record<string, unknown>,
+    recordActivity.mutate(
+      {
+        data: {
+          gameId: serverGameId,
+          gameState: state as unknown as Record<string, unknown>,
+        },
       },
-    });
+      {
+        onSuccess: (resp) => {
+          // Server-side sweep (hard cap or inactivity) already closed
+          // this row authoritatively. Transition the UI to ended so the
+          // timer stops climbing, but DO NOT let the auto-save effect
+          // re-submit — the server's snapshot is the source of truth
+          // here and the client's stale state would overwrite it. We
+          // mark `savedRef` to short-circuit the save effect, and clear
+          // the local in-progress checkpoint so a refresh doesn't try
+          // to replay it.
+          if (resp && resp.alive === false) {
+            const isPractice = state.gameType === 'practice';
+            const shark = isSharkGame(state);
+            const winnerName = isPractice
+              ? null
+              : shark
+                ? SHARK_PLAYER_NAME
+                : state.players.length > 1
+                  ? state.players[(state.currentPlayerIndex + 1) % state.players.length].name
+                  : null;
+            savedRef.current = true;
+            clearInProgressGame();
+            setState(s => s.phase === 'ended' ? s : ({
+              ...s,
+              phase: 'ended',
+              winner: winnerName,
+              winMessage: isPractice
+                ? 'Session ended — practice sessions are capped at 60 minutes.'
+                : 'Session ended — games are capped at 60 minutes.',
+              lastActionTime: Date.now(),
+            }));
+          }
+        },
+      },
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverGameId, state.lastActionTime, state.phase]);
 

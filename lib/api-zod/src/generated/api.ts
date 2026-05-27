@@ -226,7 +226,7 @@ export const SaveGameBody = zod.object({
   "bpm": zod.number().nullish(),
   "durationMs": zod.number().min(saveGameBodyDurationMsMin),
   "sunkBallsCount": zod.number().min(saveGameBodySunkBallsCountMin),
-  "outcome": zod.enum(['won', 'lost', 'forfeit', 'completed']),
+  "outcome": zod.enum(['won', 'lost', 'forfeit', 'completed', 'expired']),
   "gameState": zod.unknown(),
   "startedAt": zod.coerce.date()
 })
