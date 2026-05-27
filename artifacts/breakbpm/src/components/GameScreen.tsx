@@ -639,20 +639,67 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           }
         </div>
 
-        {/* Shark score — only shown in shark mode */}
-        {isSharkGame(state) && (
-          <div style={{
+        {/* Per-player / Shark scoreboard rows */}
+        {state.phase !== 'setup' && (() => {
+          const sharkBalls = state.sharkSunkBalls ?? [];
+          const rowStyle: React.CSSProperties = {
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '4px 8px', marginTop: 4,
             background: '#1a0a2e', border: '1px solid #5a2a8a',
             fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
-          }}>
-            <SharkIcon size={14} /><span className="text-[18px]">SHARK</span>
-            <span style={{ marginLeft: 'auto', fontWeight: 'bold' }}>
-              {(state.sharkSunkBalls ?? []).length}
-            </span>
-          </div>
-        )}
+            flexWrap: 'wrap',
+          };
+          const renderBalls = (balls: number[]) => balls.map((b, i) => (
+            <span
+              key={i}
+              className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}`}
+              data-number={b}
+              style={{ '--chip-color': BALL_COLORS[b] } as React.CSSProperties}
+              aria-label={`Ball ${b}`}
+            />
+          ));
+          return (
+            <>
+              {state.players.map((p, i) => {
+                const active = state.phase === 'playing' && i === state.currentPlayerIndex;
+                const myGroup = p.team === 'solids' ? SOLIDS : p.team === 'stripes' ? STRIPES : [];
+                const cleared = myGroup.length > 0 && myGroup.every(b => state.sunkBalls.includes(b));
+                const mySunk = state.shotLog
+                  .filter(e => e.type === 'sink' && e.playerName === p.name && typeof e.ball === 'number')
+                  .map(e => e.ball as number);
+                const teamLabel = p.team ? (p.team === 'solids' ? 'Solids' : 'Stripes') : null;
+                return (
+                  <div key={p.id} style={{
+                    ...rowStyle,
+                    borderColor: active ? '#d8b4ff' : '#5a2a8a',
+                  }}>
+                    <span style={{ minWidth: 12 }}>{active ? '▶' : ''}</span>
+                    <span style={{ fontSize: 18, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {p.name}
+                    </span>
+                    {teamLabel && (
+                      <span style={{ fontSize: 12, opacity: 0.7 }}>
+                        · {teamLabel}{cleared && ' ✓'}
+                      </span>
+                    )}
+                    <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, marginLeft: 'auto', alignItems: 'center', justifyContent: 'flex-end' }}>
+                      {renderBalls(mySunk)}
+                    </span>
+                  </div>
+                );
+              })}
+              {isSharkGame(state) && (
+                <div style={rowStyle}>
+                  <SharkIcon size={14} />
+                  <span style={{ fontSize: 18 }}>SHARK</span>
+                  <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, marginLeft: 'auto', alignItems: 'center', justifyContent: 'flex-end' }}>
+                    {renderBalls(sharkBalls)}
+                  </span>
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {/* Win/Loss flash — inside HUD */}
         {state.phase === 'ended' && (
@@ -676,33 +723,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           <div className="grid-2" style={{ marginTop: 0 }}>
             <button className="btn btn-primary btn-big" onClick={onNewGame}>▶ New Game</button>
             <button className="btn btn-big" onClick={handleShare}>📋 Share</button>
-          </div>
-        )}
-
-        {/* ── Players ── */}
-        {state.phase === 'playing' && state.gameType !== 'practice' && (
-          <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
-            {state.players.map((p, i) => {
-              const active = i === state.currentPlayerIndex;
-              const myGroup = p.team === 'solids' ? SOLIDS : p.team === 'stripes' ? STRIPES : [];
-              const cleared = myGroup.length > 0 && myGroup.every(b => state.sunkBalls.includes(b));
-              return (
-                <div key={p.id} style={{
-                  flex: 1, minWidth: 70,
-                  border: `2px solid ${active ? '#000080' : '#808080'}`,
-                  background: active ? '#e8f0ff' : '#c0c0c0',
-                  padding: '4px 6px',
-                }}>
-                  <div style={{ fontWeight: 'bold', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {active ? '▶ ' : ''}{p.name}
-                  </div>
-                  <div style={{ fontSize: 10, color: p.team === 'solids' ? '#000080' : p.team === 'stripes' ? '#804000' : '#444' }}>
-                    {p.team ? (p.team === 'solids' ? 'Solids' : 'Stripes') : 'TBD'}
-                    {cleared && <span style={{ color: '#006400', fontWeight: 'bold' }}> ✓</span>}
-                  </div>
-                </div>
-              );
-            })}
           </div>
         )}
 
