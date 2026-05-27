@@ -701,7 +701,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
         {/* Per-player rows — purple scoreboard strips with inline ball chips */}
         {state.players.map((p, i) => {
-          const active = i === state.currentPlayerIndex && state.phase === 'playing';
+          const active = i === state.currentPlayerIndex
+            && state.phase === 'playing'
+            && !pendingSharkPick;
           const myGroup = p.team === 'solids' ? SOLIDS : p.team === 'stripes' ? STRIPES : [];
           const cleared = myGroup.length > 0 && myGroup.every(b => state.sunkBalls.includes(b));
           const teamLabel = state.gameType === '8ball' && p.team
@@ -721,6 +723,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         {isSharkGame(state) && (
           <PlayerRow
             isShark
+            active={pendingSharkPick}
             name={SHARK_PLAYER_NAME}
             balls={state.sharkSunkBalls ?? []}
           />
