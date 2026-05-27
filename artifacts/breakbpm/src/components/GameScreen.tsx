@@ -44,66 +44,6 @@ const BALL_COLORS: Record<number, string> = {
   13: '#F27C1D', 14: '#276B40', 15: '#6B1F2A',
 };
 
-function getPlayerSunkBalls(shotLog: ShotLogEntry[], playerName: string): number[] {
-  const out: number[] = [];
-  for (const e of shotLog) {
-    if (e.playerName !== playerName) continue;
-    if (typeof e.ball !== 'number') continue;
-    if (e.type === 'sink' || e.type === 'win' || e.type === 'lose') {
-      out.push(e.ball);
-    }
-  }
-  return out;
-}
-
-interface PlayerRowProps {
-  name: string;
-  isShark?: boolean;
-  active?: boolean;
-  teamLabel?: string | null;
-  cleared?: boolean;
-  balls: number[];
-}
-
-function PlayerRow({ name, isShark, active, teamLabel, cleared, balls }: PlayerRowProps) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6,
-      padding: '4px 8px', marginTop: 4,
-      background: '#1a0a2e', border: '1px solid #5a2a8a',
-      fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
-      minHeight: 32,
-    }}>
-      <span style={{ width: 12, display: 'inline-block', textAlign: 'center' }}>
-        {active ? '▶' : ''}
-      </span>
-      {isShark && <SharkIcon size={14} />}
-      <span style={{ fontSize: 18, fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 110 }}>
-        {isShark ? 'SHARK' : name}
-      </span>
-      {teamLabel && (
-        <span style={{ fontSize: 12, opacity: 0.85 }}>
-          · {teamLabel}{cleared && <span style={{ color: '#7CFC8A', fontWeight: 'bold' }}> ✓</span>}
-        </span>
-      )}
-      <div style={{
-        marginLeft: 'auto', display: 'flex', alignItems: 'center',
-        flexWrap: 'wrap', gap: 4, justifyContent: 'flex-end',
-      }}>
-        {balls.map((b, i) => (
-          <span
-            key={`${b}-${i}`}
-            className={`hud-chip hud-chip-rolling ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}`}
-            data-number={b}
-            style={{ '--chip-color': BALL_COLORS[b] } as React.CSSProperties}
-            aria-label={`Ball ${b}`}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function ballClass(ball: number, legal: number[], sunk: number[], _gameType: string) {
   if (sunk.includes(ball)) return 'ball-btn sunk';
   const ok = legal.includes(ball);
@@ -699,34 +639,19 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           }
         </div>
 
-        {/* Per-player rows — purple scoreboard strips with inline ball chips */}
-        {state.players.map((p, i) => {
-          const active = i === state.currentPlayerIndex
-            && state.phase === 'playing'
-            && !pendingSharkPick;
-          const myGroup = p.team === 'solids' ? SOLIDS : p.team === 'stripes' ? STRIPES : [];
-          const cleared = myGroup.length > 0 && myGroup.every(b => state.sunkBalls.includes(b));
-          const teamLabel = state.gameType === '8ball' && p.team
-            ? (p.team === 'solids' ? 'Solids' : 'Stripes')
-            : null;
-          return (
-            <PlayerRow
-              key={p.id}
-              name={p.name}
-              active={active}
-              teamLabel={teamLabel}
-              cleared={cleared}
-              balls={getPlayerSunkBalls(state.shotLog, p.name)}
-            />
-          );
-        })}
+        {/* Shark score — only shown in shark mode */}
         {isSharkGame(state) && (
-          <PlayerRow
-            isShark
-            active={pendingSharkPick}
-            name={SHARK_PLAYER_NAME}
-            balls={state.sharkSunkBalls ?? []}
-          />
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '4px 8px', marginTop: 4,
+            background: '#1a0a2e', border: '1px solid #5a2a8a',
+            fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
+          }}>
+            <SharkIcon size={14} /><span className="text-[18px]">SHARK</span>
+            <span style={{ marginLeft: 'auto', fontWeight: 'bold' }}>
+              {(state.sharkSunkBalls ?? []).length}
+            </span>
+          </div>
         )}
 
         {/* Win/Loss flash — inside HUD */}
@@ -754,6 +679,32 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           </div>
         )}
 
+        {/* ── Players ── */}
+        {state.phase === 'playing' && state.gameType !== 'practice' && (
+          <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
+            {state.players.map((p, i) => {
+              const active = i === state.currentPlayerIndex;
+              const myGroup = p.team === 'solids' ? SOLIDS : p.team === 'stripes' ? STRIPES : [];
+              const cleared = myGroup.length > 0 && myGroup.every(b => state.sunkBalls.includes(b));
+              return (
+                <div key={p.id} style={{
+                  flex: 1, minWidth: 70,
+                  border: `2px solid ${active ? '#000080' : '#808080'}`,
+                  background: active ? '#e8f0ff' : '#c0c0c0',
+                  padding: '4px 6px',
+                }}>
+                  <div style={{ fontWeight: 'bold', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {active ? '▶ ' : ''}{p.name}
+                  </div>
+                  <div style={{ fontSize: 10, color: p.team === 'solids' ? '#000080' : p.team === 'stripes' ? '#804000' : '#444' }}>
+                    {p.team ? (p.team === 'solids' ? 'Solids' : 'Stripes') : 'TBD'}
+                    {cleared && <span style={{ color: '#006400', fontWeight: 'bold' }}> ✓</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* ── Ball selector ── */}
         {state.phase !== 'ended' && (
