@@ -1145,6 +1145,24 @@ html, #root {
   box-sizing: border-box;
 }
 
+/* Roll-in animation for chips on player rows. Each chip animates once
+   on first mount (stable keys keep older chips static). The ball
+   translates in from the right and spins counterclockwise, settling
+   at its final leftmost position. Respects prefers-reduced-motion. */
+@keyframes hud-chip-roll-in {
+  0%   { transform: translateX(40px) rotate(0deg); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translateX(0) rotate(-720deg); opacity: 1; }
+}
+
+.hud-chip-rolling {
+  animation: hud-chip-roll-in 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-chip-rolling { animation: none; }
+}
+
 .hud-chip-solid {
   background: var(--chip-color);
 }

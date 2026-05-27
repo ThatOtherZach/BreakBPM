@@ -90,15 +90,18 @@ function PlayerRow({ name, isShark, active, teamLabel, cleared, balls }: PlayerR
         marginLeft: 'auto', display: 'flex', alignItems: 'center',
         flexWrap: 'wrap', gap: 4, justifyContent: 'flex-end',
       }}>
-        {balls.map((b, i) => (
-          <span
-            key={i}
-            className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}`}
-            data-number={b}
-            style={{ '--chip-color': BALL_COLORS[b] } as React.CSSProperties}
-            aria-label={`Ball ${b}`}
-          />
-        ))}
+        {balls.map((b, originalIdx) => ({ b, originalIdx }))
+          .slice()
+          .reverse()
+          .map(({ b, originalIdx }) => (
+            <span
+              key={`${b}-${originalIdx}`}
+              className={`hud-chip hud-chip-rolling ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}`}
+              data-number={b}
+              style={{ '--chip-color': BALL_COLORS[b] } as React.CSSProperties}
+              aria-label={`Ball ${b}`}
+            />
+          ))}
       </div>
     </div>
   );
