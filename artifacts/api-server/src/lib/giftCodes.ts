@@ -25,7 +25,6 @@ const ELIGIBLE_KINDS = new Set(["year", "lifetime"]);
 /** Confusable-free alphabet (no 0/O/1/I) for friendly hand-typed codes. */
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 8;
-const CODE_PREFIX = "GIFT-";
 
 function randomCode(): string {
   const bytes = randomBytes(CODE_LENGTH);
@@ -33,7 +32,7 @@ function randomCode(): string {
   for (let i = 0; i < CODE_LENGTH; i++) {
     out += CODE_ALPHABET[bytes[i]! % CODE_ALPHABET.length];
   }
-  return CODE_PREFIX + out;
+  return out;
 }
 
 export class GiftCodeFailure extends Error {
