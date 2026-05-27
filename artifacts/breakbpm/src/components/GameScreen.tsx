@@ -665,7 +665,8 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 const myGroup = p.team === 'solids' ? SOLIDS : p.team === 'stripes' ? STRIPES : [];
                 const cleared = myGroup.length > 0 && myGroup.every(b => state.sunkBalls.includes(b));
                 const mySunk = state.shotLog
-                  .filter(e => e.type === 'sink' && e.playerName === p.name && typeof e.ball === 'number')
+                  .filter(e => (e.type === 'sink' || e.type === 'win' || e.type === 'lose')
+                    && e.playerName === p.name && typeof e.ball === 'number')
                   .map(e => e.ball as number);
                 const teamLabel = p.team ? (p.team === 'solids' ? 'Solids' : 'Stripes') : null;
                 return (
