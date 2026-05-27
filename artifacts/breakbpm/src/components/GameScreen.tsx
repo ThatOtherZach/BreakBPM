@@ -682,7 +682,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                         · {teamLabel}{cleared && ' ✓'}
                       </span>
                     )}
-                    <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, marginLeft: 'auto', alignItems: 'center', justifyContent: 'flex-end' }}>
+                    <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, marginLeft: 8, alignItems: 'center' }}>
                       {renderBalls(mySunk)}
                     </span>
                   </div>
@@ -692,7 +692,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 <div style={rowStyle}>
                   <SharkIcon size={14} />
                   <span style={{ fontSize: 18 }}>SHARK</span>
-                  <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, marginLeft: 'auto', alignItems: 'center', justifyContent: 'flex-end' }}>
+                  <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, marginLeft: 8, alignItems: 'center' }}>
                     {renderBalls(sharkBalls)}
                   </span>
                 </div>
