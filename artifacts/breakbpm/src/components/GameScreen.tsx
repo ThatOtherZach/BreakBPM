@@ -232,11 +232,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   // practice ends with no winner (saved as `expired`).
   // - Anonymous play: server-supplied `maxGameDurationMs` (1h).
   // - Signed-in / no server value: client constant MAX_GAME_DURATION_MS (1h).
-  // Pause suspends the timer (a paused practice drill won't get killed
-  // mid-pause; the cap re-evaluates on resume and fires immediately if
-  // already past the wall-clock cap).
+  // The cap is true wall-clock: pause does NOT extend it. A player
+  // who pauses for 70 minutes will see the game finalize the moment
+  // they unpause (or via the alive:false ping if signed in).
   useEffect(() => {
-    if (state.phase !== 'playing' || paused) return;
+    if (state.phase !== 'playing') return;
     const cap = maxGameDurationMs ?? MAX_GAME_DURATION_MS;
     const ms = state.gameStartTime + cap - Date.now();
     const fire = () => {
@@ -265,7 +265,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     if (ms <= 0) { fire(); return; }
     const id = setTimeout(fire, ms);
     return () => clearTimeout(id);
-  }, [state.phase, state.gameStartTime, state.gameType, state.players, state.currentPlayerIndex, paused, maxGameDurationMs]);
+  }, [state.phase, state.gameStartTime, state.gameType, state.players, state.currentPlayerIndex, maxGameDurationMs]);
 
   // Server activity ping — fires on every logged action
   // (sink/miss/foul/safety bumps state.lastActionTime) AND once on mount

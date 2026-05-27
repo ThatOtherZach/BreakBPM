@@ -200,43 +200,57 @@ router.post("/games/save", async (req, res): Promise<void> => {
 
   let id = parsed.data.gameId ?? null;
   if (id) {
-    const existing = await db
-      .select()
-      .from(gamesTable)
-      .where(and(eq(gamesTable.id, id), eq(gamesTable.userId, user.id)))
-      .limit(1);
-    const row = existing[0];
-    if (!row) {
-      id = null; // row gone → insert a fresh one
-    } else if (row.endedAt != null) {
-      const gs = row.gameState as { forfeitReason?: unknown } | null;
-      const reason =
-        typeof gs?.forfeitReason === "string"
-          ? (gs.forfeitReason as string)
-          : undefined;
-      const endReason =
-        reason === "max_duration_60min" || reason === "inactivity_60min"
-          ? reason
-          : undefined;
-      req.log.info(
-        { userId: user.id, gameId: id, endReason },
-        "Game save refused — row already ended",
-      );
-      res.json(
-        SaveGameResponse.parse({
-          saved: true,
-          gameId: id,
-          alreadyEnded: true,
-          ...(endReason ? { endReason } : {}),
-          message: "Game already finalized by server",
-        }),
-      );
-      return;
-    } else {
-      await db
-        .update(gamesTable)
-        .set(fields)
-        .where(and(eq(gamesTable.id, id), eq(gamesTable.userId, user.id)));
+    // CAS-style guarded update — only succeeds if the row is still
+    // in-progress (endedAt IS NULL). This closes the select-then-update
+    // race window where the periodic sweep could finalize the row
+    // between the lookup and the write.
+    const updated = await db
+      .update(gamesTable)
+      .set(fields)
+      .where(
+        and(
+          eq(gamesTable.id, id),
+          eq(gamesTable.userId, user.id),
+          isNull(gamesTable.endedAt),
+        ),
+      )
+      .returning({ id: gamesTable.id });
+    if (updated.length === 0) {
+      // Either the row never existed for this user, or it was already
+      // finalized (sweep or prior save). Look it up to distinguish.
+      const existing = await db
+        .select()
+        .from(gamesTable)
+        .where(and(eq(gamesTable.id, id), eq(gamesTable.userId, user.id)))
+        .limit(1);
+      const row = existing[0];
+      if (!row) {
+        id = null; // row gone → fall through to insert a fresh one
+      } else {
+        const gs = row.gameState as { forfeitReason?: unknown } | null;
+        const reason =
+          typeof gs?.forfeitReason === "string"
+            ? (gs.forfeitReason as string)
+            : undefined;
+        const endReason =
+          reason === "max_duration_60min" || reason === "inactivity_60min"
+            ? reason
+            : undefined;
+        req.log.info(
+          { userId: user.id, gameId: id, endReason },
+          "Game save refused — row already ended",
+        );
+        res.json(
+          SaveGameResponse.parse({
+            saved: true,
+            gameId: id,
+            alreadyEnded: true,
+            ...(endReason ? { endReason } : {}),
+            message: "Game already finalized by server",
+          }),
+        );
+        return;
+      }
     }
   }
   if (!id) {
