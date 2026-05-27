@@ -16,8 +16,8 @@ A fully functional **React + Vite + TypeScript** web app styled like genuine 199
 
 **UI & Experience**
 - Authentic Windows 98 aesthetic (3D buttons, sunken inputs, beveled panels, MS Sans Serif font, custom scrollbars)
-- Green CRT terminal-style game area
-- Clean, satisfying retro interface
+- Green CRT terminal-style game area with stats and pocketed balls
+- Retro interface themed to look like a only PC-98 console
 
 **Game Modes**
 - **8-Ball**: Full rules with Solids vs Stripes, Golden Break, foul-on-8 loss, up to 4 players
