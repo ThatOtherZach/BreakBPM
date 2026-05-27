@@ -1,5 +1,5 @@
 export const TAGLINES: string[] = [
-  'PLAY FAST,\nTRACK STATS',
+  'PLAY FAST,\nRACK STATS',
   'SHARK YOURSELF',
 ];
 
