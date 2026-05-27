@@ -329,6 +329,13 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
                         </span>
                       )}
                     </span>
+                    {g.endReason && (
+                      <span style={{ fontSize: 10, color: "#777", fontStyle: "italic" }}>
+                        {g.endReason === "max_duration_60min"
+                          ? "Ended — 60 min cap reached"
+                          : "Ended — inactive for 60 min"}
+                      </span>
+                    )}
                   </div>
 
                   {/* Right: BPM hero + time · date */}

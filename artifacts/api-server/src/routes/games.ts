@@ -192,13 +192,10 @@ router.post("/games/save", async (req, res): Promise<void> => {
   };
 
   // Sweep first so any hard-cap / inactivity closures land before our
-  // upsert. The sweep may have just stamped this same row as
-  // `forfeit` / `expired` — we want an explicit client save to win
-  // over that server-side approximation (the client knows the real
-  // final score). But we must NOT let a stale client overwrite a
-  // legitimately completed game, so the update is constrained to
-  // either still-open rows or rows that were closed by the sweep
-  // (identified by the `forfeitReason` field the sweep stamps in).
+  // upsert. The sweep is authoritative once it stamps a row: if the
+  // target row was just closed by the sweep (or by a prior client
+  // save), we refuse to overwrite it and signal `alreadyEnded` so the
+  // client drops its in-progress checkpoint and stops retrying.
   await sweepStaleGames(user.id);
 
   let id = parsed.data.gameId ?? null;
@@ -211,23 +208,35 @@ router.post("/games/save", async (req, res): Promise<void> => {
     const row = existing[0];
     if (!row) {
       id = null; // row gone → insert a fresh one
+    } else if (row.endedAt != null) {
+      const gs = row.gameState as { forfeitReason?: unknown } | null;
+      const reason =
+        typeof gs?.forfeitReason === "string"
+          ? (gs.forfeitReason as string)
+          : undefined;
+      const endReason =
+        reason === "max_duration_60min" || reason === "inactivity_60min"
+          ? reason
+          : undefined;
+      req.log.info(
+        { userId: user.id, gameId: id, endReason },
+        "Game save refused — row already ended",
+      );
+      res.json(
+        SaveGameResponse.parse({
+          saved: true,
+          gameId: id,
+          alreadyEnded: true,
+          ...(endReason ? { endReason } : {}),
+          message: "Game already finalized by server",
+        }),
+      );
+      return;
     } else {
-      const sweepClosed =
-        row.endedAt != null &&
-        typeof (row.gameState as { forfeitReason?: unknown } | null)?.forfeitReason ===
-          "string";
-      if (row.endedAt == null || sweepClosed) {
-        await db
-          .update(gamesTable)
-          .set(fields)
-          .where(and(eq(gamesTable.id, id), eq(gamesTable.userId, user.id)));
-      } else {
-        // Row already finalized by an earlier authoritative client save
-        // (won/lost/completed). Refuse to clobber it — insert a new row
-        // so the second snapshot is preserved as history instead.
-        id = newId();
-        await db.insert(gamesTable).values({ id, userId: user.id, ...fields });
-      }
+      await db
+        .update(gamesTable)
+        .set(fields)
+        .where(and(eq(gamesTable.id, id), eq(gamesTable.userId, user.id)));
     }
   }
   if (!id) {
@@ -384,6 +393,16 @@ router.get("/games/history", async (req, res): Promise<void> => {
 
   const games = visible.map((g) => {
     const gs = g.gameState as Record<string, unknown> | null;
+    // Surface the sweep's forfeitReason as a normalized endReason so
+    // the UI can show "60-min cap reached" vs. "60 min idle" instead
+    // of a generic "forfeit" label.
+    const rawReason = gs && typeof gs["forfeitReason"] === "string"
+      ? (gs["forfeitReason"] as string)
+      : undefined;
+    const endReason =
+      rawReason === "max_duration_60min" || rawReason === "inactivity_60min"
+        ? rawReason
+        : undefined;
     return {
       id: g.id,
       gameType: g.gameType,
@@ -396,6 +415,7 @@ router.get("/games/history", async (req, res): Promise<void> => {
       endedAt: g.endedAt!,
       startedAt: g.startedAt,
       sharkMode: !!(gs && gs["sharkAggression"]),
+      ...(endReason ? { endReason } : {}),
     };
   });
 

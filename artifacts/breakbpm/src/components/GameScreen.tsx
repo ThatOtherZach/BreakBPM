@@ -172,9 +172,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         },
       },
       {
-        // Drop the in-progress checkpoint only on successful save. On
-        // failure (network/server) we keep the checkpoint so a retry on
-        // the next mount can replay the finalize against the same row.
+        // Drop the in-progress checkpoint on successful save OR when
+        // the server tells us it already finalized the row itself
+        // (alreadyEnded — sweep beat us to it). In both cases there is
+        // nothing more to retry; keeping the checkpoint would cause an
+        // infinite replay loop against an immutable row.
         onSuccess: () => clearInProgressGame(),
       },
     );

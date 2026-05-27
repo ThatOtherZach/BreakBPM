@@ -457,6 +457,15 @@ components:
         saved: { type: boolean }
         gameId: { type: string }
         message: { type: string }
+        # True when the server refused to overwrite the row because it
+        # was already finalized by the periodic sweep (hard 1-hour cap
+        # or 60-min inactivity). The client should treat the game as
+        # ended-by-server, drop its in-progress checkpoint, and NOT
+        # retry the save. `endReason` identifies why.
+        alreadyEnded: { type: boolean }
+        endReason:
+          type: string
+          enum: [max_duration_60min, inactivity_60min]
 
     GameHistoryEntry:
       type: object
@@ -473,6 +482,13 @@ components:
         endedAt: { type: string, format: date-time }
         startedAt: { type: string, format: date-time }
         sharkMode: { type: boolean }
+        # Set when this row was auto-finalized by the server sweep.
+        # Distinguishes the 1-hour hard wall-clock cap (`max_duration_60min`)
+        # from the 60-min inactivity forfeit (`inactivity_60min`) so the
+        # UI can label the reason instead of just showing "forfeit".
+        endReason:
+          type: string
+          enum: [max_duration_60min, inactivity_60min]
 
     GameHistoryResponse:
       type: object

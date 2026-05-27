@@ -233,11 +233,29 @@ export interface GameSaveInput {
   startedAt: string;
 }
 
+export type SaveGameResultEndReason = typeof SaveGameResultEndReason[keyof typeof SaveGameResultEndReason];
+
+
+export const SaveGameResultEndReason = {
+  max_duration_60min: 'max_duration_60min',
+  inactivity_60min: 'inactivity_60min',
+} as const;
+
 export interface SaveGameResult {
   saved: boolean;
   gameId?: string;
   message?: string;
+  alreadyEnded?: boolean;
+  endReason?: SaveGameResultEndReason;
 }
+
+export type GameHistoryEntryEndReason = typeof GameHistoryEntryEndReason[keyof typeof GameHistoryEntryEndReason];
+
+
+export const GameHistoryEntryEndReason = {
+  max_duration_60min: 'max_duration_60min',
+  inactivity_60min: 'inactivity_60min',
+} as const;
 
 export interface GameHistoryEntry {
   id: string;
@@ -253,6 +271,7 @@ export interface GameHistoryEntry {
   endedAt: string;
   startedAt?: string;
   sharkMode: boolean;
+  endReason?: GameHistoryEntryEndReason;
 }
 
 export type GameHistoryResponseTier = typeof GameHistoryResponseTier[keyof typeof GameHistoryResponseTier];

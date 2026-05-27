@@ -234,7 +234,9 @@ export const SaveGameBody = zod.object({
 export const SaveGameResponse = zod.object({
   "saved": zod.boolean(),
   "gameId": zod.string().optional(),
-  "message": zod.string().optional()
+  "message": zod.string().optional(),
+  "alreadyEnded": zod.boolean().optional(),
+  "endReason": zod.enum(['max_duration_60min', 'inactivity_60min']).optional()
 })
 
 
@@ -267,7 +269,8 @@ export const GetGameHistoryResponse = zod.object({
   "shareCode": zod.string().optional(),
   "endedAt": zod.coerce.date(),
   "startedAt": zod.coerce.date().optional(),
-  "sharkMode": zod.boolean()
+  "sharkMode": zod.boolean(),
+  "endReason": zod.enum(['max_duration_60min', 'inactivity_60min']).optional()
 }))
 })
 

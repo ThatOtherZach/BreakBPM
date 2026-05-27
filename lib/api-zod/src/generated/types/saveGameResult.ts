@@ -5,9 +5,12 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { SaveGameResultEndReason } from './saveGameResultEndReason';
 
 export interface SaveGameResult {
   saved: boolean;
   gameId?: string;
   message?: string;
+  alreadyEnded?: boolean;
+  endReason?: SaveGameResultEndReason;
 }
