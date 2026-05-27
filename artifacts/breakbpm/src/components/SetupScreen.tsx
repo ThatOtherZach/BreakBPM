@@ -389,16 +389,11 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
               return (
               <div key={i} className="player-row">
                 <span
-                  className="ball-btn solid"
+                  className="hud-chip hud-chip-solid"
+                  data-number={i + 1}
                   aria-hidden="true"
-                  style={{
-                    '--ball-color': PLAYER_BALL_COLORS[i],
-                    width: 28, height: 28, aspectRatio: 'auto',
-                    flexShrink: 0,
-                  } as React.CSSProperties}
-                >
-                  <span className="ball-num" style={{ width: 18, height: 18, fontSize: 11 }}>{i + 1}</span>
-                </span>
+                  style={{ '--chip-color': PLAYER_BALL_COLORS[i] } as React.CSSProperties}
+                />
                 <input
                   className="input"
                   value={isLockedSlot ? lockedPlayer1Name : names[i]}
