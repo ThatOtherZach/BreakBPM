@@ -518,7 +518,8 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           onClick={handleStart}
           disabled={startGame.isPending}
         >
-          ▶ {startGame.isPending ? 'STARTING…' : isPractice ? 'START PRACTICE' : 'START GAME'}
+          <span className="cue-ball-icon" aria-hidden="true" style={{ marginRight: 6, verticalAlign: 'middle' }} />
+          {startGame.isPending ? 'STARTING…' : isPractice ? 'START PRACTICE' : 'START GAME'}
         </button>
 
         <hr className="sep" />
