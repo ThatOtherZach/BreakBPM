@@ -620,7 +620,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         <div className="hud-terminal">
           {state.sunkBalls.length === 0
             ? <span className="hud-terminal-idle">&gt;awaiting first shot</span>
-            : state.sunkBalls.map((b, i) => {
+            : [...state.sunkBalls].reverse().map((b, i) => {
               const sunkByShark = (state.sharkSunkBalls ?? []).includes(b);
               return (
                 <span
@@ -649,7 +649,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
             flexWrap: 'wrap',
           };
-          const renderBalls = (balls: number[]) => balls.map((b, i) => (
+          const renderBalls = (balls: number[]) => [...balls].reverse().map((b, i) => (
             <span
               key={i}
               className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}`}
