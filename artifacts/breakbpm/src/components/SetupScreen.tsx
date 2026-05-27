@@ -22,6 +22,7 @@ const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
 ];
 
 const DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
+const PLAYER_BALL_COLORS = ['#FDD307', '#1F4E9E', '#C3342B', '#5B247A'];
 
 interface Props {
   onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, sharkAggression?: SharkAggression) => void;
@@ -387,7 +388,17 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
               const isLockedSlot = i === 0 && lockedPlayer1Name !== null;
               return (
               <div key={i} className="player-row">
-                <span className="player-num">{i + 1}.</span>
+                <span
+                  className="ball-btn solid"
+                  aria-hidden="true"
+                  style={{
+                    '--ball-color': PLAYER_BALL_COLORS[i],
+                    width: 28, height: 28, aspectRatio: 'auto',
+                    flexShrink: 0,
+                  } as React.CSSProperties}
+                >
+                  <span className="ball-num" style={{ width: 18, height: 18, fontSize: 11 }}>{i + 1}</span>
+                </span>
                 <input
                   className="input"
                   value={isLockedSlot ? lockedPlayer1Name : names[i]}
