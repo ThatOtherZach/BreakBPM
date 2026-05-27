@@ -673,7 +673,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                     ...rowStyle,
                     borderColor: active ? '#d8b4ff' : '#5a2a8a',
                   }}>
-                    <span style={{ minWidth: 12 }}>{active ? '▶' : ''}</span>
+                    <span style={{ minWidth: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
+                      {active ? <span className="cue-ball-icon" /> : null}
+                    </span>
                     <span style={{ fontSize: 18, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {p.name}
                     </span>
