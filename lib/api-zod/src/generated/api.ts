@@ -92,6 +92,46 @@ export const RedeemDiscountCodeResponse = zod.object({
 
 
 /**
+ * Returns the signed-in user's most recent gift codes (newest first) plus their cooldown state. Used by the Account screen to render the "Gift a Day Pass" section.
+
+ * @summary List the caller's recently-generated Day-Pass gift codes
+ */
+export const ListMyGiftCodesResponse = zod.object({
+  "eligible": zod.boolean(),
+  "codes": zod.array(zod.object({
+  "code": zod.string(),
+  "grantsPassKind": zod.enum(['day', 'year', 'lifetime']),
+  "issuedAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date(),
+  "redeemed": zod.boolean(),
+  "expired": zod.boolean()
+})),
+  "cooldownActive": zod.boolean(),
+  "nextAvailableAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * Year and Lifetime pass holders may generate one Day-Pass gift code every 12 hours. The new code is single-use, expires 24 hours after generation, and supersedes any previous unused gift code from the same issuer.
+
+ * @summary Generate a single-use 24-hour Day-Pass gift code
+ */
+export const GenerateGiftCodeResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "code": zod.object({
+  "code": zod.string(),
+  "grantsPassKind": zod.enum(['day', 'year', 'lifetime']),
+  "issuedAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date(),
+  "redeemed": zod.boolean(),
+  "expired": zod.boolean()
+}).optional(),
+  "nextAvailableAt": zod.coerce.date().optional()
+})
+
+
+/**
  * @summary Begin a pass purchase — returns a checkout URL + opaque token
  */
 export const CreatePassCheckoutBody = zod.object({

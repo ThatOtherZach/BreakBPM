@@ -75,6 +75,37 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/RedeemResult" }
 
+  /passes/discount-codes:
+    get:
+      operationId: listMyGiftCodes
+      tags: [passes]
+      summary: List the caller's recently-generated Day-Pass gift codes
+      description: >
+        Returns the signed-in user's most recent gift codes (newest first)
+        plus their cooldown state. Used by the Account screen to render the
+        "Gift a Day Pass" section.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyGiftCodesResult" }
+    post:
+      operationId: generateGiftCode
+      tags: [passes]
+      summary: Generate a single-use 24-hour Day-Pass gift code
+      description: >
+        Year and Lifetime pass holders may generate one Day-Pass gift code
+        every 12 hours. The new code is single-use, expires 24 hours after
+        generation, and supersedes any previous unused gift code from the
+        same issuer.
+      responses:
+        "200":
+          description: Generated (or rejected with reason)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GiftCodeIssueResult" }
+
   /passes/checkout:
     post:
       operationId: createPassCheckout
@@ -489,6 +520,48 @@ components:
         endReason:
           type: string
           enum: [max_duration_60min, inactivity_60min]
+
+    GeneratedDiscountCode:
+      type: object
+      required: [code, grantsPassKind, issuedAt, expiresAt, redeemed, expired]
+      properties:
+        code: { type: string }
+        grantsPassKind: { type: string, enum: [day, year, lifetime] }
+        issuedAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        # True when the unique redemption has been consumed.
+        redeemed: { type: boolean }
+        # True when expiresAt is in the past (covers both natural 24h
+        # expiry and supersession by a newer code).
+        expired: { type: boolean }
+
+    MyGiftCodesResult:
+      type: object
+      required: [eligible, codes, cooldownActive]
+      properties:
+        # False for users without an active Year or Lifetime pass — the
+        # client uses this to hide the gift section entirely.
+        eligible: { type: boolean }
+        # Newest-first list of the caller's recent gift codes.
+        codes:
+          type: array
+          items: { $ref: "#/components/schemas/GeneratedDiscountCode" }
+        cooldownActive: { type: boolean }
+        # When the next generation will be allowed. Null when no codes
+        # have been generated yet.
+        nextAvailableAt: { type: ["string", "null"], format: date-time }
+
+    GiftCodeIssueResult:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        # The newly-issued code (only present on success).
+        code: { $ref: "#/components/schemas/GeneratedDiscountCode" }
+        # Always set, including on success — the next allowed generation
+        # timestamp so the client can show the cooldown immediately.
+        nextAvailableAt: { type: string, format: date-time }
 
     GameHistoryResponse:
       type: object

@@ -31,8 +31,10 @@ import type {
   GameHistoryResponse,
   GameSaveInput,
   GetGameHistoryParams,
+  GiftCodeIssueResult,
   HealthStatus,
   MeResponse,
+  MyGiftCodesResult,
   PassCheckoutInput,
   RedeemResult,
   ResumableGameResponse,
@@ -350,6 +352,157 @@ export const useRedeemDiscountCode = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getRedeemDiscountCodeMutationOptions(options));
+    }
+
+export const getListMyGiftCodesUrl = () => {
+
+
+
+
+  return `/api/passes/discount-codes`
+}
+
+/**
+ * Returns the signed-in user's most recent gift codes (newest first) plus their cooldown state. Used by the Account screen to render the "Gift a Day Pass" section.
+
+ * @summary List the caller's recently-generated Day-Pass gift codes
+ */
+export const listMyGiftCodes = async ( options?: RequestInit): Promise<MyGiftCodesResult> => {
+
+  return customFetch<MyGiftCodesResult>(getListMyGiftCodesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyGiftCodesQueryKey = () => {
+    return [
+    `/api/passes/discount-codes`
+    ] as const;
+    }
+
+
+export const getListMyGiftCodesQueryOptions = <TData = Awaited<ReturnType<typeof listMyGiftCodes>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyGiftCodes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyGiftCodesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyGiftCodes>>> = ({ signal }) => listMyGiftCodes({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyGiftCodes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyGiftCodesQueryResult = NonNullable<Awaited<ReturnType<typeof listMyGiftCodes>>>
+export type ListMyGiftCodesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the caller's recently-generated Day-Pass gift codes
+ */
+
+export function useListMyGiftCodes<TData = Awaited<ReturnType<typeof listMyGiftCodes>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyGiftCodes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyGiftCodesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGenerateGiftCodeUrl = () => {
+
+
+
+
+  return `/api/passes/discount-codes`
+}
+
+/**
+ * Year and Lifetime pass holders may generate one Day-Pass gift code every 12 hours. The new code is single-use, expires 24 hours after generation, and supersedes any previous unused gift code from the same issuer.
+
+ * @summary Generate a single-use 24-hour Day-Pass gift code
+ */
+export const generateGiftCode = async ( options?: RequestInit): Promise<GiftCodeIssueResult> => {
+
+  return customFetch<GiftCodeIssueResult>(getGenerateGiftCodeUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getGenerateGiftCodeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateGiftCode>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateGiftCode>>, TError,void, TContext> => {
+
+const mutationKey = ['generateGiftCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateGiftCode>>, void> = () => {
+
+
+          return  generateGiftCode(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateGiftCodeMutationResult = NonNullable<Awaited<ReturnType<typeof generateGiftCode>>>
+
+    export type GenerateGiftCodeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Generate a single-use 24-hour Day-Pass gift code
+ */
+export const useGenerateGiftCode = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateGiftCode>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateGiftCode>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGenerateGiftCodeMutationOptions(options));
     }
 
 export const getCreatePassCheckoutUrl = () => {

@@ -5,8 +5,11 @@ import {
   useUpdateScreenName,
   useGetGameHistory,
   useDevGrantLifetime,
+  useListMyGiftCodes,
+  useGenerateGiftCode,
   getGetMeQueryKey,
   getGetGameHistoryQueryKey,
+  getListMyGiftCodesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "./Navbar";
@@ -29,6 +32,20 @@ function fmtMs(ms: number): string {
 function fmtDate(d: Date | string): string {
   const date = d instanceof Date ? d : new Date(d);
   return date.toLocaleString();
+}
+
+/**
+ * Hours-rounded countdown used by the "Gift a Day Pass" section. The spec
+ * intentionally shows whole hours only (any sub-hour remainder rounds UP)
+ * so the cooldown label is calm and predictable.
+ */
+function fmtHoursUntil(target: Date | string | null): string | null {
+  if (!target) return null;
+  const ms = (target instanceof Date ? target : new Date(target)).getTime() - Date.now();
+  if (ms <= 0) return null;
+  const hours = Math.ceil(ms / (60 * 60 * 1000));
+  if (hours <= 1) return null;
+  return `~${hours}h`;
 }
 
 const GAME_TYPE_LABEL: Record<string, string> = {
@@ -82,12 +99,24 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
   // TODO(remove-before-launch): paired with the dev upgrade button below.
   const [devGrantError, setDevGrantError] = useState("");
   const [historyPage, setHistoryPage] = useState(1);
+  const [giftMsg, setGiftMsg] = useState("");
+  const [giftCopied, setGiftCopied] = useState(false);
+  // Force a re-render every 5 minutes so the cooldown / "expires in ~Xh"
+  // labels in the gift panel drift naturally without spamming setInterval.
+  const [, setClockTick] = useState(0);
 
   const me = useGetMe();
   const history = useGetGameHistory({ page: historyPage });
   const updateName = useUpdateScreenName();
   // TODO(remove-before-launch): dev-only free Lifetime upgrade hook.
   const devGrant = useDevGrantLifetime();
+  const myGiftCodes = useListMyGiftCodes();
+  const generateGift = useGenerateGiftCode();
+
+  useEffect(() => {
+    const id = setInterval(() => setClockTick((n) => n + 1), 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     if (me.data?.account?.screenName) setName(me.data.account.screenName);
@@ -141,6 +170,30 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
       setEditing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Update failed");
+    }
+  }
+
+  async function handleGenerateGift() {
+    setGiftMsg("");
+    setGiftCopied(false);
+    try {
+      const result = await generateGift.mutateAsync();
+      setGiftMsg(result.message);
+      qc.invalidateQueries({ queryKey: getListMyGiftCodesQueryKey() });
+    } catch (e) {
+      setGiftMsg(e instanceof Error ? e.message : "Generate failed");
+    }
+  }
+
+  async function handleCopyGift(code: string) {
+    try {
+      await navigator.clipboard.writeText(code);
+      setGiftCopied(true);
+      // Drop the "Copied" flash after 2s; harmless if the user navigates away.
+      setTimeout(() => setGiftCopied(false), 2000);
+    } catch {
+      // Some sandboxed iframes block clipboard writes — surface that gently.
+      setGiftMsg("Couldn't copy automatically — long-press to copy manually.");
     }
   }
 
@@ -253,6 +306,113 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
                 {ent.tier === "pass" ? "Manage Passes" : "Get a Pass"}
               </button>
             )}
+            {/* Gift a Day Pass — Year and Lifetime holders can mint a single
+                24h Day-Pass gift code, once every 12h. Cooldown is computed
+                server-side from the most recent generation time, so the
+                client just renders whichever state the API returns. */}
+            {ent.activePass &&
+              (ent.activePass.kind === "year" || ent.activePass.isLifetime) &&
+              myGiftCodes.data?.eligible && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    paddingTop: 10,
+                    borderTop: "1px solid #ccc",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: "VT323",
+                      fontSize: 18,
+                      marginBottom: 4,
+                    }}
+                  >
+                    Gift a Day Pass
+                  </div>
+                  <p style={{ fontSize: 11, color: "#444", marginBottom: 6 }}>
+                    Share a 24-hour pass with a friend. One use per code, one
+                    new code every 12 hours.
+                  </p>
+                  {(() => {
+                    const latest = myGiftCodes.data.codes[0];
+                    const cooldownActive = myGiftCodes.data.cooldownActive;
+                    const nextLabel = fmtHoursUntil(
+                      myGiftCodes.data.nextAvailableAt ?? null,
+                    );
+                    // `fmtHoursUntil` returns null for sub-hour remainders,
+                    // which we render as "Available soon" — never the awkward
+                    // "Available in ~Xh" with a missing value.
+                    const cooldownLabel = nextLabel
+                      ? `Available in ${nextLabel}`
+                      : "Available soon";
+                    return (
+                      <>
+                        <button
+                          className="btn btn-primary w-full"
+                          disabled={generateGift.isPending || cooldownActive}
+                          onClick={handleGenerateGift}
+                        >
+                          {cooldownActive
+                            ? cooldownLabel
+                            : generateGift.isPending
+                              ? "Generating…"
+                              : latest
+                                ? "Generate New Code"
+                                : "Generate Gift Code"}
+                        </button>
+                        {latest && (
+                          <div style={{ marginTop: 8 }}>
+                            <div
+                              style={{
+                                fontFamily: "monospace",
+                                fontSize: 16,
+                                padding: "6px 8px",
+                                background: "#f5f5dc",
+                                border: "1px solid #999",
+                                wordBreak: "break-all",
+                              }}
+                            >
+                              {latest.code}
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                marginTop: 4,
+                                gap: 8,
+                              }}
+                            >
+                              <span style={{ fontSize: 11, color: "#444" }}>
+                                {(() => {
+                                  if (latest.redeemed) return "Redeemed";
+                                  if (latest.expired) return "Expired";
+                                  const h = fmtHoursUntil(latest.expiresAt);
+                                  return h
+                                    ? `Unused — expires in ${h}`
+                                    : "Unused — expires soon";
+                                })()}
+                              </span>
+                              <button
+                                className="btn"
+                                onClick={() => handleCopyGift(latest.code)}
+                              >
+                                {giftCopied ? "Copied" : "Copy"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                  {giftMsg && (
+                    <div className="notice" style={{ marginTop: 8 }}>
+                      <span>ℹ</span>
+                      <span>{giftMsg}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             {/* TODO(remove-before-launch): dev-only free Lifetime upgrade button.
                 Rip out together with useDevGrantLifetime import, devGrant state,
                 handleDevGrant, and the server-side DEV_FREE_UPGRADE_ENABLED flag.

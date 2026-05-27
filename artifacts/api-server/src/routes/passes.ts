@@ -14,12 +14,19 @@ import {
   VerifyPassCheckoutBody,
   VerifyPassCheckoutResponse,
   DevGrantLifetimeResponse,
+  GenerateGiftCodeResponse,
+  ListMyGiftCodesResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser } from "../lib/auth";
 import { issuePassTx } from "../lib/passes";
 import { getActivePasses } from "../lib/entitlement";
 import { paymentProvider, DEV_FREE_UPGRADE_ENABLED } from "../lib/paymentProvider";
 import { newId } from "../lib/ids";
+import {
+  generateGiftCode,
+  listMyGiftCodes,
+  GiftCodeFailure,
+} from "../lib/giftCodes";
 
 const router: IRouter = Router();
 
@@ -63,6 +70,22 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
   }
 
   const code = parsed.data.code.trim().toUpperCase();
+
+  // Block redemption while any pass is already active. We check BEFORE
+  // opening the transaction so a refused attempt doesn't burn the code's
+  // single-redemption slot — the cap UPDATE below would otherwise increment
+  // redemption_count and then roll back, but reading the row inside the tx
+  // and then aborting is wasted work compared to this cheap pre-check.
+  const existing = await getActivePasses(user.id);
+  if (existing.length > 0) {
+    res.json(
+      RedeemDiscountCodeResponse.parse({
+        success: false,
+        message: "You already have an active pass.",
+      }),
+    );
+    return;
+  }
 
   // We use a thrown sentinel for any "validation failed" path INSIDE the
   // transaction so that pg rolls back any writes that already happened
@@ -264,6 +287,78 @@ router.post("/passes/dev-grant-lifetime", async (req, res): Promise<void> => {
       pass: outcome.summary,
     }),
   );
+});
+
+/**
+ * List the caller's recently-generated Day-Pass gift codes + cooldown
+ * state. Returns `eligible: false` for users without a qualifying pass so
+ * the client can hide the gift section without an extra entitlement call.
+ */
+router.get("/passes/discount-codes", async (req, res): Promise<void> => {
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Sign in to view your gift codes" });
+    return;
+  }
+  const result = await listMyGiftCodes(user.id);
+  res.json(
+    ListMyGiftCodesResponse.parse({
+      eligible: result.eligible,
+      codes: result.codes,
+      cooldownActive: result.cooldownActive,
+      nextAvailableAt: result.nextAvailableAt,
+    }),
+  );
+});
+
+/**
+ * Mint a new single-use 24-hour Day-Pass gift code for the caller. The
+ * library raises GiftCodeFailure with a reason we translate to a
+ * `{ success: false, message }` body; unexpected failures bubble up as
+ * 500s so they surface in logs.
+ */
+router.post("/passes/discount-codes", async (req, res): Promise<void> => {
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Sign in to gift a Day Pass" });
+    return;
+  }
+  try {
+    const result = await generateGiftCode(user.id);
+    // Do not log the raw code — anyone with log access could redeem it.
+    // Log issuer + expiry instead so we can still trace gifting activity.
+    req.log.info(
+      { userId: user.id, expiresAt: result.code.expiresAt },
+      "Gift Day-Pass code generated",
+    );
+    res.json(
+      GenerateGiftCodeResponse.parse({
+        success: true,
+        message: "Gift code generated.",
+        code: result.code,
+        nextAvailableAt: result.nextAvailableAt,
+      }),
+    );
+  } catch (err) {
+    if (err instanceof GiftCodeFailure) {
+      // For cooldown rejections we still need a nextAvailableAt so the
+      // client can refresh its disabled state without a second round-trip.
+      const fallbackNext =
+        err.reason === "cooldown_active" && err.cooldownRemainingMs !== undefined
+          ? new Date(Date.now() + err.cooldownRemainingMs)
+          : new Date();
+      res.json(
+        GenerateGiftCodeResponse.parse({
+          success: false,
+          message: err.message,
+          nextAvailableAt: fallbackNext,
+        }),
+      );
+      return;
+    }
+    req.log.error({ err, userId: user.id }, "Gift code generation failed");
+    res.status(500).json({ error: "Gift code generation failed" });
+  }
 });
 
 export default router;

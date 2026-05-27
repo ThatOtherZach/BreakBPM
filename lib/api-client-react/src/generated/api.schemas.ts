@@ -274,6 +274,39 @@ export interface GameHistoryEntry {
   endReason?: GameHistoryEntryEndReason;
 }
 
+export type GeneratedDiscountCodeGrantsPassKind = typeof GeneratedDiscountCodeGrantsPassKind[keyof typeof GeneratedDiscountCodeGrantsPassKind];
+
+
+export const GeneratedDiscountCodeGrantsPassKind = {
+  day: 'day',
+  year: 'year',
+  lifetime: 'lifetime',
+} as const;
+
+export interface GeneratedDiscountCode {
+  code: string;
+  grantsPassKind: GeneratedDiscountCodeGrantsPassKind;
+  issuedAt: string;
+  expiresAt: string;
+  redeemed: boolean;
+  expired: boolean;
+}
+
+export interface MyGiftCodesResult {
+  eligible: boolean;
+  codes: GeneratedDiscountCode[];
+  cooldownActive: boolean;
+  /** @nullable */
+  nextAvailableAt?: string | null;
+}
+
+export interface GiftCodeIssueResult {
+  success: boolean;
+  message: string;
+  code?: GeneratedDiscountCode;
+  nextAvailableAt?: string;
+}
+
 export type GameHistoryResponseTier = typeof GameHistoryResponseTier[keyof typeof GameHistoryResponseTier];
 
 

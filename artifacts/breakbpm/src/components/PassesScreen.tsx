@@ -134,20 +134,38 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
         <div className="panel">
           <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🎁</span>Redeem Code</span></div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <input
-              className="input"
-              placeholder="ENTER CODE"
-              maxLength={64}
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-            />
-            <button
-              className="btn btn-primary btn-big"
-              disabled={redeem.isPending || !code.trim()}
-              onClick={handleRedeem}
-            >
-              Redeem
-            </button>
+            {me.data.entitlement.activePass ? (
+              // We hide the input entirely when a pass is already active so
+              // a recipient with, say, a gifted Day Pass can't accidentally
+              // burn a second code. The server also enforces this — see the
+              // pre-check in /passes/redeem.
+              <>
+                <div style={{ fontFamily: "VT323", fontSize: 22, color: "#006400" }}>
+                  Pass Active
+                </div>
+                <p style={{ fontSize: 12, color: "#444" }}>
+                  You already have an active pass — no need to redeem a code
+                  right now.
+                </p>
+              </>
+            ) : (
+              <>
+                <input
+                  className="input"
+                  placeholder="ENTER CODE"
+                  maxLength={64}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                />
+                <button
+                  className="btn btn-primary btn-big"
+                  disabled={redeem.isPending || !code.trim()}
+                  onClick={handleRedeem}
+                >
+                  Redeem
+                </button>
+              </>
+            )}
           </div>
         </div>
 
