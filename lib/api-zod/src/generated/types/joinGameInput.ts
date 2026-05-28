@@ -17,4 +17,5 @@ export interface JoinGameInput {
      * @maxLength 24
      */
   guestName?: string;
+  guestToken?: string;
 }

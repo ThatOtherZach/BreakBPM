@@ -50,18 +50,29 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
 
   // Run the join exactly once on mount. Result tells us role
   // (player/spectator/already_joined) and the canonical gameId.
+  // For guest joiners we also receive a `guestToken` — stash it in
+  // localStorage so a tab-refresh re-uses the same slot instead of
+  // claiming a new one, and so /games/leave can authenticate.
   const [joinResult, setJoinResult] = useState<{
     role: 'player' | 'spectator' | 'already_joined';
     gameId: string;
     displayName: string;
     reason?: string;
+    slotIndex: number | null;
+    guestToken: string | null;
   } | null>(null);
   const [joinError, setJoinError] = useState<string>('');
   const joinedRef = useRef(false);
+  const guestTokenKey = `breakbpm.guestToken:${code}`;
   useEffect(() => {
     if (joinedRef.current) return;
     joinedRef.current = true;
-    join.mutateAsync({ data: { code } })
+    // Replay any guestToken stored from a prior join on this device so
+    // the server can short-circuit to our existing slot (idempotent
+    // rejoin) instead of allocating a new one on tab refresh.
+    let storedToken: string | null = null;
+    try { storedToken = localStorage.getItem(guestTokenKey); } catch { /* noop */ }
+    join.mutateAsync({ data: { code, ...(storedToken ? { guestToken: storedToken } : {}) } })
       .then(r => {
         if (!r.joined && r.reason === 'not_found') {
           setJoinError(`No active game with code ${code}.`);
@@ -71,18 +82,30 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
           setJoinError('That game already ended.');
           return;
         }
+        let token: string | null = (r as { guestToken?: string | null }).guestToken ?? null;
+        try {
+          if (token) {
+            localStorage.setItem(guestTokenKey, token);
+          } else {
+            // Restore a token from a previous join on this device so
+            // /games/leave can still authenticate after a refresh.
+            token = localStorage.getItem(guestTokenKey);
+          }
+        } catch { /* storage unavailable */ }
         setJoinResult({
           role: r.role,
           gameId: r.gameId,
           displayName: r.displayName ?? '',
           reason: r.reason,
+          slotIndex: (r as { slotIndex?: number | null }).slotIndex ?? null,
+          guestToken: token,
         });
       })
       .catch((e: unknown) => {
         const err = e as { data?: { error?: string } };
         setJoinError(err?.data?.error ?? (e instanceof Error ? e.message : 'Could not join.'));
       });
-  }, [code, join]);
+  }, [code, join, guestTokenKey]);
 
   // Polling: every 2.5s while tab is visible, 10s when hidden. Disabled
   // once the game ends so we stop hitting the server in a tight loop.
@@ -134,7 +157,13 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
       return;
     }
     try {
-      await leave.mutateAsync({ data: { gameId: joinResult.gameId } });
+      await leave.mutateAsync({
+        data: {
+          gameId: joinResult.gameId,
+          ...(joinResult.guestToken ? { guestToken: joinResult.guestToken } : {}),
+        },
+      });
+      try { localStorage.removeItem(guestTokenKey); } catch { /* noop */ }
     } catch {
       /* best-effort; still navigate */
     }
@@ -172,6 +201,18 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
   const sunk = state?.sunkBalls ?? [];
   const sharkBalls = state?.sharkSunkBalls ?? [];
   const players = state?.players ?? [];
+  // Server roster (source of truth for who currently holds each slot).
+  // Joiners that arrive after the host started will appear here even
+  // before the host's local gameState reflects them, so the joiner view
+  // can always show "who's actually in this game right now".
+  const participants = (snap.data as { participants?: Array<{
+    slotIndex: number;
+    displayName: string;
+    isHost: boolean;
+    hasLeft: boolean;
+    isGuest: boolean;
+  }> } | undefined)?.participants ?? [];
+  const rosterBySlot = new Map(participants.map(p => [p.slotIndex, p]));
   const currentIdx = state?.currentPlayerIndex ?? 0;
   const cur = players[currentIdx];
   const shotLog = state?.shotLog ?? [];
@@ -278,6 +319,11 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
               && e.playerName === p.name && typeof e.ball === 'number')
             .map(e => e.ball as number);
           const teamLabel = p.team ? (p.team === 'solids' ? 'Solids' : 'Stripes') : null;
+          // Overlay server roster: prefer roster displayName + show "(left)"
+          // when a joiner has bailed but the slot is still reserved.
+          const roster = rosterBySlot.get(i);
+          const shownName = roster?.displayName ?? p.name;
+          const isMe = joinResult?.slotIndex === i;
           return (
             <div key={p.id} style={{
               display: 'flex', alignItems: 'center', gap: 8,
@@ -286,13 +332,17 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
               borderColor: active ? '#d8b4ff' : '#5a2a8a',
               fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
               flexWrap: 'wrap',
+              opacity: roster?.hasLeft ? 0.55 : 1,
             }}>
               <span style={{ minWidth: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
                 {active ? <span className="cue-ball-icon" /> : null}
               </span>
               <span style={{ fontSize: 18, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {p.name}
+                {shownName}{isMe ? ' (you)' : ''}{roster?.isHost ? ' ★' : ''}
               </span>
+              {roster?.hasLeft && (
+                <span style={{ fontSize: 12, color: '#ff9090' }}>· left</span>
+              )}
               {teamLabel && (
                 <span style={{ fontSize: 12, opacity: 0.7 }}>
                   · {teamLabel}{cleared && ' ✓'}
@@ -304,6 +354,28 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
             </div>
           );
         })}
+
+        {/* Late joiners: server roster slots not yet reflected in the host's
+            local gameState.players[] (host hasn't refreshed). Show them so
+            joiners always see the real roster. */}
+        {participants
+          .filter(rp => rp.slotIndex >= players.length)
+          .map(rp => (
+            <div key={`roster-${rp.slotIndex}`} style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '4px 8px', marginTop: 4,
+              background: '#1a0a2e', border: '1px dashed #5a2a8a',
+              fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
+              opacity: rp.hasLeft ? 0.55 : 0.9,
+            }}>
+              <span style={{ minWidth: 12 }} aria-hidden="true" />
+              <span style={{ fontSize: 18 }}>
+                {rp.displayName}{joinResult?.slotIndex === rp.slotIndex ? ' (you)' : ''}
+              </span>
+              <span style={{ fontSize: 12, opacity: 0.7 }}>· joining…</span>
+              {rp.hasLeft && <span style={{ fontSize: 12, color: '#ff9090' }}>· left</span>}
+            </div>
+          ))}
 
         {state?.phase === 'ended' && (
           <div className="hud-winner">

@@ -75,6 +75,13 @@ export const gameParticipantsTable = pgTable(
     statsStartAt: timestamp("stats_start_at", { withTimezone: true }).notNull().defaultNow(),
     /** Set when the participant explicitly leaves (forfeit on their behalf). */
     leftAt: timestamp("left_at", { withTimezone: true }),
+    /**
+     * Per-participant capability token. Set for guest participants (no
+     * userId) so the client can authenticate `/games/leave` calls and
+     * resume on the same device. Null for signed-in participants who
+     * authenticate via Clerk.
+     */
+    guestToken: text("guest_token"),
   },
   (t) => [
     primaryKey({ columns: [t.gameId, t.slotIndex] }),

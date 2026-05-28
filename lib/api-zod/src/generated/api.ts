@@ -296,7 +296,8 @@ export const joinGameBodyGuestNameMax = 24;
 
 export const JoinGameBody = zod.object({
   "code": zod.string().min(joinGameBodyCodeMin).max(joinGameBodyCodeMax),
-  "guestName": zod.string().min(1).max(joinGameBodyGuestNameMax).optional()
+  "guestName": zod.string().min(1).max(joinGameBodyGuestNameMax).optional(),
+  "guestToken": zod.string().optional()
 })
 
 export const JoinGameResponse = zod.object({
@@ -307,7 +308,8 @@ export const JoinGameResponse = zod.object({
   "slotIndex": zod.number().nullish(),
   "displayName": zod.string().optional(),
   "shareCode": zod.string().optional(),
-  "reason": zod.string().optional()
+  "reason": zod.string().optional(),
+  "guestToken": zod.string().nullish()
 })
 
 
@@ -345,7 +347,8 @@ export const GetGameStateByCodeResponse = zod.object({
  * @summary Leave an in-progress game (forfeits on this participant's behalf)
  */
 export const LeaveGameBody = zod.object({
-  "gameId": zod.string()
+  "gameId": zod.string(),
+  "guestToken": zod.string().optional()
 })
 
 export const LeaveGameResponse = zod.object({

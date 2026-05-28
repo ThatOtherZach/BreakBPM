@@ -18,4 +18,6 @@ export interface JoinGameResult {
   displayName?: string;
   shareCode?: string;
   reason?: string;
+  /** @nullable */
+  guestToken?: string | null;
 }

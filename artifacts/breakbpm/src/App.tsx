@@ -82,15 +82,16 @@ function CacheInvalidator() {
 
 function MainApp() {
   const [, setLocation] = useLocation();
-  // Legacy share links used `?game=<code>` to join. Redirect them to
-  // the canonical `/join/:code` route so recipients always land in the
-  // read-only joiner view.
+  // Share-link entry points. Anything with `?code=<X>` (current) or the
+  // legacy `?game=<X>` redirects to the canonical `/join/:code` route
+  // so recipients always land in the read-only joiner view, regardless
+  // of how they got the link.
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      const legacy = params.get("game");
-      if (legacy) {
-        const code = legacy.trim().toUpperCase();
+      const raw = params.get("code") ?? params.get("game");
+      if (raw) {
+        const code = raw.trim().toUpperCase();
         if (code) {
           setLocation(`/join/${code}`);
         }

@@ -8,4 +8,5 @@
 
 export interface LeaveGameInput {
   gameId: string;
+  guestToken?: string;
 }

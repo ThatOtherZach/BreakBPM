@@ -355,6 +355,7 @@ export interface JoinGameInput {
      * @maxLength 24
      */
   guestName?: string;
+  guestToken?: string;
 }
 
 export type JoinGameResultRole = typeof JoinGameResultRole[keyof typeof JoinGameResultRole];
@@ -385,10 +386,13 @@ export interface JoinGameResult {
   displayName?: string;
   shareCode?: string;
   reason?: string;
+  /** @nullable */
+  guestToken?: string | null;
 }
 
 export interface LeaveGameInput {
   gameId: string;
+  guestToken?: string;
 }
 
 export interface LeaveGameResult {

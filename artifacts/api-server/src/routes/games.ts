@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { randomUUID } from "node:crypto";
 import { and, count, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { db, gamesTable, gameParticipantsTable } from "@workspace/db";
 import {
@@ -584,17 +585,128 @@ router.post("/games/join", async (req, res): Promise<void> => {
   const user = await getOrCreateUser(req);
   const solo = isSoloMode(fresh.gameType, fresh.maxPlayers);
 
-  // Anonymous guest → spectator (no participant row, no stats).
+  // Idempotent rejoin: if the caller presents a guestToken that already
+  // owns a (non-left) slot in this game, return that slot instead of
+  // allocating a new one. This makes tab-refresh / reopened-link flows
+  // safe — a single guest never holds two slots simultaneously.
+  if (parsed.data.guestToken) {
+    const existingGuest = await db
+      .select()
+      .from(gameParticipantsTable)
+      .where(
+        and(
+          eq(gameParticipantsTable.gameId, fresh.id),
+          eq(gameParticipantsTable.guestToken, parsed.data.guestToken),
+          isNull(gameParticipantsTable.leftAt),
+        ),
+      )
+      .limit(1);
+    if (existingGuest.length > 0) {
+      const p = existingGuest[0];
+      res.json(
+        JoinGameResponse.parse({
+          joined: true,
+          role: "already_joined",
+          gameId: fresh.id,
+          gameType: fresh.gameType as "8ball" | "9ball" | "practice",
+          slotIndex: p.slotIndex,
+          displayName: p.displayName,
+          shareCode: code,
+          reason: p.isHost ? "host" : "rejoin",
+          guestToken: parsed.data.guestToken,
+        }),
+      );
+      return;
+    }
+  }
+
+  // ── Guest (anonymous) joiners ────────────────────────────────────
+  // Per task spec: guests play and get real slots; only stats
+  // persistence differs (no userId → /games/history will skip them).
+  // For solo modes guests stay spectators (no opponent slot to fill).
   if (!user) {
+    if (solo) {
+      res.json(
+        JoinGameResponse.parse({
+          joined: true,
+          role: "spectator",
+          gameId: fresh.id,
+          gameType: fresh.gameType as "8ball" | "9ball" | "practice",
+          slotIndex: null,
+          displayName: parsed.data.guestName?.trim() || "Guest",
+          shareCode: code,
+          guestToken: null,
+        }),
+      );
+      return;
+    }
+    const nowG = new Date();
+    const guestToken = randomUUID();
+    let assignedSlotG: number | null = null;
+    let assignedNameG = "";
+    await db.transaction(async (tx) => {
+      // Slot allocation counts ALL participant rows for this game,
+      // including ones with `leftAt` set — leaving = forfeit slot
+      // (the slot stays reserved for the leaver and cannot be
+      // re-allocated to a different joiner).
+      const taken = await tx
+        .select({ slot: gameParticipantsTable.slotIndex })
+        .from(gameParticipantsTable)
+        .where(eq(gameParticipantsTable.gameId, fresh.id));
+      const takenSet = new Set(taken.map((t) => t.slot));
+      if (takenSet.size >= fresh.maxPlayers) return;
+      let next = -1;
+      for (let i = 0; i < fresh.maxPlayers; i++) {
+        if (!takenSet.has(i)) {
+          next = i;
+          break;
+        }
+      }
+      if (next < 0) return;
+      const displayName = parsed.data.guestName?.trim() || `Player ${next + 1}`;
+      try {
+        await tx.insert(gameParticipantsTable).values({
+          gameId: fresh.id,
+          slotIndex: next,
+          userId: null,
+          displayName,
+          isHost: false,
+          joinedAt: nowG,
+          statsStartAt: nowG,
+          guestToken,
+        });
+        assignedSlotG = next;
+        assignedNameG = displayName;
+      } catch {
+        // race lost
+      }
+    });
+    if (assignedSlotG === null) {
+      res.json(
+        JoinGameResponse.parse({
+          joined: true,
+          role: "spectator",
+          gameId: fresh.id,
+          gameType: fresh.gameType as "8ball" | "9ball" | "practice",
+          slotIndex: null,
+          displayName: parsed.data.guestName?.trim() || "Guest",
+          shareCode: code,
+          reason: "full",
+          guestToken: null,
+        }),
+      );
+      return;
+    }
     res.json(
       JoinGameResponse.parse({
         joined: true,
-        role: "spectator",
+        role: "player",
         gameId: fresh.id,
         gameType: fresh.gameType as "8ball" | "9ball" | "practice",
-        slotIndex: null,
-        displayName: parsed.data.guestName?.trim() || "Guest",
+        slotIndex: assignedSlotG,
+        displayName: assignedNameG,
         shareCode: code,
+        guestToken,
       }),
     );
     return;
@@ -650,10 +762,12 @@ router.post("/games/join", async (req, res): Promise<void> => {
   const now = new Date();
   let assignedSlot: number | null = null;
   await db.transaction(async (tx) => {
+    // Slot allocation counts ALL rows including `leftAt`-set ones —
+    // forfeited slots stay reserved and can't be reassigned.
     const taken = await tx
       .select({ slot: gameParticipantsTable.slotIndex })
       .from(gameParticipantsTable)
-      .where(and(eq(gameParticipantsTable.gameId, fresh.id), isNull(gameParticipantsTable.leftAt)));
+      .where(eq(gameParticipantsTable.gameId, fresh.id));
     const takenSet = new Set(taken.map((t) => t.slot));
     if (takenSet.size >= fresh.maxPlayers) return;
     let next = -1;
@@ -771,9 +885,18 @@ router.get("/games/state", async (req, res): Promise<void> => {
 });
 
 /**
- * Leave an in-progress game. Marks the caller's participant row as
- * left, then ends the whole game as a forfeit (per SOW: leave =
- * forfeit). The winner derivation mirrors the inactivity sweep.
+ * Leave an in-progress game. Marks **only the caller's** participant
+ * row as left — the slot stays occupied (no other joiner can claim it)
+ * and the game itself keeps running. The departure is a forfeit for
+ * the leaver's stats (their statsStartAt..leftAt window is what counts
+ * in /games/history), not for the game.
+ *
+ * The game ends only when there are no remaining (non-left) human
+ * participants — i.e. everyone has bailed.
+ *
+ * Authentication: signed-in callers are matched by Clerk userId; guest
+ * (anonymous) participants pass back the `guestToken` they received
+ * from /games/join.
  */
 router.post("/games/leave", async (req, res): Promise<void> => {
   const parsed = LeaveGameBody.safeParse(req.body);
@@ -782,47 +905,67 @@ router.post("/games/leave", async (req, res): Promise<void> => {
     return;
   }
   const user = await getOrCreateUser(req);
-  if (!user) {
-    res.status(401).json({ error: "Sign in required" });
+  const now = new Date();
+
+  // Build the WHERE for the caller's participant row. Signed-in users
+  // win over the guest token if both happen to be present.
+  let updated: { slotIndex: number; displayName: string }[];
+  if (user) {
+    updated = await db
+      .update(gameParticipantsTable)
+      .set({ leftAt: now })
+      .where(
+        and(
+          eq(gameParticipantsTable.gameId, parsed.data.gameId),
+          eq(gameParticipantsTable.userId, user.id),
+          isNull(gameParticipantsTable.leftAt),
+        ),
+      )
+      .returning({ slotIndex: gameParticipantsTable.slotIndex, displayName: gameParticipantsTable.displayName });
+  } else if (parsed.data.guestToken) {
+    updated = await db
+      .update(gameParticipantsTable)
+      .set({ leftAt: now })
+      .where(
+        and(
+          eq(gameParticipantsTable.gameId, parsed.data.gameId),
+          eq(gameParticipantsTable.guestToken, parsed.data.guestToken),
+          isNull(gameParticipantsTable.leftAt),
+        ),
+      )
+      .returning({ slotIndex: gameParticipantsTable.slotIndex, displayName: gameParticipantsTable.displayName });
+  } else {
+    res.status(401).json({ error: "Sign in required, or pass guestToken from /games/join" });
     return;
   }
-  const now = new Date();
-  const updated = await db
-    .update(gameParticipantsTable)
-    .set({ leftAt: now })
-    .where(
-      and(
-        eq(gameParticipantsTable.gameId, parsed.data.gameId),
-        eq(gameParticipantsTable.userId, user.id),
-        isNull(gameParticipantsTable.leftAt),
-      ),
-    )
-    .returning({ slotIndex: gameParticipantsTable.slotIndex, displayName: gameParticipantsTable.displayName });
   if (updated.length === 0) {
     res.json(LeaveGameResponse.parse({ left: false, gameEnded: false }));
     return;
   }
-  // Close the game as a forfeit, attributing the win to a remaining
-  // participant when possible.
+
+  // Only when zero non-left participants remain do we close the row as
+  // an "everyone-bailed" forfeit. Otherwise the game keeps playing —
+  // remaining participants can finish naturally on /games/save.
   const remaining = await db
-    .select({ name: gameParticipantsTable.displayName })
+    .select({ slotIndex: gameParticipantsTable.slotIndex })
     .from(gameParticipantsTable)
     .where(
       and(eq(gameParticipantsTable.gameId, parsed.data.gameId), isNull(gameParticipantsTable.leftAt)),
-    )
-    .limit(1);
-  const winner = remaining[0]?.name ?? null;
-  const closed = await db
-    .update(gamesTable)
-    .set({
-      endedAt: now,
-      outcome: "forfeit",
-      winner,
-      gameState: sql`jsonb_set(${gamesTable.gameState}, '{forfeitReason}', '"left"')`,
-    })
-    .where(and(eq(gamesTable.id, parsed.data.gameId), isNull(gamesTable.endedAt)))
-    .returning({ id: gamesTable.id });
-  res.json(LeaveGameResponse.parse({ left: true, gameEnded: closed.length > 0 }));
+    );
+  let gameEnded = false;
+  if (remaining.length === 0) {
+    const closed = await db
+      .update(gamesTable)
+      .set({
+        endedAt: now,
+        outcome: "forfeit",
+        gameState: sql`jsonb_set(${gamesTable.gameState}, '{forfeitReason}', '"all_left"')`,
+      })
+      .where(and(eq(gamesTable.id, parsed.data.gameId), isNull(gamesTable.endedAt)))
+      .returning({ id: gamesTable.id });
+    gameEnded = closed.length > 0;
+  }
+  res.json(LeaveGameResponse.parse({ left: true, gameEnded }));
 });
 
 const HISTORY_PAGE_SIZE_PASS = 10;
@@ -907,19 +1050,112 @@ router.get("/games/history", async (req, res): Promise<void> => {
     .limit(rowLimit)
     .offset(offset);
 
+  // Per-user participant rows for the visible games — used to apply
+  // the join-time stats cutoff so a mid-game joiner only sees BPM
+  // / ball counts for shots they took *after* joining.
+  const visibleIds = visible.map((g) => g.id);
+  const myParts = visibleIds.length
+    ? await db
+        .select({
+          gameId: gameParticipantsTable.gameId,
+          slotIndex: gameParticipantsTable.slotIndex,
+          displayName: gameParticipantsTable.displayName,
+          statsStartAt: gameParticipantsTable.statsStartAt,
+          isHost: gameParticipantsTable.isHost,
+        })
+        .from(gameParticipantsTable)
+        .where(
+          and(
+            inArray(gameParticipantsTable.gameId, visibleIds),
+            eq(gameParticipantsTable.userId, user.id),
+          ),
+        )
+    : [];
+  const partByGame = new Map(myParts.map((p) => [p.gameId, p]));
+
+  // shotLog entry shape (mirrors artifacts/breakbpm/src/lib/gameLogic.ts).
+  type ShotLogEntry = {
+    type: string;
+    playerName?: string;
+    gameTime?: number;
+    ball?: number;
+  };
+
+  /**
+   * Recompute this user's BPM window from the persisted shot log,
+   * anchored at their `statsStartAt` cutoff (their join time, or game
+   * start for the host). Mirrors the client-side `calculatePlayerBPM`
+   * shape: only pocketing entries (sink/win/lose-with-ball) count,
+   * BPM = pocketed / (lastPocket − firstPocket) minutes. Returns null
+   * if the user pocketed nothing in their window.
+   *
+   * `slotIndex` is the participant's slot. Shot log entries are stamped
+   * with `playerName` matching the **host's** `gameState.players[i].name`
+   * (the scorekeeper's notion of names). The host's name for a given
+   * slot may differ from the joiner's screenName, so we resolve names
+   * via the persisted players[] array by slot index rather than by the
+   * participant row's displayName.
+   */
+  function userBpmFromShotLog(
+    g: typeof visible[number],
+    cutoffMs: number,
+    slotIndex: number,
+  ): { bpm: number | null; sunk: number } {
+    const gs = g.gameState as
+      | { shotLog?: unknown; players?: Array<{ name?: unknown }> }
+      | null;
+    const log = Array.isArray(gs?.shotLog) ? (gs!.shotLog as ShotLogEntry[]) : [];
+    const players = Array.isArray(gs?.players) ? gs!.players : [];
+    const slotPlayer = players[slotIndex];
+    const playerName =
+      slotPlayer && typeof slotPlayer.name === "string" ? slotPlayer.name : "";
+    if (!playerName) return { bpm: null, sunk: 0 };
+    const anchor = g.startedAt.getTime();
+    const relCutoff = Math.max(0, cutoffMs - anchor);
+    const pockets = log.filter(
+      (e) =>
+        e &&
+        e.playerName === playerName &&
+        (e.type === "sink" || e.type === "win" || e.type === "lose") &&
+        typeof e.ball === "number" &&
+        typeof e.gameTime === "number" &&
+        (e.gameTime as number) >= relCutoff,
+    );
+    if (pockets.length === 0) return { bpm: null, sunk: 0 };
+    const first = pockets[0].gameTime as number;
+    const last = pockets[pockets.length - 1].gameTime as number;
+    const elapsedMs = Math.max(0, last - first);
+    if (elapsedMs <= 0) return { bpm: 0, sunk: pockets.length };
+    return { bpm: pockets.length / (elapsedMs / 60000), sunk: pockets.length };
+  }
+
   const games = visible.map((g) => {
     const gs = g.gameState as Record<string, unknown> | null;
     const rawReason =
       gs && typeof gs["forfeitReason"] === "string" ? (gs["forfeitReason"] as string) : undefined;
     const endReason =
       rawReason === "max_duration_60min" || rawReason === "inactivity_60min" ? rawReason : undefined;
+    const mine = partByGame.get(g.id);
+    // Host's row uses the stored bpm (it was computed against the whole
+    // game). Joiners get a per-window recompute from the shot log,
+    // resolving their name via the host's gameState.players[slotIndex].
+    let bpm: number | null;
+    let sunkBallsCount: number;
+    if (mine && !mine.isHost) {
+      const r = userBpmFromShotLog(g, mine.statsStartAt.getTime(), mine.slotIndex);
+      bpm = r.bpm;
+      sunkBallsCount = r.sunk;
+    } else {
+      bpm = g.bpm == null ? null : g.bpm / 10;
+      sunkBallsCount = g.sunkBallsCount;
+    }
     return {
       id: g.id,
       gameType: g.gameType,
       winner: g.winner,
-      bpm: g.bpm == null ? null : g.bpm / 10,
+      bpm,
       durationMs: g.durationMs,
-      sunkBallsCount: g.sunkBallsCount,
+      sunkBallsCount,
       outcome: g.outcome ?? "completed",
       shareCode: g.shareCode,
       endedAt: g.endedAt!,

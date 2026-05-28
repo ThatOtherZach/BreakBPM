@@ -682,6 +682,12 @@ components:
         # Optional display name for guest (anonymous) joiners. Signed-in
         # callers always use their screenName; this is ignored for them.
         guestName: { type: string, minLength: 1, maxLength: 24 }
+        # Capability token from a prior /games/join on this device.
+        # When present and matches a non-left participant in this game,
+        # the server returns that existing slot instead of allocating a
+        # new one. Makes guest rejoin (e.g. after a tab refresh)
+        # idempotent so a single guest never holds two slots.
+        guestToken: { type: string }
 
     JoinGameResult:
       type: object
@@ -701,12 +707,19 @@ components:
         shareCode: { type: string }
         # Set when joined=false. "not_found" | "ended" | "full"
         reason: { type: string }
+        # Capability token for guest (anonymous) joiners — they don't
+        # have a userId, so they pass this token back on /games/leave
+        # to forfeit their own slot. Null for signed-in callers.
+        guestToken: { type: ["string", "null"] }
 
     LeaveGameInput:
       type: object
       required: [gameId]
       properties:
         gameId: { type: string }
+        # Required for guest joiners; ignored for signed-in callers
+        # (who authenticate via Clerk and are matched by userId).
+        guestToken: { type: string }
 
     LeaveGameResult:
       type: object
