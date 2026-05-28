@@ -683,6 +683,21 @@ router.post("/games/join", async (req, res): Promise<void> => {
   const user = await getOrCreateUser(req);
   const solo = isSoloMode(fresh.gameType, fresh.maxPlayers);
 
+  // Pre-break join window. Once the first ball has been pocketed
+  // (sink/win/lose entry in the host's shot log), the share code stops
+  // allocating new slots — late arrivals can still watch via the read-
+  // only spectator view, but cannot claim a player slot. Mirrors how
+  // bar pool plays out IRL: once the break happens, you wait for the
+  // next rack. Idempotent rejoin paths (guestToken match, signed-in
+  // existing participant) below are unaffected — they return the
+  // slot the caller already holds.
+  const gs = fresh.gameState as { shotLog?: Array<{ type?: string }> } | null;
+  const hasPockets =
+    Array.isArray(gs?.shotLog) &&
+    (gs!.shotLog as Array<{ type?: string }>).some(
+      (e) => e && (e.type === "sink" || e.type === "win" || e.type === "lose"),
+    );
+
   // Idempotent rejoin: if the caller presents a guestToken that already
   // owns a (non-left) slot in this game, return that slot instead of
   // allocating a new one. This makes tab-refresh / reopened-link flows
@@ -738,11 +753,47 @@ router.post("/games/join", async (req, res): Promise<void> => {
       );
       return;
     }
+    if (hasPockets) {
+      res.json(
+        JoinGameResponse.parse({
+          joined: true,
+          role: "spectator",
+          gameId: fresh.id,
+          gameType: fresh.gameType as "8ball" | "9ball" | "practice",
+          slotIndex: null,
+          displayName: parsed.data.guestName?.trim() || "Guest",
+          shareCode: code,
+          reason: "in_progress",
+          guestToken: null,
+        }),
+      );
+      return;
+    }
     const nowG = new Date();
     const guestToken = randomUUID();
     let assignedSlotG: number | null = null;
     let assignedNameG = "";
+    let racePostBreakG = false;
     await db.transaction(async (tx) => {
+      // Re-check pocket state inside the txn to close the race where the
+      // host pockets between the outer `hasPockets` read and this insert.
+      // Strict pre-break-only semantics: a sink that landed mid-flight
+      // must still demote this joiner to spectator.
+      const reread = await tx
+        .select({ gameState: gamesTable.gameState })
+        .from(gamesTable)
+        .where(eq(gamesTable.id, fresh.id))
+        .limit(1);
+      const reGs = reread[0]?.gameState as { shotLog?: Array<{ type?: string }> } | null;
+      const rePockets =
+        Array.isArray(reGs?.shotLog) &&
+        (reGs!.shotLog as Array<{ type?: string }>).some(
+          (e) => e && (e.type === "sink" || e.type === "win" || e.type === "lose"),
+        );
+      if (rePockets) {
+        racePostBreakG = true;
+        return;
+      }
       // Slot allocation counts ALL participant rows for this game,
       // including ones with `leftAt` set — leaving = forfeit slot
       // (the slot stays reserved for the leaver and cannot be
@@ -789,7 +840,9 @@ router.post("/games/join", async (req, res): Promise<void> => {
           slotIndex: null,
           displayName: parsed.data.guestName?.trim() || "Guest",
           shareCode: code,
-          reason: "full",
+          // Race-lost-to-pocket wins over `full` — surface the real
+          // reason the seat couldn't be claimed.
+          reason: racePostBreakG ? "in_progress" : "full",
           guestToken: null,
         }),
       );
@@ -856,10 +909,45 @@ router.post("/games/join", async (req, res): Promise<void> => {
     return;
   }
 
+  // Pre-break gate for signed-in newcomers — see `hasPockets` comment above.
+  if (hasPockets) {
+    res.json(
+      JoinGameResponse.parse({
+        joined: true,
+        role: "spectator",
+        gameId: fresh.id,
+        gameType: fresh.gameType as "8ball" | "9ball" | "practice",
+        slotIndex: null,
+        displayName: user.screenName,
+        shareCode: code,
+        reason: "in_progress",
+      }),
+    );
+    return;
+  }
+
   // Try to allocate the next open slot atomically.
   const now = new Date();
   let assignedSlot: number | null = null;
+  let racePostBreak = false;
   await db.transaction(async (tx) => {
+    // Re-check pocket state inside the txn — see the matching comment in
+    // the guest allocation branch above. Strict pre-break-only semantics.
+    const reread = await tx
+      .select({ gameState: gamesTable.gameState })
+      .from(gamesTable)
+      .where(eq(gamesTable.id, fresh.id))
+      .limit(1);
+    const reGs = reread[0]?.gameState as { shotLog?: Array<{ type?: string }> } | null;
+    const rePockets =
+      Array.isArray(reGs?.shotLog) &&
+      (reGs!.shotLog as Array<{ type?: string }>).some(
+        (e) => e && (e.type === "sink" || e.type === "win" || e.type === "lose"),
+      );
+    if (rePockets) {
+      racePostBreak = true;
+      return;
+    }
     // Slot allocation counts ALL rows including `leftAt`-set ones —
     // forfeited slots stay reserved and can't be reassigned.
     const taken = await tx
@@ -904,7 +992,7 @@ router.post("/games/join", async (req, res): Promise<void> => {
         slotIndex: null,
         displayName: user.screenName,
         shareCode: code,
-        reason: "full",
+        reason: racePostBreak ? "in_progress" : "full",
       }),
     );
     return;
@@ -1157,124 +1245,25 @@ router.get("/games/history", async (req, res): Promise<void> => {
     .limit(rowLimit)
     .offset(offset);
 
-  // Per-user participant rows for the visible games — used to apply
-  // the join-time stats cutoff so a mid-game joiner only sees BPM
-  // / ball counts for shots they took *after* joining.
-  const visibleIds = visible.map((g) => g.id);
-  const myParts = visibleIds.length
-    ? await db
-        .select({
-          gameId: gameParticipantsTable.gameId,
-          slotIndex: gameParticipantsTable.slotIndex,
-          displayName: gameParticipantsTable.displayName,
-          statsStartAt: gameParticipantsTable.statsStartAt,
-          leftAt: gameParticipantsTable.leftAt,
-          isHost: gameParticipantsTable.isHost,
-        })
-        .from(gameParticipantsTable)
-        .where(
-          and(
-            inArray(gameParticipantsTable.gameId, visibleIds),
-            eq(gameParticipantsTable.userId, user.id),
-          ),
-        )
-    : [];
-  const partByGame = new Map(myParts.map((p) => [p.gameId, p]));
-
-  // shotLog entry shape (mirrors artifacts/breakbpm/src/lib/gameLogic.ts).
-  type ShotLogEntry = {
-    type: string;
-    playerName?: string;
-    gameTime?: number;
-    ball?: number;
-  };
-
-  /**
-   * Recompute this user's BPM window from the persisted shot log,
-   * anchored at their `statsStartAt` cutoff (their join time, or game
-   * start for the host). Mirrors the client-side `calculatePlayerBPM`
-   * shape: only pocketing entries (sink/win/lose-with-ball) count,
-   * BPM = pocketed / (lastPocket − firstPocket) minutes. Returns null
-   * if the user pocketed nothing in their window.
-   *
-   * `slotIndex` is the participant's slot. Shot log entries are stamped
-   * with `playerName` matching the **host's** `gameState.players[i].name`
-   * (the scorekeeper's notion of names). The host's name for a given
-   * slot may differ from the joiner's screenName, so we resolve names
-   * via the persisted players[] array by slot index rather than by the
-   * participant row's displayName.
-   */
-  function userBpmFromShotLog(
-    g: typeof visible[number],
-    cutoffMs: number,
-    leftAtMs: number | null,
-    slotIndex: number,
-  ): { bpm: number | null; sunk: number } {
-    const gs = g.gameState as
-      | { shotLog?: unknown; players?: Array<{ name?: unknown }> }
-      | null;
-    const log = Array.isArray(gs?.shotLog) ? (gs!.shotLog as ShotLogEntry[]) : [];
-    const players = Array.isArray(gs?.players) ? gs!.players : [];
-    const slotPlayer = players[slotIndex];
-    const playerName =
-      slotPlayer && typeof slotPlayer.name === "string" ? slotPlayer.name : "";
-    if (!playerName) return { bpm: null, sunk: 0 };
-    const anchor = g.startedAt.getTime();
-    const relCutoff = Math.max(0, cutoffMs - anchor);
-    // Upper bound at leftAt — leave=forfeit, so a departed signed-in
-    // joiner does not accrue stats for shots taken on that slot after
-    // they left (the slot is non-reclaimable but the game continues).
-    const relUpper = leftAtMs == null ? Infinity : Math.max(0, leftAtMs - anchor);
-    const pockets = log.filter(
-      (e) =>
-        e &&
-        e.playerName === playerName &&
-        (e.type === "sink" || e.type === "win" || e.type === "lose") &&
-        typeof e.ball === "number" &&
-        typeof e.gameTime === "number" &&
-        (e.gameTime as number) >= relCutoff &&
-        (e.gameTime as number) < relUpper,
-    );
-    if (pockets.length === 0) return { bpm: null, sunk: 0 };
-    const first = pockets[0].gameTime as number;
-    const last = pockets[pockets.length - 1].gameTime as number;
-    const elapsedMs = Math.max(0, last - first);
-    if (elapsedMs <= 0) return { bpm: 0, sunk: pockets.length };
-    return { bpm: pockets.length / (elapsedMs / 60000), sunk: pockets.length };
-  }
-
+  // Pre-break-only joining (v0.8) means every participant in a game
+  // experienced the same shots — there's no mid-game joiner cutoff to
+  // honor, so everyone (host and joiners alike) sees the host's stored
+  // BPM and sunk-ball count for their history row. `statsStartAt` /
+  // `leftAt` are kept on `game_participants` for forensic/debug
+  // purposes but are no longer used by history math.
   const games = visible.map((g) => {
     const gs = g.gameState as Record<string, unknown> | null;
     const rawReason =
       gs && typeof gs["forfeitReason"] === "string" ? (gs["forfeitReason"] as string) : undefined;
     const endReason =
       rawReason === "max_duration_60min" || rawReason === "inactivity_60min" ? rawReason : undefined;
-    const mine = partByGame.get(g.id);
-    // Host's row uses the stored bpm (it was computed against the whole
-    // game). Joiners get a per-window recompute from the shot log,
-    // resolving their name via the host's gameState.players[slotIndex].
-    let bpm: number | null;
-    let sunkBallsCount: number;
-    if (mine && !mine.isHost) {
-      const r = userBpmFromShotLog(
-        g,
-        mine.statsStartAt.getTime(),
-        mine.leftAt ? mine.leftAt.getTime() : null,
-        mine.slotIndex,
-      );
-      bpm = r.bpm;
-      sunkBallsCount = r.sunk;
-    } else {
-      bpm = g.bpm == null ? null : g.bpm / 10;
-      sunkBallsCount = g.sunkBallsCount;
-    }
     return {
       id: g.id,
       gameType: g.gameType,
       winner: g.winner,
-      bpm,
+      bpm: g.bpm == null ? null : g.bpm / 10,
       durationMs: g.durationMs,
-      sunkBallsCount,
+      sunkBallsCount: g.sunkBallsCount,
       outcome: g.outcome ?? "completed",
       shareCode: g.shareCode,
       endedAt: g.endedAt!,

@@ -16,8 +16,6 @@ import {
   useSaveGame,
   useRecordGameActivity,
   useGetMe,
-  useGetGameStateByCode,
-  getGetGameStateByCodeQueryKey,
 } from '@workspace/api-client-react';
 import { FORFEIT_INACTIVITY_MS, MAX_GAME_DURATION_MS } from '../lib/forfeit';
 
@@ -102,44 +100,12 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     } catch { /* noop */ }
   }, []);
 
-  // Host-side participant name propagation. When signed-in joiners
-  // claim slots, the server records their displayName on the
-  // participant row but doesn't touch this device's local
-  // `state.players[].name` (which still holds the host's placeholder
-  // like "Player 2"). Poll the server roster and overlay any
-  // joiner-provided names so the host's HUD/shot log reflects who
-  // actually joined. Skipped for anonymous play (no server game).
-  const rosterPoll = useGetGameStateByCode(
-    { code: state.shareCode ?? '' },
-    {
-      query: {
-        queryKey: getGetGameStateByCodeQueryKey({ code: state.shareCode ?? '' }),
-        refetchInterval: 5000,
-        enabled: !!serverGameId && !!state.shareCode && state.phase === 'playing',
-      },
-    },
-  );
-  useEffect(() => {
-    const data = rosterPoll.data as
-      | { participants?: Array<{ slotIndex: number; displayName: string; isHost: boolean }> }
-      | undefined;
-    const roster = data?.participants;
-    if (!roster || roster.length === 0) return;
-    setState(prev => {
-      let changed = false;
-      const players = prev.players.map((p, i) => {
-        const r = roster.find(rr => rr.slotIndex === i);
-        // Host's slot 0 always keeps its local name (host owns their
-        // own name). Joiner slots adopt the participant displayName.
-        if (r && !r.isHost && r.displayName && r.displayName !== p.name) {
-          changed = true;
-          return { ...p, name: r.displayName };
-        }
-        return p;
-      });
-      return changed ? { ...prev, players } : prev;
-    });
-  }, [rosterPoll.data]);
+  // v0.8: name-merge polling was removed. Joining is now pre-break
+  // only, so any joiner-supplied name lives entirely in the joiner's
+  // own view (rendered from /games/state). The host's local
+  // `state.players[].name` (whatever they typed at setup) stays
+  // authoritative on the scorekeeper device — no cross-device merge
+  // is needed.
 
   // Timer — only tracks elapsed time. BPM is NOT updated here.
   // Anchored on timerStartTime (set on the first pocket) so break/racking
