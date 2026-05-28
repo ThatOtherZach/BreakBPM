@@ -95,6 +95,28 @@ async function backfillHostParticipants(userId: string): Promise<void> {
   }
 }
 
+/**
+ * Is this user the active scorekeeping host of the game? Only the host
+ * device may write to game state (/games/activity, /games/save) —
+ * joiners are view-only via /join/:code. This is the server-side
+ * authority check that backs the view-only invariant.
+ */
+async function isHostOf(gameId: string, userId: string): Promise<boolean> {
+  const rows = await db
+    .select({ slotIndex: gameParticipantsTable.slotIndex })
+    .from(gameParticipantsTable)
+    .where(
+      and(
+        eq(gameParticipantsTable.gameId, gameId),
+        eq(gameParticipantsTable.userId, userId),
+        eq(gameParticipantsTable.isHost, true),
+        isNull(gameParticipantsTable.leftAt),
+      ),
+    )
+    .limit(1);
+  return rows.length > 0;
+}
+
 async function isParticipantOf(gameId: string, userId: string): Promise<boolean> {
   const rows = await db
     .select({ slotIndex: gameParticipantsTable.slotIndex })
@@ -222,11 +244,13 @@ router.post("/games/activity", async (req, res): Promise<void> => {
     .limit(1);
   if (ownerRow[0]) await sweepStaleGames(ownerRow[0].userId);
 
-  if (!(await isParticipantOf(parsed.data.gameId, user.id))) {
+  // Only the scorekeeping host may write game state — joiners are
+  // view-only and observe via /games/state polling.
+  if (!(await isHostOf(parsed.data.gameId, user.id))) {
     res.json(
       RecordGameActivityResponse.parse({
         alive: false,
-        message: "Not a participant of this game",
+        message: "Only the scorekeeper can update this game",
       }),
     );
     return;
@@ -301,15 +325,18 @@ router.post("/games/save", async (req, res): Promise<void> => {
 
   let id = parsed.data.gameId ?? null;
   if (id) {
-    if (!(await isParticipantOf(id, user.id))) {
-      // Not a current participant — try owner-only fallback for legacy rows.
+    // Only the scorekeeping host may finalize the game — joiners are
+    // view-only.
+    if (!(await isHostOf(id, user.id))) {
+      // Fallback for legacy (pre-v0.7) rows that may not yet have a
+      // participant entry: allow the owner.
       const ownerRow = await db
         .select({ userId: gamesTable.userId })
         .from(gamesTable)
         .where(eq(gamesTable.id, id))
         .limit(1);
       if (!ownerRow[0] || ownerRow[0].userId !== user.id) {
-        res.json(SaveGameResponse.parse({ saved: false, message: "Not a participant" }));
+        res.json(SaveGameResponse.parse({ saved: false, message: "Only the scorekeeper can save this game" }));
         return;
       }
     }
@@ -395,6 +422,10 @@ router.get("/games/resume", async (req, res): Promise<void> => {
     .where(
       and(
         eq(gameParticipantsTable.userId, user.id),
+        // Resume is for the scorekeeping host only — joiners stay
+        // view-only and rejoin via /join/:code. This preserves the
+        // single-scorekeeper invariant across devices.
+        eq(gameParticipantsTable.isHost, true),
         isNull(gameParticipantsTable.leftAt),
         isNull(gamesTable.endedAt),
       ),
