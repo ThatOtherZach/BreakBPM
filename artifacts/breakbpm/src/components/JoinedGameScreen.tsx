@@ -82,6 +82,14 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
           setJoinError('That game already ended.');
           return;
         }
+        if (!r.joined && r.reason === 'rate_limited') {
+          setJoinError('Too many join attempts. Please wait a minute and try again.');
+          return;
+        }
+        if (!r.joined) {
+          setJoinError(`Could not join game ${code}.`);
+          return;
+        }
         let token: string | null = (r as { guestToken?: string | null }).guestToken ?? null;
         try {
           if (token) {
@@ -244,15 +252,21 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
         className="notice"
         style={{
           margin: 8,
-          background: '#fff4cc',
-          border: '2px solid #c39d00',
+          background: joinResult.reason === 'full' ? '#ffe0e0' : '#fff4cc',
+          border: `2px solid ${joinResult.reason === 'full' ? '#c00000' : '#c39d00'}`,
           fontWeight: 'bold',
         }}
       >
-        <span>👁</span>
+        <span>{joinResult.reason === 'full' ? '⚠' : '👁'}</span>
         <span>
-          View only — host's device is scorekeeping.{' '}
-          {joinResult.role === 'spectator' ? '(spectator)' : `(slot ${joinResult.displayName})`}
+          {joinResult.reason === 'full' ? (
+            <>Last slot was just taken — viewing as spectator. Host is still scorekeeping.</>
+          ) : (
+            <>
+              View only — host's device is scorekeeping.{' '}
+              {joinResult.role === 'spectator' ? '(spectator)' : `(slot ${joinResult.displayName})`}
+            </>
+          )}
         </span>
       </div>
 

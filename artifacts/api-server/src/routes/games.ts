@@ -427,13 +427,21 @@ router.post("/games/abandon", async (req, res): Promise<void> => {
  */
 const RESOLVE_RATE_WINDOW_MS = 60 * 1000;
 const RESOLVE_RATE_MAX = 60;
-const resolveBuckets = new Map<string, { count: number; resetAt: number }>();
+const codeRateBuckets = new Map<string, { count: number; resetAt: number }>();
 
-function rateLimit(ip: string): boolean {
+/**
+ * In-memory token-bucket per (IP × bucket-tag) for share-code surfaces.
+ * `bucket` lets us throttle each code-discovery endpoint independently
+ * (/games/resolve, /games/join, /games/state) so brute-force scanning
+ * via any of them is bounded. Buckets reset on process restart — fine
+ * given the 32^5 keyspace × per-minute cap.
+ */
+function rateLimit(ip: string, bucket: string = "resolve"): boolean {
+  const key = `${bucket}:${ip}`;
   const now = Date.now();
-  const b = resolveBuckets.get(ip);
+  const b = codeRateBuckets.get(key);
   if (!b || b.resetAt <= now) {
-    resolveBuckets.set(ip, { count: 1, resetAt: now + RESOLVE_RATE_WINDOW_MS });
+    codeRateBuckets.set(key, { count: 1, resetAt: now + RESOLVE_RATE_WINDOW_MS });
     return true;
   }
   if (b.count >= RESOLVE_RATE_MAX) return false;
@@ -520,6 +528,22 @@ router.post("/games/resolve", async (req, res): Promise<void> => {
  * and are NOT participants (no DB row written) — they observe only.
  */
 router.post("/games/join", async (req, res): Promise<void> => {
+  const ip = req.ip ?? "unknown";
+  if (!rateLimit(ip, "join")) {
+    res.status(429).json(
+      JoinGameResponse.parse({
+        joined: false,
+        role: "spectator",
+        gameId: "",
+        gameType: "8ball",
+        slotIndex: null,
+        displayName: "",
+        shareCode: "",
+        reason: "rate_limited",
+      }),
+    );
+    return;
+  }
   const parsed = JoinGameBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -830,6 +854,11 @@ router.post("/games/join", async (req, res): Promise<void> => {
  * the capability.
  */
 router.get("/games/state", async (req, res): Promise<void> => {
+  const ip = req.ip ?? "unknown";
+  if (!rateLimit(ip, "state")) {
+    res.status(429).json(GetGameStateByCodeResponse.parse({ found: false }));
+    return;
+  }
   const parsed = GetGameStateByCodeQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
