@@ -188,14 +188,21 @@ export const DevGrantLifetimeResponse = zod.object({
 /**
  * @summary Check whether the caller may start a new game
  */
+export const startGameBodyMaxPlayersMax = 4;
+
+
+
 export const StartGameBody = zod.object({
-  "gameType": zod.enum(['8ball', '9ball', 'practice'])
+  "gameType": zod.enum(['8ball', '9ball', 'practice']),
+  "maxPlayers": zod.number().min(1).max(startGameBodyMaxPlayersMax).optional()
 })
 
 export const StartGameResponse = zod.object({
   "allowed": zod.boolean(),
   "tier": zod.enum(['public', 'account', 'pass']),
   "gameId": zod.string().nullish(),
+  "shareCode": zod.string().nullish(),
+  "maxPlayers": zod.number().nullish(),
   "inactivityTimeoutMs": zod.number().optional(),
   "maxGameDurationMs": zod.number().nullish()
 })
@@ -246,6 +253,104 @@ export const AbandonGameBody = zod.object({
 export const AbandonGameResponse = zod.object({
   "abandoned": zod.boolean(),
   "message": zod.string().optional()
+})
+
+
+/**
+ * Rate-limited (per-IP) lookup. Returns game state hints so the client can decide whether to assign the caller as a player or as a spectator. Never returns the full gameState — the caller must explicitly POST /games/join to participate.
+
+ * @summary Look up a share code → game metadata for the join flow
+ */
+export const resolveShareCodeBodyCodeMin = 5;
+export const resolveShareCodeBodyCodeMax = 5;
+
+
+
+export const ResolveShareCodeBody = zod.object({
+  "code": zod.string().min(resolveShareCodeBodyCodeMin).max(resolveShareCodeBodyCodeMax)
+})
+
+export const ResolveShareCodeResponse = zod.object({
+  "found": zod.boolean(),
+  "reason": zod.string().optional(),
+  "gameId": zod.string().optional(),
+  "gameType": zod.enum(['8ball', '9ball', 'practice']).optional(),
+  "maxPlayers": zod.number().optional(),
+  "filledSlots": zod.number().optional(),
+  "soloMode": zod.boolean().optional(),
+  "hostName": zod.string().optional()
+})
+
+
+/**
+ * Atomically allocates the next open slot, or returns spectator status when slots are full / the mode is solo. Anonymous callers get a guest displayName; their participation is not history-eligible.
+
+ * @summary Join an active game by share code
+ */
+export const joinGameBodyCodeMin = 5;
+export const joinGameBodyCodeMax = 5;
+
+export const joinGameBodyGuestNameMax = 24;
+
+
+
+export const JoinGameBody = zod.object({
+  "code": zod.string().min(joinGameBodyCodeMin).max(joinGameBodyCodeMax),
+  "guestName": zod.string().min(1).max(joinGameBodyGuestNameMax).optional()
+})
+
+export const JoinGameResponse = zod.object({
+  "joined": zod.boolean(),
+  "role": zod.enum(['player', 'spectator', 'already_joined']),
+  "gameId": zod.string(),
+  "gameType": zod.enum(['8ball', '9ball', 'practice']).optional(),
+  "slotIndex": zod.number().nullish(),
+  "displayName": zod.string().optional(),
+  "shareCode": zod.string().optional(),
+  "reason": zod.string().optional()
+})
+
+
+/**
+ * @summary Poll an active game's latest snapshot (for joiners/spectators)
+ */
+export const getGameStateByCodeQueryCodeMin = 5;
+export const getGameStateByCodeQueryCodeMax = 5;
+
+
+
+export const GetGameStateByCodeQueryParams = zod.object({
+  "code": zod.coerce.string().min(getGameStateByCodeQueryCodeMin).max(getGameStateByCodeQueryCodeMax)
+})
+
+export const GetGameStateByCodeResponse = zod.object({
+  "found": zod.boolean(),
+  "gameId": zod.string().optional(),
+  "gameType": zod.enum(['8ball', '9ball', 'practice']).optional(),
+  "ended": zod.boolean().optional(),
+  "startedAt": zod.coerce.date().optional(),
+  "lastActivityAt": zod.coerce.date().optional(),
+  "gameState": zod.unknown().optional(),
+  "participants": zod.array(zod.object({
+  "slotIndex": zod.number(),
+  "displayName": zod.string(),
+  "isHost": zod.boolean(),
+  "hasLeft": zod.boolean(),
+  "isGuest": zod.boolean().optional()
+})).optional()
+})
+
+
+/**
+ * @summary Leave an in-progress game (forfeits on this participant's behalf)
+ */
+export const LeaveGameBody = zod.object({
+  "gameId": zod.string()
+})
+
+export const LeaveGameResponse = zod.object({
+  "left": zod.boolean(),
+  "gameEnded": zod.boolean().optional()
 })
 
 

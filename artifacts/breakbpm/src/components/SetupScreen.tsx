@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'wouter';
 import type { GameType, GameState, Player, SharkAggression } from '../lib/gameLogic';
+import { normalizeShareCode } from '../lib/gameLogic';
 import ballImg from '/eightball_nobg.png';
 import Navbar from './Navbar';
 import {
@@ -25,7 +27,7 @@ const DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
 const PLAYER_BALL_COLORS = ['#FDD307', '#1F4E9E', '#C3342B', '#5B247A'];
 
 interface Props {
-  onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, sharkAggression?: SharkAggression) => void;
+  onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, serverShareCode: string | null, sharkAggression?: SharkAggression) => void;
   /** Resume an existing game from the server-side in-progress snapshot. */
   onResume: (state: GameState, serverGameId: string | null, maxGameDurationMs: number | null, pausedDuration: number) => void;
   onAbout: () => void;
@@ -34,6 +36,7 @@ interface Props {
 }
 
 export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onSignIn }: Props) {
+  const [, setLocation] = useLocation();
   const startGame = useStartGame();
   const abandonGame = useAbandonGame();
   const { user } = useAuth();
@@ -228,12 +231,15 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
     try {
       // Server enum only knows '8ball'/'9ball'/'practice'; shark is a
       // client-side variant of 8-ball, so the API call stays as '8ball'.
-      const res = await startGame.mutateAsync({ data: { gameType } });
+      const res = await startGame.mutateAsync({
+        data: { gameType, maxPlayers: count },
+      });
       onStart(
         gameType,
         players,
         res.gameId ?? null,
         res.maxGameDurationMs ?? null,
+        res.shareCode ?? null,
         isShark ? sharkAggression : undefined,
       );
     } catch (e: unknown) {
@@ -243,9 +249,12 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
   }
 
   function handleJoin() {
-    const url = new URL(window.location.href);
-    url.searchParams.set('game', joinCode.trim().toUpperCase());
-    window.location.href = url.toString();
+    const code = normalizeShareCode(joinCode);
+    if (!code) {
+      setStartError('Codes are 5 characters (letters & digits, no 0/1/I/O).');
+      return;
+    }
+    setLocation(`/join/${code}`);
   }
 
   function setName(i: number, v: string) {
@@ -563,8 +572,8 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
                   className="input"
                   value={joinCode}
                   onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                  placeholder="4-DIGIT CODE"
-                  maxLength={4}
+                  placeholder="5-CHAR CODE"
+                  maxLength={5}
                   style={{ fontFamily: "'VT323',monospace", fontSize: 20, letterSpacing: 6, flex: 1 }}
                 />
                 <button

@@ -230,6 +230,85 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AbandonGameResult" }
 
+  /games/resolve:
+    post:
+      operationId: resolveShareCode
+      tags: [games]
+      summary: Look up a share code → game metadata for the join flow
+      description: >
+        Rate-limited (per-IP) lookup. Returns game state hints so the
+        client can decide whether to assign the caller as a player or as
+        a spectator. Never returns the full gameState — the caller must
+        explicitly POST /games/join to participate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ResolveShareCodeInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ResolveShareCodeResult" }
+        "429":
+          description: Too many requests
+
+  /games/join:
+    post:
+      operationId: joinGame
+      tags: [games]
+      summary: Join an active game by share code
+      description: >
+        Atomically allocates the next open slot, or returns spectator
+        status when slots are full / the mode is solo. Anonymous callers
+        get a guest displayName; their participation is not history-eligible.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/JoinGameInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/JoinGameResult" }
+
+  /games/state:
+    get:
+      operationId: getGameStateByCode
+      tags: [games]
+      summary: Poll an active game's latest snapshot (for joiners/spectators)
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema: { type: string, minLength: 5, maxLength: 5 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameStateSnapshot" }
+
+  /games/leave:
+    post:
+      operationId: leaveGame
+      tags: [games]
+      summary: Leave an in-progress game (forfeits on this participant's behalf)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LeaveGameInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LeaveGameResult" }
+
   /games/save:
     post:
       operationId: saveGame
@@ -392,6 +471,10 @@ components:
         # Stored on the in-progress row so the inactivity sweep can exempt
         # practice mode (no opponent, no win condition → no forfeit).
         gameType: { type: string, enum: [8ball, 9ball, practice] }
+        # Total human-player slots for this game. Used by the join flow to
+        # cap how many participants can be allocated. Defaults vary by
+        # game type (1 for practice, 2 for versus).
+        maxPlayers: { type: integer, minimum: 1, maximum: 4 }
 
     StartGameResult:
       type: object
@@ -402,6 +485,12 @@ components:
         # Server-issued game id (signed-in users only). Use it for
         # /games/activity and to update the same row on /games/save.
         gameId: { type: ["string", "null"] }
+        # Canonical 5-char share code (signed-in users only). For
+        # anonymous games this is null and the client falls back to its
+        # locally-generated code.
+        shareCode: { type: ["string", "null"] }
+        # Total human-player slots the server allocated for this game.
+        maxPlayers: { type: ["integer", "null"] }
         # How long the server will tolerate inactivity before auto-forfeit
         # (signed-in users). Anonymous play has its own client-side cap.
         inactivityTimeoutMs: { type: integer }
@@ -562,6 +651,93 @@ components:
         # Always set, including on success — the next allowed generation
         # timestamp so the client can show the cooldown immediately.
         nextAvailableAt: { type: string, format: date-time }
+
+    ResolveShareCodeInput:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, minLength: 5, maxLength: 5 }
+
+    ResolveShareCodeResult:
+      type: object
+      required: [found]
+      properties:
+        found: { type: boolean }
+        # Set when found=false. "not_found" | "ended" | "rate_limited"
+        reason: { type: string }
+        # Present when found=true.
+        gameId: { type: string }
+        gameType: { type: string, enum: [8ball, 9ball, practice] }
+        maxPlayers: { type: integer }
+        filledSlots: { type: integer }
+        # True for practice / shark — joiners are spectator-only.
+        soloMode: { type: boolean }
+        hostName: { type: string }
+
+    JoinGameInput:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, minLength: 5, maxLength: 5 }
+        # Optional display name for guest (anonymous) joiners. Signed-in
+        # callers always use their screenName; this is ignored for them.
+        guestName: { type: string, minLength: 1, maxLength: 24 }
+
+    JoinGameResult:
+      type: object
+      required: [joined, role, gameId]
+      properties:
+        joined: { type: boolean }
+        # "player" → assigned to a slot; "spectator" → view-only;
+        # "already_joined" → caller already holds a slot in this game.
+        role: { type: string, enum: [player, spectator, already_joined] }
+        gameId: { type: string }
+        gameType: { type: string, enum: [8ball, 9ball, practice] }
+        # Slot index (0-based). Null for spectators.
+        slotIndex: { type: ["integer", "null"] }
+        displayName: { type: string }
+        # Echo of the canonical share code so the client can build the
+        # /games/state poll URL.
+        shareCode: { type: string }
+        # Set when joined=false. "not_found" | "ended" | "full"
+        reason: { type: string }
+
+    LeaveGameInput:
+      type: object
+      required: [gameId]
+      properties:
+        gameId: { type: string }
+
+    LeaveGameResult:
+      type: object
+      required: [left]
+      properties:
+        left: { type: boolean }
+        # True when this departure also ended the game (forfeit).
+        gameEnded: { type: boolean }
+
+    GameStateSnapshot:
+      type: object
+      required: [found]
+      properties:
+        found: { type: boolean }
+        gameId: { type: string }
+        gameType: { type: string, enum: [8ball, 9ball, practice] }
+        ended: { type: boolean }
+        startedAt: { type: string, format: date-time }
+        lastActivityAt: { type: string, format: date-time }
+        gameState: {}
+        participants:
+          type: array
+          items:
+            type: object
+            required: [slotIndex, displayName, isHost, hasLeft]
+            properties:
+              slotIndex: { type: integer }
+              displayName: { type: string }
+              isHost: { type: boolean }
+              hasLeft: { type: boolean }
+              isGuest: { type: boolean }
 
     GameHistoryResponse:
       type: object

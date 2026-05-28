@@ -82,15 +82,16 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const [pausedDuration, setPausedDuration] = useState(initialPausedDuration);
   const [pauseStart, setPauseStart] = useState<number | null>(null);
 
-  // URL now carries only the join `?game=` share code. The full encoded
-  // `?state=` payload is no longer written on every change — localStorage
-  // is the source of truth for refresh recovery, and the old `?state=`
-  // path is decode-only for legacy share links (handled in App.tsx).
-  const syncUrl = useCallback((s: GameState) => {
+  // Host's URL stays on '/' (the setup→game flow). The share code is
+  // displayed in the HUD and emitted as a `/join/<code>` link by
+  // handleShare(). We deliberately stop writing it into the host's URL
+  // so a stray reload doesn't try to route the host through the
+  // joiner/spectator view (which is read-only).
+  const syncUrl = useCallback((_s: GameState) => {
     try {
       const url = new URL(window.location.href);
       url.searchParams.delete('state');
-      url.searchParams.set('game', s.shareCode);
+      url.searchParams.delete('game');
       window.history.replaceState(null, '', url.toString());
     } catch { /* noop */ }
   }, []);
@@ -517,10 +518,15 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   }
 
   function handleShare() {
-    const url = window.location.href;
+    // Build the canonical join URL from the server-issued share code.
+    // Always points at `/join/<code>` so recipients land in the
+    // read-only joiner view, not the host UX.
+    const origin = window.location.origin;
+    const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+    const url = `${origin}${base}/join/${state.shareCode}`;
     navigator.clipboard.writeText(url)
-      .then(() => { setToast('URL copied!'); setTimeout(() => setToast(''), 2000); })
-      .catch(() => { setToast('Copy URL above'); setTimeout(() => setToast(''), 3000); });
+      .then(() => { setToast(`Join link copied! Code: ${state.shareCode}`); setTimeout(() => setToast(''), 2500); })
+      .catch(() => { setToast(`Code: ${state.shareCode}`); setTimeout(() => setToast(''), 3000); });
   }
 
   function handlePause() {

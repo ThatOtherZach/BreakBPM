@@ -9,4 +9,9 @@ import type { StartGameInputGameType } from './startGameInputGameType';
 
 export interface StartGameInput {
   gameType: StartGameInputGameType;
+  /**
+     * @minimum 1
+     * @maximum 4
+     */
+  maxPlayers?: number;
 }

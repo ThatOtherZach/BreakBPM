@@ -4,6 +4,7 @@ import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 
 import SetupScreen from "./components/SetupScreen";
 import GameScreen from "./components/GameScreen";
+import JoinedGameScreen from "./components/JoinedGameScreen";
 import AboutScreen from "./components/AboutScreen";
 import AccountScreen from "./components/AccountScreen";
 import PassesScreen from "./components/PassesScreen";
@@ -36,6 +37,7 @@ function loadStateFromUrl(): Partial<GameState> | null {
 function createInitialGameState(
   gameType: GameType,
   players: Player[],
+  serverShareCode: string | null,
   sharkAggression?: SharkAggression,
 ): GameState {
   // Shark mode is solo 8-ball with an opponent steal mechanic. Only seed
@@ -55,7 +57,7 @@ function createInitialGameState(
     lastActionTime: null,
     winner: null,
     winMessage: "",
-    shareCode: generateShareCode(),
+    shareCode: serverShareCode ?? generateShareCode(),
     teamAssigned: players.some((p) => p.team !== undefined),
     sharkAggression: isShark ? sharkAggression : undefined,
     sharkSunkBalls: isShark ? [] : undefined,
@@ -80,6 +82,23 @@ function CacheInvalidator() {
 
 function MainApp() {
   const [, setLocation] = useLocation();
+  // Legacy share links used `?game=<code>` to join. Redirect them to
+  // the canonical `/join/:code` route so recipients always land in the
+  // read-only joiner view.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const legacy = params.get("game");
+      if (legacy) {
+        const code = legacy.trim().toUpperCase();
+        if (code) {
+          setLocation(`/join/${code}`);
+        }
+      }
+    } catch { /* noop */ }
+    // setLocation is stable; we only want this on first mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [view, setView] = useState<AppView>("setup");
   const [gameState, setGameState] = useState<GameState | null>(null);
   const abandonGame = useAbandonGame();
@@ -140,12 +159,13 @@ function MainApp() {
     players: Player[],
     gameId: string | null,
     maxMs: number | null,
+    serverShareCode: string | null,
     sharkAggression?: SharkAggression,
   ) {
     // Explicit fresh start — wipe any stale in-progress checkpoint so we
     // don't immediately resurrect the previous game on the next mount.
     clearInProgressGame();
-    setGameState(createInitialGameState(gameType, players, sharkAggression));
+    setGameState(createInitialGameState(gameType, players, serverShareCode, sharkAggression));
     setServerGameId(gameId);
     setMaxGameDurationMs(maxMs);
     setInitialPausedDuration(0);
@@ -240,6 +260,19 @@ function PassesRoute() {
   return <PassesScreen onBack={() => setLocation("/account")} />;
 }
 
+function JoinRoute({ params }: { params: { code: string } }) {
+  const [, setLocation] = useLocation();
+  return (
+    <JoinedGameScreen
+      code={params.code.toUpperCase()}
+      onBack={() => setLocation("/")}
+      onAbout={() => setLocation("/about")}
+      onAccount={() => setLocation("/account")}
+      onSignIn={() => setLocation("/sign-in")}
+    />
+  );
+}
+
 function Routes() {
   const [, setLocation] = useLocation();
   return (
@@ -249,6 +282,7 @@ function Routes() {
       <Route path="/account" component={AccountRoute} />
       <Route path="/about" component={AboutRoute} />
       <Route path="/passes" component={PassesRoute} />
+      <Route path="/join/:code" component={JoinRoute} />
       <Route component={MainApp} />
     </Switch>
   );

@@ -322,13 +322,34 @@ export function assignTeams(
   return updated;
 }
 
+/**
+ * Local fallback generator — used when the server hasn't issued a code
+ * yet (e.g. anonymous play). Server-issued codes (generated in
+ * `artifacts/api-server/src/lib/shareCode.ts`) take precedence and are
+ * guaranteed unique against active + recently-ended games.
+ *
+ * 32-char safe alphabet (no 0/1/I/O), 5 chars → 32^5 ≈ 33.5M codes.
+ */
+export const SHARE_CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+export const SHARE_CODE_LENGTH = 5;
+
 export function generateShareCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
-  for (let i = 0; i < 4; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < SHARE_CODE_LENGTH; i++) {
+    code += SHARE_CODE_ALPHABET[Math.floor(Math.random() * SHARE_CODE_ALPHABET.length)];
   }
   return code;
+}
+
+/** Canonical form: uppercase, alphabet-only. Returns null if invalid. */
+export function normalizeShareCode(raw: string): string | null {
+  if (typeof raw !== 'string') return null;
+  const up = raw.toUpperCase().trim();
+  if (up.length !== SHARE_CODE_LENGTH) return null;
+  for (let i = 0; i < up.length; i++) {
+    if (!SHARE_CODE_ALPHABET.includes(up[i])) return null;
+  }
+  return up;
 }
 
 /**

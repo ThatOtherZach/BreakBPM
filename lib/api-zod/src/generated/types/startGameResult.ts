@@ -12,6 +12,10 @@ export interface StartGameResult {
   tier: StartGameResultTier;
   /** @nullable */
   gameId?: string | null;
+  /** @nullable */
+  shareCode?: string | null;
+  /** @nullable */
+  maxPlayers?: number | null;
   inactivityTimeoutMs?: number;
   /** @nullable */
   maxGameDurationMs?: number | null;

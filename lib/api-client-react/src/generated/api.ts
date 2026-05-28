@@ -30,13 +30,21 @@ import type {
   GameActivityResult,
   GameHistoryResponse,
   GameSaveInput,
+  GameStateSnapshot,
   GetGameHistoryParams,
+  GetGameStateByCodeParams,
   GiftCodeIssueResult,
   HealthStatus,
+  JoinGameInput,
+  JoinGameResult,
+  LeaveGameInput,
+  LeaveGameResult,
   MeResponse,
   MyGiftCodesResult,
   PassCheckoutInput,
   RedeemResult,
+  ResolveShareCodeInput,
+  ResolveShareCodeResult,
   ResumableGameResponse,
   SaveGameResult,
   ScreenNameUpdate,
@@ -1011,6 +1019,307 @@ export const useAbandonGame = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAbandonGameMutationOptions(options));
+    }
+
+export const getResolveShareCodeUrl = () => {
+
+
+
+
+  return `/api/games/resolve`
+}
+
+/**
+ * Rate-limited (per-IP) lookup. Returns game state hints so the client can decide whether to assign the caller as a player or as a spectator. Never returns the full gameState — the caller must explicitly POST /games/join to participate.
+
+ * @summary Look up a share code → game metadata for the join flow
+ */
+export const resolveShareCode = async (resolveShareCodeInput: ResolveShareCodeInput, options?: RequestInit): Promise<ResolveShareCodeResult> => {
+
+  return customFetch<ResolveShareCodeResult>(getResolveShareCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      resolveShareCodeInput,)
+  }
+);}
+
+
+
+
+export const getResolveShareCodeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveShareCode>>, TError,{data: BodyType<ResolveShareCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resolveShareCode>>, TError,{data: BodyType<ResolveShareCodeInput>}, TContext> => {
+
+const mutationKey = ['resolveShareCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resolveShareCode>>, {data: BodyType<ResolveShareCodeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  resolveShareCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResolveShareCodeMutationResult = NonNullable<Awaited<ReturnType<typeof resolveShareCode>>>
+    export type ResolveShareCodeMutationBody = BodyType<ResolveShareCodeInput>
+    export type ResolveShareCodeMutationError = ErrorType<void>
+
+    /**
+ * @summary Look up a share code → game metadata for the join flow
+ */
+export const useResolveShareCode = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveShareCode>>, TError,{data: BodyType<ResolveShareCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resolveShareCode>>,
+        TError,
+        {data: BodyType<ResolveShareCodeInput>},
+        TContext
+      > => {
+      return useMutation(getResolveShareCodeMutationOptions(options));
+    }
+
+export const getJoinGameUrl = () => {
+
+
+
+
+  return `/api/games/join`
+}
+
+/**
+ * Atomically allocates the next open slot, or returns spectator status when slots are full / the mode is solo. Anonymous callers get a guest displayName; their participation is not history-eligible.
+
+ * @summary Join an active game by share code
+ */
+export const joinGame = async (joinGameInput: JoinGameInput, options?: RequestInit): Promise<JoinGameResult> => {
+
+  return customFetch<JoinGameResult>(getJoinGameUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      joinGameInput,)
+  }
+);}
+
+
+
+
+export const getJoinGameMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinGame>>, TError,{data: BodyType<JoinGameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof joinGame>>, TError,{data: BodyType<JoinGameInput>}, TContext> => {
+
+const mutationKey = ['joinGame'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof joinGame>>, {data: BodyType<JoinGameInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  joinGame(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type JoinGameMutationResult = NonNullable<Awaited<ReturnType<typeof joinGame>>>
+    export type JoinGameMutationBody = BodyType<JoinGameInput>
+    export type JoinGameMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Join an active game by share code
+ */
+export const useJoinGame = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinGame>>, TError,{data: BodyType<JoinGameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof joinGame>>,
+        TError,
+        {data: BodyType<JoinGameInput>},
+        TContext
+      > => {
+      return useMutation(getJoinGameMutationOptions(options));
+    }
+
+export const getGetGameStateByCodeUrl = (params: GetGameStateByCodeParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/games/state?${stringifiedParams}` : `/api/games/state`
+}
+
+/**
+ * @summary Poll an active game's latest snapshot (for joiners/spectators)
+ */
+export const getGameStateByCode = async (params: GetGameStateByCodeParams, options?: RequestInit): Promise<GameStateSnapshot> => {
+
+  return customFetch<GameStateSnapshot>(getGetGameStateByCodeUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGameStateByCodeQueryKey = (params?: GetGameStateByCodeParams,) => {
+    return [
+    `/api/games/state`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetGameStateByCodeQueryOptions = <TData = Awaited<ReturnType<typeof getGameStateByCode>>, TError = ErrorType<unknown>>(params: GetGameStateByCodeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGameStateByCode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGameStateByCodeQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGameStateByCode>>> = ({ signal }) => getGameStateByCode(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGameStateByCode>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGameStateByCodeQueryResult = NonNullable<Awaited<ReturnType<typeof getGameStateByCode>>>
+export type GetGameStateByCodeQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Poll an active game's latest snapshot (for joiners/spectators)
+ */
+
+export function useGetGameStateByCode<TData = Awaited<ReturnType<typeof getGameStateByCode>>, TError = ErrorType<unknown>>(
+ params: GetGameStateByCodeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGameStateByCode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGameStateByCodeQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getLeaveGameUrl = () => {
+
+
+
+
+  return `/api/games/leave`
+}
+
+/**
+ * @summary Leave an in-progress game (forfeits on this participant's behalf)
+ */
+export const leaveGame = async (leaveGameInput: LeaveGameInput, options?: RequestInit): Promise<LeaveGameResult> => {
+
+  return customFetch<LeaveGameResult>(getLeaveGameUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      leaveGameInput,)
+  }
+);}
+
+
+
+
+export const getLeaveGameMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof leaveGame>>, TError,{data: BodyType<LeaveGameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof leaveGame>>, TError,{data: BodyType<LeaveGameInput>}, TContext> => {
+
+const mutationKey = ['leaveGame'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof leaveGame>>, {data: BodyType<LeaveGameInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  leaveGame(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LeaveGameMutationResult = NonNullable<Awaited<ReturnType<typeof leaveGame>>>
+    export type LeaveGameMutationBody = BodyType<LeaveGameInput>
+    export type LeaveGameMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Leave an in-progress game (forfeits on this participant's behalf)
+ */
+export const useLeaveGame = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof leaveGame>>, TError,{data: BodyType<LeaveGameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof leaveGame>>,
+        TError,
+        {data: BodyType<LeaveGameInput>},
+        TContext
+      > => {
+      return useMutation(getLeaveGameMutationOptions(options));
     }
 
 export const getSaveGameUrl = () => {

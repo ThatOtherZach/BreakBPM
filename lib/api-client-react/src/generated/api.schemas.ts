@@ -133,6 +133,11 @@ export const StartGameInputGameType = {
 
 export interface StartGameInput {
   gameType: StartGameInputGameType;
+  /**
+     * @minimum 1
+     * @maximum 4
+     */
+  maxPlayers?: number;
 }
 
 export type StartGameResultTier = typeof StartGameResultTier[keyof typeof StartGameResultTier];
@@ -149,6 +154,10 @@ export interface StartGameResult {
   tier: StartGameResultTier;
   /** @nullable */
   gameId?: string | null;
+  /** @nullable */
+  shareCode?: string | null;
+  /** @nullable */
+  maxPlayers?: number | null;
   inactivityTimeoutMs?: number;
   /** @nullable */
   maxGameDurationMs?: number | null;
@@ -307,6 +316,114 @@ export interface GiftCodeIssueResult {
   nextAvailableAt?: string;
 }
 
+export interface ResolveShareCodeInput {
+  /**
+     * @minLength 5
+     * @maxLength 5
+     */
+  code: string;
+}
+
+export type ResolveShareCodeResultGameType = typeof ResolveShareCodeResultGameType[keyof typeof ResolveShareCodeResultGameType];
+
+
+export const ResolveShareCodeResultGameType = {
+  '8ball': '8ball',
+  '9ball': '9ball',
+  practice: 'practice',
+} as const;
+
+export interface ResolveShareCodeResult {
+  found: boolean;
+  reason?: string;
+  gameId?: string;
+  gameType?: ResolveShareCodeResultGameType;
+  maxPlayers?: number;
+  filledSlots?: number;
+  soloMode?: boolean;
+  hostName?: string;
+}
+
+export interface JoinGameInput {
+  /**
+     * @minLength 5
+     * @maxLength 5
+     */
+  code: string;
+  /**
+     * @minLength 1
+     * @maxLength 24
+     */
+  guestName?: string;
+}
+
+export type JoinGameResultRole = typeof JoinGameResultRole[keyof typeof JoinGameResultRole];
+
+
+export const JoinGameResultRole = {
+  player: 'player',
+  spectator: 'spectator',
+  already_joined: 'already_joined',
+} as const;
+
+export type JoinGameResultGameType = typeof JoinGameResultGameType[keyof typeof JoinGameResultGameType];
+
+
+export const JoinGameResultGameType = {
+  '8ball': '8ball',
+  '9ball': '9ball',
+  practice: 'practice',
+} as const;
+
+export interface JoinGameResult {
+  joined: boolean;
+  role: JoinGameResultRole;
+  gameId: string;
+  gameType?: JoinGameResultGameType;
+  /** @nullable */
+  slotIndex?: number | null;
+  displayName?: string;
+  shareCode?: string;
+  reason?: string;
+}
+
+export interface LeaveGameInput {
+  gameId: string;
+}
+
+export interface LeaveGameResult {
+  left: boolean;
+  gameEnded?: boolean;
+}
+
+export type GameStateSnapshotGameType = typeof GameStateSnapshotGameType[keyof typeof GameStateSnapshotGameType];
+
+
+export const GameStateSnapshotGameType = {
+  '8ball': '8ball',
+  '9ball': '9ball',
+  practice: 'practice',
+} as const;
+
+export type GameStateSnapshotParticipantsItem = {
+  slotIndex: number;
+  displayName: string;
+  isHost: boolean;
+  hasLeft: boolean;
+  isGuest?: boolean;
+};
+
+export interface GameStateSnapshot {
+  found: boolean;
+  gameId?: string;
+  gameType?: GameStateSnapshotGameType;
+  ended?: boolean;
+  startedAt?: string;
+  lastActivityAt?: string;
+  gameState?: unknown;
+  participants?: GameStateSnapshotParticipantsItem[];
+}
+
 export type GameHistoryResponseTier = typeof GameHistoryResponseTier[keyof typeof GameHistoryResponseTier];
 
 
@@ -325,6 +442,14 @@ export interface GameHistoryResponse {
   totalPages: number;
   games: GameHistoryEntry[];
 }
+
+export type GetGameStateByCodeParams = {
+/**
+ * @minLength 5
+ * @maxLength 5
+ */
+code: string;
+};
 
 export type GetGameHistoryParams = {
 /**
