@@ -1168,6 +1168,7 @@ router.get("/games/history", async (req, res): Promise<void> => {
           slotIndex: gameParticipantsTable.slotIndex,
           displayName: gameParticipantsTable.displayName,
           statsStartAt: gameParticipantsTable.statsStartAt,
+          leftAt: gameParticipantsTable.leftAt,
           isHost: gameParticipantsTable.isHost,
         })
         .from(gameParticipantsTable)
@@ -1206,6 +1207,7 @@ router.get("/games/history", async (req, res): Promise<void> => {
   function userBpmFromShotLog(
     g: typeof visible[number],
     cutoffMs: number,
+    leftAtMs: number | null,
     slotIndex: number,
   ): { bpm: number | null; sunk: number } {
     const gs = g.gameState as
@@ -1219,6 +1221,10 @@ router.get("/games/history", async (req, res): Promise<void> => {
     if (!playerName) return { bpm: null, sunk: 0 };
     const anchor = g.startedAt.getTime();
     const relCutoff = Math.max(0, cutoffMs - anchor);
+    // Upper bound at leftAt — leave=forfeit, so a departed signed-in
+    // joiner does not accrue stats for shots taken on that slot after
+    // they left (the slot is non-reclaimable but the game continues).
+    const relUpper = leftAtMs == null ? Infinity : Math.max(0, leftAtMs - anchor);
     const pockets = log.filter(
       (e) =>
         e &&
@@ -1226,7 +1232,8 @@ router.get("/games/history", async (req, res): Promise<void> => {
         (e.type === "sink" || e.type === "win" || e.type === "lose") &&
         typeof e.ball === "number" &&
         typeof e.gameTime === "number" &&
-        (e.gameTime as number) >= relCutoff,
+        (e.gameTime as number) >= relCutoff &&
+        (e.gameTime as number) < relUpper,
     );
     if (pockets.length === 0) return { bpm: null, sunk: 0 };
     const first = pockets[0].gameTime as number;
@@ -1249,7 +1256,12 @@ router.get("/games/history", async (req, res): Promise<void> => {
     let bpm: number | null;
     let sunkBallsCount: number;
     if (mine && !mine.isHost) {
-      const r = userBpmFromShotLog(g, mine.statsStartAt.getTime(), mine.slotIndex);
+      const r = userBpmFromShotLog(
+        g,
+        mine.statsStartAt.getTime(),
+        mine.leftAt ? mine.leftAt.getTime() : null,
+        mine.slotIndex,
+      );
       bpm = r.bpm;
       sunkBallsCount = r.sunk;
     } else {
