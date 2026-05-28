@@ -777,13 +777,16 @@ router.post("/games/join", async (req, res): Promise<void> => {
     await db.transaction(async (tx) => {
       // Re-check pocket state inside the txn to close the race where the
       // host pockets between the outer `hasPockets` read and this insert.
-      // Strict pre-break-only semantics: a sink that landed mid-flight
-      // must still demote this joiner to spectator.
+      // `SELECT … FOR UPDATE` locks the games row so any concurrent
+      // host shot-log write via /games/activity must serialize behind
+      // (or ahead of) us — we can never observe a pre-break snapshot
+      // and then have a pocket land while we're inserting.
       const reread = await tx
         .select({ gameState: gamesTable.gameState })
         .from(gamesTable)
         .where(eq(gamesTable.id, fresh.id))
-        .limit(1);
+        .limit(1)
+        .for("update");
       const reGs = reread[0]?.gameState as { shotLog?: Array<{ type?: string }> } | null;
       const rePockets =
         Array.isArray(reGs?.shotLog) &&
@@ -932,12 +935,14 @@ router.post("/games/join", async (req, res): Promise<void> => {
   let racePostBreak = false;
   await db.transaction(async (tx) => {
     // Re-check pocket state inside the txn — see the matching comment in
-    // the guest allocation branch above. Strict pre-break-only semantics.
+    // the guest allocation branch above. `FOR UPDATE` locks the games
+    // row so a concurrent host pocket-write must serialize against us.
     const reread = await tx
       .select({ gameState: gamesTable.gameState })
       .from(gamesTable)
       .where(eq(gamesTable.id, fresh.id))
-      .limit(1);
+      .limit(1)
+      .for("update");
     const reGs = reread[0]?.gameState as { shotLog?: Array<{ type?: string }> } | null;
     const rePockets =
       Array.isArray(reGs?.shotLog) &&
