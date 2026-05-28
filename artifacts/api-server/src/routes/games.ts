@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { randomUUID } from "node:crypto";
 import { and, count, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
-import { db, gamesTable, gameParticipantsTable } from "@workspace/db";
+import { db, gamesTable, gameParticipantsTable, usersTable } from "@workspace/db";
 import {
   StartGameBody,
   StartGameResponse,
@@ -55,6 +55,46 @@ function isSoloMode(gameType: string, maxPlayers: number): boolean {
  * Resolve any current participant (host or joiner, not left). Used to
  * authorize activity/save/state writes on a game.
  */
+/**
+ * Backfill missing host participant rows for this user's legacy games
+ * (pre-v0.7 games that were created before game_participants existed).
+ * Idempotent — only inserts rows for games whose `userId` matches and
+ * which have no participant rows yet. Without this, /games/history and
+ * /games/resume — which now key off participant membership — would
+ * hide a user's pre-v0.7 game history. Cheap to call on every
+ * relevant request (a single LEFT-JOIN scan over the user's games).
+ */
+async function backfillHostParticipants(userId: string): Promise<void> {
+  const legacy = await db
+    .select({ gameId: gamesTable.id, startedAt: gamesTable.startedAt })
+    .from(gamesTable)
+    .leftJoin(gameParticipantsTable, eq(gameParticipantsTable.gameId, gamesTable.id))
+    .where(and(eq(gamesTable.userId, userId), isNull(gameParticipantsTable.gameId)));
+  if (legacy.length === 0) return;
+  const userRow = await db
+    .select({ screenName: usersTable.screenName })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+  const screenName = userRow[0]?.screenName ?? "Host";
+  for (const r of legacy) {
+    try {
+      await db.insert(gameParticipantsTable).values({
+        gameId: r.gameId,
+        slotIndex: 0,
+        userId,
+        displayName: screenName,
+        isHost: true,
+        joinedAt: r.startedAt,
+        statsStartAt: r.startedAt,
+      });
+    } catch {
+      // Race with a concurrent backfill / participant insert — fine,
+      // the row exists now.
+    }
+  }
+}
+
 async function isParticipantOf(gameId: string, userId: string): Promise<boolean> {
   const rows = await db
     .select({ slotIndex: gameParticipantsTable.slotIndex })
@@ -345,6 +385,9 @@ router.get("/games/resume", async (req, res): Promise<void> => {
     return;
   }
   await sweepStaleGames(user.id);
+  // Ensure legacy (pre-v0.7) host-owned games have host participant
+  // rows so they remain visible/resumable after this release.
+  await backfillHostParticipants(user.id);
   const rows = await db
     .select({ game: gamesTable })
     .from(gameParticipantsTable)
@@ -1021,6 +1064,10 @@ router.get("/games/history", async (req, res): Promise<void> => {
     return;
   }
   await sweepStaleGames(user.id);
+  // Backfill legacy host-owned games into game_participants so they
+  // remain visible in this user's history after the v0.7 cut-over to
+  // participant-based membership.
+  await backfillHostParticipants(user.id);
 
   const entitlement = await computeEntitlement(user);
   const limit = entitlement.historyVisibleLimit;

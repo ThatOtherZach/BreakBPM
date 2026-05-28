@@ -33,12 +33,19 @@ function randomCode(): string {
 /**
  * Generate a 5-char code that doesn't collide with any active game or
  * any game ended within the cooldown window. Retries up to N times,
- * then falls back to whatever we last drew (32^5 collision rate is
- * negligible in practice).
+ * then throws so callers surface an explicit error (preferable to
+ * silently returning a possibly-colliding code).
  */
+export class ShareCodeExhaustedError extends Error {
+  constructor() {
+    super("Could not allocate a unique share code; please retry");
+    this.name = "ShareCodeExhaustedError";
+  }
+}
+
 export async function generateUniqueShareCode(): Promise<string> {
   const cutoff = new Date(Date.now() - SHARE_CODE_REUSE_COOLDOWN_MS);
-  for (let attempt = 0; attempt < 8; attempt++) {
+  for (let attempt = 0; attempt < 16; attempt++) {
     const candidate = randomCode();
     const conflict = await db
       .select({ id: gamesTable.id })
@@ -52,5 +59,5 @@ export async function generateUniqueShareCode(): Promise<string> {
       .limit(1);
     if (conflict.length === 0) return candidate;
   }
-  return randomCode();
+  throw new ShareCodeExhaustedError();
 }
