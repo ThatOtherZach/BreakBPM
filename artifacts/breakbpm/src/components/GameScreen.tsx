@@ -687,27 +687,25 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           </div>
         </div>
 
-        {/* Sunk balls readout — full width within the panel */}
+        {/* Full-rack readout — every ball in the rack is shown from the
+            start; a ball fades to the shaded style once it's pocketed
+            (same treatment as Shark-sunk balls). Sized to fit the full
+            15-ball rack on one row at phone widths. */}
         <div className="hud-terminal">
-          {state.sunkBalls.length === 0
-            ? <span className="hud-terminal-idle">&gt;awaiting first shot</span>
-            : [...state.sunkBalls].reverse().map((b, i) => {
-              const sunkByShark = (state.sharkSunkBalls ?? []).includes(b);
-              return (
-                <span
-                  key={i}
-                  className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}`}
-                  data-number={b}
-                  style={{
-                    '--chip-color': BALL_COLORS[b],
-                    ...(sunkByShark ? { opacity: 0.45 } : {}),
-                  } as React.CSSProperties}
-                  title={sunkByShark ? 'Sunk by the Shark' : undefined}
-                  aria-label={`Ball ${b}`}
-                />
-              );
-            })
-          }
+          {allBalls.map(b => {
+            const isSunk = state.sunkBalls.includes(b);
+            const sunkByShark = (state.sharkSunkBalls ?? []).includes(b);
+            return (
+              <span
+                key={b}
+                className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}${isSunk ? ' hud-chip-sunk' : ''}`}
+                data-number={b}
+                style={{ '--chip-color': BALL_COLORS[b] } as React.CSSProperties}
+                title={sunkByShark ? 'Sunk by the Shark' : undefined}
+                aria-label={`Ball ${b}${isSunk ? ' (sunk)' : ''}`}
+              />
+            );
+          })}
         </div>
 
         {/* Per-player / Shark scoreboard rows */}

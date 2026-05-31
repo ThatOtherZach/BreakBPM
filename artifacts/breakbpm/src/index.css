@@ -1075,22 +1075,26 @@ html, #root {
   border-top: 1px solid #0f2f0f;
   padding: 6px 10px;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
+  justify-content: flex-start;
+  gap: 3px;
   min-height: 36px;
 }
 
-.hud-terminal-idle {
-  color: #1a5a1a;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  animation: cursor-blink 1.2s step-end infinite;
+/* The readout shows the full rack, so its chips shrink to fit the
+   largest rack (15 balls) on a single row at phone widths, then scale
+   up to the 26px default as the screen grows (capped at the app's
+   480px width). Scoped to .hud-terminal so the per-player scoreboard
+   chips below keep their fixed default size. */
+.hud-terminal .hud-chip {
+  --chip-size: min(26px, calc((100vw - 70px) / 15));
 }
 
-@keyframes cursor-blink {
-  50% { opacity: 0; }
+/* A pocketed ball fades to the shaded/translucent style — the same
+   treatment originally used only for Shark-sunk balls. */
+.hud-chip-sunk {
+  opacity: 0.45;
 }
 
 /* Inline ball chips — 8-bit pixel-art billiard balls.

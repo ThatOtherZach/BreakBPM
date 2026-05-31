@@ -207,6 +207,9 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
   }
 
   const sunk = state?.sunkBalls ?? [];
+  const allBalls = state?.gameType === '9ball'
+    ? [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const sharkBalls = state?.sharkSunkBalls ?? [];
   const players = state?.players ?? [];
   // Server roster (source of truth for who currently holds each slot).
@@ -305,25 +308,24 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
           </div>
         </div>
 
+        {/* Full-rack readout — mirrors the host HUD: every ball in the
+            rack is shown from the start and fades to the shaded style
+            once it's pocketed. */}
         <div className="hud-terminal">
-          {sunk.length === 0
-            ? <span className="hud-terminal-idle">&gt;awaiting first shot</span>
-            : [...sunk].reverse().map((b, i) => {
-              const sunkByShark = sharkBalls.includes(b);
-              return (
-                <span
-                  key={i}
-                  className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}`}
-                  data-number={b}
-                  style={{
-                    '--chip-color': BALL_COLORS[b],
-                    ...(sunkByShark ? { opacity: 0.45 } : {}),
-                  } as React.CSSProperties}
-                  aria-label={`Ball ${b}`}
-                />
-              );
-            })
-          }
+          {allBalls.map(b => {
+            const isSunk = sunk.includes(b);
+            const sunkByShark = sharkBalls.includes(b);
+            return (
+              <span
+                key={b}
+                className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}${isSunk ? ' hud-chip-sunk' : ''}`}
+                data-number={b}
+                style={{ '--chip-color': BALL_COLORS[b] } as React.CSSProperties}
+                title={sunkByShark ? 'Sunk by the Shark' : undefined}
+                aria-label={`Ball ${b}${isSunk ? ' (sunk)' : ''}`}
+              />
+            );
+          })}
         </div>
 
         {players.map((p, i) => {
