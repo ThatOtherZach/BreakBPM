@@ -702,19 +702,22 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           </div>
         </div>
 
-        {/* Rack tray — in 8-ball/practice the rack splits into a solids
-            line over a stripes line with the 8-ball alone in the middle
-            as the special winning ball; 9-ball shows a single line. A
-            ball drains to an empty socket once it's pocketed. */}
+        {/* Rack tray — in 8-ball/practice the rack shows solids over
+            stripes on the left with the 8-ball set off to the right
+            (vertically centered) as the special winning ball; 9-ball
+            shows a single line. A ball drains to an empty socket once
+            it's pocketed. */}
         <div className="hud-terminal">
           {state.gameType === '9ball' ? (
             <div className="rack-line">{allBalls.map(rackChip)}</div>
           ) : (
-            <>
-              <div className="rack-line">{SOLIDS.map(rackChip)}</div>
+            <div className="rack-grouped">
+              <div className="rack-groups">
+                <div className="rack-line">{SOLIDS.map(rackChip)}</div>
+                <div className="rack-line">{STRIPES.map(rackChip)}</div>
+              </div>
               <div className="rack-eight">{rackChip(EIGHT_BALL)}</div>
-              <div className="rack-line">{STRIPES.map(rackChip)}</div>
-            </>
+            </div>
           )}
         </div>
 
@@ -722,12 +725,12 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         {state.phase !== 'setup' && (() => {
           const sharkBalls = state.sharkSunkBalls ?? [];
           const rowStyle: React.CSSProperties = {
-            display: 'flex', flexDirection: 'column', gap: 4,
-            padding: '4px 8px', marginTop: 4,
+            display: 'flex', flexDirection: 'column', gap: 2,
+            padding: '3px 8px', marginTop: 3,
             background: '#1a0a2e', border: '1px solid #5a2a8a',
             fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
           };
-          const idLine: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 8 };
+          const idLine: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 6 };
           const ballsLine: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', minHeight: 26 };
           const renderBalls = (balls: number[]) => [...balls].reverse().map((b, i) => (
             <span
@@ -758,7 +761,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                       <span style={{ minWidth: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
                         {active ? <span className="cue-ball-icon" /> : null}
                       </span>
-                      <span style={{ fontSize: 18, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 16, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {p.name}
                       </span>
                       {teamLabel && (
@@ -777,7 +780,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 <div style={rowStyle}>
                   <div style={idLine}>
                     <SharkIcon size={14} />
-                    <span style={{ fontSize: 18 }}>SHARK</span>
+                    <span style={{ fontSize: 16 }}>SHARK</span>
                   </div>
                   <div style={ballsLine}>
                     {renderBalls(sharkBalls)}

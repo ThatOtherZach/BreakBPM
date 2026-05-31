@@ -324,18 +324,20 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
         </div>
 
         {/* Rack tray — mirrors the host HUD: in 8-ball/practice the rack
-            splits into a solids line over a stripes line with the 8-ball
-            alone in the middle; 9-ball shows a single line. A ball drains
-            to an empty socket once it's pocketed. */}
+            shows solids over stripes on the left with the 8-ball set off
+            to the right (vertically centered); 9-ball shows a single
+            line. A ball drains to an empty socket once it's pocketed. */}
         <div className="hud-terminal">
           {state?.gameType === '9ball' ? (
             <div className="rack-line">{allBalls.map(rackChip)}</div>
           ) : (
-            <>
-              <div className="rack-line">{SOLIDS.map(rackChip)}</div>
+            <div className="rack-grouped">
+              <div className="rack-groups">
+                <div className="rack-line">{SOLIDS.map(rackChip)}</div>
+                <div className="rack-line">{STRIPES.map(rackChip)}</div>
+              </div>
               <div className="rack-eight">{rackChip(EIGHT_BALL)}</div>
-              <div className="rack-line">{STRIPES.map(rackChip)}</div>
-            </>
+            </div>
           )}
         </div>
 
@@ -355,18 +357,18 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
           const isMe = joinResult?.slotIndex === i;
           return (
             <div key={p.id} style={{
-              display: 'flex', flexDirection: 'column', gap: 4,
-              padding: '4px 8px', marginTop: 4,
+              display: 'flex', flexDirection: 'column', gap: 2,
+              padding: '3px 8px', marginTop: 3,
               background: '#1a0a2e', border: '1px solid #5a2a8a',
               borderColor: active ? '#d8b4ff' : '#5a2a8a',
               fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
               opacity: roster?.hasLeft ? 0.55 : 1,
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ minWidth: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
                   {active ? <span className="cue-ball-icon" /> : null}
                 </span>
-                <span style={{ fontSize: 18, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 16, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {shownName}{isMe ? ' (you)' : ''}{roster?.isHost ? ' ★' : ''}
                 </span>
                 {roster?.hasLeft && (
