@@ -1077,7 +1077,7 @@ html, #root {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 3px;
   min-height: 36px;
 }
@@ -1091,10 +1091,25 @@ html, #root {
   --chip-size: min(26px, calc((100vw - 70px) / 15));
 }
 
-/* A pocketed ball fades to the shaded/translucent style — the same
-   treatment originally used only for Shark-sunk balls. */
-.hud-chip-sunk {
-  opacity: 0.45;
+/* Pocketed balls read as emptied sockets in the rack tray: the color
+   drains out, the chip recesses into the panel, and only a faint number
+   remains. On-table balls keep their full pixel-art color, so a glance
+   tells you exactly what's left. Scoped to .hud-terminal so the
+   per-player scoreboard chips below are unaffected. */
+.hud-terminal .hud-chip-sunk {
+  background: #06120a;
+  border-color: #1e3a1e;
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.hud-terminal .hud-chip-sunk::before {
+  display: none; /* drop the stripe band on emptied sockets */
+}
+
+.hud-terminal .hud-chip-sunk::after {
+  background: transparent;
+  border-color: #1e3a1e;
+  color: #3f7d3f;
 }
 
 /* Inline ball chips — 8-bit pixel-art billiard balls.
