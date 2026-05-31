@@ -634,6 +634,21 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     else selectorHint = cur.team ? getTeamLabel(cur.team) : '';
   }
 
+  const rackChip = (b: number) => {
+    const isSunk = state.sunkBalls.includes(b);
+    const sunkByShark = (state.sharkSunkBalls ?? []).includes(b);
+    return (
+      <span
+        key={b}
+        className={`hud-chip ${b === EIGHT_BALL ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}${isSunk ? ' hud-chip-sunk' : ''}`}
+        data-number={b}
+        style={{ '--chip-color': BALL_COLORS[b] } as React.CSSProperties}
+        title={sunkByShark ? 'Sunk by the Shark' : undefined}
+        aria-label={`Ball ${b}${isSunk ? ' (sunk)' : ''}`}
+      />
+    );
+  };
+
   return (
     <div className="app-window">
       <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
@@ -687,37 +702,33 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           </div>
         </div>
 
-        {/* Full-rack readout — every ball in the rack is shown from the
-            start; a ball fades to the shaded style once it's pocketed
-            (same treatment as Shark-sunk balls). Sized to fit the full
-            15-ball rack on one row at phone widths. */}
+        {/* Rack tray — in 8-ball/practice the rack splits into a solids
+            line over a stripes line with the 8-ball alone in the middle
+            as the special winning ball; 9-ball shows a single line. A
+            ball drains to an empty socket once it's pocketed. */}
         <div className="hud-terminal">
-          {allBalls.map(b => {
-            const isSunk = state.sunkBalls.includes(b);
-            const sunkByShark = (state.sharkSunkBalls ?? []).includes(b);
-            return (
-              <span
-                key={b}
-                className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}${isSunk ? ' hud-chip-sunk' : ''}`}
-                data-number={b}
-                style={{ '--chip-color': BALL_COLORS[b] } as React.CSSProperties}
-                title={sunkByShark ? 'Sunk by the Shark' : undefined}
-                aria-label={`Ball ${b}${isSunk ? ' (sunk)' : ''}`}
-              />
-            );
-          })}
+          {state.gameType === '9ball' ? (
+            <div className="rack-line">{allBalls.map(rackChip)}</div>
+          ) : (
+            <>
+              <div className="rack-line">{SOLIDS.map(rackChip)}</div>
+              <div className="rack-eight">{rackChip(EIGHT_BALL)}</div>
+              <div className="rack-line">{STRIPES.map(rackChip)}</div>
+            </>
+          )}
         </div>
 
         {/* Per-player / Shark scoreboard rows */}
         {state.phase !== 'setup' && (() => {
           const sharkBalls = state.sharkSunkBalls ?? [];
           const rowStyle: React.CSSProperties = {
-            display: 'flex', alignItems: 'center', gap: 8,
+            display: 'flex', flexDirection: 'column', gap: 4,
             padding: '4px 8px', marginTop: 4,
             background: '#1a0a2e', border: '1px solid #5a2a8a',
             fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
-            flexWrap: 'wrap',
           };
+          const idLine: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 8 };
+          const ballsLine: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', minHeight: 26 };
           const renderBalls = (balls: number[]) => [...balls].reverse().map((b, i) => (
             <span
               key={i}
@@ -743,30 +754,34 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                     ...rowStyle,
                     borderColor: active ? '#d8b4ff' : '#5a2a8a',
                   }}>
-                    <span style={{ minWidth: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
-                      {active ? <span className="cue-ball-icon" /> : null}
-                    </span>
-                    <span style={{ fontSize: 18, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {p.name}
-                    </span>
-                    {teamLabel && (
-                      <span style={{ fontSize: 12, opacity: 0.7 }}>
-                        · {teamLabel}{cleared && ' ✓'}
+                    <div style={idLine}>
+                      <span style={{ minWidth: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
+                        {active ? <span className="cue-ball-icon" /> : null}
                       </span>
-                    )}
-                    <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, marginLeft: 8, alignItems: 'center' }}>
+                      <span style={{ fontSize: 18, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {p.name}
+                      </span>
+                      {teamLabel && (
+                        <span style={{ fontSize: 12, opacity: 0.7 }}>
+                          · {teamLabel}{cleared && ' ✓'}
+                        </span>
+                      )}
+                    </div>
+                    <div style={ballsLine}>
                       {renderBalls(mySunk)}
-                    </span>
+                    </div>
                   </div>
                 );
               })}
               {isSharkGame(state) && (
                 <div style={rowStyle}>
-                  <SharkIcon size={14} />
-                  <span style={{ fontSize: 18 }}>SHARK</span>
-                  <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, marginLeft: 8, alignItems: 'center' }}>
+                  <div style={idLine}>
+                    <SharkIcon size={14} />
+                    <span style={{ fontSize: 18 }}>SHARK</span>
+                  </div>
+                  <div style={ballsLine}>
                     {renderBalls(sharkBalls)}
-                  </span>
+                  </div>
                 </div>
               )}
             </>

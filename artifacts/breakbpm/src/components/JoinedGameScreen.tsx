@@ -246,6 +246,21 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
     />
   ));
 
+  const rackChip = (b: number) => {
+    const isSunk = sunk.includes(b);
+    const sunkByShark = sharkBalls.includes(b);
+    return (
+      <span
+        key={b}
+        className={`hud-chip ${b === EIGHT_BALL ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}${isSunk ? ' hud-chip-sunk' : ''}`}
+        data-number={b}
+        style={{ '--chip-color': BALL_COLORS[b] } as React.CSSProperties}
+        title={sunkByShark ? 'Sunk by the Shark' : undefined}
+        aria-label={`Ball ${b}${isSunk ? ' (sunk)' : ''}`}
+      />
+    );
+  };
+
   return (
     <div className="app-window">
       <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
@@ -308,24 +323,20 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
           </div>
         </div>
 
-        {/* Full-rack readout — mirrors the host HUD: every ball in the
-            rack is shown from the start and fades to the shaded style
-            once it's pocketed. */}
+        {/* Rack tray — mirrors the host HUD: in 8-ball/practice the rack
+            splits into a solids line over a stripes line with the 8-ball
+            alone in the middle; 9-ball shows a single line. A ball drains
+            to an empty socket once it's pocketed. */}
         <div className="hud-terminal">
-          {allBalls.map(b => {
-            const isSunk = sunk.includes(b);
-            const sunkByShark = sharkBalls.includes(b);
-            return (
-              <span
-                key={b}
-                className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}${isSunk ? ' hud-chip-sunk' : ''}`}
-                data-number={b}
-                style={{ '--chip-color': BALL_COLORS[b] } as React.CSSProperties}
-                title={sunkByShark ? 'Sunk by the Shark' : undefined}
-                aria-label={`Ball ${b}${isSunk ? ' (sunk)' : ''}`}
-              />
-            );
-          })}
+          {state?.gameType === '9ball' ? (
+            <div className="rack-line">{allBalls.map(rackChip)}</div>
+          ) : (
+            <>
+              <div className="rack-line">{SOLIDS.map(rackChip)}</div>
+              <div className="rack-eight">{rackChip(EIGHT_BALL)}</div>
+              <div className="rack-line">{STRIPES.map(rackChip)}</div>
+            </>
+          )}
         </div>
 
         {players.map((p, i) => {
@@ -344,31 +355,32 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
           const isMe = joinResult?.slotIndex === i;
           return (
             <div key={p.id} style={{
-              display: 'flex', alignItems: 'center', gap: 8,
+              display: 'flex', flexDirection: 'column', gap: 4,
               padding: '4px 8px', marginTop: 4,
               background: '#1a0a2e', border: '1px solid #5a2a8a',
               borderColor: active ? '#d8b4ff' : '#5a2a8a',
               fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
-              flexWrap: 'wrap',
               opacity: roster?.hasLeft ? 0.55 : 1,
             }}>
-              <span style={{ minWidth: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
-                {active ? <span className="cue-ball-icon" /> : null}
-              </span>
-              <span style={{ fontSize: 18, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {shownName}{isMe ? ' (you)' : ''}{roster?.isHost ? ' ★' : ''}
-              </span>
-              {roster?.hasLeft && (
-                <span style={{ fontSize: 12, color: '#ff9090' }}>· left</span>
-              )}
-              {teamLabel && (
-                <span style={{ fontSize: 12, opacity: 0.7 }}>
-                  · {teamLabel}{cleared && ' ✓'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ minWidth: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
+                  {active ? <span className="cue-ball-icon" /> : null}
                 </span>
-              )}
-              <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, marginLeft: 8, alignItems: 'center' }}>
+                <span style={{ fontSize: 18, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {shownName}{isMe ? ' (you)' : ''}{roster?.isHost ? ' ★' : ''}
+                </span>
+                {roster?.hasLeft && (
+                  <span style={{ fontSize: 12, color: '#ff9090' }}>· left</span>
+                )}
+                {teamLabel && (
+                  <span style={{ fontSize: 12, opacity: 0.7 }}>
+                    · {teamLabel}{cleared && ' ✓'}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', minHeight: 26 }}>
                 {renderBalls(mySunk)}
-              </span>
+              </div>
             </div>
           );
         })}
