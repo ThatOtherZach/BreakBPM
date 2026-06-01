@@ -1081,20 +1081,24 @@ html, #root {
   min-height: 32px;
 }
 
-/* The rack tray shows solids over stripes on the left with the 8-ball
-   set off to the right, vertically centered across both lines, so it
-   reads as the special winning ball without taking its own row. */
+/* The rack tray clusters solids on the left and stripes on the right
+   with the 8-ball centered between them as the special winning ball.
+   Each side wraps into a compact block so the full rack fits on mobile
+   without shrinking the chips. 9-ball uses a single .rack-line. */
 .rack-grouped {
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
-.rack-groups {
+.rack-side {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 3px;
+  width: 116px;
 }
 
 .rack-line {

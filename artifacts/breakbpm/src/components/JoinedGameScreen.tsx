@@ -324,19 +324,17 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
         </div>
 
         {/* Rack tray — mirrors the host HUD: in 8-ball/practice the rack
-            shows solids over stripes on the left with the 8-ball set off
-            to the right (vertically centered); 9-ball shows a single
-            line. A ball drains to an empty socket once it's pocketed. */}
+            clusters solids on the left and stripes on the right with the
+            8-ball centered between them; 9-ball shows a single line.
+            A ball drains to an empty socket once it's pocketed. */}
         <div className="hud-terminal">
           {state?.gameType === '9ball' ? (
             <div className="rack-line">{allBalls.map(rackChip)}</div>
           ) : (
             <div className="rack-grouped">
-              <div className="rack-groups">
-                <div className="rack-line">{SOLIDS.map(rackChip)}</div>
-                <div className="rack-line">{STRIPES.map(rackChip)}</div>
-              </div>
+              <div className="rack-side">{SOLIDS.map(rackChip)}</div>
               <div className="rack-eight">{rackChip(EIGHT_BALL)}</div>
+              <div className="rack-side">{STRIPES.map(rackChip)}</div>
             </div>
           )}
         </div>
