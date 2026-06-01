@@ -226,6 +226,9 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
   const rosterBySlot = new Map(participants.map(p => [p.slotIndex, p]));
   const currentIdx = state?.currentPlayerIndex ?? 0;
   const cur = players[currentIdx];
+  // The host is always Player 1 (slot 0). Prefer the live roster name,
+  // falling back to the snapshot's player name.
+  const hostName = rosterBySlot.get(0)?.displayName ?? players[0]?.name ?? 'Player 1';
   const shotLog = state?.shotLog ?? [];
 
   const dispPlayerName = state?.phase === 'ended'
@@ -278,12 +281,12 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
         <span>👁</span>
         <span>
           {joinResult.reason === 'in_progress' ? (
-            <>Game already underway — viewing as spectator. Host is scorekeeping.</>
+            <>Game already underway — viewing as spectator. {hostName} is scorekeeping.</>
           ) : joinResult.reason === 'full' ? (
-            <>Last slot was just taken — viewing as spectator. Host is scorekeeping.</>
+            <>Last slot was just taken — viewing as spectator. {hostName} is scorekeeping.</>
           ) : (
             <>
-              View only — host's device is scorekeeping.
+              View only — {hostName}'s device is scorekeeping.
               {joinResult.role === 'spectator' ? ' (spectator)' : ''}
             </>
           )}
