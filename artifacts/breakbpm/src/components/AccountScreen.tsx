@@ -46,11 +46,11 @@ function toRuns(seq: PocketEvent[]): PocketRun[] {
 }
 
 /**
- * A single, non-wrapping line of the balls pocketed during a game, in order.
- * Balls are grouped into consecutive same-shooter runs; each run is labeled by
- * its shooter (a name pill, or the shark fin for Shark steals) so attribution
- * is explicit even in 9-ball and open-table 8-ball where ball color alone does
- * not identify the shooter. Scrolls horizontally when wider than the row.
+ * A single, non-wrapping line of the balls pocketed during a game, in the
+ * exact order they were sunk. Balls are grouped into consecutive same-shooter
+ * runs only to add a subtle gap at turn changes and to mark Shark steals with
+ * the shark fin — no player names are shown. Scrolls horizontally when wider
+ * than the row.
  */
 function ShotLogRow({ seq }: { seq: PocketEvent[] }) {
   const runs = toRuns(seq);
@@ -70,24 +70,7 @@ function ShotLogRow({ seq }: { seq: PocketEvent[] }) {
                 flexShrink: 0,
               }}
             >
-              {isShark ? (
-                <SharkIcon size={13} />
-              ) : (
-                run.player && (
-                  <span
-                    style={{
-                      fontSize: 9,
-                      fontWeight: 700,
-                      color: "#555",
-                      textTransform: "uppercase",
-                      letterSpacing: 0.3,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {run.player}
-                  </span>
-                )
-              )}
+              {isShark && <SharkIcon size={13} />}
               {run.balls.map((ball, bi) => {
                 const chipClass =
                   ball === 8
