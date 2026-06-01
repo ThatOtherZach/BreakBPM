@@ -440,7 +440,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
                                 ? "Generate New Code"
                                 : "Generate Gift Code"}
                         </button>
-                        {latest && (
+                        {latest && !latest.expired && (
                           <div style={{ marginTop: 8 }}>
                             <div
                               style={{
