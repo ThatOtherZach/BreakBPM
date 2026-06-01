@@ -283,8 +283,8 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
             <>Last slot was just taken — viewing as spectator. Host is scorekeeping.</>
           ) : (
             <>
-              View only — host's device is scorekeeping.{' '}
-              {joinResult.role === 'spectator' ? '(spectator)' : `(slot ${joinResult.displayName})`}
+              View only — host's device is scorekeeping.
+              {joinResult.role === 'spectator' ? ' (spectator)' : ''}
             </>
           )}
         </span>
