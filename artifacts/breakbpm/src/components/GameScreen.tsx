@@ -4,8 +4,8 @@ import Navbar from './Navbar';
 import {
   getLegalBalls, getRemainingBalls, checkSinkResult,
   assignTeams, shouldAssignTeams, calculatePlayerBPM, formatTime,
-  getTeamLabel, ballLabel,
-  SOLIDS, STRIPES, EIGHT_BALL, getLowestBall,
+  ballLabel,
+  SOLIDS, STRIPES, EIGHT_BALL,
   saveInProgressGame, clearInProgressGame,
   isSharkGame, applySharkMiss,
   getSharkPickCandidates, resolveSharkPick,
@@ -351,7 +351,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     ? [1, 2, 3, 4, 5, 6, 7, 8, 9]
     : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const remaining = getRemainingBalls(state.sunkBalls, state.gameType);
-  const lowest9 = state.gameType === '9ball' ? getLowestBall(state.sunkBalls) : 0;
 
   function pushUndo(s: GameState) { setUndoStack(prev => [...prev.slice(-19), s]); }
 
@@ -626,14 +625,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     remainingSubLabel = `${left} BALLS LEFT`;
   }
 
-  let selectorHint: React.ReactNode = '';
-  if (pendingSharkPick) selectorHint = 'Tap the ball you removed from the table';
-  else if (state.gameType === '9ball') selectorHint = `Hit (${lowest9}) first`;
-  else if (state.gameType === '8ball') {
-    if (!state.teamAssigned) selectorHint = 'First ball assigns group ';
-    else selectorHint = cur.team ? getTeamLabel(cur.team) : '';
-  }
-
   const rackChip = (b: number) => {
     const isSunk = state.sunkBalls.includes(b);
     const sunkByShark = (state.sharkSunkBalls ?? []).includes(b);
@@ -819,13 +810,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         {/* ── Ball selector ── */}
         {state.phase !== 'ended' && (
           <div>
-            <div className="menu-section-label" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              {state.gameType === 'practice' ? 'BALL SELECTOR'
-                : pendingSharkPick
-                  ? `SHARK'S TURN`
-                  : `${cur.name.toUpperCase()}'S TURN`}
-              {selectorHint && <span style={{ fontWeight: 'normal', marginLeft: 8, letterSpacing: 0, textTransform: 'none', color: '#555' }}>{selectorHint}</span>}
-            </div>
             <div className="ball-grid">
               {allBalls.map(ball => (
                 <button
