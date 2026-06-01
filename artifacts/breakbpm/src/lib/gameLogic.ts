@@ -249,8 +249,11 @@ export function resolveSharkPick(state: GameState, ball: number): GameState {
  * the ball they removed from the table. Use `resolveSharkPick()` once the
  * player makes a selection.
  *
- * Special case: if the only ball remaining is the 8, the Shark wins
- * outright (player cannot recover) — no pick is needed.
+ * Special case: if the Shark has no legal non-8 ball left to take but the
+ * 8-ball is still on the table, its only legal target is the 8 — it takes it
+ * and wins outright (player cannot recover), no pick is needed. This covers
+ * both "only the 8 left on the whole table" and "Shark has cleared its own
+ * group while the player still has balls".
  *
  * Returns the state unchanged if the aggression setting blocks this
  * event type, or if the Shark has nothing legal to take.
@@ -264,11 +267,19 @@ export function applySharkMiss(
   if (!allowed) return state;
 
   const remaining = getRemainingBalls(state.sunkBalls, '8ball');
+  const candidates = getSharkPickCandidates(state);
 
-  // Only the 8 remains overall → player can't recover, Shark wins outright.
-  if (remaining.length === 1 && remaining[0] === EIGHT_BALL) {
+  // The Shark has no non-8 ball left to take but the 8 is still on the table →
+  // its only legal target is the 8. It takes it and wins; the player can't
+  // recover. Covers both "only the 8 left overall" and "Shark cleared its own
+  // group" (the player may still have balls on the table).
+  if (candidates.length === 0 && remaining.includes(EIGHT_BALL)) {
     const now = Date.now();
-    const reason = eventType === 'foul' ? 'fouled on the 8-ball' : 'missed the 8-ball';
+    const onlyEightLeft = remaining.length === 1;
+    const verb = eventType === 'foul' ? 'fouled' : 'missed';
+    const reason = onlyEightLeft
+      ? `${verb} ${eventType === 'foul' ? 'on ' : ''}the 8-ball`
+      : `${verb} and the Shark sank the 8-ball`;
     const entry: ShotLogEntry = {
       type: 'lose',
       playerName: state.players[0]?.name ?? 'Player',
@@ -286,7 +297,6 @@ export function applySharkMiss(
     };
   }
 
-  const candidates = getSharkPickCandidates(state);
   if (candidates.length === 0) return state;
 
   return { ...state, pendingSharkPick: true };
