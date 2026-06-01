@@ -115,12 +115,14 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
       });
   }, [code, join, guestTokenKey]);
 
-  // Polling: every 2.5s while tab is visible, 10s when hidden. Disabled
+  // Polling: every 1s while tab is visible, 10s when hidden. Disabled
   // once the game ends so we stop hitting the server in a tight loop.
-  const [pollInterval, setPollInterval] = useState<number | false>(2500);
+  const [pollInterval, setPollInterval] = useState<number | false>(
+    typeof document !== 'undefined' && document.hidden ? 10000 : 1000,
+  );
   useEffect(() => {
     const onVis = () => {
-      setPollInterval(prev => (prev === false ? false : (document.hidden ? 10000 : 2500)));
+      setPollInterval(prev => (prev === false ? false : (document.hidden ? 10000 : 1000)));
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
@@ -158,6 +160,22 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
     if (!gs) return null;
     return normalizeSharkIdentity({ ...gs });
   }, [snap.data?.gameState]);
+
+  // Local 1s tick so the elapsed clock advances smoothly between polls
+  // instead of jumping each time a fresh snapshot lands. `elapsed` is
+  // derived from the host's `timerStartTime` anchor and the live local
+  // clock, so every tick re-anchors to the host and there is no drift
+  // beyond constant device clock skew. Stops once the game ends or before
+  // the first ball drops (no timer running yet).
+  const [, setNowTick] = useState(0);
+  const timerRunning = !(snap.data?.ended ?? false)
+    && state?.phase === 'playing'
+    && state?.timerStartTime != null;
+  useEffect(() => {
+    if (!timerRunning) return;
+    const id = setInterval(() => setNowTick(n => (n + 1) % 1_000_000), 1000);
+    return () => clearInterval(id);
+  }, [timerRunning]);
 
   async function handleLeave() {
     if (!joinResult) {
