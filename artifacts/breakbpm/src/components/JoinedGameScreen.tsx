@@ -281,12 +281,12 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
         <span>👁</span>
         <span>
           {joinResult.reason === 'in_progress' ? (
-            <>Game already underway — viewing as spectator. {hostName} is scorekeeping.</>
+            <>Game already underway — viewing as spectator. {hostName} is host.</>
           ) : joinResult.reason === 'full' ? (
-            <>Last slot was just taken — viewing as spectator. {hostName} is scorekeeping.</>
+            <>Last slot was just taken — viewing as spectator. {hostName} is host.</>
           ) : (
             <>
-              View only — {hostName}'s device is scorekeeping.
+              View only — {hostName}'s device is host.
               {joinResult.role === 'spectator' ? ' (spectator)' : ''}
             </>
           )}
