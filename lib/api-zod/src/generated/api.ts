@@ -418,7 +418,11 @@ export const GetGameHistoryResponse = zod.object({
   "endedAt": zod.coerce.date(),
   "startedAt": zod.coerce.date().optional(),
   "sharkMode": zod.boolean(),
-  "endReason": zod.enum(['max_duration_60min', 'inactivity_60min']).optional()
+  "endReason": zod.enum(['max_duration_60min', 'inactivity_60min']).optional(),
+  "pocketSequence": zod.array(zod.object({
+  "ball": zod.number(),
+  "player": zod.string()
+})).optional()
 }))
 })
 

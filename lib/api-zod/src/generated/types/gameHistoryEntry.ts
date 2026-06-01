@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { GameHistoryEntryEndReason } from './gameHistoryEntryEndReason';
+import type { GameHistoryEntryPocketSequenceItem } from './gameHistoryEntryPocketSequenceItem';
 
 export interface GameHistoryEntry {
   id: string;
@@ -22,4 +23,5 @@ export interface GameHistoryEntry {
   startedAt?: Date;
   sharkMode: boolean;
   endReason?: GameHistoryEntryEndReason;
+  pocketSequence?: GameHistoryEntryPocketSequenceItem[];
 }

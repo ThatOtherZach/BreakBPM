@@ -1262,6 +1262,17 @@ router.get("/games/history", async (req, res): Promise<void> => {
       gs && typeof gs["forfeitReason"] === "string" ? (gs["forfeitReason"] as string) : undefined;
     const endReason =
       rawReason === "max_duration_60min" || rawReason === "inactivity_60min" ? rawReason : undefined;
+    const shotLog = Array.isArray(gs?.["shotLog"])
+      ? (gs!["shotLog"] as Array<Record<string, unknown>>)
+      : [];
+    // Pocketing events only — any shot-log entry that actually sank a ball
+    // (sinks plus a terminal win/lose that pocketed). Order is preserved.
+    const pocketSequence = shotLog
+      .filter((e) => typeof e["ball"] === "number")
+      .map((e) => ({
+        ball: e["ball"] as number,
+        player: typeof e["playerName"] === "string" ? (e["playerName"] as string) : "",
+      }));
     return {
       id: g.id,
       gameType: g.gameType,
@@ -1274,6 +1285,7 @@ router.get("/games/history", async (req, res): Promise<void> => {
       endedAt: g.endedAt!,
       startedAt: g.startedAt,
       sharkMode: !!(gs && gs["sharkAggression"]),
+      pocketSequence,
       ...(endReason ? { endReason } : {}),
     };
   });

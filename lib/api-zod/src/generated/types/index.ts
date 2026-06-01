@@ -18,6 +18,7 @@ export * from './gameActivityInput';
 export * from './gameActivityResult';
 export * from './gameHistoryEntry';
 export * from './gameHistoryEntryEndReason';
+export * from './gameHistoryEntryPocketSequenceItem';
 export * from './gameHistoryResponse';
 export * from './gameHistoryResponseTier';
 export * from './gameSaveInput';

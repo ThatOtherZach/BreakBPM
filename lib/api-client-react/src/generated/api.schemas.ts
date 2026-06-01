@@ -266,6 +266,11 @@ export const GameHistoryEntryEndReason = {
   inactivity_60min: 'inactivity_60min',
 } as const;
 
+export type GameHistoryEntryPocketSequenceItem = {
+  ball: number;
+  player: string;
+};
+
 export interface GameHistoryEntry {
   id: string;
   gameType: string;
@@ -281,6 +286,7 @@ export interface GameHistoryEntry {
   startedAt?: string;
   sharkMode: boolean;
   endReason?: GameHistoryEntryEndReason;
+  pocketSequence?: GameHistoryEntryPocketSequenceItem[];
 }
 
 export type GeneratedDiscountCodeGrantsPassKind = typeof GeneratedDiscountCodeGrantsPassKind[keyof typeof GeneratedDiscountCodeGrantsPassKind];

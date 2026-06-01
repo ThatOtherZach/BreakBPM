@@ -1219,6 +1219,52 @@ html, #root {
   z-index: 1;
 }
 
+/* Small chip variant — used for the history shot-log row. Scales the chip
+   and its inner number circle / stripe band down proportionally so a fuller
+   rack fits on one line before horizontal scrolling kicks in. */
+.hud-chip-sm {
+  --chip-size: 18px;
+  --chip-border: 1.5px;
+}
+.hud-chip-sm::after {
+  width: 10px;
+  height: 10px;
+  border-width: 1px;
+  font-size: 7px;
+}
+.hud-chip-sm.hud-chip-stripe::before {
+  height: 8px;
+}
+
+/* History shot-log row — a single, non-wrapping line of pocketed balls in
+   order. Scrolls horizontally when the sequence is wider than the row. */
+.shotlog-row {
+  position: relative;
+}
+.shotlog-scroll {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 2px 0;
+  scrollbar-width: none;
+}
+.shotlog-scroll::-webkit-scrollbar {
+  display: none;
+}
+/* Fade affordance on the right edge hinting there is more to scroll. */
+.shotlog-row::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 20px;
+  pointer-events: none;
+  background: linear-gradient(to right, rgba(192, 192, 192, 0), var(--silver));
+}
+
 /* Win flash inside HUD */
 .hud-winner {
   border-top: 1px solid #1a4a0a;

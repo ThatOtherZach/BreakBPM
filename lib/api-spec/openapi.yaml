@@ -609,6 +609,19 @@ components:
         endReason:
           type: string
           enum: [max_duration_60min, inactivity_60min]
+        # Balls in the exact order they were pocketed during the game
+        # (pocketing events only — sinks plus a terminal win/lose that
+        # pocketed a ball). Drives the visual shot-log row in history.
+        # `player` is the display name of whoever sank it; the invisible
+        # Shark opponent appears as the literal name "Shark".
+        pocketSequence:
+          type: array
+          items:
+            type: object
+            required: [ball, player]
+            properties:
+              ball: { type: integer }
+              player: { type: string }
 
     GeneratedDiscountCode:
       type: object
