@@ -1,1 +1,2 @@
 - [API server has no hot reload](api-server-no-hot-reload.md) — editing api-server source does nothing until you restart its workflow; stale server silently serves old responses.
+- [breakbpm test harness](breakbpm-test-harness.md) — vitest runs via a separate vitest.config.ts (not vite.config.ts, which throws without PORT/BASE_PATH); `*.test.ts` already excluded from tsc.
