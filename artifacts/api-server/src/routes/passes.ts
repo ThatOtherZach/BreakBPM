@@ -19,6 +19,7 @@ import {
 } from "@workspace/api-zod";
 import { getOrCreateUser } from "../lib/auth";
 import { issuePassTx } from "../lib/passes";
+import { stopRenewingActiveSubscriptionsTx } from "../lib/subscriptions";
 import { getActivePasses } from "../lib/entitlement";
 import { paymentProvider, DEV_FREE_UPGRADE_ENABLED } from "../lib/paymentProvider";
 import { newId } from "../lib/ids";
@@ -133,6 +134,12 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
         sourceRef: code,
       });
 
+      // A code can grant Lifetime — apply the same mutual exclusion as the
+      // purchase/grant paths so an active subscription stops renewing.
+      if (issued.kind === "lifetime") {
+        await stopRenewingActiveSubscriptionsTx(tx, user.id);
+      }
+
       // Insert the redemption AFTER the pass so we can wire passId
       // correctly. The unique (code, user_id) index catches duplicate
       // redeems; the throw below rolls back BOTH the pass insert and
@@ -211,14 +218,20 @@ router.post("/passes/verify", async (req, res): Promise<void> => {
     res.json(VerifyPassCheckoutResponse.parse({ success: false, message: verify.message }));
     return;
   }
-  const pass = await db.transaction((tx) =>
-    issuePassTx(tx, {
+  const pass = await db.transaction(async (tx) => {
+    const issued = await issuePassTx(tx, {
       userId: user.id,
       kind: verify.kind!,
       source: "purchase",
       sourceRef: verify.providerRef,
-    }),
-  );
+    });
+    // Buying Lifetime while subscribed is the "switch" — stop the
+    // subscription from renewing (access is retained until it lapses).
+    if (issued.kind === "lifetime") {
+      await stopRenewingActiveSubscriptionsTx(tx, user.id);
+    }
+    return issued;
+  });
   req.log.info({ userId: user.id, kind: pass.kind }, "Pass purchased");
   res.json(
     VerifyPassCheckoutResponse.parse({
@@ -262,6 +275,8 @@ router.post("/passes/dev-grant-lifetime", async (req, res): Promise<void> => {
       source: "grant",
       sourceRef: "dev_free_upgrade",
     });
+    // Granting Lifetime stops any active subscription from renewing.
+    await stopRenewingActiveSubscriptionsTx(tx, user.id);
     return { alreadyHad: false, summary: passToSummary(issued) };
   });
   if (outcome.alreadyHad) {

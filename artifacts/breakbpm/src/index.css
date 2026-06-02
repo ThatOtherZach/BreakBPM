@@ -306,6 +306,36 @@ html, #root {
 .about-markdown strong { font-weight: bold; }
 .about-markdown em { font-style: italic; }
 .about-markdown hr { border: none; border-top: 1px solid #ccc; margin: 12px 0; }
+.about-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 12px;
+  border: 2px solid var(--navy);
+  background: #fff;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.25);
+}
+.about-markdown th,
+.about-markdown td {
+  border: 1px solid #aaa;
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+.about-markdown thead th {
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  letter-spacing: 0.5px;
+  color: #fff;
+  background: var(--navy);
+  border-color: var(--navy);
+}
+.about-markdown tbody tr:nth-child(even) td { background: #eef0f6; }
+.about-markdown tbody td:nth-child(2) {
+  font-family: 'VT323', monospace;
+  font-size: 17px;
+  color: #006400;
+  white-space: nowrap;
+}
 /* Reusable CSS cue ball — used as the Foul button glyph. White ball with
    a thin dark outline, a soft top-left highlight (the cue-ball shine),
    and a small red dot in the center (the cue-ball-in-hand foul marker). */

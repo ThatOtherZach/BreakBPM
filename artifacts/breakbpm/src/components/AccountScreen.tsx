@@ -5,6 +5,7 @@ import {
   useUpdateScreenName,
   useGetGameHistory,
   useDevGrantLifetime,
+  useCancelSubscription,
   useListMyGiftCodes,
   useGenerateGiftCode,
   getGetMeQueryKey,
@@ -178,6 +179,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
   const [error, setError] = useState("");
   // TODO(remove-before-launch): paired with the dev upgrade button below.
   const [devGrantError, setDevGrantError] = useState("");
+  const [cancelMsg, setCancelMsg] = useState("");
   const [historyPage, setHistoryPage] = useState(1);
   const [giftMsg, setGiftMsg] = useState("");
   const [giftCopied, setGiftCopied] = useState(false);
@@ -190,6 +192,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
   const updateName = useUpdateScreenName();
   // TODO(remove-before-launch): dev-only free Lifetime upgrade hook.
   const devGrant = useDevGrantLifetime();
+  const cancelSub = useCancelSubscription();
   const myGiftCodes = useListMyGiftCodes();
   const generateGift = useGenerateGiftCode();
 
@@ -277,6 +280,17 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
     }
   }
 
+  async function handleCancelSub() {
+    setCancelMsg("");
+    try {
+      const result = await cancelSub.mutateAsync();
+      setCancelMsg(result.message);
+      if (result.success) qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+    } catch (e) {
+      setCancelMsg(e instanceof Error ? e.message : "Cancel failed");
+    }
+  }
+
   // TODO(remove-before-launch): dev-only free Lifetime upgrade handler.
   async function handleDevGrant() {
     setDevGrantError("");
@@ -295,9 +309,11 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
     onBack();
   }
 
+  const sub = ent.activeSubscription;
   const tierLabel =
     ent.tier === "pass"
       ? ent.activePass?.kind === "lifetime" ? "Lifetime Pass ★"
+        : sub ? (sub.interval === "month" ? "Monthly ★" : "Yearly ★")
         : ent.activePass?.kind === "year" ? "Year Pass ★"
         : ent.activePass?.kind === "day" ? "Day Pass ★"
         : "Pass Holder ★"
@@ -348,9 +364,9 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
                     fontFamily: "inherit",
                   }}
                 >
-                  Upgrade to Lifetime
+                  Get a pass
                 </button>
-                {" to customise your screen name."}
+                {" to unlock more — custom screen names come with Lifetime."}
               </div>
             )}
             {error && <div style={{ color: "#c00", fontSize: 12 }}>{error}</div>}
@@ -379,6 +395,28 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
             {passes.length > 1 && (
               <div style={{ fontSize: 11, color: "#444", marginTop: 4 }}>
                 {passes.length} active passes (stacked)
+              </div>
+            )}
+            {sub && (
+              <div style={{ fontSize: 12, marginTop: 4 }}>
+                <div style={{ color: sub.cancelAtPeriodEnd ? "#8a6d00" : "#006400" }}>
+                  {sub.cancelAtPeriodEnd
+                    ? `↛ Cancels ${fmtDate(sub.currentPeriodEnd)} — access until then`
+                    : `↻ Renews ${fmtDate(sub.currentPeriodEnd)}`}
+                </div>
+                {!sub.cancelAtPeriodEnd && (
+                  <button
+                    className="btn w-full"
+                    style={{ marginTop: 8 }}
+                    disabled={cancelSub.isPending}
+                    onClick={handleCancelSub}
+                  >
+                    {cancelSub.isPending ? "Cancelling…" : "Cancel Subscription"}
+                  </button>
+                )}
+                {cancelMsg && (
+                  <div style={{ fontSize: 11, color: "#444", marginTop: 6 }}>{cancelMsg}</div>
+                )}
               </div>
             )}
             {!ent.activePass?.isLifetime && (

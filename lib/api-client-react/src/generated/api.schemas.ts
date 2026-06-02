@@ -33,6 +33,30 @@ export interface PassSummary {
   isLifetime: boolean;
 }
 
+export type SubscriptionSummaryStatus = typeof SubscriptionSummaryStatus[keyof typeof SubscriptionSummaryStatus];
+
+
+export const SubscriptionSummaryStatus = {
+  active: 'active',
+  past_due: 'past_due',
+  canceled: 'canceled',
+} as const;
+
+export type SubscriptionSummaryInterval = typeof SubscriptionSummaryInterval[keyof typeof SubscriptionSummaryInterval];
+
+
+export const SubscriptionSummaryInterval = {
+  month: 'month',
+  year: 'year',
+} as const;
+
+export interface SubscriptionSummary {
+  status: SubscriptionSummaryStatus;
+  interval: SubscriptionSummaryInterval;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+}
+
 export type EntitlementTier = typeof EntitlementTier[keyof typeof EntitlementTier];
 
 
@@ -48,6 +72,91 @@ export interface Entitlement {
   /** @nullable */
   historyVisibleLimit: number | null;
   activePass?: PassSummary;
+  activeSubscription?: SubscriptionSummary;
+}
+
+export type PlanId = typeof PlanId[keyof typeof PlanId];
+
+
+export const PlanId = {
+  day: 'day',
+  monthly: 'monthly',
+  yearly: 'yearly',
+  lifetime: 'lifetime',
+} as const;
+
+export type PlanKind = typeof PlanKind[keyof typeof PlanKind];
+
+
+export const PlanKind = {
+  pass: 'pass',
+  subscription: 'subscription',
+} as const;
+
+export type PlanPassKind = typeof PlanPassKind[keyof typeof PlanPassKind];
+
+
+export const PlanPassKind = {
+  day: 'day',
+  lifetime: 'lifetime',
+} as const;
+
+export type PlanInterval = typeof PlanInterval[keyof typeof PlanInterval];
+
+
+export const PlanInterval = {
+  month: 'month',
+  year: 'year',
+} as const;
+
+export interface Plan {
+  id: PlanId;
+  name: string;
+  priceCents: number;
+  description: string;
+  kind: PlanKind;
+  passKind?: PlanPassKind;
+  interval?: PlanInterval;
+}
+
+export interface PlanCatalog {
+  plans: Plan[];
+}
+
+export type SubscriptionCheckoutInputInterval = typeof SubscriptionCheckoutInputInterval[keyof typeof SubscriptionCheckoutInputInterval];
+
+
+export const SubscriptionCheckoutInputInterval = {
+  month: 'month',
+  year: 'year',
+} as const;
+
+export interface SubscriptionCheckoutInput {
+  interval: SubscriptionCheckoutInputInterval;
+}
+
+export interface SubscriptionVerifyResult {
+  success: boolean;
+  message: string;
+  subscription?: SubscriptionSummary;
+}
+
+export interface CancelSubscriptionResult {
+  success: boolean;
+  message: string;
+  subscription?: SubscriptionSummary;
+}
+
+export type DevActivateSubscriptionInputInterval = typeof DevActivateSubscriptionInputInterval[keyof typeof DevActivateSubscriptionInputInterval];
+
+
+export const DevActivateSubscriptionInputInterval = {
+  month: 'month',
+  year: 'year',
+} as const;
+
+export interface DevActivateSubscriptionInput {
+  interval: DevActivateSubscriptionInputInterval;
 }
 
 export interface MeResponse {
@@ -86,7 +195,6 @@ export type PassCheckoutInputKind = typeof PassCheckoutInputKind[keyof typeof Pa
 
 export const PassCheckoutInputKind = {
   day: 'day',
-  year: 'year',
   lifetime: 'lifetime',
 } as const;
 

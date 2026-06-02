@@ -37,6 +37,12 @@ export const GetMeResponse = zod.object({
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
   "isLifetime": zod.boolean()
+}).optional(),
+  "activeSubscription": zod.object({
+  "status": zod.enum(['active', 'past_due', 'canceled']),
+  "interval": zod.enum(['month', 'year']),
+  "currentPeriodEnd": zod.coerce.date(),
+  "cancelAtPeriodEnd": zod.boolean()
 }).optional()
 }),
   "passes": zod.array(zod.object({
@@ -135,7 +141,7 @@ export const GenerateGiftCodeResponse = zod.object({
  * @summary Begin a pass purchase — returns a checkout URL + opaque token
  */
 export const CreatePassCheckoutBody = zod.object({
-  "kind": zod.enum(['day', 'year', 'lifetime'])
+  "kind": zod.enum(['day', 'lifetime'])
 })
 
 export const CreatePassCheckoutResponse = zod.object({
@@ -181,6 +187,96 @@ export const DevGrantLifetimeResponse = zod.object({
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
   "isLifetime": zod.boolean()
+}).optional()
+})
+
+
+/**
+ * Single source of truth for prices and plan metadata. The client reads this rather than hardcoding amounts. Includes one-time passes (Day, Lifetime) and recurring subscriptions (Monthly, Yearly).
+
+ * @summary The user-facing plan catalog (prices + metadata)
+ */
+export const ListPlansResponse = zod.object({
+  "plans": zod.array(zod.object({
+  "id": zod.enum(['day', 'monthly', 'yearly', 'lifetime']),
+  "name": zod.string(),
+  "priceCents": zod.number(),
+  "description": zod.string(),
+  "kind": zod.enum(['pass', 'subscription']),
+  "passKind": zod.enum(['day', 'lifetime']).optional(),
+  "interval": zod.enum(['month', 'year']).optional()
+}))
+})
+
+
+/**
+ * @summary Begin a subscription purchase — returns a checkout URL + token
+ */
+export const CreateSubscriptionCheckoutBody = zod.object({
+  "interval": zod.enum(['month', 'year'])
+})
+
+export const CreateSubscriptionCheckoutResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "opaqueToken": zod.string().optional(),
+  "checkoutUrl": zod.string().optional()
+})
+
+
+/**
+ * @summary Verify a subscription checkout token and activate on success
+ */
+export const verifySubscriptionCheckoutBodyOpaqueTokenMax = 512;
+
+
+
+export const VerifySubscriptionCheckoutBody = zod.object({
+  "opaqueToken": zod.string().min(1).max(verifySubscriptionCheckoutBodyOpaqueTokenMax)
+})
+
+export const VerifySubscriptionCheckoutResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "subscription": zod.object({
+  "status": zod.enum(['active', 'past_due', 'canceled']),
+  "interval": zod.enum(['month', 'year']),
+  "currentPeriodEnd": zod.coerce.date(),
+  "cancelAtPeriodEnd": zod.boolean()
+}).optional()
+})
+
+
+/**
+ * @summary Cancel the caller's subscription (stops renewal at period end)
+ */
+export const CancelSubscriptionResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "subscription": zod.object({
+  "status": zod.enum(['active', 'past_due', 'canceled']),
+  "interval": zod.enum(['month', 'year']),
+  "currentPeriodEnd": zod.coerce.date(),
+  "cancelAtPeriodEnd": zod.boolean()
+}).optional()
+})
+
+
+/**
+ * @summary (DEV ONLY) Activate a free subscription for the signed-in user
+ */
+export const DevActivateSubscriptionBody = zod.object({
+  "interval": zod.enum(['month', 'year'])
+})
+
+export const DevActivateSubscriptionResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "subscription": zod.object({
+  "status": zod.enum(['active', 'past_due', 'canceled']),
+  "interval": zod.enum(['month', 'year']),
+  "currentPeriodEnd": zod.coerce.date(),
+  "cancelAtPeriodEnd": zod.boolean()
 }).optional()
 })
 

@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type PassCheckoutInputKind = typeof PassCheckoutInputKind[keyof typeof PassCheckoutInputKind];
+export type PlanInterval = typeof PlanInterval[keyof typeof PlanInterval];
 
 
-export const PassCheckoutInputKind = {
-  day: 'day',
-  lifetime: 'lifetime',
+export const PlanInterval = {
+  month: 'month',
+  year: 'year',
 } as const;

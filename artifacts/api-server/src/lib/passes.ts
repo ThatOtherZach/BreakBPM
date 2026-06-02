@@ -1,6 +1,6 @@
 import { db, passesTable, PASS_DURATIONS_SECONDS, type PassKind } from "@workspace/db";
 import { newId } from "./ids";
-import { PASS_PRICES } from "./paymentProvider";
+import { PASS_PRICES_CENTS } from "./pricing";
 
 export interface IssuePassInput {
   userId: string;
@@ -21,7 +21,7 @@ export async function issuePassTx(
   const startedAt = new Date();
   const durationSeconds = PASS_DURATIONS_SECONDS[input.kind];
   const priceCents =
-    input.source === "purchase" ? PASS_PRICES[input.kind].priceCents : 0;
+    input.source === "purchase" ? PASS_PRICES_CENTS[input.kind] : 0;
 
   const [row] = await tx
     .insert(passesTable)

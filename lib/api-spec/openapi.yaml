@@ -154,6 +154,88 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/DevGrantLifetimeResult" }
 
+  /passes/plans:
+    get:
+      operationId: listPlans
+      tags: [passes]
+      summary: The user-facing plan catalog (prices + metadata)
+      description: >
+        Single source of truth for prices and plan metadata. The client reads
+        this rather than hardcoding amounts. Includes one-time passes (Day,
+        Lifetime) and recurring subscriptions (Monthly, Yearly).
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlanCatalog" }
+
+  /subscriptions/checkout:
+    post:
+      operationId: createSubscriptionCheckout
+      tags: [passes]
+      summary: Begin a subscription purchase — returns a checkout URL + token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SubscriptionCheckoutInput" }
+      responses:
+        "200":
+          description: Checkout created (or rejected if no provider / Lifetime held)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CheckoutResult" }
+
+  /subscriptions/verify:
+    post:
+      operationId: verifySubscriptionCheckout
+      tags: [passes]
+      summary: Verify a subscription checkout token and activate on success
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VerifyCheckoutInput" }
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SubscriptionVerifyResult" }
+
+  /subscriptions/cancel:
+    post:
+      operationId: cancelSubscription
+      tags: [passes]
+      summary: Cancel the caller's subscription (stops renewal at period end)
+      responses:
+        "200":
+          description: Cancellation result (or rejected if no provider)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CancelSubscriptionResult" }
+
+  # TODO(remove-before-launch): dev-only subscription activator, gated by
+  # DEV_FREE_UPGRADE_ENABLED. Lets QA simulate an active subscription without
+  # a real billing provider. Returns 404 when the flag is off.
+  /subscriptions/dev-activate:
+    post:
+      operationId: devActivateSubscription
+      tags: [passes]
+      summary: (DEV ONLY) Activate a free subscription for the signed-in user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DevActivateSubscriptionInput" }
+      responses:
+        "200":
+          description: Activated (or rejected)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SubscriptionVerifyResult" }
+
   /games/start:
     post:
       operationId: startGame
@@ -372,6 +454,17 @@ components:
         expiresAt: { type: string, format: date-time }
         isLifetime: { type: boolean }
 
+    SubscriptionSummary:
+      type: object
+      required: [status, interval, currentPeriodEnd, cancelAtPeriodEnd]
+      properties:
+        status: { type: string, enum: [active, past_due, canceled] }
+        interval: { type: string, enum: [month, year] }
+        # Paid-through date. Renews on this date unless cancelAtPeriodEnd is
+        # set, in which case access ends here.
+        currentPeriodEnd: { type: string, format: date-time }
+        cancelAtPeriodEnd: { type: boolean }
+
     Entitlement:
       type: object
       required: [tier, hasActivePass, historyVisibleLimit]
@@ -381,6 +474,59 @@ components:
         # null means no cap (full history). Number means cap to N most recent.
         historyVisibleLimit: { type: ["integer", "null"] }
         activePass: { $ref: "#/components/schemas/PassSummary" }
+        # Present when an active recurring subscription grants entitlement.
+        activeSubscription: { $ref: "#/components/schemas/SubscriptionSummary" }
+
+    Plan:
+      type: object
+      required: [id, name, priceCents, description, kind]
+      properties:
+        id: { type: string, enum: [day, monthly, yearly, lifetime] }
+        name: { type: string }
+        priceCents: { type: integer }
+        description: { type: string }
+        # "pass" = one-time purchase; "subscription" = recurring.
+        kind: { type: string, enum: [pass, subscription] }
+        # Present for one-time passes — the pass kind to issue.
+        passKind: { type: string, enum: [day, lifetime] }
+        # Present for subscriptions — the billing interval.
+        interval: { type: string, enum: [month, year] }
+
+    PlanCatalog:
+      type: object
+      required: [plans]
+      properties:
+        plans:
+          type: array
+          items: { $ref: "#/components/schemas/Plan" }
+
+    SubscriptionCheckoutInput:
+      type: object
+      required: [interval]
+      properties:
+        interval: { type: string, enum: [month, year] }
+
+    SubscriptionVerifyResult:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        subscription: { $ref: "#/components/schemas/SubscriptionSummary" }
+
+    CancelSubscriptionResult:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        subscription: { $ref: "#/components/schemas/SubscriptionSummary" }
+
+    DevActivateSubscriptionInput:
+      type: object
+      required: [interval]
+      properties:
+        interval: { type: string, enum: [month, year] }
 
     MeResponse:
       type: object
@@ -425,7 +571,11 @@ components:
       type: object
       required: [kind]
       properties:
-        kind: { type: string, enum: [day, year, lifetime] }
+        # Only one-time passes are purchasable. The former one-time "year" pass
+        # is replaced by the Yearly subscription, so it is no longer accepted
+        # here (legacy year-pass rows still resolve entitlement, but no new ones
+        # can be bought).
+        kind: { type: string, enum: [day, lifetime] }
 
     CheckoutResult:
       type: object

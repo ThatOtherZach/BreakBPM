@@ -1,5 +1,14 @@
 import { eq, desc } from "drizzle-orm";
-import { db, passesTable, type Pass, type User } from "@workspace/db";
+import {
+  db,
+  passesTable,
+  subscriptionsTable,
+  type Pass,
+  type Subscription,
+  type SubscriptionInterval,
+  type SubscriptionStatus,
+  type User,
+} from "@workspace/db";
 
 export type Tier = "public" | "account" | "pass";
 
@@ -10,12 +19,23 @@ export interface PassSummary {
   isLifetime: boolean;
 }
 
+export interface SubscriptionSummary {
+  status: SubscriptionStatus;
+  interval: SubscriptionInterval;
+  /** Paid-through date. Renews on this date unless cancelAtPeriodEnd is set,
+   * in which case access ends here. */
+  currentPeriodEnd: Date;
+  cancelAtPeriodEnd: boolean;
+}
+
 export interface Entitlement {
   tier: Tier;
   hasActivePass: boolean;
   /** null = no cap (full history). number = cap to N most recent. */
   historyVisibleLimit: number | null;
   activePass?: PassSummary;
+  /** Present when an active recurring subscription grants entitlement. */
+  activeSubscription?: SubscriptionSummary;
 }
 
 export const HISTORY_LIMIT_FREE_ACCOUNT = 3;
@@ -41,6 +61,15 @@ function passSummary(p: Pass): PassSummary {
   };
 }
 
+function subscriptionSummary(s: Subscription): SubscriptionSummary {
+  return {
+    status: s.status as SubscriptionStatus,
+    interval: s.interval as SubscriptionInterval,
+    currentPeriodEnd: s.currentPeriodEnd,
+    cancelAtPeriodEnd: s.cancelAtPeriodEnd,
+  };
+}
+
 /** All currently-active passes for a user, newest expiry first.
  * A pass is active iff it has been issued (`startedAt <= now`) and has not
  * yet expired (`expiresAt > now`). The startedAt guard matters for lifetime
@@ -57,24 +86,58 @@ export async function getActivePasses(userId: string, now: Date = new Date()): P
     .filter((p) => p.startedAt <= now && p.expiresAt > now);
 }
 
+/**
+ * The user's currently-entitling subscription, if any. A subscription grants
+ * access while `status = 'active'` AND it is still within the paid-through
+ * window (`currentPeriodEnd > now`). `cancelAtPeriodEnd` does NOT revoke
+ * access early — the row stays active until the period actually ends. Returns
+ * the latest period-end when multiple rows exist (defensive — there should
+ * normally be at most one active subscription per user).
+ */
+export async function getActiveSubscription(
+  userId: string,
+  now: Date = new Date(),
+): Promise<SubscriptionSummary | null> {
+  const all = await db
+    .select()
+    .from(subscriptionsTable)
+    .where(eq(subscriptionsTable.userId, userId))
+    .orderBy(desc(subscriptionsTable.currentPeriodEnd));
+  const active = all.find(
+    (s) => s.status === "active" && s.currentPeriodEnd > now,
+  );
+  return active ? subscriptionSummary(active) : null;
+}
+
 export async function computeEntitlement(user: User | null): Promise<Entitlement> {
   if (!user) {
     return { tier: "public", hasActivePass: false, historyVisibleLimit: 0 };
   }
-  const active = await getActivePasses(user.id);
-  if (active.length === 0) {
+  const [active, subscription] = await Promise.all([
+    getActivePasses(user.id),
+    getActiveSubscription(user.id),
+  ]);
+
+  // Either an active pass OR an active subscription grants the "pass" tier —
+  // this is the single place that "either source grants access" lives.
+  const hasActivePass = active.length > 0;
+  if (!hasActivePass && !subscription) {
     return {
       tier: "account",
       hasActivePass: false,
       historyVisibleLimit: HISTORY_LIMIT_FREE_ACCOUNT,
     };
   }
+
   // Pick the pass with the latest expiry as "the" active pass shown in the UI.
-  const headline = active.reduce((a, b) => (b.expiresAt > a.expiresAt ? b : a));
+  const headline = hasActivePass
+    ? active.reduce((a, b) => (b.expiresAt > a.expiresAt ? b : a))
+    : undefined;
   return {
     tier: "pass",
-    hasActivePass: true,
+    hasActivePass,
     historyVisibleLimit: null,
-    activePass: headline,
+    ...(headline ? { activePass: headline } : {}),
+    ...(subscription ? { activeSubscription: subscription } : {}),
   };
 }

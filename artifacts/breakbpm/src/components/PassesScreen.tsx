@@ -1,25 +1,43 @@
 import { useState } from "react";
 import {
   useGetMe,
+  useListPlans,
   useCreatePassCheckout,
   useVerifyPassCheckout,
+  useCreateSubscriptionCheckout,
+  useVerifySubscriptionCheckout,
   useRedeemDiscountCode,
   getGetMeQueryKey,
+  type Plan,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "./Navbar";
 import { signInPath } from "../lib/authClient";
 
-const TIERS = [
-  { kind: "day" as const, label: "Day Pass", price: "$1.99", desc: "Unlocks unlimited play & full history for 24h" },
-  { kind: "year" as const, label: "Year Pass", price: "$12.99", desc: "Best value for regular players" },
-  { kind: "lifetime" as const, label: "Lifetime", price: "$19.99", desc: "Pay once, play forever" },
-];
+function formatPrice(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+/** Suffix + recurring sub-line shown under a plan price. */
+function priceSuffix(plan: Plan): string {
+  if (plan.kind !== "subscription") return "";
+  return plan.interval === "month" ? "/mo" : "/yr";
+}
+
+function recurringNote(plan: Plan): string | null {
+  if (plan.kind !== "subscription") return null;
+  return plan.interval === "month"
+    ? "Renews monthly · cancel anytime"
+    : "Renews yearly · cancel anytime";
+}
 
 export default function PassesScreen({ onBack }: { onBack: () => void }) {
   const me = useGetMe();
-  const checkout = useCreatePassCheckout();
-  const verify = useVerifyPassCheckout();
+  const plans = useListPlans();
+  const passCheckout = useCreatePassCheckout();
+  const passVerify = useVerifyPassCheckout();
+  const subCheckout = useCreateSubscriptionCheckout();
+  const subVerify = useVerifySubscriptionCheckout();
   const redeem = useRedeemDiscountCode();
   const qc = useQueryClient();
 
@@ -50,31 +68,64 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
     );
   }
 
+  const busy =
+    passCheckout.isPending ||
+    passVerify.isPending ||
+    subCheckout.isPending ||
+    subVerify.isPending;
+
   /**
-   * Two-step: createCheckout returns an opaqueToken; the client then calls
-   * /passes/verify which triggers the provider to confirm and grant the
-   * pass. Until a real provider is wired up, createCheckout rejects with
-   * "Card payments aren't configured yet."
+   * One-time pass purchase. Two-step: createCheckout returns an opaqueToken;
+   * the client then calls /passes/verify to confirm and grant. Until a real
+   * provider is wired up, createCheckout rejects with a "not configured" note.
    */
-  async function handleBuy(kind: "day" | "year" | "lifetime") {
+  async function handleBuyPass(passKind: "day" | "lifetime") {
     setMsg("");
     try {
-      const ck = await checkout.mutateAsync({ data: { kind } });
+      const ck = await passCheckout.mutateAsync({ data: { kind: passKind } });
       if (!ck.success || !ck.opaqueToken) {
         setMsg(ck.message);
         return;
       }
       if (ck.checkoutUrl) {
-        // Real provider would redirect here; verification typically happens
-        // via a webhook or a redirect-back to /passes/verify.
         window.location.href = ck.checkoutUrl;
         return;
       }
-      const v = await verify.mutateAsync({ data: { opaqueToken: ck.opaqueToken } });
+      const v = await passVerify.mutateAsync({ data: { opaqueToken: ck.opaqueToken } });
       setMsg(v.message);
       qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Purchase failed");
+    }
+  }
+
+  /** Recurring subscription start. Same two-step shape as a pass purchase but
+   * through the dedicated subscription checkout path. */
+  async function handleSubscribe(interval: "month" | "year") {
+    setMsg("");
+    try {
+      const ck = await subCheckout.mutateAsync({ data: { interval } });
+      if (!ck.success || !ck.opaqueToken) {
+        setMsg(ck.message);
+        return;
+      }
+      if (ck.checkoutUrl) {
+        window.location.href = ck.checkoutUrl;
+        return;
+      }
+      const v = await subVerify.mutateAsync({ data: { opaqueToken: ck.opaqueToken } });
+      setMsg(v.message);
+      qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Subscription failed");
+    }
+  }
+
+  function handlePlanAction(plan: Plan) {
+    if (plan.kind === "subscription" && plan.interval) {
+      handleSubscribe(plan.interval);
+    } else if (plan.passKind) {
+      handleBuyPass(plan.passKind);
     }
   }
 
@@ -91,6 +142,8 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
     }
   }
 
+  const planList = plans.data?.plans ?? [];
+
   return (
     <div className="app-window app-window--page">
       <Navbar onBack={onBack} />
@@ -99,34 +152,44 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
         <div className="panel">
           <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🎟️</span>Get a Pass</span></div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {TIERS.map((t) => (
-              <div
-                key={t.kind}
-                style={{
-                  border: "1px solid #888",
-                  background: "#fff",
-                  padding: 8,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 4,
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontFamily: "VT323", fontSize: 22, color: "#000080" }}>{t.label}</span>
-                  <span style={{ fontWeight: "bold" }}>{t.price}</span>
-                </div>
-                <div style={{ fontSize: 11, color: "#444" }}>{t.desc}</div>
-                <button
-                  className="btn btn-primary"
-                  disabled={checkout.isPending || verify.isPending}
-                  onClick={() => handleBuy(t.kind)}
+            {plans.isLoading && <p style={{ fontSize: 12 }}>Loading plans…</p>}
+            {planList.map((plan) => {
+              const note = recurringNote(plan);
+              return (
+                <div
+                  key={plan.id}
+                  style={{
+                    border: "1px solid #888",
+                    background: "#fff",
+                    padding: 8,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                  }}
                 >
-                  Buy
-                </button>
-              </div>
-            ))}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontFamily: "VT323", fontSize: 22, color: "#000080" }}>{plan.name}</span>
+                    <span style={{ fontWeight: "bold" }}>
+                      {formatPrice(plan.priceCents)}
+                      <span style={{ fontWeight: "normal", fontSize: 12 }}>{priceSuffix(plan)}</span>
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#444" }}>{plan.description}</div>
+                  {note && (
+                    <div style={{ fontSize: 10, color: "#006400" }}>↻ {note}</div>
+                  )}
+                  <button
+                    className="btn btn-primary"
+                    disabled={busy}
+                    onClick={() => handlePlanAction(plan)}
+                  >
+                    {plan.kind === "subscription" ? "Subscribe" : "Buy"}
+                  </button>
+                </div>
+              );
+            })}
             <p style={{ fontSize: 10, color: "#888", marginTop: 4 }}>
-              Card payments aren't connected yet — Buy will report that. Use a discount code to grant a pass in the meantime.
+              Card payments aren't connected yet — Buy/Subscribe will report that. Use a discount code to grant a pass in the meantime.
             </p>
           </div>
         </div>
@@ -134,17 +197,17 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
         <div className="panel">
           <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🎁</span>Redeem Code</span></div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {me.data.entitlement.activePass ? (
-              // We hide the input entirely when a pass is already active so
+            {me.data.entitlement.activePass || me.data.entitlement.activeSubscription ? (
+              // We hide the input entirely when entitlement is already active so
               // a recipient with, say, a gifted Day Pass can't accidentally
               // burn a second code. The server also enforces this — see the
               // pre-check in /passes/redeem.
               <>
                 <div style={{ fontFamily: "VT323", fontSize: 22, color: "#006400" }}>
-                  Pass Active
+                  {me.data.entitlement.activeSubscription ? "Subscription Active" : "Pass Active"}
                 </div>
                 <p style={{ fontSize: 12, color: "#444" }}>
-                  You already have an active pass — no need to redeem a code
+                  You already have active access — no need to redeem a code
                   right now.
                 </p>
               </>

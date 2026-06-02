@@ -61,13 +61,16 @@ You're playing solo against an invisible opponent. Your first sink locks in your
 
 BreakBPM is free to play. Sign in to unlock full game history and cross-device resume.
 
-| Pass | Price | Access |
+| Plan | Price | Access |
 |------|-------|--------|
-| Day Pass | $1.99 | 24 hours of full access |
-| Annual Pass | $12.99 | 12 months of full access |
-| Lifetime Pass | $24.99 | Forever |
+| Day Pass | $1.99 one-time | 24 hours of full access |
+| Monthly | $4.99 / month | Full access — renews monthly, cancel anytime |
+| Yearly | $24.99 / year | Full access — renews yearly, cancel anytime |
+| Lifetime | $49.99 one-time | Full access, forever |
 
-Passes can be purchased from your account page or redeemed via a code.
+Day Pass and Lifetime are one-time purchases. Monthly and Yearly are recurring subscriptions you can cancel anytime — access continues until the end of the period you've paid for. Buying Lifetime stops any active subscription from renewing.
+
+Plans can be purchased from your account page or redeemed via a code.
 
 ---
 

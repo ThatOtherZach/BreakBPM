@@ -7,6 +7,7 @@
  */
 import type { EntitlementTier } from './entitlementTier';
 import type { PassSummary } from './passSummary';
+import type { SubscriptionSummary } from './subscriptionSummary';
 
 export interface Entitlement {
   tier: EntitlementTier;
@@ -14,4 +15,5 @@ export interface Entitlement {
   /** @nullable */
   historyVisibleLimit: number | null;
   activePass?: PassSummary;
+  activeSubscription?: SubscriptionSummary;
 }

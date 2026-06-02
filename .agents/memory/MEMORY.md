@@ -2,3 +2,4 @@
 - [Codegen corrupts Vite HMR](codegen-corrupts-vite-hmr.md) — running API codegen while the dev server runs can break breakbpm HMR silently (stale code); restart the web workflow + hard-refresh.
 - [Visual editor color edits lose to CSS](visual-editor-color-overrides.md) — visual-editor `text-[...]` classes tie specificity with `.hud-*` rules and lose on source order; fix colors in index.css, not inline.
 - [breakbpm test harness](breakbpm-test-harness.md) — vitest runs via a separate vitest.config.ts (not vite.config.ts, which throws without PORT/BASE_PATH); `*.test.ts` already excluded from tsc.
+- [Lifetime mutual exclusion](lifetime-mutual-exclusion.md) — issuing Lifetime must stop active subscriptions renewing on EVERY grant path (purchase/dev-grant/redeem), in-tx.
