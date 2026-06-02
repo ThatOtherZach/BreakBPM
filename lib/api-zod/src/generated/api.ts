@@ -360,6 +360,9 @@ export const LeaveGameResponse = zod.object({
 /**
  * @summary Persist a completed game (signed-in users only)
  */
+export const saveGameBodyAccuracyMin = 0;
+export const saveGameBodyAccuracyMax = 100;
+
 export const saveGameBodyDurationMsMin = 0;
 
 export const saveGameBodySunkBallsCountMin = 0;
@@ -372,6 +375,7 @@ export const SaveGameBody = zod.object({
   "gameType": zod.enum(['8ball', '9ball', 'practice']),
   "winner": zod.string().nullish(),
   "bpm": zod.number().nullish(),
+  "accuracy": zod.number().min(saveGameBodyAccuracyMin).max(saveGameBodyAccuracyMax).nullish(),
   "durationMs": zod.number().min(saveGameBodyDurationMsMin),
   "sunkBallsCount": zod.number().min(saveGameBodySunkBallsCountMin),
   "outcome": zod.enum(['won', 'lost', 'forfeit', 'completed', 'expired']),
@@ -411,6 +415,7 @@ export const GetGameHistoryResponse = zod.object({
   "gameType": zod.string(),
   "winner": zod.string().nullish(),
   "bpm": zod.number().nullish(),
+  "accuracy": zod.number().nullish(),
   "durationMs": zod.number(),
   "sunkBallsCount": zod.number(),
   "outcome": zod.string(),

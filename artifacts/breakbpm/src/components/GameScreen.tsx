@@ -161,6 +161,10 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     const finalBpmSnap = bpmPlayerName
       ? calculatePlayerBPM(state.shotLog, bpmPlayerName)
       : null;
+    // Accuracy mirrors BPM exactly: the same player, snapshotted at game end.
+    const finalAccSnap = bpmPlayerName
+      ? calculatePlayerAccuracy(state.shotLog, bpmPlayerName)
+      : null;
     saveGame.mutate(
       {
         data: {
@@ -171,6 +175,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           shareCode: state.shareCode,
           winner: state.winner,
           bpm: finalBpmSnap,
+          accuracy: finalAccSnap,
           durationMs: state.timerStartTime != null
             ? Math.max(0, Date.now() - state.timerStartTime - pausedDuration)
             : 0,

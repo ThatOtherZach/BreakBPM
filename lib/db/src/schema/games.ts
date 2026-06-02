@@ -26,6 +26,7 @@ export const gamesTable = pgTable(
     shareCode: text("share_code").notNull(),
     winner: text("winner"),
     bpm: integer("bpm_x10"), // BPM * 10 (so 8.7 BPM → 87) to keep integer
+    accuracy: integer("accuracy"), // whole-number percentage (0–100), null if no qualifying shots
     durationMs: integer("duration_ms").notNull().default(0),
     sunkBallsCount: integer("sunk_balls_count").notNull().default(0),
     outcome: text("outcome"), // null while in-progress; set at finalization

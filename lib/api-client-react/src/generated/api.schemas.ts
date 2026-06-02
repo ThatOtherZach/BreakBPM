@@ -233,6 +233,12 @@ export interface GameSaveInput {
   winner?: string | null;
   /** @nullable */
   bpm?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  accuracy?: number | null;
   /** @minimum 0 */
   durationMs: number;
   /** @minimum 0 */
@@ -278,6 +284,8 @@ export interface GameHistoryEntry {
   winner?: string | null;
   /** @nullable */
   bpm?: number | null;
+  /** @nullable */
+  accuracy?: number | null;
   durationMs: number;
   sunkBallsCount: number;
   outcome: string;

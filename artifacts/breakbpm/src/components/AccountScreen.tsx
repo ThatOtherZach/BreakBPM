@@ -542,6 +542,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
             {history.data?.games.map((g) => {
               const modeLabel = GAME_TYPE_LABEL[g.gameType] ?? g.gameType;
               const hasBpm = g.bpm != null;
+              const hasAcc = g.accuracy != null;
               return (
                 <div
                   key={g.id}
@@ -590,6 +591,16 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
                       }}
                     >
                       {hasBpm ? `${g.bpm!.toFixed(1)} BPM` : "— BPM"}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "VT323",
+                        fontSize: 18,
+                        lineHeight: 1,
+                        color: hasAcc ? "#006400" : "#999",
+                      }}
+                    >
+                      {hasAcc ? `${g.accuracy}% ACC` : "—% ACC"}
                     </span>
                     <span style={{ fontSize: 10, color: "#666" }}>
                       🕐 {fmtMs(g.durationMs)} · {fmtDate(g.endedAt)}

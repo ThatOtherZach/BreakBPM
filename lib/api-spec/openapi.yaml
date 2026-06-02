@@ -561,6 +561,10 @@ components:
         gameType: { type: string, enum: [8ball, 9ball, practice] }
         winner: { type: ["string", "null"] }
         bpm: { type: ["number", "null"] }
+        # Final shooting accuracy as a whole-number percentage (0–100) for
+        # the winner (or the human in Shark mode), the same player `bpm` is
+        # saved for. Null when no qualifying shots were taken.
+        accuracy: { type: ["integer", "null"], minimum: 0, maximum: 100 }
         durationMs: { type: integer, minimum: 0 }
         sunkBallsCount: { type: integer, minimum: 0 }
         # `expired` is used when a practice session hits the 1-hour hard
@@ -595,6 +599,9 @@ components:
         gameType: { type: string }
         winner: { type: ["string", "null"] }
         bpm: { type: ["number", "null"] }
+        # Final shooting accuracy as a whole-number percentage (0–100) for
+        # the player whose `bpm` is stored. Null when not recorded.
+        accuracy: { type: ["integer", "null"] }
         durationMs: { type: integer }
         sunkBallsCount: { type: integer }
         outcome: { type: string }
