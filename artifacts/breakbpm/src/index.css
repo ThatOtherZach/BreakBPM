@@ -923,8 +923,8 @@ html, #root {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-width: 100px;
-  flex-shrink: 0;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .hud-bpm-label {
@@ -957,24 +957,17 @@ html, #root {
   margin-top: 2px;
 }
 
-/* Mobile: shrink the BPM/accuracy hero numbers ~25% so they fit narrow screens */
-@media (max-width: 480px) {
-  .hud-bpm-value {
-    font-size: 38px;
-  }
-}
-
 /* Vertical divider */
 .hud-divider {
   width: 1px;
   background: linear-gradient(to bottom, transparent, #1a5a1a 20%, #1a5a1a 80%, transparent);
-  margin: 0 12px;
+  margin: 0 5px;
   flex-shrink: 0;
 }
 
 /* Right column: timer + code + share */
 .hud-right {
-  flex: 1;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -994,12 +987,12 @@ html, #root {
   color: #00ff41;
   letter-spacing: 1px;
   flex-shrink: 0;
-  width: 30px;
+  width: 26px;
 }
 
 .hud-mode {
   font-family: 'VT323', 'Courier New', monospace;
-  font-size: 22px;
+  font-size: 17px;
   color: #00ff41;
   line-height: 1;
   letter-spacing: 1px;
@@ -1008,12 +1001,12 @@ html, #root {
 
 .hud-mode-players {
   color: #00ff41;
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .hud-timer {
   font-family: 'VT323', 'Courier New', monospace;
-  font-size: 28px;
+  font-size: 22px;
   color: var(--amber);
   line-height: 1;
   letter-spacing: 1px;
@@ -1022,10 +1015,10 @@ html, #root {
 
 .hud-code {
   font-family: 'VT323', 'Courier New', monospace;
-  font-size: 28px;
+  font-size: 22px;
   color: #e8e8e8;
   line-height: 1;
-  letter-spacing: 4px;
+  letter-spacing: 2px;
 }
 
 .hud-copy-code-btn {
