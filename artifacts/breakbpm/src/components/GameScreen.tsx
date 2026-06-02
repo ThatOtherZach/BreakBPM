@@ -715,7 +715,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             <div className={`hud-bpm-value${dispAcc === null ? ' hud-bpm-dim' : ''}`}>
               {dispAcc !== null ? `${dispAcc}%` : (awaitingPlay ? spinner : '--%')}
             </div>
-            <div className="hud-bpm-sub">
+            <div className="hud-bpm-sub text-[#00ff41]">
               {dispAcc === null || dispAccCounts === null
                 ? 'AWAITING PLAY'
                 : `${dispAccCounts.made}/${dispAccCounts.attempts} MADE`}
@@ -852,7 +852,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 </>
               ) : 'GAME OVER'}
             </span>
-            <span className="hud-winner-sub">{state.winMessage}</span>
+            <span className="hud-winner-sub text-[#00ff41] border-t-[#00ff41] border-r-[#00ff41] border-b-[#00ff41] border-l-[#00ff41]">{state.winMessage}</span>
           </div>
         )}
       </div>
