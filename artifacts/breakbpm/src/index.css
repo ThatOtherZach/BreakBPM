@@ -957,6 +957,13 @@ html, #root {
   margin-top: 2px;
 }
 
+/* Mobile: shrink the BPM/accuracy hero numbers ~25% so they fit narrow screens */
+@media (max-width: 480px) {
+  .hud-bpm-value {
+    font-size: 38px;
+  }
+}
+
 /* Vertical divider */
 .hud-divider {
   width: 1px;
