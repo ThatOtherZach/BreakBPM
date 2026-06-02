@@ -782,7 +782,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           };
           const idLine: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 6 };
           const ballsLine: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', minHeight: 26 };
-          const renderBalls = (balls: number[]) => [...balls].reverse().map((b, i) => (
+          const renderBalls = (balls: number[]) => balls.map((b, i) => (
             <span
               key={i}
               className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}`}
@@ -843,7 +843,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
         {/* Win/Loss flash — inside HUD */}
         {state.phase === 'ended' && (
-          <div className="hud-winner">
+          <div className="hud-winner text-center justify-center items-center">
             <span className="hud-winner-text" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               {state.winner ? (
                 <>
