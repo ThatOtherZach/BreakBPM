@@ -49,6 +49,8 @@ const BALL_COLORS: Record<number, string> = {
   13: '#F27C1D', 14: '#276B40', 15: '#6B1F2A',
 };
 
+const SPINNER_FRAMES = ['|', '/', '-', '\\'];
+
 function ballClass(ball: number, legal: number[], sunk: number[], _gameType: string) {
   if (sunk.includes(ball)) return 'ball-btn sunk';
   const ok = legal.includes(ball);
@@ -78,6 +80,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const [undoStack, setUndoStack] = useState<GameState[]>([]);
   const [clock, setClock] = useState('');
   const [confirmNew, setConfirmNew] = useState(false);
+  const [spinFrame, setSpinFrame] = useState(0);
   const [logOpen, setLogOpen] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -631,6 +634,18 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         ? Math.max(0, Date.now() - state.timerStartTime - pausedDuration)
         : 0);
 
+  // Retro ASCII spinner shown in place of the hero numbers while awaiting the
+  // first pocket. Only ticks during live play while a value is still pending —
+  // so it doesn't churn re-renders once real numbers show, and doesn't keep
+  // spinning on the ended screen if a game finishes before any pocket.
+  const awaitingPlay = (dispBpm === null || dispAcc === null) && state.phase !== 'ended';
+  const spinner = SPINNER_FRAMES[spinFrame % SPINNER_FRAMES.length];
+  useEffect(() => {
+    if (!awaitingPlay) return;
+    const id = setInterval(() => setSpinFrame(f => (f + 1) % SPINNER_FRAMES.length), 110);
+    return () => clearInterval(id);
+  }, [awaitingPlay]);
+
   // Sublabel under the hero BPM: how many balls the shooter still needs to
   // pocket. In 8-ball (and Shark) after teams are assigned, this is the
   // current player's own group (or "8-BALL TO WIN" once their group is
@@ -684,7 +699,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           <div className="hud-bpm-block">
             <div className="hud-bpm-label">BALLS/MIN</div>
             <div className={`hud-bpm-value${dispBpm === null ? ' hud-bpm-dim' : ''}`}>
-              {dispBpm !== null ? dispBpm.toFixed(1) : '--.-'}
+              {dispBpm !== null ? dispBpm.toFixed(1) : (awaitingPlay ? spinner : '--.-')}
             </div>
             <div className="hud-bpm-sub">
               {dispBpm === null ? 'AWAITING PLAY' : remainingSubLabel}
@@ -698,7 +713,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           <div className="hud-bpm-block">
             <div className="hud-bpm-label">ACCURACY</div>
             <div className={`hud-bpm-value${dispAcc === null ? ' hud-bpm-dim' : ''}`}>
-              {dispAcc !== null ? `${dispAcc}%` : '--%'}
+              {dispAcc !== null ? `${dispAcc}%` : (awaitingPlay ? spinner : '--%')}
             </div>
             <div className="hud-bpm-sub">
               {dispAcc === null || dispAccCounts === null
