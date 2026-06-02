@@ -86,6 +86,10 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
           setJoinError('Too many join attempts. Please wait a minute and try again.');
           return;
         }
+        if (!r.joined && r.reason === 'spectators_disabled') {
+          setJoinError("Watching isn't available for this game — the host doesn't have an active pass.");
+          return;
+        }
         if (!r.joined) {
           setJoinError(`Could not join game ${code}.`);
           return;

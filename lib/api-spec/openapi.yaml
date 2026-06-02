@@ -891,7 +891,11 @@ components:
         # Echo of the canonical share code so the client can build the
         # /games/state poll URL.
         shareCode: { type: string }
-        # Set when joined=false. "not_found" | "ended" | "full"
+        # Set when joined=false. "not_found" | "ended" | "rate_limited"
+        # | "spectators_disabled" (host lacks an active pass/subscription,
+        # so the view-only spectator role is unavailable). Also set on
+        # successful spectator joins to explain why ("in_progress" | "full")
+        # or on idempotent rejoins ("host" | "rejoin").
         reason: { type: string }
         # Capability token for guest (anonymous) joiners — they don't
         # have a userId, so they pass this token back on /games/leave

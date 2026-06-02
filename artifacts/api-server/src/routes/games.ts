@@ -23,7 +23,7 @@ import {
   GetGameStateByCodeResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser, getVerifiedSubject } from "../lib/auth";
-import { computeEntitlement } from "../lib/entitlement";
+import { computeEntitlement, getActivePasses, getActiveSubscription } from "../lib/entitlement";
 import { sweepStaleGames, INACTIVITY_FORFEIT_MS, MAX_GAME_DURATION_MS } from "../lib/forfeit";
 import { newId } from "../lib/ids";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
@@ -49,6 +49,21 @@ function defaultMaxPlayers(gameType: string, requested?: number | null): number 
 
 function isSoloMode(gameType: string, maxPlayers: number): boolean {
   return gameType === "practice" || (gameType === "8ball" && maxPlayers === 1);
+}
+
+/**
+ * Spectating (read-only watching) is a paid host feature: a game is only
+ * watchable when its HOST has an active paid entitlement — either a
+ * one-time pass OR an active subscription. Players claiming open seats
+ * pre-break are always free; this gate only applies to the spectator
+ * (view-only) role. Watchers themselves never pay.
+ */
+async function hostSpectatingEnabled(hostUserId: string): Promise<boolean> {
+  const [passes, subscription] = await Promise.all([
+    getActivePasses(hostUserId),
+    getActiveSubscription(hostUserId),
+  ]);
+  return passes.length > 0 || subscription !== null;
 }
 
 /**
@@ -761,12 +776,42 @@ router.post("/games/join", async (req, res): Promise<void> => {
     }
   }
 
+  // Spectating is a paid host feature — compute once for every branch
+  // below that would assign the view-only "spectator" role. Player-slot
+  // joins (open seats, pre-break) and idempotent rejoins above are NOT
+  // affected. The host is always a signed-in user (games.userId notNull),
+  // so this checks the game owner's entitlement, never the watcher's.
+  const spectatingEnabled = await hostSpectatingEnabled(fresh.userId);
+
+  // Reusable rejection when a non-paying host's game can't be watched.
+  // Mirrors the spectator response shape but with joined=false so the
+  // joiner UI can show a friendly "watching isn't available" message.
+  function spectatorsDisabled(displayName = ""): void {
+    res.json(
+      JoinGameResponse.parse({
+        joined: false,
+        role: "spectator",
+        gameId: fresh.id,
+        gameType: fresh.gameType as "8ball" | "9ball" | "practice",
+        slotIndex: null,
+        displayName,
+        shareCode: code,
+        reason: "spectators_disabled",
+        guestToken: null,
+      }),
+    );
+  }
+
   // ── Guest (anonymous) joiners ────────────────────────────────────
   // Per task spec: guests play and get real slots; only stats
   // persistence differs (no userId → /games/history will skip them).
   // For solo modes guests stay spectators (no opponent slot to fill).
   if (!user) {
     if (solo) {
+      if (!spectatingEnabled) {
+        spectatorsDisabled(parsed.data.guestName?.trim() || "Guest");
+        return;
+      }
       res.json(
         JoinGameResponse.parse({
           joined: true,
@@ -782,6 +827,10 @@ router.post("/games/join", async (req, res): Promise<void> => {
       return;
     }
     if (hasPockets) {
+      if (!spectatingEnabled) {
+        spectatorsDisabled(parsed.data.guestName?.trim() || "Guest");
+        return;
+      }
       res.json(
         JoinGameResponse.parse({
           joined: true,
@@ -862,6 +911,10 @@ router.post("/games/join", async (req, res): Promise<void> => {
       }
     });
     if (assignedSlotG === null) {
+      if (!spectatingEnabled) {
+        spectatorsDisabled(parsed.data.guestName?.trim() || "Guest");
+        return;
+      }
       res.json(
         JoinGameResponse.parse({
           joined: true,
@@ -926,6 +979,10 @@ router.post("/games/join", async (req, res): Promise<void> => {
 
   // Solo modes: signed-in non-host → spectator (no slot allocation).
   if (solo) {
+    if (!spectatingEnabled) {
+      spectatorsDisabled(user.screenName);
+      return;
+    }
     res.json(
       JoinGameResponse.parse({
         joined: true,
@@ -942,6 +999,10 @@ router.post("/games/join", async (req, res): Promise<void> => {
 
   // Pre-break gate for signed-in newcomers — see `hasPockets` comment above.
   if (hasPockets) {
+    if (!spectatingEnabled) {
+      spectatorsDisabled(user.screenName);
+      return;
+    }
     res.json(
       JoinGameResponse.parse({
         joined: true,
@@ -1016,6 +1077,10 @@ router.post("/games/join", async (req, res): Promise<void> => {
   });
 
   if (assignedSlot === null) {
+    if (!spectatingEnabled) {
+      spectatorsDisabled(user.screenName);
+      return;
+    }
     res.json(
       JoinGameResponse.parse({
         joined: true,

@@ -13,6 +13,7 @@ import {
   SHARK_PLAYER_NAME,
 } from '../lib/gameLogic';
 import SharkIcon from './SharkIcon';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   useSaveGame,
   useRecordGameActivity,
@@ -68,6 +69,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const recordActivity = useRecordGameActivity();
   const me = useGetMe();
   const hasActivePass = me.data?.entitlement?.hasActivePass ?? false;
+  const spectatingEnabled = me.data?.entitlement?.tier === 'pass';
   const savedRef = useRef(false);
   const forfeitedRef = useRef(false);
   const [state, setState] = useState<GameState>(initialState);
@@ -554,10 +556,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     // Build the canonical join URL from the server-issued share code.
     // Always points at `/join/<code>` so recipients land in the
     // read-only joiner view, not the host UX.
-    const origin = window.location.origin;
-    const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-    const url = `${origin}${base}/join/${state.shareCode}`;
-    navigator.clipboard.writeText(url)
+    navigator.clipboard.writeText(joinUrl)
       .then(() => { setToast(`Join link copied! Code: ${state.shareCode}`); setTimeout(() => setToast(''), 2500); })
       .catch(() => { setToast(`Code: ${state.shareCode}`); setTimeout(() => setToast(''), 3000); });
   }
@@ -670,6 +669,10 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     const left = getRemainingBalls(state.sunkBalls, state.gameType).length;
     remainingSubLabel = `${left} BALLS LEFT`;
   }
+
+  // Canonical spectator join URL — always `/join/<code>` so recipients
+  // land in the read-only view. Shared by the QR code and the copy button.
+  const joinUrl = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, '')}/join/${state.shareCode}`;
 
   const rackChip = (b: number) => {
     const isSunk = state.sunkBalls.includes(b);
@@ -948,6 +951,45 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             <button className="btn btn-big btn-danger" style={{ flex: 1 }} onClick={() => setConfirmNew(true)}>
               <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🏁</span>End Game / New Game
             </button>
+          </div>
+        )}
+
+        {/* ── Spectator QR — paid hosts only ──
+            Watching is a paid host feature, so the QR (and the live join
+            link it encodes) only appears while the signed-in host holds an
+            active pass/subscription. Scanning opens the read-only
+            /join/<code> spectator view. Hidden once the game ends. */}
+        {spectatingEnabled && state.phase === 'playing' && (
+          <div
+            style={{
+              marginTop: 4, padding: '12px 12px 10px',
+              background: '#1a0a2e', border: '1px solid #5a2a8a',
+              display: 'flex', alignItems: 'center', gap: 14,
+              fontFamily: "'VT323',monospace", color: '#d8b4ff',
+            }}
+          >
+            <div style={{ background: '#fff', padding: 6, lineHeight: 0, flexShrink: 0 }}>
+              <QRCodeSVG value={joinUrl} size={96} level="M" />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 18, color: '#00ff41', letterSpacing: 1 }}>
+                📡 SCAN TO WATCH LIVE
+              </div>
+              <div style={{ fontSize: 14, opacity: 0.85, marginTop: 2 }}>
+                Spectators can follow this game in real time.
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                <span style={{ fontSize: 13, opacity: 0.7 }}>CODE</span>
+                <span className="hud-code" style={{ fontSize: 18 }}>{state.shareCode}</span>
+                <button
+                  className="btn"
+                  style={{ minHeight: 28, fontSize: 12, padding: '2px 10px' }}
+                  onClick={handleShare}
+                >
+                  📋 Copy link
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
