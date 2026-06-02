@@ -77,6 +77,13 @@ export const gameParticipantsTable = pgTable(
     /** Set when the participant explicitly leaves (forfeit on their behalf). */
     leftAt: timestamp("left_at", { withTimezone: true }),
     /**
+     * This participant's own final shooting accuracy as a whole-number
+     * percentage (0–100), snapshotted at game end. Null while in-progress
+     * or when the participant took no qualifying shots. Lets a joiner see
+     * their own accuracy in history rather than the host/winner's.
+     */
+    accuracy: integer("accuracy"),
+    /**
      * Per-participant capability token. Set for guest participants (no
      * userId) so the client can authenticate `/games/leave` calls and
      * resume on the same device. Null for signed-in participants who

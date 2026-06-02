@@ -7,6 +7,7 @@
  */
 import type { GameSaveInputGameType } from './gameSaveInputGameType';
 import type { GameSaveInputOutcome } from './gameSaveInputOutcome';
+import type { GameSaveInputParticipantAccuraciesItem } from './gameSaveInputParticipantAccuraciesItem';
 
 export interface GameSaveInput {
   /** @nullable */
@@ -23,6 +24,7 @@ export interface GameSaveInput {
      * @nullable
      */
   accuracy?: number | null;
+  participantAccuracies?: GameSaveInputParticipantAccuraciesItem[];
   /** @minimum 0 */
   durationMs: number;
   /** @minimum 0 */

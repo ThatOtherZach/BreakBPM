@@ -363,6 +363,11 @@ export const LeaveGameResponse = zod.object({
 export const saveGameBodyAccuracyMin = 0;
 export const saveGameBodyAccuracyMax = 100;
 
+export const saveGameBodyParticipantAccuraciesItemSlotIndexMin = 0;
+
+export const saveGameBodyParticipantAccuraciesItemAccuracyMin = 0;
+export const saveGameBodyParticipantAccuraciesItemAccuracyMax = 100;
+
 export const saveGameBodyDurationMsMin = 0;
 
 export const saveGameBodySunkBallsCountMin = 0;
@@ -376,6 +381,10 @@ export const SaveGameBody = zod.object({
   "winner": zod.string().nullish(),
   "bpm": zod.number().nullish(),
   "accuracy": zod.number().min(saveGameBodyAccuracyMin).max(saveGameBodyAccuracyMax).nullish(),
+  "participantAccuracies": zod.array(zod.object({
+  "slotIndex": zod.number().min(saveGameBodyParticipantAccuraciesItemSlotIndexMin),
+  "accuracy": zod.number().min(saveGameBodyParticipantAccuraciesItemAccuracyMin).max(saveGameBodyParticipantAccuraciesItemAccuracyMax).nullable()
+})).optional(),
   "durationMs": zod.number().min(saveGameBodyDurationMsMin),
   "sunkBallsCount": zod.number().min(saveGameBodySunkBallsCountMin),
   "outcome": zod.enum(['won', 'lost', 'forfeit', 'completed', 'expired']),

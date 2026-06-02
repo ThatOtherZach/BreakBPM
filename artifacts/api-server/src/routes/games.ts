@@ -397,6 +397,33 @@ router.post("/games/save", async (req, res): Promise<void> => {
       .onConflictDoNothing();
   }
 
+  // Persist each participant's OWN final accuracy (by slot index) so a
+  // joiner sees their own accuracy in history, not the host/winner's. The
+  // host computes these from the shots logged under each slot's player and
+  // sends them keyed by slotIndex (slot 0 = host). Best-effort: never let a
+  // per-participant write failure block the (already-succeeded) save.
+  const partAcc = parsed.data.participantAccuracies ?? [];
+  if (id && partAcc.length > 0) {
+    for (const pa of partAcc) {
+      try {
+        await db
+          .update(gameParticipantsTable)
+          .set({ accuracy: pa.accuracy ?? null })
+          .where(
+            and(
+              eq(gameParticipantsTable.gameId, id),
+              eq(gameParticipantsTable.slotIndex, pa.slotIndex),
+            ),
+          );
+      } catch (err) {
+        req.log.warn(
+          { userId: user.id, gameId: id, slotIndex: pa.slotIndex, err },
+          "Failed to persist participant accuracy",
+        );
+      }
+    }
+  }
+
   req.log.info({ userId: user.id, gameId: id, outcome: parsed.data.outcome }, "Game saved");
   res.json(SaveGameResponse.parse({ saved: true, gameId: id, message: "Game saved" }));
 });
@@ -1257,6 +1284,31 @@ router.get("/games/history", async (req, res): Promise<void> => {
   // BPM and sunk-ball count for their history row. `statsStartAt` /
   // `leftAt` are kept on `game_participants` for forensic/debug
   // purposes but are no longer used by history math.
+  //
+  // Accuracy is the one stat that IS per-participant: each joiner sees
+  // their OWN accuracy (snapshotted on their game_participants row at
+  // save time), falling back to the row-level winner/host accuracy for
+  // legacy rows that predate per-participant accuracy.
+  const visibleIds = visible.map((g) => g.id);
+  const myParts =
+    visibleIds.length > 0
+      ? await db
+          .select({
+            gameId: gameParticipantsTable.gameId,
+            accuracy: gameParticipantsTable.accuracy,
+          })
+          .from(gameParticipantsTable)
+          .where(
+            and(
+              inArray(gameParticipantsTable.gameId, visibleIds),
+              eq(gameParticipantsTable.userId, user.id),
+            ),
+          )
+      : [];
+  const myAccuracyByGame = new Map<string, number | null>(
+    myParts.map((p) => [p.gameId, p.accuracy]),
+  );
+
   const games = visible.map((g) => {
     const gs = g.gameState as Record<string, unknown> | null;
     const rawReason =
@@ -1279,7 +1331,9 @@ router.get("/games/history", async (req, res): Promise<void> => {
       gameType: g.gameType,
       winner: g.winner,
       bpm: g.bpm == null ? null : g.bpm / 10,
-      accuracy: g.accuracy ?? null,
+      accuracy: myAccuracyByGame.has(g.id)
+        ? (myAccuracyByGame.get(g.id) ?? null)
+        : (g.accuracy ?? null),
       durationMs: g.durationMs,
       sunkBallsCount: g.sunkBallsCount,
       outcome: g.outcome ?? "completed",

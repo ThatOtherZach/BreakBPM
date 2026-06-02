@@ -213,6 +213,17 @@ export const GameSaveInputGameType = {
   practice: 'practice',
 } as const;
 
+export type GameSaveInputParticipantAccuraciesItem = {
+  /** @minimum 0 */
+  slotIndex: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  accuracy: number | null;
+};
+
 export type GameSaveInputOutcome = typeof GameSaveInputOutcome[keyof typeof GameSaveInputOutcome];
 
 
@@ -239,6 +250,7 @@ export interface GameSaveInput {
      * @nullable
      */
   accuracy?: number | null;
+  participantAccuracies?: GameSaveInputParticipantAccuraciesItem[];
   /** @minimum 0 */
   durationMs: number;
   /** @minimum 0 */

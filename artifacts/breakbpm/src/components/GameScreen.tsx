@@ -165,6 +165,16 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     const finalAccSnap = bpmPlayerName
       ? calculatePlayerAccuracy(state.shotLog, bpmPlayerName)
       : null;
+    // Per-participant accuracy: each player's own accuracy, keyed by slot
+    // index (slot i == state.players[i], matching the server's slot
+    // allocation). The host computes every slot from the shots it logged
+    // under that player's name so a joiner sees their OWN accuracy in
+    // history, not the host/winner's. The invisible Shark is virtual (not
+    // in state.players), so it never produces a slot here.
+    const participantAccuracies = state.players.map((p, i) => ({
+      slotIndex: i,
+      accuracy: calculatePlayerAccuracy(state.shotLog, p.name),
+    }));
     saveGame.mutate(
       {
         data: {
@@ -176,6 +186,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           winner: state.winner,
           bpm: finalBpmSnap,
           accuracy: finalAccSnap,
+          participantAccuracies,
           durationMs: state.timerStartTime != null
             ? Math.max(0, Date.now() - state.timerStartTime - pausedDuration)
             : 0,

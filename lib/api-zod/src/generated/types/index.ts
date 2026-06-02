@@ -24,6 +24,7 @@ export * from './gameHistoryResponseTier';
 export * from './gameSaveInput';
 export * from './gameSaveInputGameType';
 export * from './gameSaveInputOutcome';
+export * from './gameSaveInputParticipantAccuraciesItem';
 export * from './gameStateSnapshot';
 export * from './gameStateSnapshotGameType';
 export * from './gameStateSnapshotParticipantsItem';
