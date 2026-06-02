@@ -5,6 +5,7 @@ import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import SetupScreen from "./components/SetupScreen";
 import GameScreen from "./components/GameScreen";
 import JoinedGameScreen from "./components/JoinedGameScreen";
+import WatchByNameScreen from "./components/WatchByNameScreen";
 import AboutScreen from "./components/AboutScreen";
 import AccountScreen from "./components/AccountScreen";
 import PassesScreen from "./components/PassesScreen";
@@ -274,6 +275,23 @@ function JoinRoute({ params }: { params: { code: string } }) {
   );
 }
 
+function WatchRoute({ params }: { params: { name: string } }) {
+  const [, setLocation] = useLocation();
+  // Guard against malformed percent-encoding (e.g. a stray `%`), which would
+  // otherwise throw a URIError and crash the route. Fall back to the raw value.
+  let name = params.name;
+  try { name = decodeURIComponent(params.name); } catch { /* keep raw */ }
+  return (
+    <WatchByNameScreen
+      name={name}
+      onBack={() => setLocation("/")}
+      onAbout={() => setLocation("/about")}
+      onAccount={() => setLocation("/account")}
+      onSignIn={() => setLocation("/sign-in")}
+    />
+  );
+}
+
 function Routes() {
   const [, setLocation] = useLocation();
   return (
@@ -284,6 +302,7 @@ function Routes() {
       <Route path="/about" component={AboutRoute} />
       <Route path="/passes" component={PassesRoute} />
       <Route path="/join/:code" component={JoinRoute} />
+      <Route path="/watch/:name" component={WatchRoute} />
       <Route component={MainApp} />
     </Switch>
   );

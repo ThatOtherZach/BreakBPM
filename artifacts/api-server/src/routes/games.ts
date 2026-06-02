@@ -21,6 +21,8 @@ import {
   LeaveGameResponse,
   GetGameStateByCodeQueryParams,
   GetGameStateByCodeResponse,
+  ResolveWatchByNameQueryParams,
+  ResolveWatchByNameResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser, getVerifiedSubject } from "../lib/auth";
 import { computeEntitlement, getActivePasses, getActiveSubscription } from "../lib/entitlement";
@@ -1169,6 +1171,72 @@ router.get("/games/state", async (req, res): Promise<void> => {
         hasLeft: !!p.leftAt,
         isGuest: p.userId == null,
       })),
+    }),
+  );
+});
+
+/**
+ * Resolve a host's screen name → the share code of their CURRENT live game.
+ *
+ * Powers the persistent /watch/{name} spectator link: unlike a per-game
+ * share code, this handle is stable across the host's games, so a viewer
+ * can bookmark it once and always land on whatever game the host has open
+ * now. Returns a `reason` when the name is unknown ("not_found") or the
+ * host has no in-progress game right now ("not_live"). Never returns the
+ * full gameState — the caller polls /games/state with the share code.
+ *
+ * The host's entitlement gate is NOT enforced here: the downstream
+ * /games/join (and the spectator view) already reject watchers when the
+ * host lacks an active pass ("spectators_disabled"), so we keep this
+ * lookup cheap and let the join flow own that decision.
+ */
+router.get("/games/watch-resolve", async (req, res): Promise<void> => {
+  const ip = req.ip ?? "unknown";
+  if (!rateLimit(ip, "state")) {
+    res.status(429).json(
+      ResolveWatchByNameResponse.parse({ found: false, reason: "rate_limited" }),
+    );
+    return;
+  }
+  const parsed = ResolveWatchByNameQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const handle = parsed.data.name.trim().toLowerCase();
+  if (!handle) {
+    res.json(ResolveWatchByNameResponse.parse({ found: false, reason: "not_found" }));
+    return;
+  }
+  // Resolve the host by case-insensitive screen name (the public handle).
+  const [host] = await db
+    .select({ id: usersTable.id, screenName: usersTable.screenName })
+    .from(usersTable)
+    .where(sql`lower(${usersTable.screenName}) = ${handle}`)
+    .limit(1);
+  if (!host) {
+    res.json(ResolveWatchByNameResponse.parse({ found: false, reason: "not_found" }));
+    return;
+  }
+  // Auto-forfeit any stale rows first so a long-idle game surfaces as
+  // "not_live" rather than resolving to a dead share code.
+  await sweepStaleGames(host.id);
+  // Most recent still-running game this user hosts.
+  const [live] = await db
+    .select({ shareCode: gamesTable.shareCode })
+    .from(gamesTable)
+    .where(and(eq(gamesTable.userId, host.id), isNull(gamesTable.endedAt)))
+    .orderBy(desc(gamesTable.startedAt))
+    .limit(1);
+  if (!live) {
+    res.json(ResolveWatchByNameResponse.parse({ found: false, reason: "not_live" }));
+    return;
+  }
+  res.json(
+    ResolveWatchByNameResponse.parse({
+      found: true,
+      shareCode: live.shareCode,
+      hostName: host.screenName,
     }),
   );
 });

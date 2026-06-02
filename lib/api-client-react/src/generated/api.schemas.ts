@@ -478,6 +478,13 @@ export interface ResolveShareCodeResult {
   hostName?: string;
 }
 
+export interface ResolveWatchByNameResult {
+  found: boolean;
+  reason?: string;
+  shareCode?: string;
+  hostName?: string;
+}
+
 export interface JoinGameInput {
   /**
      * @minLength 5
@@ -587,6 +594,14 @@ export type GetGameStateByCodeParams = {
  * @maxLength 5
  */
 code: string;
+};
+
+export type ResolveWatchByNameParams = {
+/**
+ * @minLength 1
+ * @maxLength 40
+ */
+name: string;
 };
 
 export type GetGameHistoryParams = {

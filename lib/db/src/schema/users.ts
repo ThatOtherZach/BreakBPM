@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -23,7 +24,12 @@ export const usersTable = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (t) => [uniqueIndex("users_auth_unique").on(t.authProvider, t.authSubject)],
+  (t) => [
+    uniqueIndex("users_auth_unique").on(t.authProvider, t.authSubject),
+    // Screen names double as the public /watch/{name} handle, so they must be
+    // unique case-insensitively (and the lookup is case-insensitive too).
+    uniqueIndex("users_screen_name_lower_unique").on(sql`lower(${t.screenName})`),
+  ],
 );
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({

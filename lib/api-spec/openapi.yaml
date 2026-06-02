@@ -374,6 +374,32 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/GameStateSnapshot" }
 
+  /games/watch-resolve:
+    get:
+      operationId: resolveWatchByName
+      tags: [games]
+      summary: Resolve a host's screen name → their current live game's share code
+      description: >
+        Rate-limited (per-IP) lookup powering the persistent /watch/{name}
+        spectator link. Maps a host's screen name (case-insensitive) to the
+        share code of their most recent in-progress game, sweeping stale
+        games first. Returns a reason when the name is unknown or the host
+        has no live game right now. Never returns the full gameState — the
+        caller polls /games/state with the returned share code.
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 40 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ResolveWatchByNameResult" }
+        "429":
+          description: Too many requests
+
   /games/leave:
     post:
       operationId: leaveGame
@@ -858,6 +884,20 @@ components:
         filledSlots: { type: integer }
         # True for practice / shark — joiners are spectator-only.
         soloMode: { type: boolean }
+        hostName: { type: string }
+
+    ResolveWatchByNameResult:
+      type: object
+      required: [found]
+      properties:
+        found: { type: boolean }
+        # Set when found=false. "not_found" (no such screen name) |
+        # "not_live" (host has no in-progress game) | "rate_limited".
+        reason: { type: string }
+        # Present when found=true — the live game's canonical share code,
+        # which the spectator view polls via /games/state.
+        shareCode: { type: string }
+        # Present when found=true — the resolved host's canonical screen name.
         hostName: { type: string }
 
     JoinGameInput:

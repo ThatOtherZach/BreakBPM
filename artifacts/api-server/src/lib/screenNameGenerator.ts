@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 
 const COLOURS = [
@@ -51,10 +51,12 @@ export function generateScreenName(now: Date = new Date()): string {
 }
 
 async function isTaken(name: string): Promise<boolean> {
+  // Case-insensitive: screen names double as the public /watch/{name} handle
+  // and are enforced unique on lower(screen_name).
   const [hit] = await db
     .select({ id: usersTable.id })
     .from(usersTable)
-    .where(eq(usersTable.screenName, name))
+    .where(sql`lower(${usersTable.screenName}) = ${name.toLowerCase()}`)
     .limit(1);
   return !!hit;
 }

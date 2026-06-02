@@ -553,12 +553,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   }
 
   function handleShare() {
-    // Build the canonical join URL from the server-issued share code.
-    // Always points at `/join/<code>` so recipients land in the
-    // read-only joiner view, not the host UX.
+    // Copy the persistent watch link (or the per-game join link as a
+    // fallback) so recipients land in the read-only spectator view.
     navigator.clipboard.writeText(joinUrl)
-      .then(() => { setToast(`Join link copied! Code: ${state.shareCode}`); setTimeout(() => setToast(''), 2500); })
-      .catch(() => { setToast(`Code: ${state.shareCode}`); setTimeout(() => setToast(''), 3000); });
+      .then(() => { setToast('Watch link copied!'); setTimeout(() => setToast(''), 2500); })
+      .catch(() => { setToast(joinUrl); setTimeout(() => setToast(''), 3000); });
   }
 
   function handlePause() {
@@ -670,9 +669,17 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     remainingSubLabel = `${left} BALLS LEFT`;
   }
 
-  // Canonical spectator join URL — always `/join/<code>` so recipients
-  // land in the read-only view. Shared by the QR code and the copy button.
-  const joinUrl = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, '')}/join/${state.shareCode}`;
+  // Canonical spectator URL. Signed-in hosts get the PERSISTENT
+  // `/watch/<screenName>` link, which always resolves to whatever game
+  // they have open now — so the QR/link stays valid across future games
+  // without resharing. We fall back to the per-game `/join/<code>` link
+  // when no screen name is available (shouldn't happen here, since the
+  // QR only renders for pass-holding signed-in hosts).
+  const watchName = me.data?.account?.screenName ?? null;
+  const baseOrigin = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, '')}`;
+  const joinUrl = watchName
+    ? `${baseOrigin}/watch/${encodeURIComponent(watchName)}`
+    : `${baseOrigin}/join/${state.shareCode}`;
 
   const rackChip = (b: number) => {
     const isSunk = state.sunkBalls.includes(b);

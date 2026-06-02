@@ -59,6 +59,8 @@ export * from './redeemResult';
 export * from './resolveShareCodeInput';
 export * from './resolveShareCodeResult';
 export * from './resolveShareCodeResultGameType';
+export * from './resolveWatchByNameParams';
+export * from './resolveWatchByNameResult';
 export * from './resumableGame';
 export * from './resumableGameGameType';
 export * from './resumableGameResponse';

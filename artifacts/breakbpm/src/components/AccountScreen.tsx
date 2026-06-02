@@ -252,7 +252,10 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
       qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
       setEditing(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Update failed");
+      // The server returns a specific reason (name taken / invalid format)
+      // in the response body — surface that rather than a generic message.
+      const serverError = (e as { data?: { error?: string } })?.data?.error;
+      setError(serverError ?? (e instanceof Error ? e.message : "Update failed"));
     }
   }
 

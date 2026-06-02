@@ -440,6 +440,27 @@ export const GetGameStateByCodeResponse = zod.object({
 
 
 /**
+ * Rate-limited (per-IP) lookup powering the persistent /watch/{name} spectator link. Maps a host's screen name (case-insensitive) to the share code of their most recent in-progress game, sweeping stale games first. Returns a reason when the name is unknown or the host has no live game right now. Never returns the full gameState — the caller polls /games/state with the returned share code.
+
+ * @summary Resolve a host's screen name → their current live game's share code
+ */
+export const resolveWatchByNameQueryNameMax = 40;
+
+
+
+export const ResolveWatchByNameQueryParams = zod.object({
+  "name": zod.coerce.string().min(1).max(resolveWatchByNameQueryNameMax)
+})
+
+export const ResolveWatchByNameResponse = zod.object({
+  "found": zod.boolean(),
+  "reason": zod.string().optional(),
+  "shareCode": zod.string().optional(),
+  "hostName": zod.string().optional()
+})
+
+
+/**
  * @summary Leave an in-progress game (forfeits on this participant's behalf)
  */
 export const LeaveGameBody = zod.object({

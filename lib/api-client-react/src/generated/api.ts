@@ -48,6 +48,8 @@ import type {
   RedeemResult,
   ResolveShareCodeInput,
   ResolveShareCodeResult,
+  ResolveWatchByNameParams,
+  ResolveWatchByNameResult,
   ResumableGameResponse,
   SaveGameResult,
   ScreenNameUpdate,
@@ -1606,6 +1608,92 @@ export function useGetGameStateByCode<TData = Awaited<ReturnType<typeof getGameS
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetGameStateByCodeQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getResolveWatchByNameUrl = (params: ResolveWatchByNameParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/games/watch-resolve?${stringifiedParams}` : `/api/games/watch-resolve`
+}
+
+/**
+ * Rate-limited (per-IP) lookup powering the persistent /watch/{name} spectator link. Maps a host's screen name (case-insensitive) to the share code of their most recent in-progress game, sweeping stale games first. Returns a reason when the name is unknown or the host has no live game right now. Never returns the full gameState — the caller polls /games/state with the returned share code.
+
+ * @summary Resolve a host's screen name → their current live game's share code
+ */
+export const resolveWatchByName = async (params: ResolveWatchByNameParams, options?: RequestInit): Promise<ResolveWatchByNameResult> => {
+
+  return customFetch<ResolveWatchByNameResult>(getResolveWatchByNameUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getResolveWatchByNameQueryKey = (params?: ResolveWatchByNameParams,) => {
+    return [
+    `/api/games/watch-resolve`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getResolveWatchByNameQueryOptions = <TData = Awaited<ReturnType<typeof resolveWatchByName>>, TError = ErrorType<void>>(params: ResolveWatchByNameParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveWatchByName>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getResolveWatchByNameQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof resolveWatchByName>>> = ({ signal }) => resolveWatchByName(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof resolveWatchByName>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ResolveWatchByNameQueryResult = NonNullable<Awaited<ReturnType<typeof resolveWatchByName>>>
+export type ResolveWatchByNameQueryError = ErrorType<void>
+
+
+/**
+ * @summary Resolve a host's screen name → their current live game's share code
+ */
+
+export function useResolveWatchByName<TData = Awaited<ReturnType<typeof resolveWatchByName>>, TError = ErrorType<void>>(
+ params: ResolveWatchByNameParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveWatchByName>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getResolveWatchByNameQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
