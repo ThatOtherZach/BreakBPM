@@ -630,8 +630,10 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     } else {
       // Group balls still on the table — include the 8 in the count so
       // the readout reflects everything this shooter still needs to pocket.
+      // Labeled generically as "BALLS LEFT" since the count rolls in the
+      // 8-ball, which isn't part of the player's solids/stripes group.
       const total = myLeft + eightLeft;
-      remainingSubLabel = `${total} ${cur.team === 'solids' ? 'SOLIDS' : 'STRIPES'} LEFT`;
+      remainingSubLabel = `${total} BALLS LEFT`;
     }
   } else {
     const left = getRemainingBalls(state.sunkBalls, state.gameType).length;
