@@ -730,10 +730,10 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             <div className="hud-right-row">
               <span className="hud-meta-label">MODE</span>
               <span className="hud-mode">
-                {state.gameType === 'practice' ? 'PRACTICE'
-                  : state.gameType === '8ball' ? '8-BALL'
-                  : '9-BALL'}
-                <span className="hud-mode-players"> · {state.players.length}P</span>
+                {isSharkGame(state) ? 'Shark'
+                  : state.gameType === 'practice' ? 'Practice'
+                  : state.gameType === '8ball' ? '8-Ball'
+                  : '9-Ball'}
               </span>
             </div>
             <div className="hud-right-row">

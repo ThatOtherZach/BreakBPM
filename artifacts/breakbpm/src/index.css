@@ -999,11 +999,6 @@ html, #root {
   text-shadow: 0 0 8px rgba(0,255,65,0.3);
 }
 
-.hud-mode-players {
-  color: #00ff41;
-  font-size: 14px;
-}
-
 .hud-timer {
   font-family: 'VT323', 'Courier New', monospace;
   font-size: 22px;
