@@ -682,11 +682,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
           {/* BPM — the hero number */}
           <div className="hud-bpm-block">
-            <div className="hud-bpm-label text-[#00ff41] border-t-[#00ff41] border-r-[#00ff41] border-b-[#00ff41] border-l-[#00ff41]">BALLS/MIN</div>
+            <div className="hud-bpm-label">BALLS/MIN</div>
             <div className={`hud-bpm-value${dispBpm === null ? ' hud-bpm-dim' : ''}`}>
               {dispBpm !== null ? dispBpm.toFixed(1) : '--.-'}
             </div>
-            <div className="hud-bpm-sub text-[#00ff41] border-t-[#00ff41] border-r-[#00ff41] border-b-[#00ff41] border-l-[#00ff41]">
+            <div className="hud-bpm-sub">
               {dispBpm === null ? 'AWAITING PLAY' : remainingSubLabel}
             </div>
           </div>
@@ -696,11 +696,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
           {/* Accuracy — twin hero number, equal weight to BPM */}
           <div className="hud-bpm-block">
-            <div className="hud-bpm-label border-t-[#00ff41] border-r-[#00ff41] border-b-[#00ff41] border-l-[#00ff41] text-[#00ff41]">ACCURACY</div>
+            <div className="hud-bpm-label">ACCURACY</div>
             <div className={`hud-bpm-value${dispAcc === null ? ' hud-bpm-dim' : ''}`}>
               {dispAcc !== null ? `${dispAcc}%` : '--%'}
             </div>
-            <div className="hud-bpm-sub text-[#00ff41] border-t-[#00ff41] border-r-[#00ff41] border-b-[#00ff41] border-l-[#00ff41]">
+            <div className="hud-bpm-sub">
               {dispAcc === null || dispAccCounts === null
                 ? 'AWAITING PLAY'
                 : `${dispAccCounts.made}/${dispAccCounts.attempts} MADE`}
@@ -713,20 +713,20 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           {/* Right: mode + timer + share */}
           <div className="hud-right">
             <div className="hud-right-row">
-              <span className="hud-meta-label text-[#00ff41] border-t-[#00ff41] border-r-[#00ff41] border-b-[#00ff41] border-l-[#00ff41]">MODE</span>
+              <span className="hud-meta-label">MODE</span>
               <span className="hud-mode">
                 {state.gameType === 'practice' ? 'PRACTICE'
                   : state.gameType === '8ball' ? '8-BALL'
                   : '9-BALL'}
-                <span className="hud-mode-players text-[#00ff41] border-t-[#00ff41] border-r-[#00ff41] border-b-[#00ff41] border-l-[#00ff41]"> · {state.players.length}P</span>
+                <span className="hud-mode-players"> · {state.players.length}P</span>
               </span>
             </div>
             <div className="hud-right-row">
-              <span className="hud-meta-label text-[#00ff41] border-t-[#00ff41] border-r-[#00ff41] border-b-[#00ff41] border-l-[#00ff41]">TIME</span>
+              <span className="hud-meta-label">TIME</span>
               <span className={`hud-timer${paused ? ' hud-timer-paused' : ''}`}>{formatTime(dispTime)}</span>
             </div>
             <div className="hud-right-row" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span className="hud-meta-label text-[#00ff41] border-t-[#00ff41] border-r-[#00ff41] border-b-[#00ff41] border-l-[#00ff41]">CODE</span>
+              <span className="hud-meta-label">CODE</span>
               <span className="hud-code">{state.shareCode}</span>
               <button
                 className="hud-copy-code-btn"

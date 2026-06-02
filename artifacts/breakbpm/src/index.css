@@ -930,7 +930,7 @@ html, #root {
 .hud-bpm-label {
   font-family: 'Courier New', monospace;
   font-size: 9px;
-  color: #3a7a3a;
+  color: #00ff41;
   letter-spacing: 2px;
   margin-bottom: 2px;
 }
@@ -952,7 +952,7 @@ html, #root {
 .hud-bpm-sub {
   font-family: 'Courier New', monospace;
   font-size: 9px;
-  color: #2a6a2a;
+  color: #00ff41;
   letter-spacing: 1px;
   margin-top: 2px;
 }
@@ -984,7 +984,7 @@ html, #root {
 .hud-meta-label {
   font-family: 'Courier New', monospace;
   font-size: 9px;
-  color: #3a7a3a;
+  color: #00ff41;
   letter-spacing: 1px;
   flex-shrink: 0;
   width: 30px;
@@ -1000,7 +1000,7 @@ html, #root {
 }
 
 .hud-mode-players {
-  color: #3a7a3a;
+  color: #00ff41;
   font-size: 18px;
 }
 
