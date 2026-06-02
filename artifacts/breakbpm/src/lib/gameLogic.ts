@@ -16,6 +16,13 @@ export interface ShotLogEntry {
   gameTime: number;
   note?: string;
   /**
+   * True when this entry is a foul the player personally committed, even when
+   * it's terminal and therefore logged as 'lose' (a foul on the 8-ball). Lets
+   * accuracy count it as a shot attempt, while the separate Shark-wins 'lose'
+   * marker (not a shot the human took) stays unflagged and excluded.
+   */
+  isFoul?: boolean;
+  /**
    * Per-player BPM snapshot at the moment this pocket happened. Only set on
    * pocketing entries (sink / terminal win / terminal lose that pocketed a
    * ball). Missing on miss/foul/safety and on Shark steals.
@@ -407,6 +414,45 @@ export function calculatePlayerBPM(
   const elapsed = (lastAt - firstSinkAt) / 60000;
   if (elapsed < 0.001) return 0;
   return Math.round((sinks.length / elapsed) * 10) / 10;
+}
+
+/**
+ * Per-player accuracy counts. `made` is the number of balls the player
+ * pocketed; `attempts` is the number of qualifying shots that count toward
+ * accuracy. A qualifying shot is any pocketed ball plus misses and fouls
+ * (including a foul on the 8-ball, flagged via `isFoul`). Safeties are
+ * intentional defensive plays and are excluded, as is the Shark-wins 'lose'
+ * marker. Shark steals are logged under the Shark's name and so never enter
+ * a human player's counts.
+ */
+export function playerAccuracyCounts(
+  shotLog: ShotLogEntry[],
+  playerName: string,
+): { made: number; attempts: number } {
+  const mine = shotLog.filter(e => e.playerName === playerName);
+  // A "made" ball is any entry where a ball was pocketed (sink, or a
+  // terminal win/lose that pocketed a ball) — keyed off `ball !== undefined`,
+  // mirroring calculatePlayerBPM's numerator.
+  const made = mine.filter(e => e.ball !== undefined).length;
+  const attempts = mine.filter(
+    e => e.ball !== undefined || e.type === 'miss' || e.type === 'foul' || e.isFoul === true,
+  ).length;
+  return { made, attempts };
+}
+
+/**
+ * Per-player shooting accuracy as a whole-number percentage (0–100), or
+ * `null` when the player has taken no qualifying shots yet. Accuracy is
+ * pocketed balls divided by qualifying shots; see `playerAccuracyCounts`
+ * for what counts.
+ */
+export function calculatePlayerAccuracy(
+  shotLog: ShotLogEntry[],
+  playerName: string,
+): number | null {
+  const { made, attempts } = playerAccuracyCounts(shotLog, playerName);
+  if (attempts === 0) return null;
+  return Math.round((made / attempts) * 100);
 }
 
 export function formatTime(ms: number): string {

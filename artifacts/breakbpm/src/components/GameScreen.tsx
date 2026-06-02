@@ -3,7 +3,8 @@ import type { GameState, ShotLogEntry } from '../lib/gameLogic';
 import Navbar from './Navbar';
 import {
   getLegalBalls, getRemainingBalls, checkSinkResult,
-  assignTeams, shouldAssignTeams, calculatePlayerBPM, formatTime,
+  assignTeams, shouldAssignTeams, calculatePlayerBPM,
+  calculatePlayerAccuracy, playerAccuracyCounts, formatTime,
   ballLabel,
   SOLIDS, STRIPES, EIGHT_BALL,
   saveInProgressGame, clearInProgressGame,
@@ -480,6 +481,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           type: 'lose', playerName: cur.name,
           timestamp: now, gameTime,
           note: 'Foul on the 8-ball',
+          // A real foul the player committed — counts toward accuracy even
+          // though it's terminal and logged as 'lose'.
+          isFoul: true,
         };
         const next: GameState = {
           ...state,
@@ -596,6 +600,15 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const dispBpm = dispPlayerName
     ? calculatePlayerBPM(state.shotLog, dispPlayerName)
     : null;
+  // Accuracy mirrors BPM exactly: same display-player (current shooter, or
+  // the winner / human at game end), derived purely from the shot log so it
+  // freezes between this player's shots.
+  const dispAcc = dispPlayerName
+    ? calculatePlayerAccuracy(state.shotLog, dispPlayerName)
+    : null;
+  const dispAccCounts = dispPlayerName
+    ? playerAccuracyCounts(state.shotLog, dispPlayerName)
+    : null;
   const dispTime = state.phase === 'playing'
     ? elapsed
     : (state.timerStartTime != null
@@ -657,6 +670,22 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             </div>
             <div className="hud-bpm-sub">
               {dispBpm === null ? 'AWAITING PLAY' : remainingSubLabel}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="hud-divider" />
+
+          {/* Accuracy — twin hero number, equal weight to BPM */}
+          <div className="hud-bpm-block">
+            <div className="hud-bpm-label">ACCURACY</div>
+            <div className={`hud-bpm-value${dispAcc === null ? ' hud-bpm-dim' : ''}`}>
+              {dispAcc !== null ? `${dispAcc}%` : '--%'}
+            </div>
+            <div className="hud-bpm-sub">
+              {dispAcc === null || dispAccCounts === null
+                ? 'AWAITING PLAY'
+                : `${dispAccCounts.made}/${dispAccCounts.attempts} MADE`}
             </div>
           </div>
 
@@ -899,6 +928,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         </div>
         <div className="statusbar-item" style={{ flex: 1 }}>
           BPM: {dispBpm !== null ? dispBpm.toFixed(1) : '--'}
+        </div>
+        <div className="statusbar-item" style={{ flex: 1 }}>
+          ACC: {dispAcc !== null ? `${dispAcc}%` : '--'}
         </div>
         <div className="statusbar-item">{clock}</div>
       </div>
