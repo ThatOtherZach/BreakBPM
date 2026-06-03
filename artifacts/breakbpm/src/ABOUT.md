@@ -29,6 +29,10 @@ Every game gets a **5-character share code**. The host's device is always the sc
 
 Pool isn't just about who wins, it's about *how* you play. A 1.0 BPM game against a 3.0 BPM opponent tells a different story than the scoreboard alone. BreakBPM gives casual players a stat that actually means something at the table.
 
+## Track your stats
+
+The **Stats** page breaks down your shooting over time — results, accuracy, pace, and your most-sunk balls. Anyone can peek at a live 24-hour global snapshot; sign in to see your own numbers, and grab a pass or subscription to look back over longer windows (30 days, a year, or all-time), compare yourself against everyone, and refresh on demand.
+
 ## Features at a glance
 
 - Live per-player BPM + game timer
@@ -40,6 +44,7 @@ Pool isn't just about who wins, it's about *how* you play. A 1.0 BPM game agains
 - Team assignment, automatic or manual per-player
 - Share a 5-character code so others can join an open seat before the break, or spectate by name once a game is live
 - Sign-in and resume games across devices, view your past game history
+- Stats page with accuracy, pace, and ball breakdowns — longer windows and the global view unlock with a pass
 - Works on any phone, no install required
 - Free forever, but to save your stats you'll need an account ;)
 
