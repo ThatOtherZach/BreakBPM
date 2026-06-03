@@ -1833,8 +1833,9 @@ html, #root {
 }
 .fpp-popup-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
+  margin-top: 6px;
 }
 .fpp-card-actions {
   display: flex;

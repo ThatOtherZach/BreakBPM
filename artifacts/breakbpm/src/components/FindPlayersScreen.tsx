@@ -455,10 +455,10 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                                 target="_blank"
                                 rel="noreferrer"
                               >
-                                Open in Maps
+                                🗺️ Maps
                               </a>
                               <button className="btn" onClick={() => downloadIcs(post)}>
-                                Add to Calendar
+                                📅 Calendar
                               </button>
                             </div>
                           </div>
