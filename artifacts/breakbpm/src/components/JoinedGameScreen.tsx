@@ -450,7 +450,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
           ))}
 
         {state?.phase === 'ended' && (
-          <div className="hud-winner">
+          <div className="hud-winner text-center justify-center items-center">
             <span className="hud-winner-text" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               {state.winner ? (
                 <>
@@ -459,7 +459,6 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
                 </>
               ) : 'GAME OVER'}
             </span>
-            {state.winMessage && <span className="hud-winner-sub">{state.winMessage}</span>}
           </div>
         )}
       </div>
