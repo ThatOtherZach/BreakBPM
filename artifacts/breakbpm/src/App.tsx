@@ -310,12 +310,24 @@ function WatchRoute({ params }: { params: { name: string } }) {
   );
 }
 
-function Routes() {
+// Route `component` props must be stable references, never inline factories
+// (`component={() => ...}`). An inline factory changes identity on every parent
+// re-render, remounting Clerk's <SignIn>/<SignUp> and re-sending verification codes.
+function SignInRouteWrapper() {
   const [, setLocation] = useLocation();
+  return <SignInPage onBack={() => setLocation("/")} />;
+}
+
+function SignUpRouteWrapper() {
+  const [, setLocation] = useLocation();
+  return <SignUpPage onBack={() => setLocation("/")} />;
+}
+
+function Routes() {
   return (
     <Switch>
-      <Route path="/sign-in/*?" component={() => <SignInPage onBack={() => setLocation("/")} />} />
-      <Route path="/sign-up/*?" component={() => <SignUpPage onBack={() => setLocation("/")} />} />
+      <Route path="/sign-in/*?" component={SignInRouteWrapper} />
+      <Route path="/sign-up/*?" component={SignUpRouteWrapper} />
       <Route path="/account" component={AccountRoute} />
       <Route path="/stats" component={StatsRoute} />
       <Route path="/about" component={AboutRoute} />
