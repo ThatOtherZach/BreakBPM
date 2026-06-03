@@ -147,9 +147,8 @@ export default function GameHistoryCard({ game: g }: { game: GameHistoryEntry })
   const hasAcc = g.accuracy != null;
   return (
     <div
+      className="fpp-card history-card"
       style={{
-        borderTop: "1px solid #aaa",
-        padding: "6px 0",
         display: "flex",
         flexDirection: "column",
         gap: 6,
@@ -158,8 +157,19 @@ export default function GameHistoryCard({ game: g }: { game: GameHistoryEntry })
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         {/* Left: mode + result + winner */}
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-          <span style={{ fontWeight: "bold", fontSize: 13 }}>{modeLabel}</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#444", fontSize: 11 }}>
+          <span
+            style={{
+              fontFamily: "VT323",
+              fontSize: 20,
+              lineHeight: 1,
+              letterSpacing: 0.5,
+              color: "#f4f4dc",
+              textShadow: "1px 1px 0 #042414",
+            }}
+          >
+            {modeLabel}
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#cdeccd", fontSize: 11 }}>
             <ResultBadge outcome={g.outcome} />
             {g.sharkMode ? (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
@@ -177,7 +187,7 @@ export default function GameHistoryCard({ game: g }: { game: GameHistoryEntry })
             ) : null}
           </span>
           {g.endReason && (
-            <span style={{ fontSize: 10, color: "#777", fontStyle: "italic" }}>
+            <span style={{ fontSize: 10, color: "#a9c9b3", fontStyle: "italic" }}>
               {g.endReason === "max_duration_60min"
                 ? "Ended — 60 min cap reached"
                 : "Ended — inactive for 60 min"}
@@ -192,7 +202,8 @@ export default function GameHistoryCard({ game: g }: { game: GameHistoryEntry })
               fontFamily: "VT323",
               fontSize: 26,
               lineHeight: 1,
-              color: hasBpm ? "#000080" : "#999",
+              color: hasBpm ? "#ffe98a" : "#8aa593",
+              textShadow: "1px 1px 0 #042414",
             }}
           >
             {hasBpm ? `${g.bpm!.toFixed(1)} BPM` : "— BPM"}
@@ -202,12 +213,13 @@ export default function GameHistoryCard({ game: g }: { game: GameHistoryEntry })
               fontFamily: "VT323",
               fontSize: 18,
               lineHeight: 1,
-              color: hasAcc ? "#006400" : "#999",
+              color: hasAcc ? "#b9e6c4" : "#8aa593",
+              textShadow: "1px 1px 0 #042414",
             }}
           >
             {hasAcc ? `${g.accuracy}% ACC` : "—% ACC"}
           </span>
-          <span style={{ fontSize: 10, color: "#666" }}>
+          <span style={{ fontSize: 10, color: "#a9c9b3" }}>
             🕐 {fmtMs(g.durationMs)} · {fmtDate(g.endedAt)}
           </span>
         </div>
