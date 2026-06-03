@@ -17,7 +17,11 @@ BPM is calculated per-player, anchored at your first pocket of the game, so it r
 
 ## Play anywhere, with anyone
 
-Share a **4-digit code** to allow anyone at the table to follow along in real time. Up to 4 players per game. Names, scores, and live BPM for everyone.
+Every game gets a **5-character share code**. The host's device is always the scorekeeper — one phone runs the rack while everyone else follows along live.
+
+**Join a game** by entering the code (or opening a `/join/CODE` link). If you grab one of the open seats before the break, you're in the player roster with your name, group, and live BPM — no account required, guests are welcome. Joiners are view-only (the host keeps score) and can leave at any time, which forfeits their spot. Seats fill on a first-come basis up to the game's player count, and you have to join *before the first ball drops*. Once the game's underway or full, you come in as a spectator instead.
+
+**Spectate by name** at `/watch/yourfriend` to follow a specific player's live game without needing the code — handy for railbirds. Spectators can hop in any time, watch the full HUD, shot log, and BPM, and don't take up a seat. Watching another player's game is a perk of a paid host: the player you're watching needs an active pass or subscription for their games to be watchable.
 
 **Sign in** to unlock cross-device resume, full game history, and persistent stats. Your account name is automatically used for Player 1 — no need to type it each time.
 
@@ -34,14 +38,21 @@ Pool isn't just about who wins, it's about *how* you play. A 1.0 BPM game agains
 - Full shot log with undo button (just in case)
 - Fouls, safeties, and misses tracked in each game
 - Team assignment, automatic or manual per-player
-- Share your sessions game code for others to follow along live
+- Share a 5-character code so others can join an open seat before the break, or spectate by name once a game is live
 - Sign-in and resume games across devices, view your past game history
 - Works on any phone, no install required
 - Free forever, but to save your stats you'll need an account ;)
 
 ## 🦈 Shark Mode
 
-You're playing solo against an invisible opponent. Your first sink locks in your group (solids or stripes); the other goes to the Shark. Clear your group and sink the 8 to win, but every miss gives the Shark a chance to pocket a ball. It's an honor system, so you'll need to decide what ball could be sunk by a shark each time and then remove it from the table.
+You're playing solo against an invisible opponent. Your first sink locks in your group (solids or stripes); the other goes to the Shark. Clear your group and sink the 8 to win, but every miss gives the Shark a chance to pocket a ball.
+
+**Clearing the Shark's ball off the real table.** Shark Mode is an honor system — when the Shark "pockets" one of its balls, you decide which of its balls left on the table is gone and physically remove it. There are two ways players usually handle it, and both end the same way:
+
+- **Pick the easy one** — look at the Shark's remaining balls, choose whichever looks like an easy pot, and lift it off the table.
+- **Shoot it for them** — line up one of the Shark's balls and try to sink it yourself, playing the shot *as the Shark*.
+
+Either way, the ball comes off the table. Tap the Shark's ball in the selector to record it so the rack on your screen matches the felt in front of you.
 
 **Shark Mode Rules:**
 
