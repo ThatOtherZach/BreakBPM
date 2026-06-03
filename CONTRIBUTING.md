@@ -8,9 +8,10 @@ Thank you for your interest in BreakBPM! This is a retro Windows 98-style pool s
 
 - **Maintain the Windows 98 aesthetic** — Every UI element uses the 98.css box-shadow depth system. Gray 3D buttons, navy title bars, sunken inputs, MS Sans Serif font. Do not modernize the UI.
 - **Pure box-shadow buttons** — No CSS `border` on `.btn`. All depth comes from layered `inset` shadows matching the 98.css spec. See the "Button States" section below.
-- **Game rules live in `gameLogic.ts`** — Do not duplicate rule logic in components. All win condition checks, legal-ball filtering, and action processing belong in `src/lib/gameLogic.ts`.
+- **Game rules live in `gameLogic.ts`** — Do not duplicate rule logic in components. All win condition checks, legal-ball filtering, and action processing belong in `src/lib/gameLogic.ts`. The server's `stats.ts` deliberately mirrors the BPM/accuracy math from this file (the two artifacts can't import each other) — keep them in lockstep if scoring rules change.
+- **Contract-first API** — The API contract lives in `lib/api-spec/openapi.yaml`. Run `pnpm --filter @workspace/api-spec run codegen` after any spec change to regenerate the server Zod schemas and client React Query hooks. Never hand-write API types.
 - **Ball colors live in `BALL_COLORS`** — The color map for each ball number is in `GameScreen.tsx`. Keep it in sync with real pool ball colors.
-- **Mobile-first** — The app is optimised for 412px wide screens. Test at that width first.
+- **Mobile-first** — The app is optimised for narrow phone screens. Test at mobile width first.
 
 ### Button States (98.css spec)
 
@@ -39,20 +40,23 @@ Never use `outline` to simulate a button border. If you need a "default" button 
 1. Install dependencies: `pnpm install`
 2. Start dev server: `pnpm --filter @workspace/breakbpm run dev`
 3. Edit source files in `artifacts/breakbpm/src/`
-4. Test thoroughly at 412px width:
+4. Test thoroughly at mobile width:
    - New game flow (8-ball, 9-ball, practice)
    - Team assignment (auto + manual with per-player dropdowns)
    - Ball selector — only legal balls should appear
    - BPM and timer (pause in practice, auto-runs in game modes)
-   - Share code — state must survive a full page reload
+   - Share code — state must survive a full page reload; join/spectate work
    - Win conditions (8-ball group clearance, Golden Break, Foul-on-8, 9-ball)
    - Undo functionality
+   - Stats page renders for each tier (anonymous, signed-in, pass holder)
    - About page — markdown renders, scrollbar themed
-5. Update `CHANGELOG.md` when adding features.
+5. Run `pnpm run typecheck` (the canonical check) before delivering.
+6. Update `CHANGELOG.md` when adding features.
 
 ### Testing Checklist
 
-- [ ] Game starts with 4-digit share code visible
+- [ ] Game starts with a 5-character share code visible
+- [ ] Joining an open seat works before the break; spectating by name works
 - [ ] Ball selector only shows legal/available balls for current player
 - [ ] Colored ball indicators display correct pool colors
 - [ ] BPM and timer run correctly; pause works in practice mode
@@ -63,6 +67,7 @@ Never use `outline` to simulate a button border. If you need a "default" button 
 - [ ] Manual team assignment: dropdowns appear inline per player
 - [ ] Golden Break: sinking the 8 on the break = instant win
 - [ ] Foul-on-8: fouling while sinking the 8 = instant loss
+- [ ] Stats page loads and respects tier gating (window/scope locks)
 - [ ] About page loads, markdown renders, Win98 scrollbar visible
 
 ## For Future AIs / Developers
@@ -71,15 +76,18 @@ The project has gone through major evolutions:
 
 1. Modern Tailwind pool-hall theme (single `index.html`)
 2. Added team assignment + ball selector
-3. Added 4-digit codes + proper win rules
+3. Added short share codes + proper win rules
 4. Full Windows 98 retro theme (still `index.html`)
-5. **React + Vite + TypeScript monorepo — current state (v0.5)**
+5. React + Vite + TypeScript monorepo migration
+6. Accounts, game history, passes, per-player BPM
+7. **Statistics page, live join & spectate, recurring subscriptions — current state (v0.7)**
 
 **Key things to know:**
 
-- `gameLogic.ts` is the source of truth for all rules. Read it before touching any game behavior.
+- `gameLogic.ts` is the source of truth for all rules. Read it before touching any game behavior. The server's `stats.ts` mirrors its BPM/accuracy math — keep them in lockstep.
 - The CSS design system is entirely in `index.css` — variables, button states, inputs, scrollbars, layout.
-- The `AboutScreen` fetches `README.md` from the GitHub raw URL — keep that URL valid.
+- The `AboutScreen` renders `src/ABOUT.md`, which is bundled at build time (imported as `?raw`) — edit that file to change About-page copy.
+- The API is contract-first: edit `lib/api-spec/openapi.yaml`, then run `pnpm --filter @workspace/api-spec run codegen`. Never hand-write API types.
 - Icons live in `public/` and are referenced as `/icon-name.png`.
 - The `pnpm-workspace` skill in `.local/skills/` describes the full monorepo structure and TypeScript setup.
 
@@ -88,7 +96,7 @@ If you're an AI continuing this project:
 - Maintain the 98.css box-shadow button system — never regress to borders or `outline` hacks.
 - Keep `gameLogic.ts` as the single source of truth for rules.
 - Always update `CHANGELOG.md` with clear, user-facing entries.
-- Test at 412px width before delivering.
+- Run `pnpm run typecheck` and test at mobile width before delivering.
 
 ## Questions?
 

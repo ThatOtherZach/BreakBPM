@@ -5,6 +5,20 @@ All notable changes to BreakBPM will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-06-03
+
+### Added
+- **Statistics page** — a dedicated `/stats` view with results, accuracy, pace, and ball/pattern breakdowns, styled in the retro CRT/PC-98 aesthetic. Access is tiered: anonymous players see a global 24h snapshot, signed-in players see personal 24h stats, and pass/subscription holders unlock selectable windows (24h / 30d / 365d / all), a personal-vs-global toggle, and live refresh.
+- **Join an open seat** — others can join a live game with the 5-character share code before the break. Joiners (guests included) get a view-only mirror of the host's HUD, shot log, and BPM, and can leave/forfeit at any time. The host's device remains the canonical scorekeeper.
+- **Spectate by name** — follow a player's live game at `/watch/:name` without needing a code. Spectating is available when the watched player (the host) has a paid plan.
+- **Recurring subscriptions** — Monthly ($4.99/mo) and Yearly ($24.99/yr) auto-renewing plans alongside the one-time Day and Lifetime passes. Cancel anytime from the account page; access continues through the paid period. Buying Lifetime stops any active subscription from renewing.
+- **Undo tracking** — per-game undo counts are recorded and surfaced in stats.
+- **Legal pages** — in-app Subscription & Billing Terms and Cancellation & Refund Policy.
+
+### Changed
+- **Pricing ladder** — Day $1.99 (unchanged), new Monthly $4.99/mo, Yearly is now a $24.99/yr subscription (replacing the old $12.99 annual pass), Lifetime raised to $49.99.
+- **Three-tier entitlement model** — access now resolves to `public` / `account` / `pass`, drawn from both one-time passes and recurring subscriptions.
+
 ## [0.6.0] - 2026-05-22
 
 ### Added
@@ -100,6 +114,7 @@ Major rewrite migrating from a single `index.html` file to a full React + Vite +
 - Multiplayer via link (async state sharing)
 - Shot logging and undo
 
+[0.7.0]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.4.0...v0.5.0
