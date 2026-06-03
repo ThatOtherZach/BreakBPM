@@ -301,15 +301,15 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                       <FlyTo position={position} flyKey={flyKey} />
                     </MapContainer>
                   </div>
+                  <span className="fpp-coords fpp-coords--caption">
+                    {position
+                      ? `${position[0].toFixed(4)}, ${position[1].toFixed(4)}`
+                      : "Tap the map to drop a pin"}
+                  </span>
                   <div className="fpp-form-row">
                     <button className="btn" type="button" onClick={locateMe}>
                       📍 Locate me
                     </button>
-                    <span className="fpp-coords">
-                      {position
-                        ? `${position[0].toFixed(4)}, ${position[1].toFixed(4)}`
-                        : "Tap the map to drop a pin"}
-                    </span>
                   </div>
                   <label className="fpp-label">
                     Table #
