@@ -42,6 +42,11 @@ const DEFAULT_ZOOM = 2;
 /** "Near Me" radius in kilometres. */
 const NEAR_RADIUS_KM = 25;
 
+/** Trims a stored "City, Country" label down to just the city for display. */
+function cityOf(label: string): string {
+  return label.split(",")[0].trim();
+}
+
 /** Great-circle distance between two [lat, lng] points, in kilometres. */
 function haversineKm(a: [number, number], b: [number, number]): number {
   const R = 6371;
@@ -225,8 +230,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
         if (cancelled) return;
         const addr = data.address;
         const locality = addr?.city ?? addr?.town ?? addr?.village ?? addr?.county ?? null;
-        const country = addr?.country ?? null;
-        setLocationPreview([locality, country].filter(Boolean).join(", ") || null);
+        setLocationPreview(locality);
       })
       .catch(() => { if (!cancelled) setLocationPreview(null); });
     return () => { cancelled = true; };
@@ -544,7 +548,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                             )}
                             {post.locationLabel && (
                               <div className="fpp-popup-coords">
-                                📍 {post.locationLabel}
+                                📍 {cityOf(post.locationLabel)}
                               </div>
                             )}
                             <div className="fpp-popup-actions">
@@ -626,7 +630,7 @@ function PostCard({
         <div className="fpp-card-when">{formatSchedule(new Date(post.scheduledAt))}</div>
       )}
       {!cancelled && post.locationLabel && (
-        <div className="fpp-card-loc">📍 {post.locationLabel}</div>
+        <div className="fpp-card-loc">📍 {cityOf(post.locationLabel)}</div>
       )}
       {!cancelled && (
         <div className="fpp-card-actions">
