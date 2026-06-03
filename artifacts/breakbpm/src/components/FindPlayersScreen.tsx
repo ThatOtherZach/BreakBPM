@@ -142,6 +142,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const [mapView, setMapView] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
 
   const list = useListFindPlayerPosts({ page });
   const data = list.data;
@@ -233,6 +234,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
       setTableNumber("");
       setDateStr("");
       setTimeStr("");
+      setFormOpen(false);
       setPage(1);
       invalidate();
     } catch {
@@ -275,10 +277,20 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
             </SignedOut>
 
             <SignedIn>
-              {/* ── Create form (paid only) ── */}
+              {/* ── Create form (paid only, collapsible) ── */}
               {canCreate ? (
                 <div className="fpp-form">
-                  <div className="fpp-subhead">POST A GAME</div>
+                  <button
+                    className="fpp-reveal"
+                    type="button"
+                    onClick={() => setFormOpen((o) => !o)}
+                    aria-expanded={formOpen}
+                  >
+                    <span>➕ Post a Game</span>
+                    <span className="fpp-reveal-caret">{formOpen ? "▲" : "▼"}</span>
+                  </button>
+                  {formOpen && (
+                  <div className="fpp-form-fields">
                   <div className="fpp-map fpp-map--form">
                     <MapContainer center={position ?? DEFAULT_CENTER} zoom={position ? 15 : DEFAULT_ZOOM} style={{ height: "100%", width: "100%" }}>
                       <TileLayer
@@ -345,6 +357,8 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                   >
                     {createPost.isPending ? "Posting…" : "Post Game"}
                   </button>
+                  </div>
+                  )}
                 </div>
               ) : (
                 <p className="fpp-hint">
@@ -352,19 +366,13 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                 </p>
               )}
 
-              {/* ── List / Map toggle ── */}
+              {/* ── List / Map toggle (single button) ── */}
               <div className="fpp-toggle">
                 <button
-                  className={`btn${!mapView ? " btn-primary" : ""}`}
-                  onClick={() => setMapView(false)}
+                  className="btn btn-primary fpp-toggle-btn"
+                  onClick={() => setMapView((v) => !v)}
                 >
-                  List
-                </button>
-                <button
-                  className={`btn${mapView ? " btn-primary" : ""}`}
-                  onClick={() => setMapView(true)}
-                >
-                  Map
+                  {mapView ? "📋 List View" : "🗺️ Map View"}
                 </button>
               </div>
 
