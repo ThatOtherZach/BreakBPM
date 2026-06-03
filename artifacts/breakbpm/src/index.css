@@ -1692,22 +1692,6 @@ html, #root {
   margin-bottom: 6px;
 }
 .fpp-form { margin-bottom: 14px; }
-.fpp-reveal {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  font-family: 'MS Sans Serif', 'Tahoma', Geneva, Arial, sans-serif;
-  font-weight: bold;
-  font-size: 13px;
-  color: var(--navy);
-  background: var(--silver);
-  border: 2px outset var(--silver);
-  padding: 7px 10px;
-  cursor: pointer;
-}
-.fpp-reveal:active { border-style: inset; }
-.fpp-reveal-caret { font-size: 10px; }
 .fpp-form-fields {
   border: 2px inset var(--silver);
   border-top: none;

@@ -303,15 +303,19 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
             <SignedIn>
               {/* ── Create form (paid only, collapsible) ── */}
               {canCreate ? (
-                <div className="fpp-form">
+                <div className="panel fpp-form">
                   <button
-                    className="fpp-reveal"
                     type="button"
+                    className="panel-header"
                     onClick={() => setFormOpen((o) => !o)}
                     aria-expanded={formOpen}
+                    style={{ width: "100%", border: "none", cursor: "pointer", font: "inherit", textAlign: "left" }}
                   >
-                    <span>➕ Post a Game</span>
-                    <span className="fpp-reveal-caret">{formOpen ? "▲" : "▼"}</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+                      className="text-[13px] text-[#000000] font-semibold">
+                      POST A MEETUP
+                    </span>
+                    <span aria-hidden="true" className="text-[#000000]">{formOpen ? "▼" : "▶"}</span>
                   </button>
                   {formOpen && (
                   <div className="fpp-form-fields">
