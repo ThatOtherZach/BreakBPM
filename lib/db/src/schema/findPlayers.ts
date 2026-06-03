@@ -44,6 +44,8 @@ export const findPlayerPostsTable = pgTable(
     scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
     /** "YYYY-MM-DD" UTC calendar date of scheduledAt — backs the per-date index. */
     scheduledDateUtc: text("scheduled_date_utc").notNull(),
+    /** Human-readable reverse-geocoded label e.g. "Los Angeles, United States". */
+    locationLabel: text("location_label"),
     /** Null while active. Set when the creator cancels. */
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })

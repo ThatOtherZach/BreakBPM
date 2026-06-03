@@ -1309,6 +1309,9 @@ components:
         cancelled: { type: boolean }
         # True when the caller owns this post (so the UI can show "Cancel").
         isOwn: { type: boolean }
+        # Reverse-geocoded human label e.g. "Los Angeles, United States".
+        # Null for cancelled posts (place hidden) or if geocoding failed.
+        locationLabel: { type: ["string", "null"] }
 
     FindPlayerPostsResult:
       type: object

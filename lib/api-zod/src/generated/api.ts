@@ -689,7 +689,8 @@ export const ListFindPlayerPostsResponse = zod.object({
   "longitude": zod.number().nullish(),
   "scheduledAt": zod.coerce.date().nullable(),
   "cancelled": zod.boolean(),
-  "isOwn": zod.boolean()
+  "isOwn": zod.boolean(),
+  "locationLabel": zod.string().nullish()
 })),
   "page": zod.number(),
   "totalPages": zod.number(),
@@ -732,7 +733,8 @@ export const CreateFindPlayerPostResponse = zod.object({
   "longitude": zod.number().nullish(),
   "scheduledAt": zod.coerce.date().nullable(),
   "cancelled": zod.boolean(),
-  "isOwn": zod.boolean()
+  "isOwn": zod.boolean(),
+  "locationLabel": zod.string().nullish()
 }).optional()
 })
 
@@ -758,7 +760,8 @@ export const CancelFindPlayerPostResponse = zod.object({
   "longitude": zod.number().nullish(),
   "scheduledAt": zod.coerce.date().nullable(),
   "cancelled": zod.boolean(),
-  "isOwn": zod.boolean()
+  "isOwn": zod.boolean(),
+  "locationLabel": zod.string().nullish()
 }).optional()
 })
 

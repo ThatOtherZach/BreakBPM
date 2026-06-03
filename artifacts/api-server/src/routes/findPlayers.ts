@@ -37,6 +37,33 @@ function isUniqueViolation(err: unknown): boolean {
 }
 
 /**
+ * Reverse-geocode a WGS84 coordinate via Nominatim, returning a short
+ * human label like "Los Angeles, United States". Returns null on failure
+ * (network error, rate-limit, unrecognised place) — never throws.
+ */
+async function reverseGeocode(lat: number, lon: number): Promise<string | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
+    const resp = await fetch(url, {
+      headers: { "User-Agent": "BreakBPM/1.0 (find-players feature)" },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json() as {
+      address?: { city?: string; town?: string; village?: string; county?: string; country?: string };
+    };
+    const addr = data.address;
+    if (!addr) return null;
+    const locality = addr.city ?? addr.town ?? addr.village ?? addr.county ?? null;
+    const country = addr.country ?? null;
+    if (!locality && !country) return null;
+    return [locality, country].filter(Boolean).join(", ");
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Shape a DB row into the API contract. Cancelled posts hide their place and
  * time — only the "Cancelled" badge and (for the owner) the card remain until
  * the original time passes and the row is purged.
@@ -54,6 +81,7 @@ function toPostResponse(
     tableNumber: row.tableNumber,
     latitude: cancelled ? null : row.latitude,
     longitude: cancelled ? null : row.longitude,
+    locationLabel: cancelled ? null : (row.locationLabel ?? null),
     scheduledAt: cancelled ? null : row.scheduledAt,
     cancelled,
     isOwn: row.userId === callerUserId,
@@ -200,6 +228,10 @@ router.post("/find-players/posts", async (req, res): Promise<void> => {
 
   await purgeExpiredPosts(now);
 
+  // Geocode outside the transaction — Nominatim is a network call and we don't
+  // want to hold a DB lock while it's in flight. Failure is non-fatal.
+  const locationLabel = await reverseGeocode(latitude, longitude);
+
   const scheduledDateUtc = scheduledAt.toISOString().slice(0, 10);
 
   // Enforce the max-5 and per-UTC-date rules atomically. We serialize all of a
@@ -243,6 +275,7 @@ router.post("/find-players/posts", async (req, res): Promise<void> => {
           userId: user.id,
           latitude,
           longitude,
+          locationLabel,
           tableNumber,
           scheduledAt,
           scheduledDateUtc,

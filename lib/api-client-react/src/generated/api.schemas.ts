@@ -732,6 +732,8 @@ export interface FindPlayerPost {
   scheduledAt: string | null;
   cancelled: boolean;
   isOwn: boolean;
+  /** @nullable */
+  locationLabel?: string | null;
 }
 
 export interface FindPlayerPostsResult {

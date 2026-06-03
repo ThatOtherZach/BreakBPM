@@ -19,4 +19,6 @@ export interface FindPlayerPost {
   scheduledAt: Date | null;
   cancelled: boolean;
   isOwn: boolean;
+  /** @nullable */
+  locationLabel?: string | null;
 }

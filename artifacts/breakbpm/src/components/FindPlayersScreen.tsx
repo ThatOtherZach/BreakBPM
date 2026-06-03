@@ -6,7 +6,7 @@
  * anywhere in this screen. We read/write the literal Y/M/D H:M via the Date's
  * getUTC accessors and Date.UTC so the displayed value never drifts by locale.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
@@ -165,10 +165,34 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
   // ── Create-form state ──
   const [position, setPosition] = useState<[number, number] | null>(null);
   const [flyKey, setFlyKey] = useState(0);
+  const [locationPreview, setLocationPreview] = useState<string | null>(null);
   const [tableNumber, setTableNumber] = useState("");
   const [dateStr, setDateStr] = useState("");
   const [timeStr, setTimeStr] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Client-side reverse-geocode preview — fires when the user drops/moves a
+  // pin in the form. Uses the same Nominatim endpoint the server calls at
+  // create time, so the preview matches what will be stored.
+  useEffect(() => {
+    if (!position) { setLocationPreview(null); return; }
+    let cancelled = false;
+    const [lat, lon] = position;
+    fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+      { headers: { "User-Agent": "BreakBPM/1.0" } },
+    )
+      .then((r) => r.json())
+      .then((data: { address?: { city?: string; town?: string; village?: string; county?: string; country?: string } }) => {
+        if (cancelled) return;
+        const addr = data.address;
+        const locality = addr?.city ?? addr?.town ?? addr?.village ?? addr?.county ?? null;
+        const country = addr?.country ?? null;
+        setLocationPreview([locality, country].filter(Boolean).join(", ") || null);
+      })
+      .catch(() => { if (!cancelled) setLocationPreview(null); });
+    return () => { cancelled = true; };
+  }, [position]);
 
   const today = useMemo(() => utcDateStr(new Date()), []);
   const maxDate = useMemo(() => {
@@ -307,9 +331,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                       📍 Locate me
                     </button>
                     <span className="fpp-row-hint fpp-row-hint--coords">
-                      {position
-                        ? `${position[0].toFixed(4)}, ${position[1].toFixed(4)}`
-                        : "Tap the map to drop a pin"}
+                      {locationPreview ?? (position ? "Locating…" : "Tap the map to drop a pin")}
                     </span>
                   </div>
                   <div className="fpp-form-row fpp-form-row--compact">
@@ -403,10 +425,11 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                                 {formatSchedule(new Date(post.scheduledAt))}
                               </div>
                             )}
-                            <div className="fpp-popup-coords">
-                              📍 {(post.latitude as number).toFixed(4)},{" "}
-                              {(post.longitude as number).toFixed(4)}
-                            </div>
+                            {post.locationLabel && (
+                              <div className="fpp-popup-coords">
+                                📍 {post.locationLabel}
+                              </div>
+                            )}
                             <div className="fpp-popup-actions">
                               <a
                                 className="btn"
@@ -477,10 +500,8 @@ function PostCard({
       {!cancelled && post.scheduledAt && (
         <div className="fpp-card-when">{formatSchedule(new Date(post.scheduledAt))}</div>
       )}
-      {!cancelled && post.latitude != null && post.longitude != null && (
-        <div className="fpp-card-loc">
-          📍 {post.latitude.toFixed(4)}, {post.longitude.toFixed(4)}
-        </div>
+      {!cancelled && post.locationLabel && (
+        <div className="fpp-card-loc">📍 {post.locationLabel}</div>
       )}
       {!cancelled && (
         <div className="fpp-card-actions">
