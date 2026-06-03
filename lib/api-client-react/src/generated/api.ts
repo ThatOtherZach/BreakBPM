@@ -35,6 +35,7 @@ import type {
   GameStateSnapshot,
   GetGameHistoryParams,
   GetGameStateByCodeParams,
+  GetStatsParams,
   GiftCodeIssueResult,
   HealthStatus,
   JoinGameInput,
@@ -55,6 +56,7 @@ import type {
   ScreenNameUpdate,
   StartGameInput,
   StartGameResult,
+  StatsResult,
   SubscriptionCheckoutInput,
   SubscriptionVerifyResult,
   VerifyCheckoutInput,
@@ -1920,6 +1922,92 @@ export function useGetGameHistory<TData = Awaited<ReturnType<typeof getGameHisto
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetGameHistoryQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetStatsUrl = (params?: GetStatsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/stats?${stringifiedParams}` : `/api/stats`
+}
+
+/**
+ * Returns derived statistics over completed games. Access scales with the caller's tier: anonymous → global scope, 24h window only; signed-in without a pass → personal scope, 24h window only; pass holders → personal stats with a selectable window (24h / 30d / 365d / all) plus an optional global overlay. Personal stats are attributed through game_participants (so joined games count, not just hosted ones) and recomputed per game from the shot log. The server clamps window/scope to what the caller's tier allows. Results are cached server-side with a 1-hour TTL; pass holders may pass refresh=true to force a fresh recompute of the requested key.
+
+ * @summary Aggregate shooting statistics, gated by tier
+ */
+export const getStats = async (params?: GetStatsParams, options?: RequestInit): Promise<StatsResult> => {
+
+  return customFetch<StatsResult>(getGetStatsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStatsQueryKey = (params?: GetStatsParams,) => {
+    return [
+    `/api/stats`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetStatsQueryOptions = <TData = Awaited<ReturnType<typeof getStats>>, TError = ErrorType<void>>(params?: GetStatsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStatsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStats>>> = ({ signal }) => getStats(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getStats>>>
+export type GetStatsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Aggregate shooting statistics, gated by tier
+ */
+
+export function useGetStats<TData = Awaited<ReturnType<typeof getStats>>, TError = ErrorType<void>>(
+ params?: GetStatsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStatsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -69,6 +69,13 @@ export interface GameState {
    * until resolved via resolveSharkPick().
    */
   pendingSharkPick?: boolean;
+  /**
+   * Total number of undos performed in this game ("No one Saw That"). Bumped
+   * each time the scorekeeper reverts a logged action. Persisted in the
+   * gameState JSONB so the Stats page can total it across games. Defaults to
+   * 0; historical games (saved before this field existed) read back as 0.
+   */
+  undoCount: number;
 }
 
 /** True when this is the solo-vs-Shark flavor of 8-ball. */
@@ -484,6 +491,7 @@ export function encodeGameState(state: GameState): string {
       ga: state.sharkAggression,
       gsb: state.sharkSunkBalls,
       psp: state.pendingSharkPick,
+      uc: state.undoCount,
     };
     return btoa(JSON.stringify(compact));
   } catch {
@@ -512,6 +520,7 @@ export function decodeGameState(encoded: string): Partial<GameState> | null {
       sharkAggression: d.ga,
       sharkSunkBalls: Array.isArray(d.gsb) ? d.gsb : undefined,
       pendingSharkPick: d.psp ?? false,
+      undoCount: typeof d.uc === 'number' ? d.uc : 0,
     };
   } catch {
     return null;

@@ -454,6 +454,54 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/GameHistoryResponse" }
 
+  /stats:
+    get:
+      operationId: getStats
+      tags: [games]
+      summary: Aggregate shooting statistics, gated by tier
+      description: >
+        Returns derived statistics over completed games. Access scales with
+        the caller's tier: anonymous → global scope, 24h window only;
+        signed-in without a pass → personal scope, 24h window only; pass
+        holders → personal stats with a selectable window (24h / 30d / 365d /
+        all) plus an optional global overlay. Personal stats are attributed
+        through game_participants (so joined games count, not just hosted
+        ones) and recomputed per game from the shot log. The server clamps
+        window/scope to what the caller's tier allows. Results are cached
+        server-side with a 1-hour TTL; pass holders may pass refresh=true to
+        force a fresh recompute of the requested key.
+      parameters:
+        - name: window
+          in: query
+          required: false
+          schema: { type: string, enum: [24h, 30d, 365d, all], default: 24h }
+          description: >
+            Time window anchored on each game's endedAt. Clamped to 24h for
+            callers without a pass.
+        - name: scope
+          in: query
+          required: false
+          schema: { type: string, enum: [personal, global], default: personal }
+          description: >
+            personal = games the caller participated in; global = aggregate
+            across all users. Anonymous callers are forced to global;
+            no-pass callers are forced to personal.
+        - name: refresh
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+          description: >
+            Bypass and repopulate the cache for the requested key. Honored
+            only for pass holders; ignored otherwise.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StatsResult" }
+        "429":
+          description: Too many requests
+
 components:
   schemas:
     HealthStatus:
@@ -997,3 +1045,113 @@ components:
         games:
           type: array
           items: { $ref: "#/components/schemas/GameHistoryEntry" }
+
+    StatBall:
+      type: object
+      required: [ball, count]
+      properties:
+        ball: { type: integer }
+        count: { type: integer }
+
+    StatPlayTime:
+      type: object
+      required: [gameType, avgDurationMs, gameCount]
+      properties:
+        gameType: { type: string, enum: [8ball, 9ball, practice] }
+        avgDurationMs: { type: integer }
+        gameCount: { type: integer }
+
+    StatsResult:
+      type: object
+      required:
+        [
+          tier,
+          scope,
+          window,
+          appliedScope,
+          appliedWindow,
+          canChooseWindow,
+          canToggleGlobal,
+          canRefresh,
+          cached,
+          gamesPlayed,
+          totalShots,
+          totalMisses,
+          totalFouls,
+          totalSafeties,
+          totalUndos,
+          avgShotsPerGame,
+          avgMissesPerGame,
+          avgFoulsPerGame,
+          avgSafetiesPerGame,
+          playTimeByType,
+          topBalls,
+        ]
+      properties:
+        # The caller's resolved entitlement tier.
+        tier: { type: string, enum: [public, account, pass] }
+        # Echo of the scope/window the client requested.
+        scope: { type: string, enum: [personal, global] }
+        window: { type: string, enum: [24h, 30d, 365d, all] }
+        # What the server actually served after clamping to the caller's
+        # tier (anonymous → global+24h; no-pass → personal+24h).
+        appliedScope: { type: string, enum: [personal, global] }
+        appliedWindow: { type: string, enum: [24h, 30d, 365d, all] }
+        # UI capability flags, derived from tier, so the client doesn't
+        # re-implement the gating rules.
+        canChooseWindow: { type: boolean }
+        canToggleGlobal: { type: boolean }
+        canRefresh: { type: boolean }
+        # True when this response was served from the 1-hour cache rather
+        # than freshly computed.
+        cached: { type: boolean }
+        # ISO timestamp the served snapshot was computed at.
+        computedAt: { type: string, format: date-time }
+
+        # ── Results ──
+        gamesPlayed: { type: integer }
+        # Personal scope only — fraction of completed non-practice games the
+        # caller won. Null in global scope (meaningless there).
+        winRate: { type: ["number", "null"] }
+        # Global scope only — fraction of completed games that ended in a
+        # clean win (vs forfeit/abandonment), from the outcome field. Null
+        # in personal scope.
+        finishRate: { type: ["number", "null"] }
+        # 8-ball games that actually ended on an 8-ball shot. Null when there
+        # are no qualifying 8-ball games in the scope/window.
+        eightBallSinkRate: { type: ["number", "null"] }
+        eightBallDecidedGames: { type: integer }
+
+        # ── Shooting ──
+        # Whole-number percentage (0–100). Null when no qualifying shots.
+        accuracy: { type: ["integer", "null"] }
+        bestAccuracy: { type: ["integer", "null"] }
+        totalShots: { type: integer }
+        totalMisses: { type: integer }
+        totalFouls: { type: integer }
+        totalSafeties: { type: integer }
+        totalUndos: { type: integer }
+        avgShotsPerGame: { type: number }
+        avgMissesPerGame: { type: number }
+        avgFoulsPerGame: { type: number }
+        avgSafetiesPerGame: { type: number }
+
+        # ── Pace ──
+        # Mean / peak per-game BPM. Null when no game has a BPM yet.
+        avgBpm: { type: ["number", "null"] }
+        bestBpm: { type: ["number", "null"] }
+        playTimeByType:
+          type: array
+          items: { $ref: "#/components/schemas/StatPlayTime" }
+
+        # ── Ball patterns (personal scope only) ──
+        topBalls:
+          type: array
+          items: { $ref: "#/components/schemas/StatBall" }
+        # Solids vs stripes split across 8-ball games where a group was
+        # locked in. Null when there are no such games.
+        solidsCount: { type: integer }
+        stripesCount: { type: integer }
+        # Shark-mode wins / total shark games. Null when no shark games.
+        sharkWinRate: { type: ["number", "null"] }
+        sharkGames: { type: integer }

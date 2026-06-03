@@ -23,9 +23,12 @@ import {
   GetGameStateByCodeResponse,
   ResolveWatchByNameQueryParams,
   ResolveWatchByNameResponse,
+  GetStatsQueryParams,
+  GetStatsResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser, getVerifiedSubject } from "../lib/auth";
 import { computeEntitlement, getActivePasses, getActiveSubscription } from "../lib/entitlement";
+import { resolveStats, type StatScope, type StatWindow } from "../lib/stats";
 import { sweepStaleGames, INACTIVITY_FORFEIT_MS, MAX_GAME_DURATION_MS } from "../lib/forfeit";
 import { newId } from "../lib/ids";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
@@ -1488,6 +1491,75 @@ router.get("/games/history", async (req, res): Promise<void> => {
       page,
       totalPages,
       games,
+    }),
+  );
+});
+
+/**
+ * Aggregate shooting statistics, gated by tier:
+ *  - anonymous     → global scope, 24h window, no toggles/refresh
+ *  - signed-in     → personal scope, 24h window, no toggles/refresh
+ *  - pass holders  → personal stats with selectable window + global overlay
+ *                    + manual refresh (cache bypass)
+ *
+ * Results are served from a 1-hour in-memory cache keyed by scope/window
+ * (and userId for personal); pass holders may force a recompute.
+ */
+router.get("/stats", async (req, res): Promise<void> => {
+  const ip = req.ip ?? "unknown";
+  if (!rateLimit(ip, "state")) {
+    res.status(429).json({ error: "rate_limited" });
+    return;
+  }
+
+  const parsed = GetStatsQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "invalid_query" });
+    return;
+  }
+  const { window, scope, refresh } = parsed.data;
+
+  const user = await getOrCreateUser(req);
+  const entitlement = await computeEntitlement(user);
+  const tier = entitlement.tier;
+  const isPass = tier === "pass";
+
+  // Clamp the requested scope/window to what this tier may access.
+  let appliedScope: StatScope;
+  let appliedWindow: StatWindow;
+  if (!user) {
+    appliedScope = "global";
+    appliedWindow = "24h";
+  } else if (!isPass) {
+    appliedScope = "personal";
+    appliedWindow = "24h";
+  } else {
+    appliedScope = scope;
+    appliedWindow = window;
+  }
+
+  const effectiveRefresh = isPass && refresh;
+  const { core, cached } = await resolveStats(
+    appliedScope,
+    appliedWindow,
+    user?.id ?? null,
+    effectiveRefresh,
+  );
+
+  const { computedAt, ...rest } = core;
+  res.json(
+    GetStatsResponse.parse({
+      tier,
+      scope,
+      window,
+      appliedScope,
+      appliedWindow,
+      canChooseWindow: isPass,
+      canToggleGlobal: isPass,
+      canRefresh: isPass,
+      cached,
+      computedAt: new Date(computedAt).toISOString(),
+      ...rest,
     }),
   );
 });

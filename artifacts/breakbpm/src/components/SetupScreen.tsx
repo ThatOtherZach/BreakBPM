@@ -32,10 +32,11 @@ interface Props {
   onResume: (state: GameState, serverGameId: string | null, maxGameDurationMs: number | null, pausedDuration: number) => void;
   onAbout: () => void;
   onAccount: () => void;
+  onStats: () => void;
   onSignIn: () => void;
 }
 
-export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onSignIn }: Props) {
+export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onStats, onSignIn }: Props) {
   const [, setLocation] = useLocation();
   const startGame = useStartGame();
   const abandonGame = useAbandonGame();
@@ -144,6 +145,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
       // game silently degrades into a non-shark solo 8-ball (no steals).
       sharkAggression: gs.sharkAggression,
       sharkSunkBalls: gs.sharkSunkBalls,
+      undoCount: gs.undoCount ?? 0,
     };
     // Seed localStorage so the next refresh resumes from local too.
     saveInProgressGame({
@@ -282,7 +284,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
     // appears for player-name input.
     <div className="app-window app-window--page">
       {/* Title bar */}
-      <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
+      <Navbar onAbout={onAbout} onAccount={onAccount} onStats={onStats} onSignIn={onSignIn} />
       {/* ── PC-98 Splash Panel ── */}
       <div className="splash-panel">
         {/* Left: 8-ball art in a CRT-style frame */}

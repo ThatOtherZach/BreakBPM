@@ -588,6 +588,116 @@ export interface GameHistoryResponse {
   games: GameHistoryEntry[];
 }
 
+export interface StatBall {
+  ball: number;
+  count: number;
+}
+
+export type StatPlayTimeGameType = typeof StatPlayTimeGameType[keyof typeof StatPlayTimeGameType];
+
+
+export const StatPlayTimeGameType = {
+  '8ball': '8ball',
+  '9ball': '9ball',
+  practice: 'practice',
+} as const;
+
+export interface StatPlayTime {
+  gameType: StatPlayTimeGameType;
+  avgDurationMs: number;
+  gameCount: number;
+}
+
+export type StatsResultTier = typeof StatsResultTier[keyof typeof StatsResultTier];
+
+
+export const StatsResultTier = {
+  public: 'public',
+  account: 'account',
+  pass: 'pass',
+} as const;
+
+export type StatsResultScope = typeof StatsResultScope[keyof typeof StatsResultScope];
+
+
+export const StatsResultScope = {
+  personal: 'personal',
+  global: 'global',
+} as const;
+
+export type StatsResultWindow = typeof StatsResultWindow[keyof typeof StatsResultWindow];
+
+
+export const StatsResultWindow = {
+  '24h': '24h',
+  '30d': '30d',
+  '365d': '365d',
+  all: 'all',
+} as const;
+
+export type StatsResultAppliedScope = typeof StatsResultAppliedScope[keyof typeof StatsResultAppliedScope];
+
+
+export const StatsResultAppliedScope = {
+  personal: 'personal',
+  global: 'global',
+} as const;
+
+export type StatsResultAppliedWindow = typeof StatsResultAppliedWindow[keyof typeof StatsResultAppliedWindow];
+
+
+export const StatsResultAppliedWindow = {
+  '24h': '24h',
+  '30d': '30d',
+  '365d': '365d',
+  all: 'all',
+} as const;
+
+export interface StatsResult {
+  tier: StatsResultTier;
+  scope: StatsResultScope;
+  window: StatsResultWindow;
+  appliedScope: StatsResultAppliedScope;
+  appliedWindow: StatsResultAppliedWindow;
+  canChooseWindow: boolean;
+  canToggleGlobal: boolean;
+  canRefresh: boolean;
+  cached: boolean;
+  computedAt?: string;
+  gamesPlayed: number;
+  /** @nullable */
+  winRate?: number | null;
+  /** @nullable */
+  finishRate?: number | null;
+  /** @nullable */
+  eightBallSinkRate?: number | null;
+  eightBallDecidedGames?: number;
+  /** @nullable */
+  accuracy?: number | null;
+  /** @nullable */
+  bestAccuracy?: number | null;
+  totalShots: number;
+  totalMisses: number;
+  totalFouls: number;
+  totalSafeties: number;
+  totalUndos: number;
+  avgShotsPerGame: number;
+  avgMissesPerGame: number;
+  avgFoulsPerGame: number;
+  avgSafetiesPerGame: number;
+  /** @nullable */
+  avgBpm?: number | null;
+  /** @nullable */
+  bestBpm?: number | null;
+  playTimeByType: StatPlayTime[];
+  topBalls: StatBall[];
+  solidsCount?: number;
+  stripesCount?: number;
+  /** @nullable */
+  sharkWinRate?: number | null;
+  sharkGames?: number;
+}
+
 export type GetGameStateByCodeParams = {
 /**
  * @minLength 5
@@ -612,4 +722,40 @@ export type GetGameHistoryParams = {
  */
 page?: number;
 };
+
+export type GetStatsParams = {
+/**
+ * Time window anchored on each game's endedAt. Clamped to 24h for callers without a pass.
+
+ */
+window?: GetStatsWindow;
+/**
+ * personal = games the caller participated in; global = aggregate across all users. Anonymous callers are forced to global; no-pass callers are forced to personal.
+
+ */
+scope?: GetStatsScope;
+/**
+ * Bypass and repopulate the cache for the requested key. Honored only for pass holders; ignored otherwise.
+
+ */
+refresh?: boolean;
+};
+
+export type GetStatsWindow = typeof GetStatsWindow[keyof typeof GetStatsWindow];
+
+
+export const GetStatsWindow = {
+  '24h': '24h',
+  '30d': '30d',
+  '365d': '365d',
+  all: 'all',
+} as const;
+
+export type GetStatsScope = typeof GetStatsScope[keyof typeof GetStatsScope];
+
+
+export const GetStatsScope = {
+  personal: 'personal',
+  global: 'global',
+} as const;
 

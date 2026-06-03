@@ -6,10 +6,11 @@ interface NavbarProps {
   onAbout?: () => void;
   onBack?: () => void;
   onAccount?: () => void;
+  onStats?: () => void;
   onSignIn?: () => void;
 }
 
-export default function Navbar({ onAbout, onBack, onAccount, onSignIn }: NavbarProps) {
+export default function Navbar({ onAbout, onBack, onAccount, onStats, onSignIn }: NavbarProps) {
   const [open, setOpen] = useState(false);
   const me = useGetMe();
 
@@ -19,7 +20,7 @@ export default function Navbar({ onAbout, onBack, onAccount, onSignIn }: NavbarP
     : tier === 'account' ? '●'
     : null;
 
-  const showHamburger = !!(onAbout || onAccount || onSignIn);
+  const showHamburger = !!(onAbout || onAccount || onStats || onSignIn);
 
   return (
     <>
@@ -62,6 +63,11 @@ export default function Navbar({ onAbout, onBack, onAccount, onSignIn }: NavbarP
 
       {open && showHamburger && (
         <div className="navbar-menu">
+          {onStats && (
+            <button className="navbar-menu-item" onClick={() => { setOpen(false); onStats(); }}>
+              <span style={{ textDecoration: 'underline' }}>S</span>tats
+            </button>
+          )}
           {onAbout && (
             <button className="navbar-menu-item" onClick={() => { setOpen(false); onAbout(); }}>
               <span style={{ textDecoration: 'underline' }}>A</span>bout

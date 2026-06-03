@@ -39,6 +39,7 @@ interface Props {
   onNewGame: () => void;
   onAbout: () => void;
   onAccount: () => void;
+  onStats: () => void;
   onSignIn: () => void;
 }
 
@@ -64,7 +65,7 @@ function ballClass(ball: number, legal: number[], sunk: number[], _gameType: str
   return base;
 }
 
-export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, initialPausedDuration = 0, onNewGame, onAbout, onAccount, onSignIn }: Props) {
+export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, initialPausedDuration = 0, onNewGame, onAbout, onAccount, onStats, onSignIn }: Props) {
   const saveGame = useSaveGame();
   const recordActivity = useRecordGameActivity();
   const me = useGetMe();
@@ -549,7 +550,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     if (!undoStack.length) return;
     const prev = undoStack[undoStack.length - 1];
     setUndoStack(s => s.slice(0, -1));
-    applyState(prev);
+    // "No one Saw That" — every revert bumps the running undo tally, which
+    // rides along in the gameState JSONB and feeds the Stats page. We carry
+    // the *current* count forward (not the snapshot's) so the tally only ever
+    // grows, even as we roll the rest of the state back.
+    applyState({ ...prev, undoCount: (state.undoCount ?? 0) + 1 });
   }
 
   function handleShare() {
@@ -698,7 +703,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
   return (
     <div className="app-window">
-      <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
+      <Navbar onAbout={onAbout} onAccount={onAccount} onStats={onStats} onSignIn={onSignIn} />
       {/* ── Dark HUD panel (matches splash aesthetic) ── */}
       <div className="hud-panel">
 
