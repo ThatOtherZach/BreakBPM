@@ -630,7 +630,7 @@ function PostCard({
         <div className="fpp-card-when">{formatSchedule(new Date(post.scheduledAt))}</div>
       )}
       {!cancelled && post.locationLabel && (
-        <div className="fpp-card-loc">📍 {cityOf(post.locationLabel)}</div>
+        <div className="fpp-card-loc">📍 {post.locationLabel}</div>
       )}
       {!cancelled && (
         <div className="fpp-card-actions">
