@@ -988,12 +988,12 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 Spectators can follow this game in real time.
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-                <span style={{ fontSize: 13, opacity: 0.7 }}>{watchName ? 'LINK' : 'CODE'}</span>
+                <span style={{ fontSize: 13, opacity: 0.7, flexShrink: 0 }}>{watchName ? 'LINK' : 'CODE'}</span>
                 <span
                   className="hud-code"
-                  style={{ fontSize: watchName ? 14 : 18, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}
+                  style={{ fontSize: watchName ? 13 : 18, wordBreak: 'break-all', minWidth: 0 }}
                 >
-                  {watchName ? `/watch/${watchName}` : state.shareCode}
+                  {watchName ? joinUrl.replace(/^https?:\/\//, '') : state.shareCode}
                 </span>
                 <button
                   className="btn"
