@@ -40,7 +40,7 @@ const DEFAULT_CENTER: [number, number] = [20, 0];
 const DEFAULT_ZOOM = 2;
 
 /** "Near Me" radius in kilometres. */
-const NEAR_RADIUS_KM = 50;
+const NEAR_RADIUS_KM = 25;
 
 /** Great-circle distance between two [lat, lng] points, in kilometres. */
 function haversineKm(a: [number, number], b: [number, number]): number {
