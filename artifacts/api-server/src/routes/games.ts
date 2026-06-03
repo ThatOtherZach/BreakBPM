@@ -807,6 +807,65 @@ router.post("/games/join", async (req, res): Promise<void> => {
     );
   }
 
+  // ── Spectator-only callers (the persistent /watch/{name} link) ───
+  // These must NEVER occupy a player slot. Short-circuit straight to the
+  // read-only "spectator" role without touching slot allocation. Runs
+  // after the idempotent guestToken rejoin above so a device that already
+  // holds a guest slot keeps it; a signed-in caller who already holds a
+  // slot (e.g. the host opening their own watch link) is recognized here
+  // and returned as "already_joined" so the client redirects them out of
+  // the read-only view instead of mirroring their own game.
+  if (parsed.data.spectatorOnly) {
+    if (user) {
+      const own = await db
+        .select()
+        .from(gameParticipantsTable)
+        .where(
+          and(
+            eq(gameParticipantsTable.gameId, fresh.id),
+            eq(gameParticipantsTable.userId, user.id),
+            isNull(gameParticipantsTable.leftAt),
+          ),
+        )
+        .limit(1);
+      if (own[0]) {
+        res.json(
+          JoinGameResponse.parse({
+            joined: true,
+            role: "already_joined",
+            reason: own[0].isHost ? "host" : undefined,
+            gameId: fresh.id,
+            gameType: fresh.gameType as "8ball" | "9ball" | "practice",
+            slotIndex: own[0].slotIndex,
+            displayName: own[0].displayName,
+            shareCode: code,
+          }),
+        );
+        return;
+      }
+    }
+    const watcherName = user
+      ? user.screenName
+      : parsed.data.guestName?.trim() || "Guest";
+    if (!spectatingEnabled) {
+      spectatorsDisabled(watcherName);
+      return;
+    }
+    res.json(
+      JoinGameResponse.parse({
+        joined: true,
+        role: "spectator",
+        gameId: fresh.id,
+        gameType: fresh.gameType as "8ball" | "9ball" | "practice",
+        slotIndex: null,
+        displayName: watcherName,
+        shareCode: code,
+        guestToken: null,
+      }),
+    );
+    return;
+  }
+
   // ── Guest (anonymous) joiners ────────────────────────────────────
   // Per task spec: guests play and get real slots; only stats
   // persistence differs (no userId → /games/history will skip them).

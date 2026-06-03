@@ -497,6 +497,7 @@ export interface JoinGameInput {
      */
   guestName?: string;
   guestToken?: string;
+  spectatorOnly?: boolean;
 }
 
 export type JoinGameResultRole = typeof JoinGameResultRole[keyof typeof JoinGameResultRole];

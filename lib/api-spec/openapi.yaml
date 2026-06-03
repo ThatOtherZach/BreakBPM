@@ -962,6 +962,12 @@ components:
         # new one. Makes guest rejoin (e.g. after a tab refresh)
         # idempotent so a single guest never holds two slots.
         guestToken: { type: string }
+        # View-only intent (the persistent /watch/{name} link). When true
+        # the server NEVER allocates a player slot — it short-circuits to
+        # the read-only "spectator" role (still subject to the host having
+        # spectating enabled). Existing participants are still recognized so
+        # a host opening their own watch link is redirected out, not mirrored.
+        spectatorOnly: { type: boolean }
 
     JoinGameResult:
       type: object

@@ -18,4 +18,5 @@ export interface JoinGameInput {
      */
   guestName?: string;
   guestToken?: string;
+  spectatorOnly?: boolean;
 }

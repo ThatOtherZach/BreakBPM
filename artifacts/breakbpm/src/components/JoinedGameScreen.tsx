@@ -33,6 +33,13 @@ interface Props {
   onAbout: () => void;
   onAccount: () => void;
   onSignIn: () => void;
+  /**
+   * View-only intent. Set by the persistent /watch/{name} link so the join
+   * call never claims a player slot — the server short-circuits to the
+   * read-only spectator role. When true we also skip the guestToken dance
+   * (no slot to reserve / forfeit), so a watcher never occupies a seat.
+   */
+  spectatorOnly?: boolean;
 }
 
 /**
@@ -43,7 +50,7 @@ interface Props {
  * Renders an overlay banner that explicitly states "View only — host is
  * scorekeeping" so joiners aren't confused about why they can't tap.
  */
-export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onSignIn }: Props) {
+export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onSignIn, spectatorOnly = false }: Props) {
   const [, setLocation] = useLocation();
   const join = useJoinGame();
   const leave = useLeaveGame();
@@ -69,10 +76,20 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
     joinedRef.current = true;
     // Replay any guestToken stored from a prior join on this device so
     // the server can short-circuit to our existing slot (idempotent
-    // rejoin) instead of allocating a new one on tab refresh.
+    // rejoin) instead of allocating a new one on tab refresh. Skipped
+    // for view-only watchers — they never reserve a slot, so there is no
+    // token to replay and we must not appear to claim one.
     let storedToken: string | null = null;
-    try { storedToken = localStorage.getItem(guestTokenKey); } catch { /* noop */ }
-    join.mutateAsync({ data: { code, ...(storedToken ? { guestToken: storedToken } : {}) } })
+    if (!spectatorOnly) {
+      try { storedToken = localStorage.getItem(guestTokenKey); } catch { /* noop */ }
+    }
+    join.mutateAsync({
+      data: {
+        code,
+        ...(spectatorOnly ? { spectatorOnly: true } : {}),
+        ...(storedToken ? { guestToken: storedToken } : {}),
+      },
+    })
       .then(r => {
         if (!r.joined && r.reason === 'not_found') {
           setJoinError(`No active game with code ${code}.`);
@@ -117,7 +134,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
         const err = e as { data?: { error?: string } };
         setJoinError(err?.data?.error ?? (e instanceof Error ? e.message : 'Could not join.'));
       });
-  }, [code, join, guestTokenKey]);
+  }, [code, join, guestTokenKey, spectatorOnly]);
 
   // Polling: every 1s while tab is visible, 10s when hidden. Disabled
   // once the game ends so we stop hitting the server in a tight loop.

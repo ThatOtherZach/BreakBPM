@@ -393,7 +393,8 @@ export const joinGameBodyGuestNameMax = 24;
 export const JoinGameBody = zod.object({
   "code": zod.string().min(joinGameBodyCodeMin).max(joinGameBodyCodeMax),
   "guestName": zod.string().min(1).max(joinGameBodyGuestNameMax).optional(),
-  "guestToken": zod.string().optional()
+  "guestToken": zod.string().optional(),
+  "spectatorOnly": zod.boolean().optional()
 })
 
 export const JoinGameResponse = zod.object({

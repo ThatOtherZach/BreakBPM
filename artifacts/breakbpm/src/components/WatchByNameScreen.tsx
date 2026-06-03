@@ -56,6 +56,7 @@ export default function WatchByNameScreen({ name, onBack, onAbout, onAccount, on
         onAbout={onAbout}
         onAccount={onAccount}
         onSignIn={onSignIn}
+        spectatorOnly
       />
     );
   }
