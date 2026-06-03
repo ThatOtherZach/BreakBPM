@@ -1750,14 +1750,17 @@ html, #root {
   max-width: 100%;
 }
 .fpp-table-input { text-align: center; }
-.fpp-coords {
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  color: #333;
+.fpp-row-hint {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: #777;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.fpp-coords--caption {
-  display: block;
-  margin: 4px 0 2px;
+.fpp-row-hint--coords {
+  font-family: 'Courier New', monospace;
   color: #555;
 }
 .fpp-label {

@@ -301,16 +301,16 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                       <FlyTo position={position} flyKey={flyKey} />
                     </MapContainer>
                   </div>
-                  <span className="fpp-coords fpp-coords--caption">
-                    {position
-                      ? `${position[0].toFixed(4)}, ${position[1].toFixed(4)}`
-                      : "Tap the map to drop a pin"}
-                  </span>
                   <div className="fpp-form-row fpp-form-row--compact">
                     <label className="fpp-label fpp-label--row">Location</label>
                     <button className="btn fpp-locate-btn" type="button" onClick={locateMe}>
                       📍 Locate me
                     </button>
+                    <span className="fpp-row-hint fpp-row-hint--coords">
+                      {position
+                        ? `${position[0].toFixed(4)}, ${position[1].toFixed(4)}`
+                        : "Tap the map to drop a pin"}
+                    </span>
                   </div>
                   <div className="fpp-form-row fpp-form-row--compact">
                     <label className="fpp-label fpp-label--row">
@@ -325,6 +325,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                       onChange={(e) => setTableNumber(e.target.value)}
                       placeholder="e.g. 3"
                     />
+                    <span className="fpp-row-hint">Which table you'll be on</span>
                   </div>
                   <div className="fpp-form-row fpp-form-row--compact">
                     <label className="fpp-label fpp-label--row">Date</label>
@@ -336,6 +337,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                       value={dateStr}
                       onChange={(e) => setDateStr(e.target.value)}
                     />
+                    <span className="fpp-row-hint">Up to 1 year out</span>
                   </div>
                   <div className="fpp-form-row fpp-form-row--compact">
                     <label className="fpp-label fpp-label--row">Time (24h)</label>
@@ -346,6 +348,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                       value={timeStr}
                       onChange={(e) => setTimeStr(e.target.value)}
                     />
+                    <span className="fpp-row-hint">24-hour clock</span>
                   </div>
                   {formError && <p className="fpp-error">{formError}</p>}
                   {atLimit && (
