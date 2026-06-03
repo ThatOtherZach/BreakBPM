@@ -39,6 +39,22 @@ const poolIcon = L.divIcon({
 const DEFAULT_CENTER: [number, number] = [20, 0];
 const DEFAULT_ZOOM = 2;
 
+/** Fits the map view to all visible pins whenever the set of pins changes. */
+function FitBounds({ positions }: { positions: [number, number][] }) {
+  const map = useMap();
+  const key = positions.map((p) => p.join(",")).join("|");
+  useEffect(() => {
+    if (positions.length === 0) return;
+    if (positions.length === 1) {
+      map.setView(positions[0], 13);
+      return;
+    }
+    map.fitBounds(L.latLngBounds(positions), { padding: [40, 40], maxZoom: 14 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, map]);
+  return null;
+}
+
 const CREATE_REASONS: Record<string, string> = {
   not_signed_in: "You must be signed in to post.",
   not_paid: "A pass is required to create a post.",
@@ -441,6 +457,9 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                     <TileLayer
                       attribution='&copy; OpenStreetMap'
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    <FitBounds
+                      positions={mappable.map((p) => [p.latitude as number, p.longitude as number])}
                     />
                     {mappable.map((post) => (
                       <Marker
