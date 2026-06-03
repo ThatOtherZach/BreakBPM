@@ -663,15 +663,19 @@ function PostCard({
               target="_blank"
               rel="noreferrer"
             >
-              Open in Maps
+              🗺️ Open in Maps
             </a>
           )}
           <button className="btn" onClick={() => downloadIcs(post)}>
-            Add to Calendar
+            📅 Add to Calendar
           </button>
           {post.isOwn && (
-            <button className="btn btn-danger" disabled={pending} onClick={() => onCancel(post.id)}>
-              Cancel
+            <button
+              className="btn btn-danger fpp-cancel-btn"
+              disabled={pending}
+              onClick={() => onCancel(post.id)}
+            >
+              ❌ Cancel
             </button>
           )}
         </div>
