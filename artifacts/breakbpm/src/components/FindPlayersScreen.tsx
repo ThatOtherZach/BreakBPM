@@ -306,8 +306,9 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                       ? `${position[0].toFixed(4)}, ${position[1].toFixed(4)}`
                       : "Tap the map to drop a pin"}
                   </span>
-                  <div className="fpp-form-row">
-                    <button className="btn" type="button" onClick={locateMe}>
+                  <div className="fpp-form-row fpp-form-row--compact">
+                    <label className="fpp-label fpp-label--row">Location</label>
+                    <button className="btn fpp-locate-btn" type="button" onClick={locateMe}>
                       📍 Locate me
                     </button>
                   </div>

@@ -1745,6 +1745,10 @@ html, #root {
   width: 160px;
   max-width: 100%;
 }
+.fpp-locate-btn {
+  width: 160px;
+  max-width: 100%;
+}
 .fpp-table-input { text-align: center; }
 .fpp-coords {
   font-family: 'Courier New', monospace;
