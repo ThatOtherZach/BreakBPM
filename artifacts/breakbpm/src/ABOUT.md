@@ -27,7 +27,15 @@ Every game gets a **5-character share code**. The host's device is always the sc
 
 ## Why BPM?
 
-Pool isn't just about who wins, it's about *how* you play. A 1.0 BPM game against a 3.0 BPM opponent tells a different story than the scoreboard alone. BreakBPM gives casual players a stat that actually means something at the table.
+Because most pool nights are a mess. Different bar rules, people forgetting what they’re shooting, slow play, arguments about whether it was a foul or not. After a decade of dealing with all of it, I built the app I actually wanted: one that strips everything unnecessary away.
+BreakBPM doesn’t try to simulate the table or read the balls with AI. It just logs your shots, one ball at a time, and gives you two things back:
+
+- Accuracy for what actually matters
+- BPM is a number you can compare with your friends
+
+The higher the BPM, the faster the game moves. That’s it. No fake science. Just something fun to chase while you’re actually playing.
+
+The app is basically a remote for the table. Simple. Fast. No bullsh!t.
 
 ## Track your stats
 
