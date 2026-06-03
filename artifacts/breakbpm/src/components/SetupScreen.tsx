@@ -33,10 +33,11 @@ interface Props {
   onAbout: () => void;
   onAccount: () => void;
   onStats: () => void;
+  onFindPlayers: () => void;
   onSignIn: () => void;
 }
 
-export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onStats, onSignIn }: Props) {
+export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onStats, onFindPlayers, onSignIn }: Props) {
   const [, setLocation] = useLocation();
   const startGame = useStartGame();
   const abandonGame = useAbandonGame();
@@ -284,7 +285,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
     // appears for player-name input.
     <div className="app-window app-window--page">
       {/* Title bar */}
-      <Navbar onAbout={onAbout} onAccount={onAccount} onStats={onStats} onSignIn={onSignIn} />
+      <Navbar onAbout={onAbout} onAccount={onAccount} onStats={onStats} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
       {/* ── PC-98 Splash Panel ── */}
       <div className="splash-panel">
         {/* Left: 8-ball art in a CRT-style frame */}

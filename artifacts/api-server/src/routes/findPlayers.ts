@@ -1,0 +1,314 @@
+import { Router, type IRouter } from "express";
+import { and, asc, count, eq, gt, isNull, lte, sql } from "drizzle-orm";
+import { db, findPlayerPostsTable, usersTable } from "@workspace/db";
+import {
+  ListFindPlayerPostsQueryParams,
+  ListFindPlayerPostsResponse,
+  CreateFindPlayerPostBody,
+  CreateFindPlayerPostResponse,
+  CancelFindPlayerPostBody,
+  CancelFindPlayerPostResponse,
+} from "@workspace/api-zod";
+import { getOrCreateUser } from "../lib/auth";
+import { computeEntitlement } from "../lib/entitlement";
+import { newId } from "../lib/ids";
+
+const router: IRouter = Router();
+
+/** Posts per page in the list view. */
+const PAGE_SIZE = 10;
+/** Hard cap on a user's simultaneously-active (non-cancelled) posts. */
+const MAX_ACTIVE_POSTS = 5;
+
+type PostRow = typeof findPlayerPostsTable.$inferSelect;
+
+/** Thrown inside the create transaction to abort with a specific client reason. */
+class CreateRuleError extends Error {
+  constructor(public reason: "limit_reached" | "duplicate_date") {
+    super(reason);
+  }
+}
+
+/** Detect a Postgres unique-constraint violation (SQLSTATE 23505). */
+function isUniqueViolation(err: unknown): boolean {
+  const code = (err as { code?: string; cause?: { code?: string } })?.code
+    ?? (err as { cause?: { code?: string } })?.cause?.code;
+  return code === "23505";
+}
+
+/**
+ * Shape a DB row into the API contract. Cancelled posts hide their place and
+ * time — only the "Cancelled" badge and (for the owner) the card remain until
+ * the original time passes and the row is purged.
+ */
+function toPostResponse(
+  row: PostRow,
+  screenName: string,
+  callerUserId: string,
+) {
+  const cancelled = row.cancelledAt != null;
+  return {
+    id: row.id,
+    displayName: `${screenName}, Table #${row.tableNumber}`,
+    userName: screenName,
+    tableNumber: row.tableNumber,
+    latitude: cancelled ? null : row.latitude,
+    longitude: cancelled ? null : row.longitude,
+    scheduledAt: cancelled ? null : row.scheduledAt,
+    cancelled,
+    isOwn: row.userId === callerUserId,
+  };
+}
+
+/**
+ * Durable housekeeping: drop posts whose scheduled time has already passed.
+ * Read-time filtering (every list query uses `scheduledAt > now`) is the
+ * correctness guarantee; this sweep-on-write/read keeps the table from
+ * growing unbounded without relying on an in-process timer that would not
+ * survive a restart or redeploy.
+ */
+async function purgeExpiredPosts(now: Date): Promise<void> {
+  await db.delete(findPlayerPostsTable).where(lte(findPlayerPostsTable.scheduledAt, now));
+}
+
+/** Count a user's active (non-cancelled, still-future) posts. */
+async function countActivePosts(userId: string, now: Date): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(findPlayerPostsTable)
+    .where(
+      and(
+        eq(findPlayerPostsTable.userId, userId),
+        isNull(findPlayerPostsTable.cancelledAt),
+        gt(findPlayerPostsTable.scheduledAt, now),
+      ),
+    );
+  return row?.n ?? 0;
+}
+
+/**
+ * GET /find-players/posts — paginated, soonest-first list of active posts.
+ * Signed-out callers get an empty list (the page shows a sign-in prompt).
+ */
+router.get("/find-players/posts", async (req, res): Promise<void> => {
+  const parsed = ListFindPlayerPostsQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const page = parsed.data.page ?? 1;
+  const now = new Date();
+
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.json(
+      ListFindPlayerPostsResponse.parse({
+        signedIn: false,
+        canCreate: false,
+        activePostCount: 0,
+        maxActivePosts: MAX_ACTIVE_POSTS,
+        posts: [],
+        page: 1,
+        totalPages: 0,
+        total: 0,
+      }),
+    );
+    return;
+  }
+
+  await purgeExpiredPosts(now);
+
+  const entitlement = await computeEntitlement(user);
+  const canCreate = entitlement.tier === "pass";
+
+  // A post is listable while its time is still in the future — including
+  // cancelled-but-not-yet-expired posts (which render a "Cancelled" badge).
+  const activeFilter = gt(findPlayerPostsTable.scheduledAt, now);
+
+  const [{ n: total } = { n: 0 }] = await db
+    .select({ n: count() })
+    .from(findPlayerPostsTable)
+    .where(activeFilter);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const rows = await db
+    .select({ post: findPlayerPostsTable, screenName: usersTable.screenName })
+    .from(findPlayerPostsTable)
+    .innerJoin(usersTable, eq(usersTable.id, findPlayerPostsTable.userId))
+    .where(activeFilter)
+    .orderBy(asc(findPlayerPostsTable.scheduledAt))
+    .limit(PAGE_SIZE)
+    .offset((page - 1) * PAGE_SIZE);
+
+  const activePostCount = await countActivePosts(user.id, now);
+
+  res.json(
+    ListFindPlayerPostsResponse.parse({
+      signedIn: true,
+      canCreate,
+      activePostCount,
+      maxActivePosts: MAX_ACTIVE_POSTS,
+      posts: rows.map((r) => toPostResponse(r.post, r.screenName, user.id)),
+      page,
+      totalPages,
+      total,
+    }),
+  );
+});
+
+/**
+ * POST /find-players/posts — create a post. Paid tier only. Enforces the
+ * per-UTC-date, max-5, and 1-year-out rules.
+ */
+router.post("/find-players/posts", async (req, res): Promise<void> => {
+  const parsed = CreateFindPlayerPostBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { latitude, longitude, tableNumber } = parsed.data;
+  const scheduledAt = new Date(parsed.data.scheduledAt);
+  const now = new Date();
+
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.json(CreateFindPlayerPostResponse.parse({ success: false, reason: "not_signed_in" }));
+    return;
+  }
+
+  const entitlement = await computeEntitlement(user);
+  if (entitlement.tier !== "pass") {
+    res.json(CreateFindPlayerPostResponse.parse({ success: false, reason: "not_paid" }));
+    return;
+  }
+
+  if (!(scheduledAt.getTime() > now.getTime())) {
+    res.json(CreateFindPlayerPostResponse.parse({ success: false, reason: "in_past" }));
+    return;
+  }
+  const oneYearOut = new Date(now);
+  oneYearOut.setUTCFullYear(oneYearOut.getUTCFullYear() + 1);
+  if (scheduledAt.getTime() > oneYearOut.getTime()) {
+    res.json(CreateFindPlayerPostResponse.parse({ success: false, reason: "too_far" }));
+    return;
+  }
+
+  await purgeExpiredPosts(now);
+
+  const scheduledDateUtc = scheduledAt.toISOString().slice(0, 10);
+
+  // Enforce the max-5 and per-UTC-date rules atomically. We serialize all of a
+  // user's create attempts by taking a row lock on their `users` row first, so
+  // concurrent requests cannot each pass the count/dupe checks and overshoot
+  // the limit. The partial unique index (user_id, scheduled_date_utc WHERE
+  // cancelled_at IS NULL) remains the last-resort durable guarantee.
+  try {
+    const created = await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT 1 FROM ${usersTable} WHERE ${eq(usersTable.id, user.id)} FOR UPDATE`);
+
+      const [{ n: activeCount } = { n: 0 }] = await tx
+        .select({ n: count() })
+        .from(findPlayerPostsTable)
+        .where(
+          and(
+            eq(findPlayerPostsTable.userId, user.id),
+            isNull(findPlayerPostsTable.cancelledAt),
+            gt(findPlayerPostsTable.scheduledAt, now),
+          ),
+        );
+      if (activeCount >= MAX_ACTIVE_POSTS) throw new CreateRuleError("limit_reached");
+
+      const [dupe] = await tx
+        .select({ id: findPlayerPostsTable.id })
+        .from(findPlayerPostsTable)
+        .where(
+          and(
+            eq(findPlayerPostsTable.userId, user.id),
+            eq(findPlayerPostsTable.scheduledDateUtc, scheduledDateUtc),
+            isNull(findPlayerPostsTable.cancelledAt),
+          ),
+        )
+        .limit(1);
+      if (dupe) throw new CreateRuleError("duplicate_date");
+
+      const [row] = await tx
+        .insert(findPlayerPostsTable)
+        .values({
+          id: newId(),
+          userId: user.id,
+          latitude,
+          longitude,
+          tableNumber,
+          scheduledAt,
+          scheduledDateUtc,
+        })
+        .returning();
+      return row;
+    });
+
+    req.log.info({ userId: user.id, postId: created.id }, "Find Players post created");
+    res.json(
+      CreateFindPlayerPostResponse.parse({
+        success: true,
+        post: toPostResponse(created, user.screenName, user.id),
+      }),
+    );
+  } catch (err) {
+    if (err instanceof CreateRuleError) {
+      res.json(CreateFindPlayerPostResponse.parse({ success: false, reason: err.reason }));
+      return;
+    }
+    // Unique-index violation → an active post already exists for this date.
+    if (isUniqueViolation(err)) {
+      req.log.warn({ userId: user.id }, "Find Players post insert conflict");
+      res.json(CreateFindPlayerPostResponse.parse({ success: false, reason: "duplicate_date" }));
+      return;
+    }
+    throw err; // Unexpected DB error → 500 via the error handler.
+  }
+});
+
+/**
+ * POST /find-players/posts/cancel — cancel one of the caller's own posts.
+ * Strips the place/time exposure (handled in toPostResponse) but leaves the
+ * card visible until the original time passes.
+ */
+router.post("/find-players/posts/cancel", async (req, res): Promise<void> => {
+  const parsed = CancelFindPlayerPostBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.json(CancelFindPlayerPostResponse.parse({ success: false, reason: "not_signed_in" }));
+    return;
+  }
+
+  const [updated] = await db
+    .update(findPlayerPostsTable)
+    .set({ cancelledAt: new Date() })
+    .where(
+      and(
+        eq(findPlayerPostsTable.id, parsed.data.id),
+        eq(findPlayerPostsTable.userId, user.id),
+        isNull(findPlayerPostsTable.cancelledAt),
+      ),
+    )
+    .returning();
+
+  if (!updated) {
+    res.json(CancelFindPlayerPostResponse.parse({ success: false, reason: "not_found" }));
+    return;
+  }
+
+  req.log.info({ userId: user.id, postId: updated.id }, "Find Players post cancelled");
+  res.json(
+    CancelFindPlayerPostResponse.parse({
+      success: true,
+      post: toPostResponse(updated, user.screenName, user.id),
+    }),
+  );
+});
+
+export default router;

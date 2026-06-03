@@ -16,6 +16,8 @@ tags:
     description: Pass purchases, discount codes, entitlements
   - name: games
     description: Game start gating and history
+  - name: findPlayers
+    description: Find Players meetup board
 paths:
   /healthz:
     get:
@@ -527,6 +529,70 @@ paths:
               schema: { $ref: "#/components/schemas/StatsResult" }
         "429":
           description: Too many requests
+
+  /find-players/posts:
+    get:
+      operationId: listFindPlayerPosts
+      tags: [findPlayers]
+      summary: List active meetup posts (signed-in callers only)
+      description: >
+        Returns active (future, non-expired) posts soonest-first, 10 per page.
+        Signed-out callers receive `signedIn: false` and an empty list — they
+        see the page shell but no posts. Includes capability flags
+        (`canCreate`) and the caller's current active-post count so the UI can
+        react without hardcoding tier logic.
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FindPlayerPostsResult" }
+    post:
+      operationId: createFindPlayerPost
+      tags: [findPlayers]
+      summary: Create a meetup post (paid tier only)
+      description: >
+        Only callers with `tier === 'pass'` may create posts. Enforces one
+        active post per UTC calendar date, a maximum of 5 active posts, a
+        numeric table number, and a scheduled time that is in the future and at
+        most one year out.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FindPlayerPostInput" }
+      responses:
+        "200":
+          description: Result (check `success`; `reason` set on failure)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CreateFindPlayerPostResult" }
+
+  /find-players/posts/cancel:
+    post:
+      operationId: cancelFindPlayerPost
+      tags: [findPlayers]
+      summary: Cancel one of the caller's own posts
+      description: >
+        Sets the cancelled marker on the caller's own post. The place and time
+        are no longer exposed; the card shows a "Cancelled" badge until the
+        original scheduled time passes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CancelFindPlayerPostInput" }
+      responses:
+        "200":
+          description: Result (check `success`; `reason` set on failure)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CancelFindPlayerPostResult" }
 
 components:
   schemas:
@@ -1215,3 +1281,77 @@ components:
         # Shark-mode wins / total shark games. Null when no shark games.
         sharkWinRate: { type: ["number", "null"] }
         sharkGames: { type: integer }
+
+    FindPlayerPost:
+      type: object
+      required: [id, displayName, userName, tableNumber, scheduledAt, cancelled, isOwn]
+      properties:
+        id: { type: string }
+        # "USERNAME, Table #" — the post's public display name.
+        displayName: { type: string }
+        # The creator's screen name (without the table suffix).
+        userName: { type: string }
+        tableNumber: { type: integer }
+        # Latitude/longitude in WGS84. Null for cancelled posts (place hidden).
+        latitude: { type: ["number", "null"] }
+        longitude: { type: ["number", "null"] }
+        # UTC meetup time. Null for cancelled posts (time hidden). Never
+        # surfaced to the user as UTC — the client renders the wall-clock value.
+        scheduledAt: { type: ["string", "null"], format: date-time }
+        cancelled: { type: boolean }
+        # True when the caller owns this post (so the UI can show "Cancel").
+        isOwn: { type: boolean }
+
+    FindPlayerPostsResult:
+      type: object
+      required: [signedIn, canCreate, activePostCount, maxActivePosts, posts, page, totalPages, total]
+      properties:
+        signedIn: { type: boolean }
+        # Capability flag — true only for paid (tier === 'pass') callers.
+        canCreate: { type: boolean }
+        # The caller's current count of active (non-cancelled, future) posts.
+        activePostCount: { type: integer }
+        # Hard cap on active posts per user.
+        maxActivePosts: { type: integer }
+        posts:
+          type: array
+          items: { $ref: "#/components/schemas/FindPlayerPost" }
+        page: { type: integer }
+        totalPages: { type: integer }
+        total: { type: integer }
+
+    FindPlayerPostInput:
+      type: object
+      required: [latitude, longitude, tableNumber, scheduledAt]
+      properties:
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        tableNumber: { type: integer, minimum: 0, maximum: 99999 }
+        # Desired meetup time as an ISO timestamp. Treated as UTC; must be in
+        # the future and at most one year out.
+        scheduledAt: { type: string, format: date-time }
+
+    CreateFindPlayerPostResult:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+        # Set on failure: "not_signed_in" | "not_paid" | "in_past" |
+        # "too_far" | "duplicate_date" | "limit_reached".
+        reason: { type: string }
+        post: { $ref: "#/components/schemas/FindPlayerPost" }
+
+    CancelFindPlayerPostInput:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string }
+
+    CancelFindPlayerPostResult:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+        # Set on failure: "not_signed_in" | "not_found".
+        reason: { type: string }
+        post: { $ref: "#/components/schemas/FindPlayerPost" }

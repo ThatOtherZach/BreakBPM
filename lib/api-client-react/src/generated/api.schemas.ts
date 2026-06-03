@@ -719,6 +719,67 @@ export interface StatsResult {
   sharkGames?: number;
 }
 
+export interface FindPlayerPost {
+  id: string;
+  displayName: string;
+  userName: string;
+  tableNumber: number;
+  /** @nullable */
+  latitude?: number | null;
+  /** @nullable */
+  longitude?: number | null;
+  /** @nullable */
+  scheduledAt: string | null;
+  cancelled: boolean;
+  isOwn: boolean;
+}
+
+export interface FindPlayerPostsResult {
+  signedIn: boolean;
+  canCreate: boolean;
+  activePostCount: number;
+  maxActivePosts: number;
+  posts: FindPlayerPost[];
+  page: number;
+  totalPages: number;
+  total: number;
+}
+
+export interface FindPlayerPostInput {
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  latitude: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  longitude: number;
+  /**
+     * @minimum 0
+     * @maximum 99999
+     */
+  tableNumber: number;
+  scheduledAt: string;
+}
+
+export interface CreateFindPlayerPostResult {
+  success: boolean;
+  reason?: string;
+  post?: FindPlayerPost;
+}
+
+export interface CancelFindPlayerPostInput {
+  id: string;
+}
+
+export interface CancelFindPlayerPostResult {
+  success: boolean;
+  reason?: string;
+  post?: FindPlayerPost;
+}
+
 export type GetGameStateByCodeParams = {
 /**
  * @minLength 5
@@ -787,4 +848,11 @@ export const GetStatsScope = {
   personal: 'personal',
   global: 'global',
 } as const;
+
+export type ListFindPlayerPostsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+};
 

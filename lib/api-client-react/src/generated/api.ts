@@ -23,11 +23,16 @@ import type {
   AbandonGameInput,
   AbandonGameResult,
   Account,
+  CancelFindPlayerPostInput,
+  CancelFindPlayerPostResult,
   CancelSubscriptionResult,
   CheckoutResult,
+  CreateFindPlayerPostResult,
   DevActivateSubscriptionInput,
   DevGrantLifetimeResult,
   DiscountRedeemInput,
+  FindPlayerPostInput,
+  FindPlayerPostsResult,
   GameActivityInput,
   GameActivityResult,
   GameHistoryResponse,
@@ -43,6 +48,7 @@ import type {
   JoinGameResult,
   LeaveGameInput,
   LeaveGameResult,
+  ListFindPlayerPostsParams,
   MeResponse,
   MyGiftCodesResult,
   PassCheckoutInput,
@@ -2107,4 +2113,236 @@ export function useGetStats<TData = Awaited<ReturnType<typeof getStats>>, TError
 
 
 
+
+export const getListFindPlayerPostsUrl = (params?: ListFindPlayerPostsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/find-players/posts?${stringifiedParams}` : `/api/find-players/posts`
+}
+
+/**
+ * Returns active (future, non-expired) posts soonest-first, 10 per page. Signed-out callers receive `signedIn: false` and an empty list — they see the page shell but no posts. Includes capability flags (`canCreate`) and the caller's current active-post count so the UI can react without hardcoding tier logic.
+
+ * @summary List active meetup posts (signed-in callers only)
+ */
+export const listFindPlayerPosts = async (params?: ListFindPlayerPostsParams, options?: RequestInit): Promise<FindPlayerPostsResult> => {
+
+  return customFetch<FindPlayerPostsResult>(getListFindPlayerPostsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFindPlayerPostsQueryKey = (params?: ListFindPlayerPostsParams,) => {
+    return [
+    `/api/find-players/posts`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListFindPlayerPostsQueryOptions = <TData = Awaited<ReturnType<typeof listFindPlayerPosts>>, TError = ErrorType<unknown>>(params?: ListFindPlayerPostsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFindPlayerPosts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFindPlayerPostsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFindPlayerPosts>>> = ({ signal }) => listFindPlayerPosts(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFindPlayerPosts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFindPlayerPostsQueryResult = NonNullable<Awaited<ReturnType<typeof listFindPlayerPosts>>>
+export type ListFindPlayerPostsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List active meetup posts (signed-in callers only)
+ */
+
+export function useListFindPlayerPosts<TData = Awaited<ReturnType<typeof listFindPlayerPosts>>, TError = ErrorType<unknown>>(
+ params?: ListFindPlayerPostsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFindPlayerPosts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFindPlayerPostsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateFindPlayerPostUrl = () => {
+
+
+
+
+  return `/api/find-players/posts`
+}
+
+/**
+ * Only callers with `tier === 'pass'` may create posts. Enforces one active post per UTC calendar date, a maximum of 5 active posts, a numeric table number, and a scheduled time that is in the future and at most one year out.
+
+ * @summary Create a meetup post (paid tier only)
+ */
+export const createFindPlayerPost = async (findPlayerPostInput: FindPlayerPostInput, options?: RequestInit): Promise<CreateFindPlayerPostResult> => {
+
+  return customFetch<CreateFindPlayerPostResult>(getCreateFindPlayerPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      findPlayerPostInput,)
+  }
+);}
+
+
+
+
+export const getCreateFindPlayerPostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFindPlayerPost>>, TError,{data: BodyType<FindPlayerPostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFindPlayerPost>>, TError,{data: BodyType<FindPlayerPostInput>}, TContext> => {
+
+const mutationKey = ['createFindPlayerPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFindPlayerPost>>, {data: BodyType<FindPlayerPostInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFindPlayerPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFindPlayerPostMutationResult = NonNullable<Awaited<ReturnType<typeof createFindPlayerPost>>>
+    export type CreateFindPlayerPostMutationBody = BodyType<FindPlayerPostInput>
+    export type CreateFindPlayerPostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a meetup post (paid tier only)
+ */
+export const useCreateFindPlayerPost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFindPlayerPost>>, TError,{data: BodyType<FindPlayerPostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createFindPlayerPost>>,
+        TError,
+        {data: BodyType<FindPlayerPostInput>},
+        TContext
+      > => {
+      return useMutation(getCreateFindPlayerPostMutationOptions(options));
+    }
+
+export const getCancelFindPlayerPostUrl = () => {
+
+
+
+
+  return `/api/find-players/posts/cancel`
+}
+
+/**
+ * Sets the cancelled marker on the caller's own post. The place and time are no longer exposed; the card shows a "Cancelled" badge until the original scheduled time passes.
+
+ * @summary Cancel one of the caller's own posts
+ */
+export const cancelFindPlayerPost = async (cancelFindPlayerPostInput: CancelFindPlayerPostInput, options?: RequestInit): Promise<CancelFindPlayerPostResult> => {
+
+  return customFetch<CancelFindPlayerPostResult>(getCancelFindPlayerPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cancelFindPlayerPostInput,)
+  }
+);}
+
+
+
+
+export const getCancelFindPlayerPostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelFindPlayerPost>>, TError,{data: BodyType<CancelFindPlayerPostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelFindPlayerPost>>, TError,{data: BodyType<CancelFindPlayerPostInput>}, TContext> => {
+
+const mutationKey = ['cancelFindPlayerPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelFindPlayerPost>>, {data: BodyType<CancelFindPlayerPostInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  cancelFindPlayerPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelFindPlayerPostMutationResult = NonNullable<Awaited<ReturnType<typeof cancelFindPlayerPost>>>
+    export type CancelFindPlayerPostMutationBody = BodyType<CancelFindPlayerPostInput>
+    export type CancelFindPlayerPostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Cancel one of the caller's own posts
+ */
+export const useCancelFindPlayerPost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelFindPlayerPost>>, TError,{data: BodyType<CancelFindPlayerPostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof cancelFindPlayerPost>>,
+        TError,
+        {data: BodyType<CancelFindPlayerPostInput>},
+        TContext
+      > => {
+      return useMutation(getCancelFindPlayerPostMutationOptions(options));
+    }
 

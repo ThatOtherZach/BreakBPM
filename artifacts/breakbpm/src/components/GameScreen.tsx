@@ -40,6 +40,7 @@ interface Props {
   onAbout: () => void;
   onAccount: () => void;
   onStats: () => void;
+  onFindPlayers: () => void;
   onSignIn: () => void;
 }
 
@@ -65,7 +66,7 @@ function ballClass(ball: number, legal: number[], sunk: number[], _gameType: str
   return base;
 }
 
-export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, initialPausedDuration = 0, onNewGame, onAbout, onAccount, onStats, onSignIn }: Props) {
+export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, initialPausedDuration = 0, onNewGame, onAbout, onAccount, onStats, onFindPlayers, onSignIn }: Props) {
   const saveGame = useSaveGame();
   const recordActivity = useRecordGameActivity();
   const me = useGetMe();
@@ -703,7 +704,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
   return (
     <div className="app-window">
-      <Navbar onAbout={onAbout} onAccount={onAccount} onStats={onStats} onSignIn={onSignIn} />
+      <Navbar onAbout={onAbout} onAccount={onAccount} onStats={onStats} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
       {/* ── Dark HUD panel (matches splash aesthetic) ── */}
       <div className="hud-panel">
 

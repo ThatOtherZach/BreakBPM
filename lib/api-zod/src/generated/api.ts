@@ -661,3 +661,104 @@ export const GetStatsResponse = zod.object({
 })
 
 
+/**
+ * Returns active (future, non-expired) posts soonest-first, 10 per page. Signed-out callers receive `signedIn: false` and an empty list — they see the page shell but no posts. Includes capability flags (`canCreate`) and the caller's current active-post count so the UI can react without hardcoding tier logic.
+
+ * @summary List active meetup posts (signed-in callers only)
+ */
+export const listFindPlayerPostsQueryPageDefault = 1;
+
+
+
+export const ListFindPlayerPostsQueryParams = zod.object({
+  "page": zod.coerce.number().min(1).default(listFindPlayerPostsQueryPageDefault)
+})
+
+export const ListFindPlayerPostsResponse = zod.object({
+  "signedIn": zod.boolean(),
+  "canCreate": zod.boolean(),
+  "activePostCount": zod.number(),
+  "maxActivePosts": zod.number(),
+  "posts": zod.array(zod.object({
+  "id": zod.string(),
+  "displayName": zod.string(),
+  "userName": zod.string(),
+  "tableNumber": zod.number(),
+  "latitude": zod.number().nullish(),
+  "longitude": zod.number().nullish(),
+  "scheduledAt": zod.coerce.date().nullable(),
+  "cancelled": zod.boolean(),
+  "isOwn": zod.boolean()
+})),
+  "page": zod.number(),
+  "totalPages": zod.number(),
+  "total": zod.number()
+})
+
+
+/**
+ * Only callers with `tier === 'pass'` may create posts. Enforces one active post per UTC calendar date, a maximum of 5 active posts, a numeric table number, and a scheduled time that is in the future and at most one year out.
+
+ * @summary Create a meetup post (paid tier only)
+ */
+export const createFindPlayerPostBodyLatitudeMin = -90;
+export const createFindPlayerPostBodyLatitudeMax = 90;
+
+export const createFindPlayerPostBodyLongitudeMin = -180;
+export const createFindPlayerPostBodyLongitudeMax = 180;
+
+export const createFindPlayerPostBodyTableNumberMin = 0;
+export const createFindPlayerPostBodyTableNumberMax = 99999;
+
+
+
+export const CreateFindPlayerPostBody = zod.object({
+  "latitude": zod.number().min(createFindPlayerPostBodyLatitudeMin).max(createFindPlayerPostBodyLatitudeMax),
+  "longitude": zod.number().min(createFindPlayerPostBodyLongitudeMin).max(createFindPlayerPostBodyLongitudeMax),
+  "tableNumber": zod.number().min(createFindPlayerPostBodyTableNumberMin).max(createFindPlayerPostBodyTableNumberMax),
+  "scheduledAt": zod.coerce.date()
+})
+
+export const CreateFindPlayerPostResponse = zod.object({
+  "success": zod.boolean(),
+  "reason": zod.string().optional(),
+  "post": zod.object({
+  "id": zod.string(),
+  "displayName": zod.string(),
+  "userName": zod.string(),
+  "tableNumber": zod.number(),
+  "latitude": zod.number().nullish(),
+  "longitude": zod.number().nullish(),
+  "scheduledAt": zod.coerce.date().nullable(),
+  "cancelled": zod.boolean(),
+  "isOwn": zod.boolean()
+}).optional()
+})
+
+
+/**
+ * Sets the cancelled marker on the caller's own post. The place and time are no longer exposed; the card shows a "Cancelled" badge until the original scheduled time passes.
+
+ * @summary Cancel one of the caller's own posts
+ */
+export const CancelFindPlayerPostBody = zod.object({
+  "id": zod.string()
+})
+
+export const CancelFindPlayerPostResponse = zod.object({
+  "success": zod.boolean(),
+  "reason": zod.string().optional(),
+  "post": zod.object({
+  "id": zod.string(),
+  "displayName": zod.string(),
+  "userName": zod.string(),
+  "tableNumber": zod.number(),
+  "latitude": zod.number().nullish(),
+  "longitude": zod.number().nullish(),
+  "scheduledAt": zod.coerce.date().nullable(),
+  "cancelled": zod.boolean(),
+  "isOwn": zod.boolean()
+}).optional()
+})
+
+

@@ -9,6 +9,7 @@ import WatchByNameScreen from "./components/WatchByNameScreen";
 import AboutScreen from "./components/AboutScreen";
 import AccountScreen from "./components/AccountScreen";
 import StatsScreen from "./components/StatsScreen";
+import FindPlayersScreen from "./components/FindPlayersScreen";
 import PassesScreen from "./components/PassesScreen";
 import { SignInPage, SignUpPage } from "./components/SignInPage";
 import type { GameType, GameState, Player, SharkAggression } from "./lib/gameLogic";
@@ -217,6 +218,7 @@ function MainApp() {
   const goAbout = () => setLocation("/about");
   const goAccount = () => setLocation("/account");
   const goStats = () => setLocation("/stats");
+  const goFindPlayers = () => setLocation("/find-players");
 
   if (view === "game" && gameState) {
     return (
@@ -230,6 +232,7 @@ function MainApp() {
         onAbout={goAbout}
         onAccount={goAccount}
         onStats={goStats}
+        onFindPlayers={goFindPlayers}
         onSignIn={goSignIn}
       />
     );
@@ -241,6 +244,7 @@ function MainApp() {
       onAbout={goAbout}
       onAccount={goAccount}
       onStats={goStats}
+      onFindPlayers={goFindPlayers}
       onSignIn={goSignIn}
     />
   );
@@ -253,6 +257,7 @@ function AccountRoute() {
       onBack={() => setLocation("/")}
       onPasses={() => setLocation("/passes")}
       onAbout={() => setLocation("/about")}
+      onFindPlayers={() => setLocation("/find-players")}
       onSignIn={() => setLocation("/sign-in")}
     />
   );
@@ -265,6 +270,7 @@ function StatsRoute() {
       onBack={() => setLocation("/")}
       onAbout={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
+      onFindPlayers={() => setLocation("/find-players")}
       onSignIn={() => setLocation("/sign-in")}
     />
   );
@@ -273,6 +279,18 @@ function StatsRoute() {
 function AboutRoute() {
   const [, setLocation] = useLocation();
   return <AboutScreen onBack={() => setLocation("/")} />;
+}
+
+function FindPlayersRoute() {
+  const [, setLocation] = useLocation();
+  return (
+    <FindPlayersScreen
+      onBack={() => setLocation("/")}
+      onAbout={() => setLocation("/about")}
+      onAccount={() => setLocation("/account")}
+      onSignIn={() => setLocation("/sign-in")}
+    />
+  );
 }
 
 function PassesRoute() {
@@ -330,6 +348,7 @@ function Routes() {
       <Route path="/sign-up/*?" component={SignUpRouteWrapper} />
       <Route path="/account" component={AccountRoute} />
       <Route path="/stats" component={StatsRoute} />
+      <Route path="/find-players" component={FindPlayersRoute} />
       <Route path="/about" component={AboutRoute} />
       <Route path="/passes" component={PassesRoute} />
       <Route path="/join/:code" component={JoinRoute} />

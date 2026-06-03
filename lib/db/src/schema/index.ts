@@ -3,3 +3,4 @@ export * from "./passes";
 export * from "./subscriptions";
 export * from "./discountCodes";
 export * from "./games";
+export * from "./findPlayers";

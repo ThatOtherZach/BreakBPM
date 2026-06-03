@@ -7,3 +7,4 @@
 - [History card subject-relative outcome](history-subject-relative-outcome.md) — stored outcome/winner isn't viewer-aware; recompute WIN/LOSS per-subject, locate subject by participant slotIndex not name.
 - [Client fetch throws on non-2xx](client-fetch-throws-on-non-2xx.md) — customFetch throws ApiError on any non-2xx, so in-body error `reason` (e.g. rate_limited on 429) is unreachable as query.data; branch on ApiError.status.
 - [Clerk duplicate verification emails](clerk-duplicate-verification-emails.md) — inline `Route component={() => ...}` remounts Clerk's <SignIn>/<SignUp>, re-sending a 2nd code; use stable named route components.
+- [api-client-react vs api-zod date typing](api-client-react-date-typing.md) — client model types use `string` for date-time, api-zod uses `Date`; send ISO strings in mutation bodies, import frontend types from api-client-react.

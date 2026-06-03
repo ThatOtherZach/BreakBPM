@@ -20,6 +20,7 @@ interface Props {
   onBack: () => void;
   onPasses: () => void;
   onAbout: () => void;
+  onFindPlayers: () => void;
   onSignIn: () => void;
 }
 
@@ -37,7 +38,7 @@ function fmtHoursUntil(target: Date | string | null): string | null {
   return `~${hours}h`;
 }
 
-export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: Props) {
+export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers, onSignIn }: Props) {
   const { logout: signOut } = useAuth();
   const qc = useQueryClient();
 
@@ -75,7 +76,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
   if (me.isLoading) {
     return (
       <div className="app-window app-window--page">
-        <Navbar onBack={onBack} onAbout={onAbout} onSignIn={onSignIn} />
+        <Navbar onBack={onBack} onAbout={onAbout} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
         <div className="app-body">
           <p style={{ fontFamily: "VT323", fontSize: 18 }}>Loading…</p>
         </div>
@@ -86,7 +87,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onSignIn }: P
   if (!me.data?.signedIn) {
     return (
       <div className="app-window app-window--page">
-        <Navbar onBack={onBack} onAbout={onAbout} onSignIn={onSignIn} />
+        <Navbar onBack={onBack} onAbout={onAbout} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
         <div className="app-body">
           <div className="panel">
             <div className="panel-header"><span>Account</span></div>

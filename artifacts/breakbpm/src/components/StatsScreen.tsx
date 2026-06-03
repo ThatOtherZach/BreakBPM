@@ -13,6 +13,7 @@ interface Props {
   onBack: () => void;
   onAbout: () => void;
   onAccount: () => void;
+  onFindPlayers: () => void;
   onSignIn: () => void;
 }
 
@@ -135,7 +136,7 @@ function SectionHeader({ emoji, title }: { emoji: string; title: string }) {
   );
 }
 
-export default function StatsScreen({ onBack, onAbout, onAccount, onSignIn }: Props) {
+export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers, onSignIn }: Props) {
   const qc = useQueryClient();
   const [window, setWindow] = useState<"24h" | "30d" | "365d" | "all">("24h");
   const [scope, setScope] = useState<"personal" | "global">("personal");
@@ -181,7 +182,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onSignIn }: Pr
 
   return (
     <div className="app-window app-window--page">
-      <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
+      <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
       <div className="app-body">
         {/* ── Controls ── */}
         <div className="panel">

@@ -1682,3 +1682,108 @@ html, #root {
 .text-navy { color: var(--navy); }
 .w-full { width: 100%; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+/* ── Find Players ── */
+.fpp-subhead {
+  font-family: 'MS Sans Serif', 'Tahoma', Geneva, Arial, sans-serif;
+  font-weight: bold;
+  font-size: 12px;
+  color: var(--navy);
+  margin-bottom: 6px;
+}
+.fpp-form { margin-bottom: 14px; }
+.fpp-map {
+  width: 100%;
+  border: 2px inset var(--silver);
+  background: #aad3df;
+}
+.fpp-map--form { height: 240px; }
+.fpp-map--view { height: 360px; }
+.fpp-pin {
+  font-size: 22px;
+  line-height: 22px;
+  text-align: center;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.5));
+}
+.fpp-form-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+.fpp-coords {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #333;
+}
+.fpp-label {
+  display: block;
+  font-size: 12px;
+  margin: 8px 0;
+}
+.fpp-label .input { margin-top: 3px; }
+.fpp-error {
+  color: #b00;
+  font-size: 12px;
+  margin: 6px 0;
+}
+.fpp-hint {
+  font-size: 12px;
+  color: #444;
+  margin: 8px 0;
+}
+.fpp-empty {
+  font-size: 13px;
+  color: #333;
+  margin: 10px 0;
+}
+.fpp-toggle {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0;
+}
+.fpp-list { display: flex; flex-direction: column; gap: 8px; }
+.fpp-card {
+  border: 2px outset var(--silver);
+  background: #fff;
+  padding: 8px 10px;
+}
+.fpp-card--cancelled { opacity: 0.7; }
+.fpp-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.fpp-card-name {
+  font-weight: bold;
+  font-size: 13px;
+  color: #111;
+}
+.fpp-badge {
+  background: #b00;
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+.fpp-card-when {
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  color: var(--navy);
+  margin: 4px 0;
+}
+.fpp-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.fpp-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.fpp-page-label { font-size: 12px; }

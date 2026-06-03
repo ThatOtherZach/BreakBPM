@@ -7,10 +7,11 @@ interface NavbarProps {
   onBack?: () => void;
   onAccount?: () => void;
   onStats?: () => void;
+  onFindPlayers?: () => void;
   onSignIn?: () => void;
 }
 
-export default function Navbar({ onAbout, onBack, onAccount, onStats, onSignIn }: NavbarProps) {
+export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlayers, onSignIn }: NavbarProps) {
   const [open, setOpen] = useState(false);
   const me = useGetMe();
 
@@ -20,7 +21,7 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onSignIn }
     : tier === 'account' ? '●'
     : null;
 
-  const showHamburger = !!(onAbout || onAccount || onStats || onSignIn);
+  const showHamburger = !!(onAbout || onAccount || onStats || onFindPlayers || onSignIn);
 
   return (
     <>
@@ -74,6 +75,11 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onSignIn }
             </button>
           )}
           <SignedIn>
+            {onFindPlayers && (
+              <button className="navbar-menu-item" onClick={() => { setOpen(false); onFindPlayers(); }}>
+                <span style={{ textDecoration: 'underline' }}>F</span>ind Players
+              </button>
+            )}
             {onAccount && (
               <button className="navbar-menu-item" onClick={() => { setOpen(false); onAccount(); }}>
                 <span style={{ textDecoration: 'underline' }}>A</span>ccount
