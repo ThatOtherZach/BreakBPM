@@ -962,10 +962,12 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         )}
 
         {/* ── Spectator QR — paid hosts only ──
-            Watching is a paid host feature, so the QR (and the live join
-            link it encodes) only appears while the signed-in host holds an
-            active pass/subscription. Scanning opens the read-only
-            /join/<code> spectator view. Hidden once the game ends. */}
+            Watching is a paid host feature, so the QR (and the link it
+            encodes) only appears while the signed-in host holds an active
+            pass/subscription. Scanning opens the read-only spectator view —
+            the persistent /watch/<name> link when the host has a screen name,
+            or the per-game /join/<code> link as a fallback. Hidden once the
+            game ends. */}
         {spectatingEnabled && state.phase === 'playing' && (
           <div
             style={{
@@ -986,8 +988,13 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 Spectators can follow this game in real time.
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-                <span style={{ fontSize: 13, opacity: 0.7 }}>CODE</span>
-                <span className="hud-code" style={{ fontSize: 18 }}>{state.shareCode}</span>
+                <span style={{ fontSize: 13, opacity: 0.7 }}>{watchName ? 'LINK' : 'CODE'}</span>
+                <span
+                  className="hud-code"
+                  style={{ fontSize: watchName ? 14 : 18, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}
+                >
+                  {watchName ? `/watch/${watchName}` : state.shareCode}
+                </span>
                 <button
                   className="btn"
                   style={{ minHeight: 28, fontSize: 12, padding: '2px 10px' }}
