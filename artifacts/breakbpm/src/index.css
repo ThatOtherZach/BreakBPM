@@ -1773,6 +1773,37 @@ html, #root {
   color: var(--navy);
   margin: 4px 0;
 }
+.fpp-card-loc {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: #555;
+  margin: 2px 0;
+}
+.fpp-popup {
+  min-width: 160px;
+}
+.fpp-popup-name {
+  font-weight: bold;
+  font-size: 13px;
+  color: #111;
+}
+.fpp-popup-when {
+  font-family: 'VT323', monospace;
+  font-size: 15px;
+  color: var(--navy);
+  margin: 3px 0;
+}
+.fpp-popup-coords {
+  font-family: 'VT323', monospace;
+  font-size: 13px;
+  color: #555;
+  margin-bottom: 6px;
+}
+.fpp-popup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 .fpp-card-actions {
   display: flex;
   flex-wrap: wrap;

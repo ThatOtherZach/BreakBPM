@@ -668,10 +668,11 @@ export const GetStatsResponse = zod.object({
  */
 export const listFindPlayerPostsQueryPageDefault = 1;
 
-
+export const listFindPlayerPostsQueryAllDefault = false;
 
 export const ListFindPlayerPostsQueryParams = zod.object({
-  "page": zod.coerce.number().min(1).default(listFindPlayerPostsQueryPageDefault)
+  "page": zod.coerce.number().min(1).default(listFindPlayerPostsQueryPageDefault),
+  "all": zod.coerce.boolean().default(listFindPlayerPostsQueryAllDefault).describe('When true, returns ALL active posts in one page (unpaginated), soonest-first. Used by the map view, which must plot every active post globally rather than just the current list page.\n')
 })
 
 export const ListFindPlayerPostsResponse = zod.object({

@@ -546,6 +546,14 @@ paths:
           in: query
           required: false
           schema: { type: integer, minimum: 1, default: 1 }
+        - name: all
+          in: query
+          required: false
+          description: >
+            When true, returns ALL active posts in one page (unpaginated),
+            soonest-first. Used by the map view, which must plot every active
+            post globally rather than just the current list page.
+          schema: { type: boolean, default: false }
       responses:
         "200":
           description: OK

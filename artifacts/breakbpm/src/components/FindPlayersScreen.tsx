@@ -8,7 +8,7 @@
  */
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
@@ -146,6 +146,18 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
   const list = useListFindPlayerPosts({ page });
   const data = list.data;
 
+  // Map view must plot EVERY active post globally, not just the current list
+  // page — so it uses a separate unpaginated query, fetched only when shown.
+  const mapList = useListFindPlayerPosts(
+    { all: true },
+    {
+      query: {
+        enabled: mapView,
+        queryKey: getListFindPlayerPostsQueryKey({ all: true }),
+      },
+    },
+  );
+
   const createPost = useCreateFindPlayerPost();
   const cancelPost = useCancelFindPlayerPost();
 
@@ -241,7 +253,10 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
   const posts = data?.posts ?? [];
   const totalPages = data?.totalPages ?? 0;
   const atLimit = (data?.activePostCount ?? 0) >= (data?.maxActivePosts ?? 5);
-  const mappable = posts.filter((p) => p.latitude != null && p.longitude != null);
+  // Cancelled posts return null coordinates, so they're naturally excluded.
+  const mappable = (mapList.data?.posts ?? []).filter(
+    (p) => p.latitude != null && p.longitude != null,
+  );
 
   return (
     <div className="app-window app-window--page">
@@ -367,7 +382,35 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                         key={post.id}
                         position={[post.latitude as number, post.longitude as number]}
                         icon={poolIcon}
-                      />
+                      >
+                        <Popup>
+                          <div className="fpp-popup">
+                            <div className="fpp-popup-name">{post.displayName}</div>
+                            {post.scheduledAt && (
+                              <div className="fpp-popup-when">
+                                {formatSchedule(new Date(post.scheduledAt))}
+                              </div>
+                            )}
+                            <div className="fpp-popup-coords">
+                              📍 {(post.latitude as number).toFixed(4)},{" "}
+                              {(post.longitude as number).toFixed(4)}
+                            </div>
+                            <div className="fpp-popup-actions">
+                              <a
+                                className="btn"
+                                href={`https://www.google.com/maps?q=${post.latitude},${post.longitude}`}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Open in Maps
+                              </a>
+                              <button className="btn" onClick={() => downloadIcs(post)}>
+                                Add to Calendar
+                              </button>
+                            </div>
+                          </div>
+                        </Popup>
+                      </Marker>
                     ))}
                   </MapContainer>
                 </div>
@@ -421,6 +464,11 @@ function PostCard({
       </div>
       {!cancelled && post.scheduledAt && (
         <div className="fpp-card-when">{formatSchedule(new Date(post.scheduledAt))}</div>
+      )}
+      {!cancelled && post.latitude != null && post.longitude != null && (
+        <div className="fpp-card-loc">
+          📍 {post.latitude.toFixed(4)}, {post.longitude.toFixed(4)}
+        </div>
       )}
       {!cancelled && (
         <div className="fpp-card-actions">

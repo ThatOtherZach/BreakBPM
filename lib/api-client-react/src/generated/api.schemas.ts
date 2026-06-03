@@ -854,5 +854,10 @@ export type ListFindPlayerPostsParams = {
  * @minimum 1
  */
 page?: number;
+/**
+ * When true, returns ALL active posts in one page (unpaginated), soonest-first. Used by the map view, which must plot every active post globally rather than just the current list page.
+
+ */
+all?: boolean;
 };
 

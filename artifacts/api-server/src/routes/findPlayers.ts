@@ -97,6 +97,7 @@ router.get("/find-players/posts", async (req, res): Promise<void> => {
     return;
   }
   const page = parsed.data.page ?? 1;
+  const all = parsed.data.all ?? false;
   const now = new Date();
 
   const user = await getOrCreateUser(req);
@@ -130,15 +131,19 @@ router.get("/find-players/posts", async (req, res): Promise<void> => {
     .from(findPlayerPostsTable)
     .where(activeFilter);
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-  const rows = await db
+  // `all=true` (map view) returns every active post in one page; otherwise
+  // the list is paginated 10/page.
+  const totalPages = all ? (total > 0 ? 1 : 0) : Math.ceil(total / PAGE_SIZE);
+  const baseQuery = db
     .select({ post: findPlayerPostsTable, screenName: usersTable.screenName })
     .from(findPlayerPostsTable)
     .innerJoin(usersTable, eq(usersTable.id, findPlayerPostsTable.userId))
     .where(activeFilter)
     .orderBy(asc(findPlayerPostsTable.scheduledAt))
-    .limit(PAGE_SIZE)
-    .offset((page - 1) * PAGE_SIZE);
+    .$dynamic();
+  const rows = all
+    ? await baseQuery
+    : await baseQuery.limit(PAGE_SIZE).offset((page - 1) * PAGE_SIZE);
 
   const activePostCount = await countActivePosts(user.id, now);
 
@@ -149,7 +154,7 @@ router.get("/find-players/posts", async (req, res): Promise<void> => {
       activePostCount,
       maxActivePosts: MAX_ACTIVE_POSTS,
       posts: rows.map((r) => toPostResponse(r.post, r.screenName, user.id)),
-      page,
+      page: all ? 1 : page,
       totalPages,
       total,
     }),
