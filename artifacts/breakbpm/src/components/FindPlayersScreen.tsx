@@ -142,6 +142,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const [mapView, setMapView] = useState(false);
+  const [todayOnly, setTodayOnly] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
 
   const list = useListFindPlayerPosts({ page });
@@ -276,13 +277,20 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
   };
 
   const canCreate = data?.canCreate ?? false;
-  const posts = data?.posts ?? [];
+  const todayStr = useMemo(() => utcDateStr(new Date()), []);
+  const allPosts = data?.posts ?? [];
+  const posts = todayOnly
+    ? allPosts.filter((p) => p.scheduledAt != null && p.scheduledAt.slice(0, 10) === todayStr)
+    : allPosts;
   const totalPages = data?.totalPages ?? 0;
   const atLimit = (data?.activePostCount ?? 0) >= (data?.maxActivePosts ?? 5);
   // Cancelled posts return null coordinates, so they're naturally excluded.
-  const mappable = (mapList.data?.posts ?? []).filter(
+  const allMappable = (mapList.data?.posts ?? []).filter(
     (p) => p.latitude != null && p.longitude != null,
   );
+  const mappable = todayOnly
+    ? allMappable.filter((p) => p.scheduledAt != null && p.scheduledAt.slice(0, 10) === todayStr)
+    : allMappable;
 
   return (
     <div className="app-window app-window--page">
@@ -403,6 +411,12 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                   onClick={() => setMapView((v) => !v)}
                 >
                   {mapView ? "📋 List View" : "🗺️ Map View"}
+                </button>
+                <button
+                  className={`btn fpp-toggle-btn${todayOnly ? " btn-primary" : ""}`}
+                  onClick={() => setTodayOnly((v) => !v)}
+                >
+                  Today
                 </button>
               </div>
 
