@@ -64,7 +64,7 @@ function utcDateStr(d: Date): string {
  */
 function formatSchedule(d: Date): string {
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return `${months[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()} · ${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`;
+  return `${months[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()} @ ${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`;
 }
 
 /** Click-to-place + draggable marker for the create form. */
