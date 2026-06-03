@@ -1732,17 +1732,7 @@ html, #root {
   gap: 8px;
   margin: 8px 0;
 }
-.fpp-form-row--2col {
-  align-items: flex-end;
-}
-.fpp-locate-btn {
-  flex-shrink: 0;
-  align-self: flex-end;
-}
-.fpp-label--inline {
-  flex: 1;
-  margin: 0;
-}
+
 .fpp-coords {
   font-family: 'Courier New', monospace;
   font-size: 12px;

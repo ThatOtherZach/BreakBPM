@@ -306,23 +306,23 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                       ? `${position[0].toFixed(4)}, ${position[1].toFixed(4)}`
                       : "Tap the map to drop a pin"}
                   </span>
-                  <div className="fpp-form-row fpp-form-row--2col">
-                    <button className="btn fpp-locate-btn" type="button" onClick={locateMe}>
+                  <div className="fpp-form-row">
+                    <button className="btn" type="button" onClick={locateMe}>
                       📍 Locate me
                     </button>
-                    <label className="fpp-label fpp-label--inline">
-                      Table #
-                      <input
-                        className="input w-full"
-                        type="number"
-                        min={0}
-                        max={99999}
-                        value={tableNumber}
-                        onChange={(e) => setTableNumber(e.target.value)}
-                        placeholder="e.g. 3"
-                      />
-                    </label>
                   </div>
+                  <label className="fpp-label">
+                    Table #
+                    <input
+                      className="input w-full"
+                      type="number"
+                      min={0}
+                      max={99999}
+                      value={tableNumber}
+                      onChange={(e) => setTableNumber(e.target.value)}
+                      placeholder="e.g. 3"
+                    />
+                  </label>
                   <div className="fpp-form-row">
                     <label className="fpp-label" style={{ flex: 1 }}>
                       Date
