@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation } from 'wouter';
 import { SignedIn, SignedOut, useAuth } from '../lib/authClient';
 import { useGetMe } from '@workspace/api-client-react';
 
@@ -15,9 +16,13 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlay
   const [open, setOpen] = useState(false);
   const me = useGetMe();
   const { logout } = useAuth();
+  const [location] = useLocation();
 
   const tier = me.data?.entitlement?.tier;
   const screenName = me.data?.account?.screenName ?? null;
+
+  // Hide the menu item for the page the user is already on.
+  const at = (path: string) => location === path;
 
   const showHamburger = !!(onAbout || onAccount || onStats || onFindPlayers || onSignIn);
 
@@ -62,23 +67,23 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlay
 
       {open && showHamburger && (
         <div className="navbar-menu">
-          {onStats && (
+          {onStats && !at('/stats') && (
             <button className="navbar-menu-item" onClick={() => { setOpen(false); onStats(); }}>
               <span style={{ textDecoration: 'underline' }}>S</span>tats
             </button>
           )}
-          {onAbout && (
+          {onAbout && !at('/about') && (
             <button className="navbar-menu-item" onClick={() => { setOpen(false); onAbout(); }}>
               <span style={{ textDecoration: 'underline' }}>A</span>bout
             </button>
           )}
           <SignedIn>
-            {onFindPlayers && (
+            {onFindPlayers && !at('/find-players') && (
               <button className="navbar-menu-item" onClick={() => { setOpen(false); onFindPlayers(); }}>
                 <span style={{ textDecoration: 'underline' }}>F</span>ind Players
               </button>
             )}
-            {onAccount && (
+            {onAccount && !at('/account') && (
               <button className="navbar-menu-item" onClick={() => { setOpen(false); onAccount(); }}>
                 <span style={{ textDecoration: 'underline' }}>A</span>ccount
               </button>

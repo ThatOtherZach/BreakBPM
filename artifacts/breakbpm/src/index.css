@@ -163,6 +163,7 @@ html, #root {
 .navbar-menu {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
   background: var(--silver);
   border-bottom: 2px solid;
@@ -1713,6 +1714,7 @@ html, #root {
 .fpp-form-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin: 8px 0;
 }
@@ -1735,13 +1737,12 @@ html, #root {
 }
 .fpp-table-input { text-align: center; }
 .fpp-row-hint {
-  flex: 1;
+  flex: 0 0 100%;
   min-width: 0;
+  padding-left: 92px;
   font-size: 11px;
   color: #777;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
 }
 .fpp-row-hint--coords {
   font-family: 'Courier New', monospace;
@@ -1778,10 +1779,14 @@ html, #root {
 }
 .fpp-toggle {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin: 12px 0;
 }
-.fpp-toggle-btn { flex: 1; }
+.fpp-toggle-btn {
+  flex: 1 1 120px;
+  min-width: 0;
+}
 .fpp-list { display: flex; flex-direction: column; gap: 10px; }
 .fpp-card {
   position: relative;
