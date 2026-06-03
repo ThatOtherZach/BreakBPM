@@ -311,10 +311,12 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                       📍 Locate me
                     </button>
                   </div>
-                  <label className="fpp-label">
-                    Table #
+                  <div className="fpp-form-row fpp-form-row--compact">
+                    <label className="fpp-label fpp-label--row">
+                      Table #
+                    </label>
                     <input
-                      className="input w-full"
+                      className="input fpp-table-input"
                       type="number"
                       min={0}
                       max={99999}
@@ -322,7 +324,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                       onChange={(e) => setTableNumber(e.target.value)}
                       placeholder="e.g. 3"
                     />
-                  </label>
+                  </div>
                   <div className="fpp-form-row">
                     <label className="fpp-label" style={{ flex: 1 }}>
                       Date

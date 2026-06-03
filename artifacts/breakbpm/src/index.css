@@ -1733,6 +1733,16 @@ html, #root {
   margin: 8px 0;
 }
 
+.fpp-form-row--compact { margin: 6px 0; }
+.fpp-label--row {
+  font-size: 12px;
+  white-space: nowrap;
+  margin: 0;
+}
+.fpp-table-input {
+  width: 80px;
+  text-align: center;
+}
 .fpp-coords {
   font-family: 'Courier New', monospace;
   font-size: 12px;
