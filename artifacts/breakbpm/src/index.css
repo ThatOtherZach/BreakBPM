@@ -1801,6 +1801,12 @@ html, #root {
   justify-content: space-between;
   gap: 8px;
 }
+.fpp-card-rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
 .fpp-card-name {
   font-family: 'VT323', monospace;
   font-size: 20px;

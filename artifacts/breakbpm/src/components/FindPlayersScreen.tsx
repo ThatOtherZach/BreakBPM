@@ -20,6 +20,14 @@ import {
 import type { FindPlayerPost } from "@workspace/api-client-react";
 import Navbar from "./Navbar";
 import { SignedIn, SignedOut } from "../lib/authClient";
+import { SOLIDS } from "../lib/gameLogic";
+
+/** Pool-ball colors, mirrored from the game HUD, for the rank chips. */
+const BALL_COLORS: Record<number, string> = {
+  1: "#FDD307", 2: "#1F4E9E", 3: "#C3342B", 4: "#5B247A",
+  5: "#F27C1D", 6: "#276B40", 7: "#6B1F2A", 8: "#000000",
+  9: "#FDD307", 10: "#1F4E9E",
+};
 
 interface Props {
   onBack: () => void;
@@ -582,8 +590,8 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                 </p>
               ) : (
                 <div className="fpp-list">
-                  {posts.map((post) => (
-                    <PostCard key={post.id} post={post} onCancel={cancel} pending={cancelPost.isPending} />
+                  {posts.map((post, i) => (
+                    <PostCard key={post.id} post={post} rank={i + 1} onCancel={cancel} pending={cancelPost.isPending} />
                   ))}
                 </div>
               )}
@@ -612,19 +620,33 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
 
 function PostCard({
   post,
+  rank,
   onCancel,
   pending,
 }: {
   post: FindPlayerPost;
+  rank: number;
   onCancel: (id: string) => void;
   pending: boolean;
 }) {
   const cancelled = post.cancelled;
+  const chipClass =
+    rank === 8 ? "hud-chip-eight" : SOLIDS.includes(rank) ? "hud-chip-solid" : "hud-chip-stripe";
   return (
     <div className={`fpp-card${cancelled ? " fpp-card--cancelled" : ""}`}>
       <div className="fpp-card-head">
         <span className="fpp-card-name">{post.displayName}</span>
-        {cancelled && <span className="fpp-badge">Cancelled</span>}
+        <span className="fpp-card-rank">
+          {cancelled && <span className="fpp-badge">Cancelled</span>}
+          {rank <= 10 && (
+            <span
+              className={`hud-chip ${chipClass}`}
+              data-number={rank}
+              style={{ "--chip-color": BALL_COLORS[rank] } as React.CSSProperties}
+              aria-label={`Sort order ${rank}`}
+            />
+          )}
+        </span>
       </div>
       {!cancelled && post.scheduledAt && (
         <div className="fpp-card-when">{formatSchedule(new Date(post.scheduledAt))}</div>
