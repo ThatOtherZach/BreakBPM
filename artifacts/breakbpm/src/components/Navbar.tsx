@@ -64,20 +64,20 @@ export default function Navbar({ onAbout, onBack, onAccount, onSignIn }: NavbarP
         <div className="navbar-menu">
           {onAbout && (
             <button className="navbar-menu-item" onClick={() => { setOpen(false); onAbout(); }}>
-              About
+              <span style={{ textDecoration: 'underline' }}>A</span>bout
             </button>
           )}
           <SignedIn>
             {onAccount && (
               <button className="navbar-menu-item" onClick={() => { setOpen(false); onAccount(); }}>
-                Account
+                <span style={{ textDecoration: 'underline' }}>A</span>ccount
               </button>
             )}
           </SignedIn>
           <SignedOut>
             {onSignIn && (
               <button className="navbar-menu-item" onClick={() => { setOpen(false); onSignIn(); }}>
-                Sign In
+                <span style={{ textDecoration: 'underline' }}>S</span>ign In
               </button>
             )}
           </SignedOut>
