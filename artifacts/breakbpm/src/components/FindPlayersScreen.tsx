@@ -36,8 +36,8 @@ const poolIcon = L.divIcon({
   iconAnchor: [14, 14],
 });
 
-const DEFAULT_CENTER: [number, number] = [39.8283, -98.5795];
-const DEFAULT_ZOOM = 4;
+const DEFAULT_CENTER: [number, number] = [20, 0];
+const DEFAULT_ZOOM = 2;
 
 const CREATE_REASONS: Record<string, string> = {
   not_signed_in: "You must be signed in to post.",
