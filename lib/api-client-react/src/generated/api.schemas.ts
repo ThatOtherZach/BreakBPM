@@ -403,6 +403,8 @@ export interface GameHistoryEntry {
   /** @nullable */
   winner?: string | null;
   /** @nullable */
+  opponent?: string | null;
+  /** @nullable */
   bpm?: number | null;
   /** @nullable */
   accuracy?: number | null;

@@ -862,6 +862,11 @@ components:
         id: { type: string }
         gameType: { type: string }
         winner: { type: ["string", "null"] }
+        # The opposing player to render after "vs." — for a loss this is the
+        # player (or team representative) who won; for a win it is the defeated
+        # opponent. Null for solo/practice and Shark games (the card shows a
+        # dedicated Shark label instead).
+        opponent: { type: ["string", "null"] }
         bpm: { type: ["number", "null"] }
         # The viewing caller's OWN final shooting accuracy as a whole-number
         # percentage (0–100). Resolved from their game_participants row when
@@ -870,6 +875,10 @@ components:
         accuracy: { type: ["integer", "null"] }
         durationMs: { type: integer }
         sunkBallsCount: { type: integer }
+        # Subject-relative result for the player whose history this is:
+        # `won`/`lost` reflect whether THAT player (or their team) won, not who
+        # won in absolute terms. `forfeit`/`completed`/`expired` are preserved
+        # as stored. Drives the WIN/LOSS/DNF badge on the history card.
         outcome: { type: string }
         shareCode: { type: string }
         endedAt: { type: string, format: date-time }

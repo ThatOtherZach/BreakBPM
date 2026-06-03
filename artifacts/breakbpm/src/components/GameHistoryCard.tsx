@@ -161,16 +161,20 @@ export default function GameHistoryCard({ game: g }: { game: GameHistoryEntry })
           <span style={{ fontWeight: "bold", fontSize: 13 }}>{modeLabel}</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#444", fontSize: 11 }}>
             <ResultBadge outcome={g.outcome} />
-            {(g.winner || g.sharkMode) && (
+            {g.sharkMode ? (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
-                {g.sharkMode && <SharkIcon size={12} />}
+                <SharkIcon size={12} />
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {g.sharkMode
-                    ? (g.winner === SHARK_PLAYER_NAME ? "Shark'd" : "Beat the Shark")
-                    : g.winner}
+                  {g.winner === SHARK_PLAYER_NAME ? "Shark'd" : "Beat the Shark"}
                 </span>
               </span>
-            )}
+            ) : g.opponent ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  vs. {g.opponent}
+                </span>
+              </span>
+            ) : null}
           </span>
           {g.endReason && (
             <span style={{ fontSize: 10, color: "#777", fontStyle: "italic" }}>

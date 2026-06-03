@@ -4,5 +4,6 @@
 - [breakbpm test harness](breakbpm-test-harness.md) — vitest runs via a separate vitest.config.ts (not vite.config.ts, which throws without PORT/BASE_PATH); `*.test.ts` already excluded from tsc.
 - [Lifetime mutual exclusion](lifetime-mutual-exclusion.md) — issuing Lifetime must stop active subscriptions renewing on EVERY grant path (purchase/dev-grant/redeem), in-tx.
 - [Paid-host gating uses tier not hasActivePass](entitlement-paid-flag.md) — entitlement.hasActivePass = one-time passes only; subscriptions set tier==='pass'. Gate "paid host" features on tier==='pass'.
+- [History card subject-relative outcome](history-subject-relative-outcome.md) — stored outcome/winner isn't viewer-aware; recompute WIN/LOSS per-subject, locate subject by participant slotIndex not name.
 - [Client fetch throws on non-2xx](client-fetch-throws-on-non-2xx.md) — customFetch throws ApiError on any non-2xx, so in-body error `reason` (e.g. rate_limited on 429) is unreachable as query.data; branch on ApiError.status.
 - [Clerk duplicate verification emails](clerk-duplicate-verification-emails.md) — inline `Route component={() => ...}` remounts Clerk's <SignIn>/<SignUp>, re-sending a 2nd code; use stable named route components.

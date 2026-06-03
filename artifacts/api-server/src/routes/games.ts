@@ -64,12 +64,104 @@ function isSoloMode(gameType: string, maxPlayers: number): boolean {
 type GameRow = typeof gamesTable.$inferSelect;
 
 /**
+ * Resolve a game's WIN/LOSS/etc. badge and "vs." opponent RELATIVE to a
+ * subject player (the account owner or profiled player), rather than in
+ * absolute "someone won" terms. The stored `g.outcome` only records whether a
+ * human won (`won`) or the Shark won (`lost`); it is NOT viewer-aware, so a
+ * game the subject *lost* to another human is stored as `won`. Here we flip it
+ * to the subject's perspective using the persisted `players` (with team info).
+ *
+ * The subject is located by their participant `slotIndex` — `gameState.players`
+ * is ordered by slot (players[i] === slot i), so this is rename-proof and
+ * unambiguous even when 4P games reuse the same display name. We fall back to
+ * matching the current `name` only when the slot is unknown (e.g. legacy rows
+ * with no participant record).
+ *
+ *  - `forfeit` / `completed` / `expired` are preserved (no clear head-to-head).
+ *  - With a winner: `won` if the subject (or their team) is the winner, else
+ *    `lost`.
+ *  - `opponent`: who to show after "vs." — the winner when the subject lost,
+ *    or a defeated opposing player when the subject won. Null for Shark games
+ *    (the card renders a Shark label) and solo/practice (no opponent).
+ *  - When the subject can't be located among the players, we fall back to the
+ *    stored outcome and just surface the winner.
+ */
+function resolveSubjectResult(
+  g: GameRow,
+  gs: Record<string, unknown> | null,
+  subject: { slot: number | null; name: string | null },
+): { outcome: string; opponent: string | null } {
+  const storedOutcome = g.outcome ?? "completed";
+  const winner = g.winner;
+  const sharkMode = !!(gs && gs["sharkAggression"]);
+
+  const rawPlayers = Array.isArray(gs?.["players"])
+    ? (gs!["players"] as Array<Record<string, unknown>>)
+    : [];
+  const players = rawPlayers.map((p) => ({
+    name: typeof p["name"] === "string" ? (p["name"] as string) : "",
+    team: typeof p["team"] === "string" ? (p["team"] as string) : undefined,
+  }));
+  const teamOf = (name: string): string | undefined =>
+    players.find((p) => p.name === name)?.team;
+
+  // No head-to-head winner (practice / expired / abandoned-with-no-winner):
+  // preserve the stored outcome, no opponent.
+  if (!winner) return { outcome: storedOutcome, opponent: null };
+
+  // Locate the subject by slot (rename-proof), else by current name.
+  const subjectIdx =
+    subject.slot != null && subject.slot >= 0 && subject.slot < players.length
+      ? subject.slot
+      : subject.name
+        ? players.findIndex((p) => p.name === subject.name)
+        : -1;
+
+  // Can't tell the subject's side (legacy row with no players) → keep stored
+  // outcome, show the winner as the opponent so the card still reads naturally.
+  if (subjectIdx < 0) {
+    return { outcome: storedOutcome, opponent: sharkMode ? null : winner };
+  }
+
+  const subjectPlayer = players[subjectIdx];
+  const subjectTeam = subjectPlayer.team;
+  const winnerTeam = teamOf(winner);
+  const subjectWon =
+    subjectTeam && winnerTeam ? subjectTeam === winnerTeam : winner === subjectPlayer.name;
+
+  // Forfeits stay a DNF badge regardless of the derived winner.
+  const outcome = storedOutcome === "forfeit" ? "forfeit" : subjectWon ? "won" : "lost";
+
+  let opponent: string | null = null;
+  if (!sharkMode) {
+    if (subjectWon) {
+      // Prefer a player on the opposing team; otherwise any other slot.
+      opponent =
+        players.find((p, i) => {
+          if (i === subjectIdx || !p.name) return false;
+          if (subjectTeam && p.team) return p.team !== subjectTeam;
+          return true;
+        })?.name ?? null;
+    } else {
+      opponent = winner;
+    }
+  }
+  return { outcome, opponent };
+}
+
+/**
  * Map a stored game row into a GameHistoryEntry — the shape rendered by the
  * shared history cards on both the owner's account page and the public
  * /watch/{name} profile. `accuracy` is resolved by the caller (per-participant
- * where known, row-level fallback) so this stays a pure shape transform.
+ * where known, row-level fallback). `subject` identifies the player whose
+ * history this is (by stable slot, with name fallback), used to make the
+ * outcome/opponent viewer-relative.
  */
-function toHistoryEntry(g: GameRow, accuracy: number | null) {
+function toHistoryEntry(
+  g: GameRow,
+  accuracy: number | null,
+  subject: { slot: number | null; name: string | null },
+) {
   const gs = g.gameState as Record<string, unknown> | null;
   const rawReason =
     gs && typeof gs["forfeitReason"] === "string" ? (gs["forfeitReason"] as string) : undefined;
@@ -86,15 +178,17 @@ function toHistoryEntry(g: GameRow, accuracy: number | null) {
       ball: e["ball"] as number,
       player: typeof e["playerName"] === "string" ? (e["playerName"] as string) : "",
     }));
+  const { outcome, opponent } = resolveSubjectResult(g, gs, subject);
   return {
     id: g.id,
     gameType: g.gameType,
     winner: g.winner,
+    opponent,
     bpm: g.bpm == null ? null : g.bpm / 10,
     accuracy,
     durationMs: g.durationMs,
     sunkBallsCount: g.sunkBallsCount,
-    outcome: g.outcome ?? "completed",
+    outcome,
     shareCode: g.shareCode,
     endedAt: g.endedAt!,
     startedAt: g.startedAt,
@@ -1419,6 +1513,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
             .select({
               gameId: gameParticipantsTable.gameId,
               accuracy: gameParticipantsTable.accuracy,
+              slotIndex: gameParticipantsTable.slotIndex,
             })
             .from(gameParticipantsTable)
             .where(
@@ -1429,8 +1524,13 @@ router.get("/games/profile", async (req, res): Promise<void> => {
             )
         : [];
     const accByGame = new Map<string, number | null>(parts.map((p) => [p.gameId, p.accuracy]));
+    const slotByGame = new Map<string, number>(parts.map((p) => [p.gameId, p.slotIndex]));
     games = visible.map((g) =>
-      toHistoryEntry(g, accByGame.has(g.id) ? (accByGame.get(g.id) ?? null) : (g.accuracy ?? null)),
+      toHistoryEntry(
+        g,
+        accByGame.has(g.id) ? (accByGame.get(g.id) ?? null) : (g.accuracy ?? null),
+        { slot: slotByGame.has(g.id) ? (slotByGame.get(g.id) ?? null) : null, name: host.screenName },
+      ),
     );
   }
 
@@ -1632,6 +1732,7 @@ router.get("/games/history", async (req, res): Promise<void> => {
           .select({
             gameId: gameParticipantsTable.gameId,
             accuracy: gameParticipantsTable.accuracy,
+            slotIndex: gameParticipantsTable.slotIndex,
           })
           .from(gameParticipantsTable)
           .where(
@@ -1644,6 +1745,7 @@ router.get("/games/history", async (req, res): Promise<void> => {
   const myAccuracyByGame = new Map<string, number | null>(
     myParts.map((p) => [p.gameId, p.accuracy]),
   );
+  const mySlotByGame = new Map<string, number>(myParts.map((p) => [p.gameId, p.slotIndex]));
 
   const games = visible.map((g) =>
     toHistoryEntry(
@@ -1651,6 +1753,7 @@ router.get("/games/history", async (req, res): Promise<void> => {
       myAccuracyByGame.has(g.id)
         ? (myAccuracyByGame.get(g.id) ?? null)
         : (g.accuracy ?? null),
+      { slot: mySlotByGame.has(g.id) ? (mySlotByGame.get(g.id) ?? null) : null, name: user.screenName },
     ),
   );
 
