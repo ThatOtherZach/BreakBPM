@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { SignedIn, SignedOut, useAuth } from '../lib/authClient';
+import { SignedIn, SignedOut } from '../lib/authClient';
 import { useGetMe } from '@workspace/api-client-react';
 
 interface NavbarProps {
@@ -15,7 +15,6 @@ interface NavbarProps {
 export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlayers, onSignIn }: NavbarProps) {
   const [open, setOpen] = useState(false);
   const me = useGetMe();
-  const { logout } = useAuth();
   const [location] = useLocation();
 
   const tier = me.data?.entitlement?.tier;
@@ -88,9 +87,6 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlay
                 <span style={{ textDecoration: 'underline' }}>A</span>ccount
               </button>
             )}
-            <button className="navbar-menu-item" onClick={() => { setOpen(false); logout(); }}>
-              <span style={{ textDecoration: 'underline' }}>S</span>ign Out
-            </button>
           </SignedIn>
           <SignedOut>
             {onSignIn && (
