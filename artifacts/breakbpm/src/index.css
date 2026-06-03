@@ -1419,6 +1419,250 @@ html, #root {
   align-items: center;
 }
 
+/* ── Stats screen ── */
+
+/* CRT hero readout — mirrors the splash/HUD green-phosphor aesthetic. */
+.stats-hero {
+  background: #0a1a0a;
+  border: 2px solid;
+  border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.16) 2px,
+      rgba(0, 0, 0, 0.16) 4px
+    );
+  padding: 12px 14px;
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.stats-hero-main {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.stats-hero-label {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  color: #00ff41;
+  letter-spacing: 2px;
+  margin-bottom: 1px;
+}
+
+.stats-hero-value {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 60px;
+  line-height: 0.85;
+  color: #00ff41;
+  letter-spacing: -1px;
+  text-shadow: 0 0 16px rgba(0, 255, 65, 0.4);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.stats-hero-value.dim { color: #1a5a1a; text-shadow: none; }
+
+.stats-hero-unit {
+  font-size: 18px;
+  color: #2a7a2a;
+  letter-spacing: 1px;
+}
+
+.stats-hero-sub {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  color: #5a9a5a;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+.stats-hero-side {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding-left: 12px;
+  border-left: 1px solid #1a5a1a;
+}
+
+.stats-hero-side-item { display: flex; flex-direction: column; gap: 1px; }
+
+.stats-hero-side-val {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 30px;
+  line-height: 0.9;
+  color: #e8e8e8;
+}
+.stats-hero-side-val.green { color: #00ff41; text-shadow: 0 0 10px rgba(0, 255, 65, 0.3); }
+.stats-hero-side-val.amber { color: var(--amber); text-shadow: 0 0 10px rgba(255, 179, 0, 0.3); }
+
+.stats-hero-side-label {
+  font-family: 'Courier New', monospace;
+  font-size: 8px;
+  color: #3a7a3a;
+  letter-spacing: 1px;
+}
+
+/* Pixel-segment meter — a recessed black track with a glowing,
+   notched fill bar reminiscent of an old equalizer / loading gauge. */
+.stats-meter-row { display: flex; flex-direction: column; gap: 3px; }
+
+.stats-meter-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.stats-meter-name {
+  font-size: 10px;
+  color: #444;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stats-meter-val {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--navy);
+}
+
+.stats-meter-track {
+  height: 14px;
+  background: #06120a;
+  border: 2px solid;
+  border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
+  overflow: hidden;
+  position: relative;
+}
+
+.stats-meter-fill {
+  height: 100%;
+  background: #00ff41;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0) 0,
+      rgba(0, 0, 0, 0) 5px,
+      rgba(0, 0, 0, 0.45) 5px,
+      rgba(0, 0, 0, 0.45) 7px
+    );
+  box-shadow: 0 0 6px rgba(0, 255, 65, 0.5);
+  transition: width 0.4s steps(14);
+  min-width: 0;
+}
+.stats-meter-fill.amber {
+  background-color: var(--amber);
+  box-shadow: 0 0 6px rgba(255, 179, 0, 0.55);
+}
+.stats-meter-fill.cyan {
+  background-color: #36c5f0;
+  box-shadow: 0 0 6px rgba(54, 197, 240, 0.55);
+}
+
+/* Split meter — solids vs stripes in one track. */
+.stats-split-track {
+  height: 16px;
+  display: flex;
+  background: #06120a;
+  border: 2px solid;
+  border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
+  overflow: hidden;
+}
+.stats-split-seg {
+  height: 100%;
+  transition: width 0.4s steps(14);
+}
+.stats-split-seg.solids { background: var(--amber); box-shadow: inset 0 0 6px rgba(0,0,0,0.3); }
+.stats-split-seg.stripes {
+  background: #fffef2;
+  background-image: repeating-linear-gradient(90deg, #c3342b 0, #c3342b 4px, #fffef2 4px, #fffef2 8px);
+}
+
+/* Retro stat card — raised silver chip with emoji + VT323 value. */
+.stats-card-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.stats-card {
+  flex: 1 1 calc(33.333% - 4px);
+  min-width: 80px;
+  background: var(--silver);
+  border: 2px solid;
+  border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.stats-card-emoji { font-size: 14px; line-height: 1; }
+.stats-card-val {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--navy);
+}
+.stats-card-label { font-size: 9px; color: #555; letter-spacing: 0.5px; }
+.stats-card-sub { font-size: 9px; color: #777; }
+
+/* Section header with emoji glyph. */
+.stats-sec-emoji { font-size: 12px; line-height: 1; margin-right: 2px; }
+
+/* Play-time bar list (green CRT bars scaled to longest game). */
+.stats-bar-line { display: flex; flex-direction: column; gap: 3px; }
+.stats-bar-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11px;
+  color: #444;
+}
+.stats-bar-time { font-family: 'VT323', monospace; font-size: 16px; color: var(--navy); }
+
+/* Most-sunk ball: chip + count bar. */
+.stats-ball-row { display: flex; align-items: center; gap: 8px; }
+.stats-ball-bar-track {
+  flex: 1;
+  height: 12px;
+  background: #06120a;
+  border: 2px solid;
+  border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
+  overflow: hidden;
+}
+.stats-ball-bar-fill {
+  height: 100%;
+  background: #00ff41;
+  background-image: repeating-linear-gradient(90deg, rgba(0,0,0,0) 0, rgba(0,0,0,0) 4px, rgba(0,0,0,0.4) 4px, rgba(0,0,0,0.4) 6px);
+  box-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+  transition: width 0.4s steps(12);
+}
+.stats-ball-count {
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  color: var(--navy);
+  width: 34px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Upsell call-out — yellow PC-98 notice. */
+.stats-upsell {
+  background: #ffffcc;
+  border: 2px solid;
+  border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
+  padding: 10px;
+}
+
 /* ── utils ── */
 .flex { display: flex; }
 .flex-col { flex-direction: column; }

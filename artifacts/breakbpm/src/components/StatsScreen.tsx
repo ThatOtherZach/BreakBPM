@@ -31,6 +31,11 @@ const WINDOW_LABEL: Record<string, string> = {
 };
 const WINDOWS: Array<"24h" | "30d" | "365d" | "all"> = ["24h", "30d", "365d", "all"];
 
+const GAME_TYPE_EMOJI: Record<string, string> = {
+  "8ball": "🎱",
+  "9ball": "9️⃣",
+  practice: "🎯",
+};
 const GAME_TYPE_LABEL: Record<string, string> = {
   "8ball": "8-Ball",
   "9ball": "9-Ball",
@@ -64,49 +69,70 @@ function fmtWhen(iso: string | undefined): string {
   }
 }
 
-/** A single metric tile — big VT323 value over a small caption. */
-function Tile({
+type Tone = "green" | "amber" | "cyan";
+
+/** A recessed CRT gauge: glowing notched fill bar scaled 0..100. */
+function PixelMeter({
   label,
-  value,
-  sub,
-  accent,
+  emoji,
+  pct,
+  display,
+  tone = "green",
 }: {
   label: string;
-  value: string;
-  sub?: string;
-  accent?: string;
+  emoji?: string;
+  pct: number | null | undefined;
+  display: string;
+  tone?: Tone;
 }) {
+  const w = pct == null || !Number.isFinite(pct) ? 0 : Math.max(0, Math.min(100, pct));
   return (
-    <div
-      style={{
-        flex: "1 1 calc(50% - 6px)",
-        minWidth: 120,
-        background: "#fff",
-        border: "1px solid #999",
-        padding: "8px 10px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-      }}
-    >
-      <span style={{ fontSize: 10, color: "#555", letterSpacing: 0.5 }}>{label}</span>
-      <span
-        style={{
-          fontFamily: "VT323",
-          fontSize: 28,
-          lineHeight: 1,
-          color: accent ?? "#000080",
-        }}
-      >
-        {value}
-      </span>
-      {sub && <span style={{ fontSize: 10, color: "#777" }}>{sub}</span>}
+    <div className="stats-meter-row">
+      <div className="stats-meter-top">
+        <span className="stats-meter-name">
+          {emoji && <span aria-hidden="true">{emoji}</span>}
+          {label}
+        </span>
+        <span className="stats-meter-val">{display}</span>
+      </div>
+      <div className="stats-meter-track">
+        <div className={`stats-meter-fill ${tone}`} style={{ width: `${w}%` }} />
+      </div>
     </div>
   );
 }
 
-function TileRow({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{children}</div>;
+/** Raised silver chip with an emoji glyph + big VT323 value. */
+function StatCard({
+  emoji,
+  value,
+  label,
+  sub,
+}: {
+  emoji: string;
+  value: string;
+  label: string;
+  sub?: string;
+}) {
+  return (
+    <div className="stats-card">
+      <span className="stats-card-emoji" aria-hidden="true">{emoji}</span>
+      <span className="stats-card-val">{value}</span>
+      <span className="stats-card-label">{label}</span>
+      {sub && <span className="stats-card-sub">{sub}</span>}
+    </div>
+  );
+}
+
+function SectionHeader({ emoji, title }: { emoji: string; title: string }) {
+  return (
+    <div className="panel-header">
+      <span>
+        <span className="stats-sec-emoji" aria-hidden="true">{emoji}</span>
+        {title}
+      </span>
+    </div>
+  );
 }
 
 export default function StatsScreen({ onBack, onAbout, onAccount, onSignIn }: Props) {
@@ -141,15 +167,28 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onSignIn }: Pr
   const appliedWindow = stats?.appliedWindow ?? "24h";
   const isPersonal = appliedScope === "personal";
 
+  // Longest avg game length, used to scale the play-time bars.
+  const maxPlayMs = stats
+    ? Math.max(1, ...stats.playTimeByType.map((p) => p.avgDurationMs))
+    : 1;
+  // Largest most-sunk count, used to scale the ball-frequency bars.
+  const maxBallCount = stats
+    ? Math.max(1, ...stats.topBalls.map((b) => b.count))
+    : 1;
+
+  const rateLabel = isPersonal ? "WIN RATE" : "FINISH RATE";
+  const rateValue = isPersonal ? stats?.winRate : stats?.finishRate;
+
   return (
     <div className="app-window app-window--page">
       <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
       <div className="app-body">
-        {/* Controls */}
+        {/* ── Controls ── */}
         <div className="panel">
           <div className="panel-header">
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>📊</span>Statistics
+            <span>
+              <span className="stats-sec-emoji" aria-hidden="true">📊</span>
+              Statistics
             </span>
             {stats && (
               <span style={{ fontSize: 10, color: "#666", fontWeight: "normal" }}>
@@ -167,7 +206,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onSignIn }: Pr
                 disabled={!canToggleGlobal && appliedScope !== "personal"}
                 onClick={() => setScope("personal")}
               >
-                Me
+                🙋 Me
               </button>
               <button
                 className={`btn${appliedScope === "global" ? " btn-primary" : ""}`}
@@ -176,7 +215,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onSignIn }: Pr
                 onClick={() => canToggleGlobal && setScope("global")}
                 title={canToggleGlobal ? undefined : "Get a pass to compare against everyone"}
               >
-                Everyone {canToggleGlobal ? "" : "🔒"}
+                🌍 Everyone {canToggleGlobal ? "" : "🔒"}
               </button>
             </div>
 
@@ -209,7 +248,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onSignIn }: Pr
                 disabled={refreshing || statsQuery.isFetching}
                 onClick={handleRefresh}
               >
-                {refreshing ? "Refreshing…" : "↻ Refresh"}
+                {refreshing ? "↻ Refreshing…" : "↻ Refresh"}
               </button>
             )}
           </div>
@@ -218,7 +257,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onSignIn }: Pr
         {statsQuery.isLoading && (
           <div className="panel">
             <div className="panel-body">
-              <p style={{ fontFamily: "VT323", fontSize: 18 }}>Loading…</p>
+              <p style={{ fontFamily: "VT323", fontSize: 18 }}>▌ Loading…</p>
             </div>
           </div>
         )}
@@ -226,7 +265,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onSignIn }: Pr
         {statsQuery.isError && (
           <div className="panel">
             <div className="panel-body">
-              <p style={{ fontSize: 12, color: "#c00" }}>Couldn't load stats. Try again shortly.</p>
+              <p style={{ fontSize: 12, color: "#c00" }}>⚠ Couldn't load stats. Try again shortly.</p>
             </div>
           </div>
         )}
@@ -238,89 +277,130 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onSignIn }: Pr
                 <div className="panel-body">
                   <p style={{ fontSize: 13, color: "#444" }}>
                     {isPersonal
-                      ? "No completed games in this window yet. Go sink some balls!"
-                      : "No completed games in this window yet."}
+                      ? "🎱 No completed games in this window yet. Go sink some balls!"
+                      : "🎱 No completed games in this window yet."}
                   </p>
                 </div>
               </div>
             ) : (
               <>
-                {/* Results */}
+                {/* ── CRT hero readout ── */}
+                <div className="stats-hero">
+                  <div className="stats-hero-main">
+                    <span className="stats-hero-label">▲ AVG BPM</span>
+                    <span className={`stats-hero-value${stats.avgBpm == null ? " dim" : ""}`}>
+                      {stats.avgBpm == null ? "--" : stats.avgBpm.toFixed(1)}
+                      <span className="stats-hero-unit">BPM</span>
+                    </span>
+                    <span className="stats-hero-sub">
+                      {isPersonal ? "YOUR PACE" : "ALL PLAYERS"} · BEST{" "}
+                      {stats.bestBpm == null ? "--" : stats.bestBpm.toFixed(1)}
+                    </span>
+                  </div>
+                  <div className="stats-hero-side">
+                    <div className="stats-hero-side-item">
+                      <span className="stats-hero-side-val">{fmtInt(stats.gamesPlayed)}</span>
+                      <span className="stats-hero-side-label">GAMES</span>
+                    </div>
+                    <div className="stats-hero-side-item">
+                      <span className="stats-hero-side-val green">{fmtPct(rateValue)}</span>
+                      <span className="stats-hero-side-label">{rateLabel}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Results ── */}
                 <div className="panel">
-                  <div className="panel-header"><span>Results</span></div>
-                  <div className="panel-body">
-                    <TileRow>
-                      <Tile label="GAMES PLAYED" value={fmtInt(stats.gamesPlayed)} />
-                      {isPersonal ? (
-                        <Tile label="WIN RATE" value={fmtPct(stats.winRate)} accent="#006400" />
-                      ) : (
-                        <Tile
-                          label="FINISH RATE"
-                          value={fmtPct(stats.finishRate)}
-                          accent="#006400"
-                          sub="games played to the end"
-                        />
-                      )}
-                      <Tile
+                  <SectionHeader emoji="🏆" title="Results" />
+                  <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <PixelMeter
+                      label={rateLabel}
+                      emoji={isPersonal ? "🥇" : "🏁"}
+                      pct={rateValue == null ? null : rateValue * 100}
+                      display={fmtPct(rateValue)}
+                      tone="green"
+                    />
+                    {(stats.eightBallDecidedGames ?? 0) > 0 && (
+                      <PixelMeter
                         label="8-BALL SINK RATE"
-                        value={fmtPct(stats.eightBallSinkRate)}
-                        sub={`${fmtInt(stats.eightBallDecidedGames)} decided on the 8`}
+                        emoji="🎱"
+                        pct={stats.eightBallSinkRate == null ? null : stats.eightBallSinkRate * 100}
+                        display={`${fmtPct(stats.eightBallSinkRate)} · ${fmtInt(stats.eightBallDecidedGames)} on the 8`}
+                        tone="amber"
                       />
-                    </TileRow>
+                    )}
                   </div>
                 </div>
 
-                {/* Shooting */}
+                {/* ── Shooting ── */}
                 <div className="panel">
-                  <div className="panel-header"><span>Shooting</span></div>
-                  <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <TileRow>
-                      <Tile
-                        label="ACCURACY"
-                        value={stats.accuracy == null ? "—" : `${stats.accuracy}%`}
-                        accent="#006400"
-                      />
-                      <Tile
-                        label="BEST ACCURACY"
-                        value={stats.bestAccuracy == null ? "—" : `${stats.bestAccuracy}%`}
-                      />
-                    </TileRow>
-                    <TileRow>
-                      <Tile label="TOTAL SHOTS" value={fmtInt(stats.totalShots)} sub={`${fmtNum(stats.avgShotsPerGame)}/game`} />
-                      <Tile label="MISSES" value={fmtInt(stats.totalMisses)} sub={`${fmtNum(stats.avgMissesPerGame)}/game`} />
-                      <Tile label="FOULS" value={fmtInt(stats.totalFouls)} sub={`${fmtNum(stats.avgFoulsPerGame)}/game`} />
-                      <Tile label="SAFETIES" value={fmtInt(stats.totalSafeties)} sub={`${fmtNum(stats.avgSafetiesPerGame)}/game`} />
-                      <Tile label="UNDOS" value={fmtInt(stats.totalUndos)} />
-                    </TileRow>
+                  <SectionHeader emoji="🎯" title="Shooting" />
+                  <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <PixelMeter
+                      label="ACCURACY"
+                      emoji="🎯"
+                      pct={stats.accuracy}
+                      display={stats.accuracy == null ? "—" : `${stats.accuracy}%`}
+                      tone="green"
+                    />
+                    <PixelMeter
+                      label="BEST GAME ACCURACY"
+                      emoji="⭐"
+                      pct={stats.bestAccuracy}
+                      display={stats.bestAccuracy == null ? "—" : `${stats.bestAccuracy}%`}
+                      tone="cyan"
+                    />
+                    <div className="stats-card-grid">
+                      <StatCard emoji="🎱" value={fmtInt(stats.totalShots)} label="SHOTS" sub={`${fmtNum(stats.avgShotsPerGame)}/game`} />
+                      <StatCard emoji="❌" value={fmtInt(stats.totalMisses)} label="MISSES" sub={`${fmtNum(stats.avgMissesPerGame)}/game`} />
+                      <StatCard emoji="🚫" value={fmtInt(stats.totalFouls)} label="FOULS" sub={`${fmtNum(stats.avgFoulsPerGame)}/game`} />
+                      <StatCard emoji="🛡️" value={fmtInt(stats.totalSafeties)} label="SAFETIES" sub={`${fmtNum(stats.avgSafetiesPerGame)}/game`} />
+                      <StatCard emoji="↩️" value={fmtInt(stats.totalUndos)} label="UNDOS" />
+                    </div>
                   </div>
                 </div>
 
-                {/* Pace */}
+                {/* ── Pace ── */}
                 <div className="panel">
-                  <div className="panel-header"><span>Pace</span></div>
-                  <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <TileRow>
-                      <Tile label="AVG BPM" value={stats.avgBpm == null ? "—" : stats.avgBpm.toFixed(1)} />
-                      <Tile label="BEST BPM" value={stats.bestBpm == null ? "—" : stats.bestBpm.toFixed(1)} />
-                    </TileRow>
+                  <SectionHeader emoji="⚡" title="Pace" />
+                  <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <div className="digit-display">
+                          <div className="digit-bpm">{stats.avgBpm == null ? "--" : stats.avgBpm.toFixed(1)}</div>
+                        </div>
+                        <div className="digit-label">AVG BPM</div>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div className="digit-display">
+                          <div className="digit-bpm" style={{ color: "var(--amber)" }}>
+                            {stats.bestBpm == null ? "--" : stats.bestBpm.toFixed(1)}
+                          </div>
+                        </div>
+                        <div className="digit-label">BEST BPM</div>
+                      </div>
+                    </div>
                     {stats.playTimeByType.length > 0 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <span style={{ fontSize: 10, color: "#555", letterSpacing: 0.5 }}>AVG GAME LENGTH</span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <span style={{ fontSize: 10, color: "#555", letterSpacing: 0.5 }}>🕐 AVG GAME LENGTH</span>
                         {stats.playTimeByType.map((p) => (
-                          <div
-                            key={p.gameType}
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              fontSize: 12,
-                              borderTop: "1px solid #ddd",
-                              padding: "3px 0",
-                            }}
-                          >
-                            <span>{GAME_TYPE_LABEL[p.gameType] ?? p.gameType}</span>
-                            <span style={{ color: "#444" }}>
-                              🕐 {fmtMs(p.avgDurationMs)} · {p.gameCount} {p.gameCount === 1 ? "game" : "games"}
-                            </span>
+                          <div key={p.gameType} className="stats-bar-line">
+                            <div className="stats-bar-top">
+                              <span>
+                                <span aria-hidden="true" style={{ marginRight: 4 }}>
+                                  {GAME_TYPE_EMOJI[p.gameType] ?? "🎱"}
+                                </span>
+                                {GAME_TYPE_LABEL[p.gameType] ?? p.gameType}
+                                <span style={{ color: "#888" }}> · {p.gameCount} {p.gameCount === 1 ? "game" : "games"}</span>
+                              </span>
+                              <span className="stats-bar-time">{fmtMs(p.avgDurationMs)}</span>
+                            </div>
+                            <div className="stats-meter-track" style={{ height: 12 }}>
+                              <div
+                                className="stats-meter-fill amber"
+                                style={{ width: `${(p.avgDurationMs / maxPlayMs) * 100}%` }}
+                              />
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -328,49 +408,74 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onSignIn }: Pr
                   </div>
                 </div>
 
-                {/* Patterns — personal scope only */}
+                {/* ── Patterns — personal scope only ── */}
                 {isPersonal && (
                   <div className="panel">
-                    <div className="panel-header"><span>Ball Patterns</span></div>
-                    <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <SectionHeader emoji="🎱" title="Ball Patterns" />
+                    <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       {stats.topBalls.length > 0 && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          <span style={{ fontSize: 10, color: "#555", letterSpacing: 0.5 }}>MOST-SUNK BALLS</span>
-                          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                            {stats.topBalls.map((b) => {
-                              const chipClass =
-                                b.ball === 8
-                                  ? "hud-chip-eight"
-                                  : SOLIDS.includes(b.ball)
-                                    ? "hud-chip-solid"
-                                    : "hud-chip-stripe";
-                              return (
-                                <span key={b.ball} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          <span style={{ fontSize: 10, color: "#555", letterSpacing: 0.5 }}>⭐ MOST-SUNK BALLS</span>
+                          {stats.topBalls.map((b) => {
+                            const chipClass =
+                              b.ball === 8
+                                ? "hud-chip-eight"
+                                : SOLIDS.includes(b.ball)
+                                  ? "hud-chip-solid"
+                                  : "hud-chip-stripe";
+                            return (
+                              <div key={b.ball} className="stats-ball-row">
+                                <span
+                                  className={`hud-chip ${chipClass}`}
+                                  data-number={b.ball}
+                                  style={{ "--chip-color": BALL_COLORS[b.ball] } as React.CSSProperties}
+                                  aria-label={`Ball ${b.ball}`}
+                                />
+                                <span className="stats-ball-bar-track">
                                   <span
-                                    className={`hud-chip ${chipClass}`}
-                                    data-number={b.ball}
-                                    style={{ "--chip-color": BALL_COLORS[b.ball] } as React.CSSProperties}
-                                    aria-label={`Ball ${b.ball}`}
+                                    className="stats-ball-bar-fill"
+                                    style={{ width: `${(b.count / maxBallCount) * 100}%`, display: "block" }}
                                   />
-                                  <span style={{ fontFamily: "VT323", fontSize: 20, color: "#000080" }}>×{b.count}</span>
                                 </span>
-                              );
-                            })}
-                          </div>
+                                <span className="stats-ball-count">×{b.count}</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
-                      <TileRow>
-                        <Tile label="SOLIDS GAMES" value={fmtInt(stats.solidsCount)} />
-                        <Tile label="STRIPES GAMES" value={fmtInt(stats.stripesCount)} />
-                      </TileRow>
+
+                      {/* Solids vs stripes split */}
+                      {((stats.solidsCount ?? 0) > 0 || (stats.stripesCount ?? 0) > 0) && (() => {
+                        const solids = stats.solidsCount ?? 0;
+                        const stripes = stats.stripesCount ?? 0;
+                        const total = solids + stripes;
+                        const solidsPct = total > 0 ? (solids / total) * 100 : 0;
+                        const stripesPct = total > 0 ? (stripes / total) * 100 : 0;
+                        return (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <div className="stats-bar-top">
+                              <span>🟡 Solids {Math.round(solidsPct)}%</span>
+                              <span>{Math.round(stripesPct)}% Stripes 🔴</span>
+                            </div>
+                            <div className="stats-split-track">
+                              <span className="stats-split-seg solids" style={{ width: `${solidsPct}%` }} />
+                              <span className="stats-split-seg stripes" style={{ width: `${stripesPct}%` }} />
+                            </div>
+                            <div className="stats-bar-top">
+                              <span style={{ color: "#888" }}>{solids} games</span>
+                              <span style={{ color: "#888" }}>{stripes} games</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       {(stats.sharkGames ?? 0) > 0 && (
-                        <TileRow>
-                          <Tile
-                            label="🦈 SHARK WIN RATE"
-                            value={fmtPct(stats.sharkWinRate)}
-                            sub={`${fmtInt(stats.sharkGames)} shark games`}
-                          />
-                        </TileRow>
+                        <PixelMeter
+                          label="🦈 SHARK WIN RATE"
+                          pct={stats.sharkWinRate == null ? null : stats.sharkWinRate * 100}
+                          display={`${fmtPct(stats.sharkWinRate)} · ${fmtInt(stats.sharkGames)} games`}
+                          tone="cyan"
+                        />
                       )}
                     </div>
                   </div>
@@ -378,22 +483,20 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onSignIn }: Pr
               </>
             )}
 
-            {/* Upsell for non-pass tiers */}
+            {/* ── Upsell for non-pass tiers ── */}
             {stats.tier !== "pass" && (
-              <div className="panel">
-                <div className="panel-body">
-                  <p style={{ fontSize: 12, color: "#444", marginBottom: 8 }}>
-                    {stats.tier === "public"
-                      ? "Sign in to track your own stats, or get a pass to unlock longer windows, the global leaderboard view, and live refresh."
-                      : "Get a pass to unlock 30-day, 1-year and all-time windows, the global comparison view, and manual refresh."}
-                  </p>
-                  <button
-                    className="btn btn-primary w-full"
-                    onClick={stats.tier === "public" ? onSignIn : onAccount}
-                  >
-                    {stats.tier === "public" ? "Sign In" : "Get a Pass"}
-                  </button>
-                </div>
+              <div className="stats-upsell">
+                <p style={{ fontSize: 12, color: "#444", marginBottom: 8 }}>
+                  {stats.tier === "public"
+                    ? "🔓 Sign in to track your own stats, or get a pass to unlock longer windows, the global leaderboard view, and live refresh."
+                    : "🔓 Get a pass to unlock 30-day, 1-year and all-time windows, the global comparison view, and manual refresh."}
+                </p>
+                <button
+                  className="btn btn-primary w-full"
+                  onClick={stats.tier === "public" ? onSignIn : onAccount}
+                >
+                  {stats.tier === "public" ? "Sign In" : "Get a Pass"}
+                </button>
               </div>
             )}
           </>
