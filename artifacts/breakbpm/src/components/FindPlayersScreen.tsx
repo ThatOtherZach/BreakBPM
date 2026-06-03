@@ -159,8 +159,16 @@ function downloadIcs(post: FindPlayerPost) {
   const end = new Date(start.getTime() + 60 * 60 * 1000);
   const stamp = (d: Date) =>
     `${d.getUTCFullYear()}${p2(d.getUTCMonth() + 1)}${p2(d.getUTCDate())}T${p2(d.getUTCHours())}${p2(d.getUTCMinutes())}00Z`;
+  const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
   const geo =
-    post.latitude != null && post.longitude != null ? `\nGEO:${post.latitude};${post.longitude}` : "";
+    post.latitude != null && post.longitude != null ? `GEO:${post.latitude};${post.longitude}` : "";
+  const locationText = [
+    post.locationLabel,
+    post.tableNumber != null ? `Table ${post.tableNumber}` : null,
+  ]
+    .filter(Boolean)
+    .join(" — ");
+  const location = locationText ? `LOCATION:${esc(locationText)}` : "";
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -170,8 +178,9 @@ function downloadIcs(post: FindPlayerPost) {
     `DTSTAMP:${stamp(new Date())}`,
     `DTSTART:${stamp(start)}`,
     `DTEND:${stamp(end)}`,
-    `SUMMARY:Pool with ${post.displayName}`,
-    geo.trim(),
+    `SUMMARY:Pool with ${esc(post.displayName)}`,
+    location,
+    geo,
     "END:VEVENT",
     "END:VCALENDAR",
   ].filter(Boolean);
