@@ -143,6 +143,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
   const [page, setPage] = useState(1);
   const [mapView, setMapView] = useState(false);
   const [todayOnly, setTodayOnly] = useState(false);
+  const [next30Only, setNext30Only] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
 
   const list = useListFindPlayerPosts({ page });
@@ -278,19 +279,25 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
 
   const canCreate = data?.canCreate ?? false;
   const todayStr = useMemo(() => utcDateStr(new Date()), []);
+  const next30Str = useMemo(() => {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() + 30);
+    return utcDateStr(d);
+  }, []);
+  const filterPosts = <T extends { scheduledAt?: string | null }>(arr: T[]): T[] => {
+    if (todayOnly) return arr.filter((p) => p.scheduledAt != null && p.scheduledAt.slice(0, 10) === todayStr);
+    if (next30Only) return arr.filter((p) => p.scheduledAt != null && p.scheduledAt.slice(0, 10) <= next30Str);
+    return arr;
+  };
   const allPosts = data?.posts ?? [];
-  const posts = todayOnly
-    ? allPosts.filter((p) => p.scheduledAt != null && p.scheduledAt.slice(0, 10) === todayStr)
-    : allPosts;
+  const posts = filterPosts(allPosts);
   const totalPages = data?.totalPages ?? 0;
   const atLimit = (data?.activePostCount ?? 0) >= (data?.maxActivePosts ?? 5);
   // Cancelled posts return null coordinates, so they're naturally excluded.
   const allMappable = (mapList.data?.posts ?? []).filter(
     (p) => p.latitude != null && p.longitude != null,
   );
-  const mappable = todayOnly
-    ? allMappable.filter((p) => p.scheduledAt != null && p.scheduledAt.slice(0, 10) === todayStr)
-    : allMappable;
+  const mappable = filterPosts(allMappable);
 
   return (
     <div className="app-window app-window--page">
@@ -408,15 +415,21 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
               <div className="fpp-toggle">
                 <button
                   className="btn btn-primary fpp-toggle-btn"
-                  onClick={() => { setMapView((v) => { if (!v) invalidate(); return !v; }); setTodayOnly(false); }}
+                  onClick={() => { setMapView((v) => { if (!v) invalidate(); return !v; }); setTodayOnly(false); setNext30Only(false); }}
                 >
                   {mapView ? "📋 List View" : "🗺️ Map View"}
                 </button>
                 <button
                   className={`btn fpp-toggle-btn${todayOnly ? " btn-primary" : ""}`}
-                  onClick={() => setTodayOnly((v) => !v)}
+                  onClick={() => { setTodayOnly((v) => !v); setNext30Only(false); }}
                 >
                   Today
+                </button>
+                <button
+                  className={`btn fpp-toggle-btn${next30Only ? " btn-primary" : ""}`}
+                  onClick={() => { setNext30Only((v) => !v); setTodayOnly(false); }}
+                >
+                  30 Days
                 </button>
               </div>
 
