@@ -589,6 +589,24 @@ export interface GameHistoryResponse {
   games: GameHistoryEntry[];
 }
 
+export type PublicProfileResultReason = typeof PublicProfileResultReason[keyof typeof PublicProfileResultReason];
+
+
+export const PublicProfileResultReason = {
+  not_found: 'not_found',
+  rate_limited: 'rate_limited',
+} as const;
+
+export interface PublicProfileResult {
+  found: boolean;
+  reason?: PublicProfileResultReason;
+  /** @nullable */
+  screenName?: string | null;
+  /** @nullable */
+  memberSince?: string | null;
+  games: GameHistoryEntry[];
+}
+
 export interface StatBall {
   ball: number;
   count: number;
@@ -708,6 +726,14 @@ code: string;
 };
 
 export type ResolveWatchByNameParams = {
+/**
+ * @minLength 1
+ * @maxLength 40
+ */
+name: string;
+};
+
+export type GetPublicProfileParams = {
 /**
  * @minLength 1
  * @maxLength 40

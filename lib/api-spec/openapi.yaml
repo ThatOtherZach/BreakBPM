@@ -400,6 +400,32 @@ paths:
         "429":
           description: Too many requests
 
+  /games/profile:
+    get:
+      operationId: getPublicProfile
+      tags: [games]
+      summary: Public profile (member-since + last 5 games) for a player by screen name
+      description: >
+        Rate-limited (per-IP) public profile shown on /watch/{name} when the
+        player has no live game right now. Resolves a host's screen name
+        (case-insensitive) to their member-since date and their five most
+        recent completed games. No auth required and never exposes email or
+        in-progress game state — purely the same read-only history cards the
+        owner sees on their account page.
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 40 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicProfileResult" }
+        "429":
+          description: Too many requests
+
   /games/leave:
     post:
       operationId: leaveGame
@@ -1048,6 +1074,25 @@ components:
         page: { type: integer }
         # Total number of pages (always 1 for free accounts).
         totalPages: { type: integer }
+        games:
+          type: array
+          items: { $ref: "#/components/schemas/GameHistoryEntry" }
+
+    PublicProfileResult:
+      type: object
+      required: [found, games]
+      properties:
+        found: { type: boolean }
+        # Why the lookup failed (only present when found is false).
+        reason: { type: string, enum: [not_found, rate_limited] }
+        # Canonical screen name (original casing) when found.
+        screenName: { type: ["string", "null"] }
+        # Account creation date. Null for legacy users with no recorded
+        # createdAt — the header simply omits the "member since" line then.
+        memberSince: { type: ["string", "null"], format: date-time }
+        # Up to the five most recent completed games, newest-first. Same
+        # shape (and rendered with the same cards) as the owner's own
+        # account history. Empty when found is false.
         games:
           type: array
           items: { $ref: "#/components/schemas/GameHistoryEntry" }

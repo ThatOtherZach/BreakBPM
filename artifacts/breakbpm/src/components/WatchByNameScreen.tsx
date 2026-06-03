@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'wouter';
-import Navbar from './Navbar';
 import JoinedGameScreen from './JoinedGameScreen';
+import PlayerProfileScreen from './PlayerProfileScreen';
 import {
   useResolveWatchByName,
   getResolveWatchByNameQueryKey,
@@ -28,7 +27,6 @@ interface Props {
  * to follow a later game, reload the page.
  */
 export default function WatchByNameScreen({ name, onBack, onAbout, onAccount, onSignIn }: Props) {
-  const [, setLocation] = useLocation();
   const [liveCode, setLiveCode] = useState<string | null>(null);
 
   const resolve = useResolveWatchByName(
@@ -61,37 +59,17 @@ export default function WatchByNameScreen({ name, onBack, onAbout, onAccount, on
     );
   }
 
-  const reason = resolve.data && !resolve.data.found ? resolve.data.reason : undefined;
-  let message = `Finding ${name}'s game…`;
-  let isError = false;
-  if (resolve.isError) {
-    message = "Couldn't reach the server. Check your connection and try again.";
-    isError = true;
-  } else if (reason === 'not_found') {
-    message = `No player named "${name}". Double-check the link.`;
-    isError = true;
-  } else if (reason === 'rate_limited') {
-    message = 'Too many attempts. Please wait a minute and try again.';
-    isError = true;
-  } else if (reason === 'not_live') {
-    message = `${name} isn't in a game right now — this page will update automatically when they start one.`;
-  }
-
+  // No live game (yet). Show the player's public profile while we keep polling
+  // in the background; the effect above promotes us to the live spectator view
+  // the moment they break. The profile screen owns its own loading / not-found
+  // / rate-limited / error states.
   return (
-    <div className="app-window">
-      <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
-      <div className="app-body">
-        <div className="notice" style={isError ? { color: '#c00' } : undefined}>
-          <span>{isError ? '!' : '📡'}</span>
-          <span>{message}</span>
-        </div>
-        <button
-          className="btn btn-primary btn-big btn-full"
-          onClick={() => { onBack(); setLocation('/'); }}
-        >
-          ← Back to menu
-        </button>
-      </div>
-    </div>
+    <PlayerProfileScreen
+      name={name}
+      onBack={onBack}
+      onAbout={onAbout}
+      onAccount={onAccount}
+      onSignIn={onSignIn}
+    />
   );
 }

@@ -23,6 +23,8 @@ import {
   GetGameStateByCodeResponse,
   ResolveWatchByNameQueryParams,
   ResolveWatchByNameResponse,
+  GetPublicProfileQueryParams,
+  GetPublicProfileResponse,
   GetStatsQueryParams,
   GetStatsResponse,
 } from "@workspace/api-zod";
@@ -37,6 +39,9 @@ const router: IRouter = Router();
 
 /** Hard wall-clock cap for anonymous play (no DB row, self-enforced client-side). */
 const ANONYMOUS_MAX_GAME_DURATION_MS = MAX_GAME_DURATION_MS;
+
+/** Number of recent games shown on the public /watch/{name} profile. */
+const PROFILE_GAME_LIMIT = 5;
 
 /** Default slot counts by game type. 8-ball can be 2 or 4 players (set via body). */
 function defaultMaxPlayers(gameType: string, requested?: number | null): number {
@@ -54,6 +59,49 @@ function defaultMaxPlayers(gameType: string, requested?: number | null): number 
 
 function isSoloMode(gameType: string, maxPlayers: number): boolean {
   return gameType === "practice" || (gameType === "8ball" && maxPlayers === 1);
+}
+
+type GameRow = typeof gamesTable.$inferSelect;
+
+/**
+ * Map a stored game row into a GameHistoryEntry — the shape rendered by the
+ * shared history cards on both the owner's account page and the public
+ * /watch/{name} profile. `accuracy` is resolved by the caller (per-participant
+ * where known, row-level fallback) so this stays a pure shape transform.
+ */
+function toHistoryEntry(g: GameRow, accuracy: number | null) {
+  const gs = g.gameState as Record<string, unknown> | null;
+  const rawReason =
+    gs && typeof gs["forfeitReason"] === "string" ? (gs["forfeitReason"] as string) : undefined;
+  const endReason =
+    rawReason === "max_duration_60min" || rawReason === "inactivity_60min" ? rawReason : undefined;
+  const shotLog = Array.isArray(gs?.["shotLog"])
+    ? (gs!["shotLog"] as Array<Record<string, unknown>>)
+    : [];
+  // Pocketing events only — any shot-log entry that actually sank a ball
+  // (sinks plus a terminal win/lose that pocketed). Order is preserved.
+  const pocketSequence = shotLog
+    .filter((e) => typeof e["ball"] === "number")
+    .map((e) => ({
+      ball: e["ball"] as number,
+      player: typeof e["playerName"] === "string" ? (e["playerName"] as string) : "",
+    }));
+  return {
+    id: g.id,
+    gameType: g.gameType,
+    winner: g.winner,
+    bpm: g.bpm == null ? null : g.bpm / 10,
+    accuracy,
+    durationMs: g.durationMs,
+    sunkBallsCount: g.sunkBallsCount,
+    outcome: g.outcome ?? "completed",
+    shareCode: g.shareCode,
+    endedAt: g.endedAt!,
+    startedAt: g.startedAt,
+    sharkMode: !!(gs && gs["sharkAggression"]),
+    pocketSequence,
+    ...(endReason ? { endReason } : {}),
+  };
 }
 
 /**
@@ -1304,6 +1352,99 @@ router.get("/games/watch-resolve", async (req, res): Promise<void> => {
 });
 
 /**
+ * Public profile for a player by screen name. Powers the /watch/{name} page
+ * when the player has no live game — shows the same read-only history cards
+ * the owner sees on their account page (their five most recent completed
+ * games) plus a member-since date. Public (no auth): the screen name is the
+ * capability, and only already-public game outcomes are exposed (never email
+ * or in-progress state). Tier does NOT gate this view — a profile is a
+ * fixed 5-game showcase regardless of who is looking.
+ */
+router.get("/games/profile", async (req, res): Promise<void> => {
+  const ip = req.ip ?? "unknown";
+  if (!rateLimit(ip, "state")) {
+    res.status(429).json(
+      GetPublicProfileResponse.parse({ found: false, reason: "rate_limited", games: [] }),
+    );
+    return;
+  }
+  const parsed = GetPublicProfileQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const handle = parsed.data.name.trim().toLowerCase();
+  if (!handle) {
+    res.json(GetPublicProfileResponse.parse({ found: false, reason: "not_found", games: [] }));
+    return;
+  }
+  const [host] = await db
+    .select({
+      id: usersTable.id,
+      screenName: usersTable.screenName,
+      createdAt: usersTable.createdAt,
+    })
+    .from(usersTable)
+    .where(sql`lower(${usersTable.screenName}) = ${handle}`)
+    .limit(1);
+  if (!host) {
+    res.json(GetPublicProfileResponse.parse({ found: false, reason: "not_found", games: [] }));
+    return;
+  }
+  // Finalize any stale games and backfill legacy host-owned rows so the
+  // profile mirrors exactly what the owner sees in their own history.
+  await sweepStaleGames(host.id);
+  await backfillHostParticipants(host.id);
+
+  const participantGameIds = await db
+    .select({ gameId: gameParticipantsTable.gameId })
+    .from(gameParticipantsTable)
+    .where(eq(gameParticipantsTable.userId, host.id));
+  const ids = participantGameIds.map((r) => r.gameId);
+
+  let games: ReturnType<typeof toHistoryEntry>[] = [];
+  if (ids.length > 0) {
+    const visible = await db
+      .select()
+      .from(gamesTable)
+      .where(and(inArray(gamesTable.id, ids), isNotNull(gamesTable.endedAt)))
+      .orderBy(desc(gamesTable.endedAt))
+      .limit(PROFILE_GAME_LIMIT);
+    const visibleIds = visible.map((g) => g.id);
+    // This player's OWN accuracy per game (snapshotted on their participant
+    // row), falling back to the row-level winner/host accuracy for legacy rows.
+    const parts =
+      visibleIds.length > 0
+        ? await db
+            .select({
+              gameId: gameParticipantsTable.gameId,
+              accuracy: gameParticipantsTable.accuracy,
+            })
+            .from(gameParticipantsTable)
+            .where(
+              and(
+                inArray(gameParticipantsTable.gameId, visibleIds),
+                eq(gameParticipantsTable.userId, host.id),
+              ),
+            )
+        : [];
+    const accByGame = new Map<string, number | null>(parts.map((p) => [p.gameId, p.accuracy]));
+    games = visible.map((g) =>
+      toHistoryEntry(g, accByGame.has(g.id) ? (accByGame.get(g.id) ?? null) : (g.accuracy ?? null)),
+    );
+  }
+
+  res.json(
+    GetPublicProfileResponse.parse({
+      found: true,
+      screenName: host.screenName,
+      memberSince: host.createdAt ?? null,
+      games,
+    }),
+  );
+});
+
+/**
  * Leave an in-progress game. Marks **only the caller's** participant
  * row as left — the slot stays occupied (no other joiner can claim it)
  * and the game itself keeps running. The departure is a forfeit for
@@ -1504,42 +1645,14 @@ router.get("/games/history", async (req, res): Promise<void> => {
     myParts.map((p) => [p.gameId, p.accuracy]),
   );
 
-  const games = visible.map((g) => {
-    const gs = g.gameState as Record<string, unknown> | null;
-    const rawReason =
-      gs && typeof gs["forfeitReason"] === "string" ? (gs["forfeitReason"] as string) : undefined;
-    const endReason =
-      rawReason === "max_duration_60min" || rawReason === "inactivity_60min" ? rawReason : undefined;
-    const shotLog = Array.isArray(gs?.["shotLog"])
-      ? (gs!["shotLog"] as Array<Record<string, unknown>>)
-      : [];
-    // Pocketing events only — any shot-log entry that actually sank a ball
-    // (sinks plus a terminal win/lose that pocketed). Order is preserved.
-    const pocketSequence = shotLog
-      .filter((e) => typeof e["ball"] === "number")
-      .map((e) => ({
-        ball: e["ball"] as number,
-        player: typeof e["playerName"] === "string" ? (e["playerName"] as string) : "",
-      }));
-    return {
-      id: g.id,
-      gameType: g.gameType,
-      winner: g.winner,
-      bpm: g.bpm == null ? null : g.bpm / 10,
-      accuracy: myAccuracyByGame.has(g.id)
+  const games = visible.map((g) =>
+    toHistoryEntry(
+      g,
+      myAccuracyByGame.has(g.id)
         ? (myAccuracyByGame.get(g.id) ?? null)
         : (g.accuracy ?? null),
-      durationMs: g.durationMs,
-      sunkBallsCount: g.sunkBallsCount,
-      outcome: g.outcome ?? "completed",
-      shareCode: g.shareCode,
-      endedAt: g.endedAt!,
-      startedAt: g.startedAt,
-      sharkMode: !!(gs && gs["sharkAggression"]),
-      pocketSequence,
-      ...(endReason ? { endReason } : {}),
-    };
-  });
+    ),
+  );
 
   res.json(
     GetGameHistoryResponse.parse({

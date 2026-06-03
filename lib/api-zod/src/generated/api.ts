@@ -462,6 +462,46 @@ export const ResolveWatchByNameResponse = zod.object({
 
 
 /**
+ * Rate-limited (per-IP) public profile shown on /watch/{name} when the player has no live game right now. Resolves a host's screen name (case-insensitive) to their member-since date and their five most recent completed games. No auth required and never exposes email or in-progress game state — purely the same read-only history cards the owner sees on their account page.
+
+ * @summary Public profile (member-since + last 5 games) for a player by screen name
+ */
+export const getPublicProfileQueryNameMax = 40;
+
+
+
+export const GetPublicProfileQueryParams = zod.object({
+  "name": zod.coerce.string().min(1).max(getPublicProfileQueryNameMax)
+})
+
+export const GetPublicProfileResponse = zod.object({
+  "found": zod.boolean(),
+  "reason": zod.enum(['not_found', 'rate_limited']).optional(),
+  "screenName": zod.string().nullish(),
+  "memberSince": zod.coerce.date().nullish(),
+  "games": zod.array(zod.object({
+  "id": zod.string(),
+  "gameType": zod.string(),
+  "winner": zod.string().nullish(),
+  "bpm": zod.number().nullish(),
+  "accuracy": zod.number().nullish(),
+  "durationMs": zod.number(),
+  "sunkBallsCount": zod.number(),
+  "outcome": zod.string(),
+  "shareCode": zod.string().optional(),
+  "endedAt": zod.coerce.date(),
+  "startedAt": zod.coerce.date().optional(),
+  "sharkMode": zod.boolean(),
+  "endReason": zod.enum(['max_duration_60min', 'inactivity_60min']).optional(),
+  "pocketSequence": zod.array(zod.object({
+  "ball": zod.number(),
+  "player": zod.string()
+})).optional()
+}))
+})
+
+
+/**
  * @summary Leave an in-progress game (forfeits on this participant's behalf)
  */
 export const LeaveGameBody = zod.object({

@@ -35,6 +35,7 @@ import type {
   GameStateSnapshot,
   GetGameHistoryParams,
   GetGameStateByCodeParams,
+  GetPublicProfileParams,
   GetStatsParams,
   GiftCodeIssueResult,
   HealthStatus,
@@ -46,6 +47,7 @@ import type {
   MyGiftCodesResult,
   PassCheckoutInput,
   PlanCatalog,
+  PublicProfileResult,
   RedeemResult,
   ResolveShareCodeInput,
   ResolveShareCodeResult,
@@ -1696,6 +1698,92 @@ export function useResolveWatchByName<TData = Awaited<ReturnType<typeof resolveW
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getResolveWatchByNameQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetPublicProfileUrl = (params: GetPublicProfileParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/games/profile?${stringifiedParams}` : `/api/games/profile`
+}
+
+/**
+ * Rate-limited (per-IP) public profile shown on /watch/{name} when the player has no live game right now. Resolves a host's screen name (case-insensitive) to their member-since date and their five most recent completed games. No auth required and never exposes email or in-progress game state — purely the same read-only history cards the owner sees on their account page.
+
+ * @summary Public profile (member-since + last 5 games) for a player by screen name
+ */
+export const getPublicProfile = async (params: GetPublicProfileParams, options?: RequestInit): Promise<PublicProfileResult> => {
+
+  return customFetch<PublicProfileResult>(getGetPublicProfileUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublicProfileQueryKey = (params?: GetPublicProfileParams,) => {
+    return [
+    `/api/games/profile`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPublicProfileQueryOptions = <TData = Awaited<ReturnType<typeof getPublicProfile>>, TError = ErrorType<void>>(params: GetPublicProfileParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicProfileQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicProfile>>> = ({ signal }) => getPublicProfile(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicProfile>>>
+export type GetPublicProfileQueryError = ErrorType<void>
+
+
+/**
+ * @summary Public profile (member-since + last 5 games) for a player by screen name
+ */
+
+export function useGetPublicProfile<TData = Awaited<ReturnType<typeof getPublicProfile>>, TError = ErrorType<void>>(
+ params: GetPublicProfileParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicProfileQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

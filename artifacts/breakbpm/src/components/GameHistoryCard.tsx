@@ -1,0 +1,218 @@
+import type { GameHistoryEntry } from "@workspace/api-client-react";
+import SharkIcon from "./SharkIcon";
+import { SHARK_PLAYER_NAME, SOLIDS } from "../lib/gameLogic";
+
+const BALL_COLORS: Record<number, string> = {
+  1: "#FDD307", 2: "#1F4E9E", 3: "#C3342B", 4: "#5B247A",
+  5: "#F27C1D", 6: "#276B40", 7: "#6B1F2A", 8: "#000000",
+  9: "#FDD307", 10: "#1F4E9E", 11: "#C3342B", 12: "#5B247A",
+  13: "#F27C1D", 14: "#276B40", 15: "#6B1F2A",
+};
+
+interface PocketEvent {
+  ball: number;
+  player: string;
+}
+
+interface PocketRun {
+  player: string;
+  balls: number[];
+}
+
+/** Collapse the flat pocket sequence into consecutive same-shooter runs so
+ *  each shooter's balls can be labeled once and grouped together. */
+function toRuns(seq: PocketEvent[]): PocketRun[] {
+  const runs: PocketRun[] = [];
+  for (const ev of seq) {
+    const last = runs[runs.length - 1];
+    if (last && last.player === ev.player) last.balls.push(ev.ball);
+    else runs.push({ player: ev.player, balls: [ev.ball] });
+  }
+  return runs;
+}
+
+/**
+ * A single, non-wrapping line of the balls pocketed during a game, in the
+ * exact order they were sunk. Balls are grouped into consecutive same-shooter
+ * runs only to add a subtle gap at turn changes and to mark Shark steals with
+ * the shark fin — no player names are shown. Scrolls horizontally when wider
+ * than the row.
+ */
+function ShotLogRow({ seq }: { seq: PocketEvent[] }) {
+  const runs = toRuns(seq);
+  return (
+    <div className="shotlog-row">
+      <div className="shotlog-scroll">
+        {runs.map((run, ri) => {
+          const isShark = run.player === SHARK_PLAYER_NAME;
+          return (
+            <span
+              key={ri}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 3,
+                marginLeft: ri > 0 ? 9 : 0,
+                flexShrink: 0,
+              }}
+            >
+              {isShark && <SharkIcon size={13} />}
+              {run.balls.map((ball, bi) => {
+                const chipClass =
+                  ball === 8
+                    ? "hud-chip-eight"
+                    : SOLIDS.includes(ball)
+                      ? "hud-chip-solid"
+                      : "hud-chip-stripe";
+                return (
+                  <span
+                    key={bi}
+                    className={`hud-chip hud-chip-sm ${chipClass}`}
+                    data-number={ball}
+                    style={{ "--chip-color": BALL_COLORS[ball] } as React.CSSProperties}
+                    aria-label={`Ball ${ball} by ${isShark ? "Shark" : run.player || "player"}`}
+                  />
+                );
+              })}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export function fmtMs(ms: number): string {
+  const total = Math.round(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+export function fmtDate(d: Date | string): string {
+  const date = d instanceof Date ? d : new Date(d);
+  return date.toLocaleString();
+}
+
+const GAME_TYPE_LABEL: Record<string, string> = {
+  "8ball": "8-Ball",
+  "9ball": "9-Ball",
+  practice: "Practice",
+};
+
+type OutcomeStyle = { label: string; bg: string; fg: string; border: string; title?: string };
+const OUTCOME_STYLE: Record<string, OutcomeStyle> = {
+  won: { label: "WIN", bg: "#2e7d32", fg: "#fff", border: "#1b5e20" },
+  lost: { label: "LOSS", bg: "#c62828", fg: "#fff", border: "#8e1b1b" },
+  forfeit: {
+    label: "DNF",
+    bg: "#dddddd",
+    fg: "#444",
+    border: "#999",
+    title: "Forfeit — Did Not Finish",
+  },
+  completed: { label: "DONE", bg: "#c0c0c0", fg: "#000080", border: "#808080" },
+};
+
+function ResultBadge({ outcome }: { outcome: string }) {
+  const s = OUTCOME_STYLE[outcome] ?? OUTCOME_STYLE.completed;
+  return (
+    <span
+      title={s.title}
+      style={{
+        display: "inline-block",
+        fontSize: 10,
+        fontWeight: "bold",
+        letterSpacing: 0.5,
+        padding: "1px 6px",
+        background: s.bg,
+        color: s.fg,
+        border: `1px solid ${s.border}`,
+      }}
+    >
+      {s.label}
+    </span>
+  );
+}
+
+/**
+ * One game's history row — mode, result/winner, BPM + accuracy hero, duration
+ * and date, plus the visual shot-log of balls in pocket order. Shared between
+ * the owner's account page and the public /watch/{name} profile so both stay
+ * pixel-identical.
+ */
+export default function GameHistoryCard({ game: g }: { game: GameHistoryEntry }) {
+  const modeLabel = GAME_TYPE_LABEL[g.gameType] ?? g.gameType;
+  const hasBpm = g.bpm != null;
+  const hasAcc = g.accuracy != null;
+  return (
+    <div
+      style={{
+        borderTop: "1px solid #aaa",
+        padding: "6px 0",
+        display: "flex",
+        flexDirection: "column",
+        gap: 6,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {/* Left: mode + result + winner */}
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+          <span style={{ fontWeight: "bold", fontSize: 13 }}>{modeLabel}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#444", fontSize: 11 }}>
+            <ResultBadge outcome={g.outcome} />
+            {(g.winner || g.sharkMode) && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
+                {g.sharkMode && <SharkIcon size={12} />}
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {g.sharkMode
+                    ? (g.winner === SHARK_PLAYER_NAME ? "Shark'd" : "Beat the Shark")
+                    : g.winner}
+                </span>
+              </span>
+            )}
+          </span>
+          {g.endReason && (
+            <span style={{ fontSize: 10, color: "#777", fontStyle: "italic" }}>
+              {g.endReason === "max_duration_60min"
+                ? "Ended — 60 min cap reached"
+                : "Ended — inactive for 60 min"}
+            </span>
+          )}
+        </div>
+
+        {/* Right: BPM hero + time · date */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+          <span
+            style={{
+              fontFamily: "VT323",
+              fontSize: 26,
+              lineHeight: 1,
+              color: hasBpm ? "#000080" : "#999",
+            }}
+          >
+            {hasBpm ? `${g.bpm!.toFixed(1)} BPM` : "— BPM"}
+          </span>
+          <span
+            style={{
+              fontFamily: "VT323",
+              fontSize: 18,
+              lineHeight: 1,
+              color: hasAcc ? "#006400" : "#999",
+            }}
+          >
+            {hasAcc ? `${g.accuracy}% ACC` : "—% ACC"}
+          </span>
+          <span style={{ fontSize: 10, color: "#666" }}>
+            🕐 {fmtMs(g.durationMs)} · {fmtDate(g.endedAt)}
+          </span>
+        </div>
+      </div>
+
+      {/* Bottom: visual shot log — balls in pocket order */}
+      {g.pocketSequence && g.pocketSequence.length > 0 && (
+        <ShotLogRow seq={g.pocketSequence} />
+      )}
+    </div>
+  );
+}
