@@ -1735,16 +1735,17 @@ html, #root {
 
 .fpp-form-row--compact { margin: 6px 0; }
 .fpp-label--row {
+  width: 84px;
+  flex-shrink: 0;
   font-size: 12px;
   white-space: nowrap;
   margin: 0;
 }
-.fpp-table-input {
-  width: 80px;
-  text-align: center;
+.fpp-form-row--compact .input {
+  width: 160px;
+  max-width: 100%;
 }
-.fpp-date-input { width: 150px; }
-.fpp-time-input { width: 110px; }
+.fpp-table-input { text-align: center; }
 .fpp-coords {
   font-family: 'Courier New', monospace;
   font-size: 12px;
