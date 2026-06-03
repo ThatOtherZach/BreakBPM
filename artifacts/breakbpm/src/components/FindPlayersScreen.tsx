@@ -362,7 +362,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                     <span className="fpp-row-hint">Up to 1 year out</span>
                   </div>
                   <div className="fpp-form-row fpp-form-row--compact">
-                    <label className="fpp-label fpp-label--row">Time (24h)</label>
+                    <label className="fpp-label fpp-label--row">Time</label>
                     <input
                       className="input fpp-time-input"
                       type="time"
