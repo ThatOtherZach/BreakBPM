@@ -39,6 +39,23 @@ const poolIcon = L.divIcon({
 const DEFAULT_CENTER: [number, number] = [20, 0];
 const DEFAULT_ZOOM = 2;
 
+/** "Near Me" radius in kilometres. */
+const NEAR_RADIUS_KM = 50;
+
+/** Great-circle distance between two [lat, lng] points, in kilometres. */
+function haversineKm(a: [number, number], b: [number, number]): number {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b[0] - a[0]);
+  const dLng = toRad(b[1] - a[1]);
+  const lat1 = toRad(a[0]);
+  const lat2 = toRad(b[0]);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
 /** Fits the map view to all visible pins whenever the set of pins changes. */
 function FitBounds({ positions }: { positions: [number, number][] }) {
   const map = useMap();
@@ -160,6 +177,9 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
   const [mapView, setMapView] = useState(false);
   const [todayOnly, setTodayOnly] = useState(false);
   const [next30Only, setNext30Only] = useState(false);
+  const [nearMeOnly, setNearMeOnly] = useState(false);
+  const [userCoords, setUserCoords] = useState<[number, number] | null>(null);
+  const [geoBusy, setGeoBusy] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
 
   const list = useListFindPlayerPosts({ page });
@@ -235,6 +255,33 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
     );
   };
 
+  const toggleNearMe = () => {
+    if (nearMeOnly) {
+      setNearMeOnly(false);
+      return;
+    }
+    if (userCoords) {
+      setNearMeOnly(true);
+      return;
+    }
+    if (!navigator.geolocation) {
+      setFormError("Geolocation is not available in this browser.");
+      return;
+    }
+    setGeoBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserCoords([pos.coords.latitude, pos.coords.longitude]);
+        setNearMeOnly(true);
+        setGeoBusy(false);
+      },
+      () => {
+        setFormError("Couldn't get your location.");
+        setGeoBusy(false);
+      },
+    );
+  };
+
   const submit = async () => {
     setFormError(null);
     if (!position) {
@@ -300,10 +347,23 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
     d.setUTCDate(d.getUTCDate() + 30);
     return utcDateStr(d);
   }, []);
-  const filterPosts = <T extends { scheduledAt?: string | null }>(arr: T[]): T[] => {
-    if (todayOnly) return arr.filter((p) => p.scheduledAt != null && p.scheduledAt.slice(0, 10) === todayStr);
-    if (next30Only) return arr.filter((p) => p.scheduledAt != null && p.scheduledAt.slice(0, 10) <= next30Str);
-    return arr;
+  const filterPosts = <
+    T extends { scheduledAt?: string | null; latitude?: number | null; longitude?: number | null },
+  >(
+    arr: T[],
+  ): T[] => {
+    let out = arr;
+    if (todayOnly) out = out.filter((p) => p.scheduledAt != null && p.scheduledAt.slice(0, 10) === todayStr);
+    else if (next30Only) out = out.filter((p) => p.scheduledAt != null && p.scheduledAt.slice(0, 10) <= next30Str);
+    if (nearMeOnly && userCoords) {
+      out = out.filter(
+        (p) =>
+          p.latitude != null &&
+          p.longitude != null &&
+          haversineKm(userCoords, [p.latitude, p.longitude]) <= NEAR_RADIUS_KM,
+      );
+    }
+    return out;
   };
   const allPosts = data?.posts ?? [];
   const posts = filterPosts(allPosts);
@@ -431,7 +491,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
               <div className="fpp-toggle">
                 <button
                   className="btn btn-primary fpp-toggle-btn"
-                  onClick={() => { setMapView((v) => { if (!v) invalidate(); return !v; }); setTodayOnly(false); setNext30Only(false); }}
+                  onClick={() => { setMapView((v) => { if (!v) invalidate(); return !v; }); setTodayOnly(false); setNext30Only(false); setNearMeOnly(false); }}
                 >
                   {mapView ? "📋 List View" : "🗺️ Map View"}
                 </button>
@@ -446,6 +506,13 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                   onClick={() => { setNext30Only((v) => !v); setTodayOnly(false); }}
                 >
                   🗓️ 30 Days
+                </button>
+                <button
+                  className={`btn fpp-toggle-btn${nearMeOnly ? " btn-primary" : ""}`}
+                  onClick={toggleNearMe}
+                  disabled={geoBusy}
+                >
+                  {geoBusy ? "📍 Locating…" : "📍 Near Me"}
                 </button>
               </div>
 
@@ -500,7 +567,15 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                   </MapContainer>
                 </div>
               ) : posts.length === 0 ? (
-                <p className="fpp-empty">No games posted yet. Be the first!</p>
+                <p className="fpp-empty">
+                  {nearMeOnly
+                    ? `No games within ${NEAR_RADIUS_KM}km of you.`
+                    : todayOnly
+                      ? "Nothing today — try 30 Days."
+                      : next30Only
+                        ? "Nothing in the next 30 days."
+                        : "No games posted yet. Be the first!"}
+                </p>
               ) : (
                 <div className="fpp-list">
                   {posts.map((post) => (
