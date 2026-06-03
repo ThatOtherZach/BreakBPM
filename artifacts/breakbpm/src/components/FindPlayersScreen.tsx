@@ -408,7 +408,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
               <div className="fpp-toggle">
                 <button
                   className="btn btn-primary fpp-toggle-btn"
-                  onClick={() => setMapView((v) => !v)}
+                  onClick={() => { setMapView((v) => !v); setTodayOnly(false); }}
                 >
                   {mapView ? "📋 List View" : "🗺️ Map View"}
                 </button>
