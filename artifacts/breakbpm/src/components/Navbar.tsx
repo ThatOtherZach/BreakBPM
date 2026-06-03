@@ -17,10 +17,7 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlay
   const { logout } = useAuth();
 
   const tier = me.data?.entitlement?.tier;
-  const tierBadge =
-    tier === 'pass' ? '★'
-    : tier === 'account' ? '●'
-    : null;
+  const screenName = me.data?.account?.screenName ?? null;
 
   const showHamburger = !!(onAbout || onAccount || onStats || onFindPlayers || onSignIn);
 
@@ -34,16 +31,16 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlay
             <>
               <img src="/eightball_nobg.png" alt="8-ball" className="navbar-icon-img" />
               <span className="navbar-title">BreakBPM</span>
-              {tierBadge && (
+              {screenName && (
                 <span
                   title={tier === 'pass' ? 'Pass holder' : 'Signed in'}
                   style={{
                     fontSize: 14,
                     color: tier === 'pass' ? '#ffd700' : '#aaffaa',
-                    marginLeft: 4,
+                    marginLeft: 6,
                   }}
                 >
-                  {tierBadge}
+                  {screenName}
                 </span>
               )}
             </>
