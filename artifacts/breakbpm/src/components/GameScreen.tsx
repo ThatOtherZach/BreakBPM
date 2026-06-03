@@ -1000,14 +1000,14 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 >
                   {watchName ? joinUrl.replace(/^https?:\/\//, '') : state.shareCode}
                 </span>
-                <button
-                  className="btn"
-                  style={{ minHeight: 28, fontSize: 12, padding: '2px 10px' }}
-                  onClick={handleShare}
-                >
-                  📋 Copy link
-                </button>
               </div>
+              <button
+                className="btn"
+                style={{ minHeight: 28, fontSize: 12, padding: '2px 10px', marginTop: 8 }}
+                onClick={handleShare}
+              >
+                📋 Copy link
+              </button>
             </div>
           </div>
         )}
