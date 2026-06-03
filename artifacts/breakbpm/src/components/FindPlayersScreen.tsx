@@ -325,28 +325,26 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                       placeholder="e.g. 3"
                     />
                   </div>
-                  <div className="fpp-form-row">
-                    <label className="fpp-label" style={{ flex: 1 }}>
-                      Date
-                      <input
-                        className="input w-full"
-                        type="date"
-                        min={today}
-                        max={maxDate}
-                        value={dateStr}
-                        onChange={(e) => setDateStr(e.target.value)}
-                      />
-                    </label>
-                    <label className="fpp-label" style={{ flex: 1 }}>
-                      Time (24h)
-                      <input
-                        className="input w-full"
-                        type="time"
-                        step={60}
-                        value={timeStr}
-                        onChange={(e) => setTimeStr(e.target.value)}
-                      />
-                    </label>
+                  <div className="fpp-form-row fpp-form-row--compact">
+                    <label className="fpp-label fpp-label--row">Date</label>
+                    <input
+                      className="input fpp-date-input"
+                      type="date"
+                      min={today}
+                      max={maxDate}
+                      value={dateStr}
+                      onChange={(e) => setDateStr(e.target.value)}
+                    />
+                  </div>
+                  <div className="fpp-form-row fpp-form-row--compact">
+                    <label className="fpp-label fpp-label--row">Time (24h)</label>
+                    <input
+                      className="input fpp-time-input"
+                      type="time"
+                      step={60}
+                      value={timeStr}
+                      onChange={(e) => setTimeStr(e.target.value)}
+                    />
                   </div>
                   {formError && <p className="fpp-error">{formError}</p>}
                   {atLimit && (

@@ -1743,6 +1743,8 @@ html, #root {
   width: 80px;
   text-align: center;
 }
+.fpp-date-input { width: 150px; }
+.fpp-time-input { width: 110px; }
 .fpp-coords {
   font-family: 'Courier New', monospace;
   font-size: 12px;
