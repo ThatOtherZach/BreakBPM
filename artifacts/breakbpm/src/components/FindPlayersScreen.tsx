@@ -381,7 +381,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                     onClick={submit}
                     disabled={createPost.isPending || atLimit}
                   >
-                    {createPost.isPending ? "Posting…" : "Post Game"}
+                    {createPost.isPending ? "Posting…" : "Post Meetup"}
                   </button>
                   </div>
                   )}
