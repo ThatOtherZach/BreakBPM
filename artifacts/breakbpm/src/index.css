@@ -1794,19 +1794,6 @@ html, #root {
   box-shadow: inset 0 0 0 2px #0a4322, inset 0 2px 6px rgba(0, 0, 0, 0.35);
   padding: 10px 12px;
 }
-/* Corner pocket — a pixel-rounded dark cup in the top-right of the felt. */
-.fpp-card::after {
-  content: "";
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 20px;
-  height: 20px;
-  background: #050d08;
-  border: 2px solid #2a1a0c;
-  border-radius: 50%;
-  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.8);
-}
 .fpp-card--cancelled { opacity: 0.55; filter: grayscale(0.6); }
 .fpp-card-head {
   display: flex;
