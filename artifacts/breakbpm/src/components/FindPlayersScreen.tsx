@@ -331,7 +331,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                       📍 Locate me
                     </button>
                     <span className="fpp-row-hint fpp-row-hint--coords">
-                      {locationPreview ?? (position ? "Locating…" : "Tap the map to drop a pin")}
+                      {locationPreview ?? (position ? "Locating…" : "Or tap the map")}
                     </span>
                   </div>
                   <div className="fpp-form-row fpp-form-row--compact">
