@@ -423,13 +423,13 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                   className={`btn fpp-toggle-btn${todayOnly ? " btn-primary" : ""}`}
                   onClick={() => { setTodayOnly((v) => !v); setNext30Only(false); }}
                 >
-                  Today
+                  📅 Today
                 </button>
                 <button
                   className={`btn fpp-toggle-btn${next30Only ? " btn-primary" : ""}`}
                   onClick={() => { setNext30Only((v) => !v); setTodayOnly(false); }}
                 >
-                  30 Days
+                  🗓️ 30 Days
                 </button>
               </div>
 
