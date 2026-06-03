@@ -1773,7 +1773,7 @@ html, #root {
   gap: 6px;
   margin: 12px 0;
 }
-.fpp-toggle-btn { min-width: 130px; }
+.fpp-toggle-btn { flex: 1; }
 .fpp-list { display: flex; flex-direction: column; gap: 8px; }
 .fpp-card {
   border: 2px outset var(--silver);
