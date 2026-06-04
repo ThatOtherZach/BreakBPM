@@ -1971,11 +1971,8 @@ function uniqueAnonName(taken: Set<string>): string {
 
 /**
  * Permanently scrub the caller from all of their game data. Runs in one
- * transaction over every COMPLETED game the user took part in (hosted or
- * joined). In-progress games are deliberately skipped: they are live state
- * the host re-syncs on every action (so any scrub would be clobbered), they
- * carry no history/stats/export data yet, and detaching a still-playing host
- * would leave them able to abandon a game they no longer belong to.
+ * transaction over every game the user took part in (hosted or joined),
+ * in-progress or completed:
  *
  *   - If no OTHER real (signed-in) player remains, the whole game is deleted.
  *     Its shot log lives in gameState, so the row delete removes the shots and
@@ -2004,21 +2001,17 @@ router.delete("/games/data", async (req, res): Promise<void> => {
   }
 
   const result = await db.transaction(async (tx) => {
-    // Every COMPLETED game the caller touches: games they host + games they
-    // hold a participant slot in. In-progress games (endedAt null) are
-    // excluded — see the doc comment above. Sorted so concurrent deletes
-    // acquire row locks in a consistent order (no deadlocks).
+    // Every game the caller touches: games they host + games they hold a
+    // participant slot in. Sorted so concurrent deletes acquire per-game row
+    // locks in a consistent order (no deadlocks).
     const hosted = await tx
       .select({ id: gamesTable.id })
       .from(gamesTable)
-      .where(and(eq(gamesTable.userId, user.id), isNotNull(gamesTable.endedAt)));
+      .where(eq(gamesTable.userId, user.id));
     const joined = await tx
       .select({ gameId: gameParticipantsTable.gameId })
       .from(gameParticipantsTable)
-      .innerJoin(gamesTable, eq(gamesTable.id, gameParticipantsTable.gameId))
-      .where(
-        and(eq(gameParticipantsTable.userId, user.id), isNotNull(gamesTable.endedAt)),
-      );
+      .where(eq(gameParticipantsTable.userId, user.id));
     const gameIds = [
       ...new Set<string>([...hosted.map((g) => g.id), ...joined.map((p) => p.gameId)]),
     ].sort();
