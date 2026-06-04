@@ -28,6 +28,7 @@ import type {
   CancelSubscriptionResult,
   CheckoutResult,
   CreateFindPlayerPostResult,
+  DeleteGameDataResult,
   DevActivateSubscriptionInput,
   DevGrantLifetimeResult,
   DiscountRedeemInput,
@@ -2027,6 +2028,157 @@ export function useGetGameHistory<TData = Awaited<ReturnType<typeof getGameHisto
 
 
 
+
+export const getExportMyGamesUrl = () => {
+
+
+
+
+  return `/api/games/export`
+}
+
+/**
+ * Returns a CSV download with one row per logged shot, flattening every game the signed-in caller participated in (hosted or joined). Each row carries the game-level columns (id, type, date, outcome, BPM, etc.) alongside the per-shot fields so the single flat file is self-contained and openable directly in a spreadsheet app. Requires authentication.
+
+ * @summary Export all of the caller's games and shot logs as CSV
+ */
+export const exportMyGames = async ( options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getExportMyGamesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportMyGamesQueryKey = () => {
+    return [
+    `/api/games/export`
+    ] as const;
+    }
+
+
+export const getExportMyGamesQueryOptions = <TData = Awaited<ReturnType<typeof exportMyGames>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportMyGames>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportMyGamesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportMyGames>>> = ({ signal }) => exportMyGames({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportMyGames>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportMyGamesQueryResult = NonNullable<Awaited<ReturnType<typeof exportMyGames>>>
+export type ExportMyGamesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Export all of the caller's games and shot logs as CSV
+ */
+
+export function useExportMyGames<TData = Awaited<ReturnType<typeof exportMyGames>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportMyGames>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportMyGamesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getDeleteMyGameDataUrl = () => {
+
+
+
+
+  return `/api/games/data`
+}
+
+/**
+ * Erases every game the signed-in caller hosted (which carry their shot logs) and removes their participation slots in other players' games. The user's account record, screen name, passes, and subscriptions are left intact. Requires authentication.
+
+ * @summary Permanently delete all of the caller's shot and game data
+ */
+export const deleteMyGameData = async ( options?: RequestInit): Promise<DeleteGameDataResult> => {
+
+  return customFetch<DeleteGameDataResult>(getDeleteMyGameDataUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteMyGameDataMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMyGameData>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteMyGameData>>, TError,void, TContext> => {
+
+const mutationKey = ['deleteMyGameData'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteMyGameData>>, void> = () => {
+
+
+          return  deleteMyGameData(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteMyGameDataMutationResult = NonNullable<Awaited<ReturnType<typeof deleteMyGameData>>>
+
+    export type DeleteMyGameDataMutationError = ErrorType<void>
+
+    /**
+ * @summary Permanently delete all of the caller's shot and game data
+ */
+export const useDeleteMyGameData = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMyGameData>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteMyGameData>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDeleteMyGameDataMutationOptions(options));
+    }
 
 export const getGetStatsUrl = (params?: GetStatsParams,) => {
   const normalizedParams = new URLSearchParams();

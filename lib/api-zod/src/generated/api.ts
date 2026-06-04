@@ -602,6 +602,18 @@ export const GetGameHistoryResponse = zod.object({
 
 
 /**
+ * Erases every game the signed-in caller hosted (which carry their shot logs) and removes their participation slots in other players' games. The user's account record, screen name, passes, and subscriptions are left intact. Requires authentication.
+
+ * @summary Permanently delete all of the caller's shot and game data
+ */
+export const DeleteMyGameDataResponse = zod.object({
+  "deleted": zod.boolean(),
+  "deletedGames": zod.number(),
+  "deletedParticipations": zod.number()
+})
+
+
+/**
  * Returns derived statistics over completed games. Access scales with the caller's tier: anonymous → global scope, 24h window only; signed-in without a pass → personal scope, 24h window only; pass holders → personal stats with a selectable window (24h / 30d / 365d / all) plus an optional global overlay. Personal stats are attributed through game_participants (so joined games count, not just hosted ones) and recomputed per game from the shot log. The server clamps window/scope to what the caller's tier allows. Results are cached server-side with a 1-hour TTL; pass holders may pass refresh=true to force a fresh recompute of the requested key.
 
  * @summary Aggregate shooting statistics, gated by tier

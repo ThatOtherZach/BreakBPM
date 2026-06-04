@@ -464,3 +464,17 @@ export async function resolveStats(
   statsCache.set(key, { core, expiresAt: now + STATS_CACHE_TTL_MS });
   return { core, cached: false };
 }
+
+/**
+ * Drop every cached personal-stats snapshot for a user (all windows). Called
+ * after the user deletes their game data so the /stats endpoint recomputes
+ * immediately (showing empty stats) rather than serving up-to-1h-stale
+ * cached numbers — important for free/account-tier users who cannot force a
+ * refresh themselves.
+ */
+export function clearUserStatsCache(userId: string): void {
+  const prefix = `personal:${userId}:`;
+  for (const key of statsCache.keys()) {
+    if (key.startsWith(prefix)) statsCache.delete(key);
+  }
+}

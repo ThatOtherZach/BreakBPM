@@ -14,6 +14,7 @@ export * from './cancelFindPlayerPostResult';
 export * from './cancelSubscriptionResult';
 export * from './checkoutResult';
 export * from './createFindPlayerPostResult';
+export * from './deleteGameDataResult';
 export * from './devActivateSubscriptionInput';
 export * from './devActivateSubscriptionInputInterval';
 export * from './devGrantLifetimeResult';

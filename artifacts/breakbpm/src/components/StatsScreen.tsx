@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useGetStats,
   getStats,
   getGetStatsQueryKey,
+  exportMyGames,
+  deleteMyGameData,
 } from "@workspace/api-client-react";
 import type { GetStatsParams, StatsResult } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "./Navbar";
+import { useAuth } from "../lib/authClient";
 import { SOLIDS } from "../lib/gameLogic";
 
 interface Props {
@@ -138,9 +141,64 @@ function SectionHeader({ emoji, title }: { emoji: string; title: string }) {
 
 export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers, onSignIn }: Props) {
   const qc = useQueryClient();
+  const { isAuthenticated } = useAuth();
   const [window, setWindow] = useState<"24h" | "30d" | "365d" | "all">("24h");
   const [scope, setScope] = useState<"personal" | "global">("personal");
   const [refreshing, setRefreshing] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // The delete button is a two-click confirm: the first click arms it and the
+  // second click within the window actually deletes. Auto-disarm after a few
+  // seconds (or on unmount / navigate-away) so a stale "Are you sure?" can't
+  // linger and be hit by accident.
+  useEffect(() => {
+    if (!confirmDelete) return;
+    const t = setTimeout(() => setConfirmDelete(false), 4000);
+    return () => clearTimeout(t);
+  }, [confirmDelete]);
+
+  async function handleExport() {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const csv = await exportMyGames();
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `breakbpm-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Surface nothing — the page state is unchanged on failure.
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (deleting) return;
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    setDeleting(true);
+    try {
+      await deleteMyGameData();
+      // Wipe every cached read so Stats, history, and resume all reflect the
+      // now-empty data instead of showing the deleted games.
+      await qc.invalidateQueries();
+    } catch {
+      // Surface nothing — a failed delete leaves the data intact.
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  }
 
   // `refresh` is intentionally left out of the query key so cache-busting is
   // an explicit user action (handleRefresh) rather than part of normal reads.
@@ -251,6 +309,33 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
               >
                 {refreshing ? "↻ Refreshing…" : "↻ Refresh"}
               </button>
+            )}
+
+            {isAuthenticated && (
+              <div style={{ display: "flex", gap: 6 }}>
+                <button
+                  className="btn"
+                  style={{ flex: 1 }}
+                  disabled={exporting || deleting}
+                  onClick={handleExport}
+                  title="Download all your games and shots as a CSV spreadsheet"
+                >
+                  {exporting ? "🧳 Exporting…" : "🧳 Export"}
+                </button>
+                <button
+                  className={`btn${confirmDelete ? " btn-primary" : ""}`}
+                  style={{ flex: 1 }}
+                  disabled={deleting || exporting}
+                  onClick={handleDelete}
+                  title="Permanently delete all your games and shots"
+                >
+                  {deleting
+                    ? "☢️ Deleting…"
+                    : confirmDelete
+                      ? "☢️ Are you sure?"
+                      : "☢️ Delete"}
+                </button>
+              </div>
             )}
           </div>
         </div>

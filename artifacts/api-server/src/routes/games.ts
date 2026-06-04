@@ -27,10 +27,11 @@ import {
   GetPublicProfileResponse,
   GetStatsQueryParams,
   GetStatsResponse,
+  DeleteMyGameDataResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser, getVerifiedSubject } from "../lib/auth";
 import { computeEntitlement, getActivePasses, getActiveSubscription } from "../lib/entitlement";
-import { resolveStats, type StatScope, type StatWindow } from "../lib/stats";
+import { resolveStats, clearUserStatsCache, type StatScope, type StatWindow } from "../lib/stats";
 import { sweepStaleGames, INACTIVITY_FORFEIT_MS, MAX_GAME_DURATION_MS } from "../lib/forfeit";
 import { newId } from "../lib/ids";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
@@ -1835,6 +1836,163 @@ router.get("/stats", async (req, res): Promise<void> => {
       cached,
       computedAt: new Date(computedAt).toISOString(),
       ...rest,
+    }),
+  );
+});
+
+/**
+ * Escape a single value for CSV output (RFC 4180): wrap in double quotes when
+ * it contains a comma, quote, or newline, and double any embedded quotes.
+ *
+ * Also neutralizes spreadsheet formula injection: a cell whose text starts
+ * with =, +, -, @, tab, or CR is treated as a formula by Excel/Sheets, so we
+ * prefix such values with an apostrophe to force them to render as plain text
+ * (player names and notes are user-controlled and end up in this file).
+ */
+function csvCell(value: unknown): string {
+  if (value == null) return "";
+  let s = String(value);
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+/** Read a typed field off a loosely-typed shot-log entry. */
+function shotField<T>(e: Record<string, unknown>, key: string, kind: "number" | "string" | "boolean"): T | "" {
+  const v = e[key];
+  return typeof v === kind ? (v as T) : "";
+}
+
+/**
+ * Export every game the caller participated in (hosted or joined) as a single
+ * flat CSV — one row per logged shot, with the game-level columns repeated on
+ * each row so the file is self-contained and opens directly in a spreadsheet.
+ * Games with no shots still emit one row so they appear in the export.
+ * Requires authentication.
+ */
+router.get("/games/export", async (req, res): Promise<void> => {
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "sign_in_required" });
+    return;
+  }
+
+  // Every game this user has a participation slot in (host or joiner).
+  const parts = await db
+    .select({ gameId: gameParticipantsTable.gameId })
+    .from(gameParticipantsTable)
+    .where(eq(gameParticipantsTable.userId, user.id));
+  const ids = parts.map((p) => p.gameId);
+
+  const header = [
+    "game_id", "game_type", "share_code", "outcome", "winner",
+    "game_bpm", "game_accuracy_pct", "duration_ms", "sunk_balls_count",
+    "shark_mode", "started_at", "ended_at",
+    "shot_index", "shot_type", "shot_player", "shot_ball", "shot_bpm",
+    "shot_is_foul", "shot_game_time_ms", "shot_timestamp", "shot_note",
+  ];
+  const rows: string[] = [header.join(",")];
+
+  if (ids.length > 0) {
+    const games = await db
+      .select()
+      .from(gamesTable)
+      .where(inArray(gamesTable.id, ids))
+      .orderBy(desc(gamesTable.startedAt));
+
+    for (const g of games) {
+      const gs = (g.gameState ?? {}) as Record<string, unknown>;
+      const sharkMode = gs["sharkAggression"] != null;
+      const shotLog = Array.isArray(gs["shotLog"])
+        ? (gs["shotLog"] as Array<Record<string, unknown>>)
+        : [];
+      const base: unknown[] = [
+        g.id,
+        g.gameType,
+        g.shareCode,
+        g.outcome ?? "",
+        g.winner ?? "",
+        g.bpm == null ? "" : g.bpm / 10,
+        g.accuracy ?? "",
+        g.durationMs,
+        g.sunkBallsCount,
+        sharkMode,
+        g.startedAt.toISOString(),
+        g.endedAt ? g.endedAt.toISOString() : "",
+      ];
+
+      if (shotLog.length === 0) {
+        rows.push([...base, "", "", "", "", "", "", "", "", ""].map(csvCell).join(","));
+        continue;
+      }
+
+      shotLog.forEach((e, i) => {
+        const ts = shotField<number>(e, "timestamp", "number");
+        rows.push(
+          [
+            ...base,
+            i,
+            shotField<string>(e, "type", "string"),
+            shotField<string>(e, "playerName", "string"),
+            shotField<number>(e, "ball", "number"),
+            shotField<number>(e, "bpm", "number"),
+            shotField<boolean>(e, "isFoul", "boolean"),
+            shotField<number>(e, "gameTime", "number"),
+            ts === "" ? "" : new Date(ts).toISOString(),
+            shotField<string>(e, "note", "string"),
+          ].map(csvCell).join(","),
+        );
+      });
+    }
+  }
+
+  const csv = rows.join("\r\n") + "\r\n";
+  const filename = `breakbpm-export-${new Date().toISOString().slice(0, 10)}.csv`;
+  req.log.info({ userId: user.id, games: ids.length }, "Exported game data");
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.send(csv);
+});
+
+/**
+ * Permanently delete all of the caller's shot and game data. Runs in one
+ * transaction: deletes every game they HOSTED (their shot logs live in
+ * gameState, so the row deletion removes the shots; the FK cascade clears all
+ * participant slots on those games), then removes their remaining slots in
+ * OTHER hosts' games (joined games) so their attribution is gone while the
+ * host's game stays intact. The user record, passes, and subscriptions are
+ * untouched. Requires authentication.
+ */
+router.delete("/games/data", async (req, res): Promise<void> => {
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "sign_in_required" });
+    return;
+  }
+
+  const result = await db.transaction(async (tx) => {
+    const deletedGames = await tx
+      .delete(gamesTable)
+      .where(eq(gamesTable.userId, user.id))
+      .returning({ id: gamesTable.id });
+    const deletedParts = await tx
+      .delete(gameParticipantsTable)
+      .where(eq(gameParticipantsTable.userId, user.id))
+      .returning({ gameId: gameParticipantsTable.gameId });
+    return {
+      deletedGames: deletedGames.length,
+      deletedParticipations: deletedParts.length,
+    };
+  });
+
+  // Bust the user's cached personal stats so /stats recomputes (empty) now.
+  clearUserStatsCache(user.id);
+
+  req.log.info({ userId: user.id, ...result }, "Deleted all game data for user");
+  res.json(
+    DeleteMyGameDataResponse.parse({
+      deleted: true,
+      deletedGames: result.deletedGames,
+      deletedParticipations: result.deletedParticipations,
     }),
   );
 });

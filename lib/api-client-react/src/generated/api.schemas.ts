@@ -591,6 +591,12 @@ export interface GameHistoryResponse {
   games: GameHistoryEntry[];
 }
 
+export interface DeleteGameDataResult {
+  deleted: boolean;
+  deletedGames: number;
+  deletedParticipations: number;
+}
+
 export type PublicProfileResultReason = typeof PublicProfileResultReason[keyof typeof PublicProfileResultReason];
 
 
