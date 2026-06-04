@@ -28,6 +28,11 @@ async function buildAll() {
     // - uses native modules and loads them dynamically (e.g. sharp)
     // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
     external: [
+      // stripe-replit-sync resolves its SQL migrations folder via
+      // import.meta.url at runtime. If bundled, that URL points at our dist/
+      // (no migrations there) and runMigrations silently applies nothing.
+      // Keeping it external lets it resolve its own files from node_modules.
+      "stripe-replit-sync",
       "*.node",
       "sharp",
       "better-sqlite3",

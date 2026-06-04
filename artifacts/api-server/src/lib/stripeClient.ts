@@ -9,7 +9,6 @@ import { StripeSync } from "stripe-replit-sync";
  */
 export async function getStripeCredentials(): Promise<{
   secretKey: string;
-  webhookSecret?: string;
 }> {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
@@ -39,24 +38,22 @@ export async function getStripeCredentials(): Promise<{
     );
   }
 
+  // The Replit Stripe connector exposes the secret key as `settings.secret`
+  // (not `secret_key`). There is no webhook secret here — StripeSync manages
+  // the webhook's signing secret itself via findOrCreateManagedWebhook.
   const data = (await resp.json()) as {
-    items?: {
-      settings?: { secret_key?: string; webhook_secret?: string };
-    }[];
+    items?: { settings?: { secret?: string } }[];
   };
-  const settings = data.items?.[0]?.settings;
+  const secret = data.items?.[0]?.settings?.secret;
 
-  if (!settings?.secret_key) {
+  if (!secret) {
     throw new Error(
       "Stripe integration not connected or missing secret key. " +
         "Connect Stripe via the Integrations tab first.",
     );
   }
 
-  return {
-    secretKey: settings.secret_key,
-    webhookSecret: settings.webhook_secret,
-  };
+  return { secretKey: secret };
 }
 
 /**
@@ -78,28 +75,26 @@ export async function getStripeSync(): Promise<StripeSync> {
     throw new Error("DATABASE_URL environment variable is required");
   }
 
-  const { secretKey, webhookSecret } = await getStripeCredentials();
+  const { secretKey } = await getStripeCredentials();
   return new StripeSync({
     poolConfig: { connectionString: databaseUrl },
     stripeSecretKey: secretKey,
-    stripeWebhookSecret: webhookSecret ?? "",
+    // Managed webhooks own their signing secret (stored in the synced schema
+    // by findOrCreateManagedWebhook). processWebhook looks it up internally, so
+    // no static webhook secret is needed here.
+    stripeWebhookSecret: "",
   });
 }
 
 /**
- * Verify a raw webhook payload and return the typed Stripe event. We run this
- * alongside StripeSync's own processing so our entitlement reconciliation can
- * dispatch on a verified, typed event. Signature is verified against the
- * managed webhook's signing secret.
+ * Parse an already-verified webhook payload into a typed Stripe event.
+ *
+ * Signature verification is owned by StripeSync.processWebhook (it checks the
+ * payload against the managed webhook's signing secret and throws on mismatch).
+ * Callers MUST run processWebhook first; once it succeeds the raw buffer is
+ * authentic, so we can safely JSON-parse it for our own reconciliation dispatch
+ * without re-verifying (we don't have direct access to the managed secret).
  */
-export async function constructStripeEvent(
-  payload: Buffer,
-  signature: string,
-): Promise<Stripe.Event> {
-  const { secretKey, webhookSecret } = await getStripeCredentials();
-  if (!webhookSecret) {
-    throw new Error("Stripe webhook secret not available yet");
-  }
-  const stripe = new Stripe(secretKey);
-  return stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+export function parseVerifiedStripeEvent(payload: Buffer): Stripe.Event {
+  return JSON.parse(payload.toString("utf8")) as Stripe.Event;
 }

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
   db,
   passesTable,
@@ -62,9 +62,17 @@ export interface GrantPurchasedPassInput {
 /**
  * Idempotently grant a purchased pass. Both the verify endpoint (UX) and the
  * webhook (authoritative) call this on a confirmed payment, so it must not
- * double-issue: a pass already issued for the same (user, sourceRef) is
- * returned as-is. Buying Lifetime stops any active subscription from renewing,
- * in the same transaction (the mutual-exclusion rule).
+ * double-issue. Dedup is keyed GLOBALLY on the Stripe payment reference
+ * (sourceRef = payment_intent), which uniquely identifies one payment by one
+ * user — combined with the partial unique index on (source_ref WHERE
+ * source='purchase'), this holds even when verify and the webhook race each
+ * other on the post-checkout redirect. Buying Lifetime stops any active
+ * subscription from renewing, in the same transaction (mutual exclusion).
+ *
+ * Note: this grants ACCESS only. Telling Stripe to stop a real subscription
+ * from renewing on Lifetime is the caller's job (see
+ * stopRenewingStripeSubscriptions in paymentProvider) and runs OUTSIDE this
+ * transaction since it makes a network call.
  */
 export async function grantPurchasedPassTx(
   tx: Pick<typeof db, "insert" | "update" | "select">,
@@ -75,8 +83,8 @@ export async function grantPurchasedPassTx(
     .from(passesTable)
     .where(
       and(
-        eq(passesTable.userId, input.userId),
         eq(passesTable.sourceRef, input.sourceRef),
+        eq(passesTable.source, "purchase"),
       ),
     )
     .limit(1);
@@ -84,12 +92,43 @@ export async function grantPurchasedPassTx(
     return { pass: existing[0], deduped: true };
   }
 
-  const pass = await issuePassTx(tx, {
-    userId: input.userId,
-    kind: input.kind,
-    source: "purchase",
-    sourceRef: input.sourceRef,
-  });
+  const [pass] = await tx
+    .insert(passesTable)
+    .values({
+      id: newId(),
+      userId: input.userId,
+      kind: input.kind,
+      startedAt: new Date(),
+      durationSeconds: PASS_DURATIONS_SECONDS[input.kind],
+      source: "purchase",
+      sourceRef: input.sourceRef,
+      priceCents: PASS_PRICES_CENTS[input.kind],
+    })
+    .onConflictDoNothing({
+      target: passesTable.sourceRef,
+      where: sql`${passesTable.source} = 'purchase'`,
+    })
+    .returning();
+
+  // A concurrent grant (verify vs webhook firing together) won the insert
+  // race and the unique index rejected ours. Return the row that won — same
+  // payment, no double-grant. We re-read by sourceRef rather than (user,
+  // sourceRef) so a misattributed concurrent insert can never slip a second
+  // pass through.
+  if (!pass) {
+    const [row] = await tx
+      .select()
+      .from(passesTable)
+      .where(
+        and(
+          eq(passesTable.sourceRef, input.sourceRef),
+          eq(passesTable.source, "purchase"),
+        ),
+      )
+      .limit(1);
+    return { pass: row, deduped: true };
+  }
+
   if (pass.kind === "lifetime") {
     await stopRenewingActiveSubscriptionsTx(tx, input.userId);
   }

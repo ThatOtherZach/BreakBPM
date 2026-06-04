@@ -13,6 +13,7 @@ import type Stripe from "stripe";
 import { db, subscriptionsTable, type PassKind } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { grantPurchasedPassTx } from "./passes";
+import { stopRenewingStripeSubscriptions } from "./paymentProvider";
 import { upsertPurchasedSubscriptionTx } from "./subscriptions";
 import {
   readSubscriptionInterval,
@@ -76,6 +77,12 @@ async function grantPassFromSession(
     { userId, passKind, sourceRef, deduped },
     "Reconciled pass purchase from webhook",
   );
+  // Authoritative path: a webhook-reconciled Lifetime must also stop the real
+  // Stripe subscription from renewing (best-effort, outside the tx). Skipped on
+  // dedup — verify or an earlier webhook already handled it.
+  if (passKind === "lifetime" && !deduped) {
+    await stopRenewingStripeSubscriptions(userId);
+  }
 }
 
 async function reconcileSubscription(

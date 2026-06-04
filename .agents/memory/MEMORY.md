@@ -9,3 +9,4 @@
 - [Clerk duplicate verification emails](clerk-duplicate-verification-emails.md) — inline `Route component={() => ...}` remounts Clerk's <SignIn>/<SignUp>, re-sending a 2nd code; use stable named route components.
 - [api-client-react vs api-zod date typing](api-client-react-date-typing.md) — client model types use `string` for date-time, api-zod uses `Date`; send ISO strings in mutation bodies, import frontend types from api-client-react.
 - [Delete-my-data scope](delete-my-data-scope.md) — per-game: full-delete when no other real (signed-in) player remains, else anonymize caller to "🕴️ Mr. X" everywhere + null their slot; never drop shot entries; bust stats cache after.
+- [Wiring stripe-replit-sync on Replit](stripe-replit-sync-setup.md) — connector secret is `settings.secret` (not secret_key), no webhook_secret; and stripe-replit-sync MUST be esbuild-external or runMigrations silently applies 0 migrations.

@@ -5,7 +5,7 @@ import { mountAuth } from "./lib/serverAuthAdapter";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { WebhookHandlers } from "./lib/webhookHandlers";
-import { constructStripeEvent } from "./lib/stripeClient";
+import { parseVerifiedStripeEvent } from "./lib/stripeClient";
 import { reconcileStripeEvent } from "./lib/stripeReconcile";
 
 const app: Express = express();
@@ -49,8 +49,11 @@ app.post(
     }
     const sig = Array.isArray(signature) ? signature[0] : signature;
     try {
+      // processWebhook verifies the signature (throws on mismatch) AND keeps
+      // the mirrored `stripe` schema fresh. Only after it succeeds is the raw
+      // body proven authentic, so we then parse it for entitlement reconcile.
       await WebhookHandlers.processWebhook(req.body as Buffer, sig);
-      const event = await constructStripeEvent(req.body as Buffer, sig);
+      const event = parseVerifiedStripeEvent(req.body as Buffer);
       await reconcileStripeEvent(event);
       res.status(200).json({ received: true });
     } catch (err) {

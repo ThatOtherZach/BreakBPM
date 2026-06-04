@@ -1,4 +1,12 @@
-import { pgTable, text, timestamp, integer, boolean, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  integer,
+  boolean,
+  index,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
@@ -47,7 +55,14 @@ export const subscriptionsTable = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("subscriptions_user_idx").on(t.userId)],
+  (t) => [
+    index("subscriptions_user_idx").on(t.userId),
+    // Idempotency guard: one Stripe subscription id maps to exactly one row,
+    // so the verify endpoint and the customer.subscription.* webhook can't
+    // race into two rows for the same subscription. NULLs (legacy/granted
+    // subs with no provider id) are treated as distinct by Postgres.
+    uniqueIndex("subscriptions_provider_sub_uniq").on(t.providerSubscriptionId),
+  ],
 );
 
 export const insertSubscriptionSchema = createInsertSchema(subscriptionsTable).omit({

@@ -86,12 +86,16 @@ export interface CancelSubscriptionResult {
 
 export interface PaymentProvider {
   createCheckout(input: CreateCheckoutInput): Promise<CreateCheckoutResult>;
-  verifyAndGrant(opaqueToken: string): Promise<VerifyAndGrantResult>;
+  verifyAndGrant(
+    opaqueToken: string,
+    expectedUserId: string,
+  ): Promise<VerifyAndGrantResult>;
   createSubscriptionCheckout(
     input: CreateSubscriptionCheckoutInput,
   ): Promise<CreateCheckoutResult>;
   verifyAndActivateSubscription(
     opaqueToken: string,
+    expectedUserId: string,
   ): Promise<VerifyAndActivateSubscriptionResult>;
   cancelSubscription(
     input: CancelSubscriptionInput,
@@ -144,6 +148,35 @@ async function resolvePriceId(
   const prices = await stripe.prices.list({ active: true, limit: 100 });
   const match = prices.data.find((p) => p.metadata?.planId === planId);
   return match?.id ?? null;
+}
+
+/**
+ * Best-effort: tell Stripe to stop renewing the user's active subscription.
+ * Called AFTER a Lifetime pass is granted (purchase, redeem, or webhook) so
+ * the real Stripe subscription actually stops billing — flipping only our
+ * local cancel_at_period_end flag would be reverted by the next
+ * customer.subscription.updated webhook (which mirrors Stripe's true state).
+ * Non-fatal: access is already granted; if this network call fails we log and
+ * move on, and a later manual cancel or webhook can reconcile.
+ */
+export async function stopRenewingStripeSubscriptions(
+  userId: string,
+): Promise<void> {
+  try {
+    const subId = await getActiveProviderSubscriptionId(userId);
+    if (!subId) return;
+    const stripe = await getUncachableStripeClient();
+    await stripe.subscriptions.update(subId, { cancel_at_period_end: true });
+    logger.info(
+      { userId, subId },
+      "Stopped Stripe subscription renewal after Lifetime grant",
+    );
+  } catch (err) {
+    logger.error(
+      { err, userId },
+      "Failed to stop Stripe subscription renewal after Lifetime grant",
+    );
+  }
 }
 
 export class StripePaymentProvider implements PaymentProvider {
@@ -216,10 +249,22 @@ export class StripePaymentProvider implements PaymentProvider {
     }
   }
 
-  async verifyAndGrant(opaqueToken: string): Promise<VerifyAndGrantResult> {
+  async verifyAndGrant(
+    opaqueToken: string,
+    expectedUserId: string,
+  ): Promise<VerifyAndGrantResult> {
     try {
       const stripe = await getUncachableStripeClient();
       const session = await stripe.checkout.sessions.retrieve(opaqueToken);
+      // Ownership: the checkout session must belong to the caller. Without
+      // this, a leaked session_id would let another signed-in user claim
+      // someone else's purchase against their own account.
+      if (session.metadata?.userId !== expectedUserId) {
+        return {
+          success: false,
+          message: "This checkout belongs to a different account.",
+        };
+      }
       if (session.mode !== "payment") {
         return { success: false, message: "That checkout isn't a pass purchase." };
       }
@@ -325,12 +370,21 @@ export class StripePaymentProvider implements PaymentProvider {
 
   async verifyAndActivateSubscription(
     opaqueToken: string,
+    expectedUserId: string,
   ): Promise<VerifyAndActivateSubscriptionResult> {
     try {
       const stripe = await getUncachableStripeClient();
       const session = await stripe.checkout.sessions.retrieve(opaqueToken, {
         expand: ["subscription"],
       });
+      // Ownership: the checkout session must belong to the caller (see
+      // verifyAndGrant) to prevent claiming someone else's subscription.
+      if (session.metadata?.userId !== expectedUserId) {
+        return {
+          success: false,
+          message: "This checkout belongs to a different account.",
+        };
+      }
       if (session.mode !== "subscription") {
         return {
           success: false,

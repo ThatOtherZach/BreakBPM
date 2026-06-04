@@ -1,4 +1,12 @@
-import { pgTable, text, timestamp, integer, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  integer,
+  index,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
@@ -39,7 +47,16 @@ export const passesTable = pgTable(
     priceCents: integer("price_cents"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("passes_user_idx").on(t.userId)],
+  (t) => [
+    index("passes_user_idx").on(t.userId),
+    // Idempotency guard for purchased passes: a single Stripe payment
+    // (sourceRef = payment_intent id) can only ever grant ONE pass, even if
+    // the verify endpoint and the webhook race each other. Partial so it
+    // never constrains discount-code passes (which share the source_ref col).
+    uniqueIndex("passes_purchase_source_ref_uniq")
+      .on(t.sourceRef)
+      .where(sql`${t.source} = 'purchase'`),
+  ],
 );
 
 export const insertPassSchema = createInsertSchema(passesTable).omit({ createdAt: true });

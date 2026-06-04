@@ -18,51 +18,6 @@ export function addInterval(from: Date, interval: SubscriptionInterval): Date {
   return d;
 }
 
-export interface ActivateSubscriptionInput {
-  userId: string;
-  interval: SubscriptionInterval;
-  source: "purchase" | "grant";
-  currentPeriodEnd?: Date;
-  provider?: string | null;
-  providerCustomerId?: string | null;
-  providerSubscriptionId?: string | null;
-}
-
-/**
- * Insert a new active subscription row inside a caller-provided transaction.
- * The paid-through date defaults to one interval from now when the provider
- * doesn't supply one.
- */
-export async function activateSubscriptionTx(
-  tx: Pick<typeof db, "insert">,
-  input: ActivateSubscriptionInput,
-) {
-  const startedAt = new Date();
-  const currentPeriodEnd =
-    input.currentPeriodEnd ?? addInterval(startedAt, input.interval);
-  const priceCents =
-    input.source === "purchase" ? SUBSCRIPTION_PRICES_CENTS[input.interval] : 0;
-
-  const [row] = await tx
-    .insert(subscriptionsTable)
-    .values({
-      id: newId(),
-      userId: input.userId,
-      status: "active",
-      interval: input.interval,
-      priceCents,
-      startedAt,
-      currentPeriodEnd,
-      cancelAtPeriodEnd: false,
-      source: input.source,
-      provider: input.provider ?? null,
-      providerCustomerId: input.providerCustomerId ?? null,
-      providerSubscriptionId: input.providerSubscriptionId ?? null,
-    })
-    .returning();
-  return row;
-}
-
 /**
  * Flag every currently-active subscription for a user to stop renewing. Used
  * when a subscribed user buys Lifetime — they keep access until the paid
@@ -107,11 +62,43 @@ export interface UpsertPurchasedSubscriptionInput {
   providerCustomerId?: string | null;
 }
 
+/** Apply an incoming subscription event to an existing row, in place. */
+async function applySubscriptionUpdateTx(
+  tx: Pick<typeof db, "update">,
+  existing: Subscription,
+  input: UpsertPurchasedSubscriptionInput,
+): Promise<Subscription> {
+  const [updated] = await tx
+    .update(subscriptionsTable)
+    .set({
+      status: input.status ?? existing.status,
+      interval: input.interval,
+      ...(input.currentPeriodEnd
+        ? { currentPeriodEnd: input.currentPeriodEnd }
+        : {}),
+      ...(input.cancelAtPeriodEnd !== undefined
+        ? { cancelAtPeriodEnd: input.cancelAtPeriodEnd }
+        : {}),
+      ...(input.provider !== undefined ? { provider: input.provider } : {}),
+      ...(input.providerCustomerId !== undefined
+        ? { providerCustomerId: input.providerCustomerId }
+        : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(subscriptionsTable.id, existing.id))
+    .returning();
+  return updated;
+}
+
 /**
  * Idempotently insert-or-update a subscription keyed on its Stripe
  * subscription id. Both the verify endpoint (UX) and the webhook
  * (authoritative) call this, so an existing row for the same
- * providerSubscriptionId is updated in place rather than duplicated.
+ * providerSubscriptionId is updated in place rather than duplicated. The
+ * unique index on provider_subscription_id makes this safe even when verify
+ * and the customer.subscription.* webhook race: the insert below uses
+ * onConflictDoNothing, and on conflict we fall back to updating the row the
+ * winner inserted (never a second row, never a lost event).
  */
 export async function upsertPurchasedSubscriptionTx(
   tx: Pick<typeof db, "insert" | "update" | "select">,
@@ -126,37 +113,44 @@ export async function upsertPurchasedSubscriptionTx(
     .limit(1);
 
   if (existing[0]) {
-    const [updated] = await tx
-      .update(subscriptionsTable)
-      .set({
-        status: input.status ?? existing[0].status,
-        interval: input.interval,
-        ...(input.currentPeriodEnd
-          ? { currentPeriodEnd: input.currentPeriodEnd }
-          : {}),
-        ...(input.cancelAtPeriodEnd !== undefined
-          ? { cancelAtPeriodEnd: input.cancelAtPeriodEnd }
-          : {}),
-        ...(input.provider !== undefined ? { provider: input.provider } : {}),
-        ...(input.providerCustomerId !== undefined
-          ? { providerCustomerId: input.providerCustomerId }
-          : {}),
-        updatedAt: new Date(),
-      })
-      .where(eq(subscriptionsTable.id, existing[0].id))
-      .returning();
-    return updated;
+    return applySubscriptionUpdateTx(tx, existing[0], input);
   }
 
-  return activateSubscriptionTx(tx, {
-    userId: input.userId,
-    interval: input.interval,
-    source: "purchase",
-    currentPeriodEnd: input.currentPeriodEnd,
-    provider: input.provider,
-    providerCustomerId: input.providerCustomerId,
-    providerSubscriptionId: input.providerSubscriptionId,
-  });
+  const startedAt = new Date();
+  const [inserted] = await tx
+    .insert(subscriptionsTable)
+    .values({
+      id: newId(),
+      userId: input.userId,
+      status: input.status ?? "active",
+      interval: input.interval,
+      priceCents: SUBSCRIPTION_PRICES_CENTS[input.interval],
+      startedAt,
+      currentPeriodEnd:
+        input.currentPeriodEnd ?? addInterval(startedAt, input.interval),
+      cancelAtPeriodEnd: input.cancelAtPeriodEnd ?? false,
+      source: "purchase",
+      provider: input.provider ?? null,
+      providerCustomerId: input.providerCustomerId ?? null,
+      providerSubscriptionId: input.providerSubscriptionId,
+    })
+    .onConflictDoNothing({
+      target: subscriptionsTable.providerSubscriptionId,
+    })
+    .returning();
+
+  if (inserted) return inserted;
+
+  // A concurrent insert won the race; fetch its row and apply this event's
+  // fields in place so the later event isn't dropped.
+  const [row] = await tx
+    .select()
+    .from(subscriptionsTable)
+    .where(
+      eq(subscriptionsTable.providerSubscriptionId, input.providerSubscriptionId),
+    )
+    .limit(1);
+  return applySubscriptionUpdateTx(tx, row, input);
 }
 
 /**

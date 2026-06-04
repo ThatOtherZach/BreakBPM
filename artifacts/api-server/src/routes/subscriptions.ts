@@ -83,6 +83,7 @@ router.post("/subscriptions/verify", async (req, res): Promise<void> => {
   }
   const verify = await paymentProvider.verifyAndActivateSubscription(
     parsed.data.opaqueToken,
+    user.id,
   );
   if (!verify.success || !verify.interval || !verify.providerSubscriptionId) {
     res.json(

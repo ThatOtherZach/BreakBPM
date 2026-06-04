@@ -20,7 +20,10 @@ import { getOrCreateUser } from "../lib/auth";
 import { issuePassTx, grantPurchasedPassTx } from "../lib/passes";
 import { stopRenewingActiveSubscriptionsTx } from "../lib/subscriptions";
 import { getActivePasses } from "../lib/entitlement";
-import { paymentProvider } from "../lib/paymentProvider";
+import {
+  paymentProvider,
+  stopRenewingStripeSubscriptions,
+} from "../lib/paymentProvider";
 import { newId } from "../lib/ids";
 import {
   generateGiftCode,
@@ -172,6 +175,11 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
     { userId: user.id, code, passKind: pass.kind },
     "Discount code redeemed",
   );
+  // Mirror the local mutual-exclusion to Stripe: a redeemed Lifetime must also
+  // stop a real subscription from renewing (best-effort, outside the tx).
+  if (pass.kind === "lifetime") {
+    await stopRenewingStripeSubscriptions(user.id);
+  }
   res.json(
     RedeemDiscountCodeResponse.parse({
       success: true,
@@ -212,14 +220,17 @@ router.post("/passes/verify", async (req, res): Promise<void> => {
     res.status(401).json({ error: "Sign in to verify a pass" });
     return;
   }
-  const verify = await paymentProvider.verifyAndGrant(parsed.data.opaqueToken);
+  const verify = await paymentProvider.verifyAndGrant(
+    parsed.data.opaqueToken,
+    user.id,
+  );
   if (!verify.success || !verify.kind) {
     res.json(VerifyPassCheckoutResponse.parse({ success: false, message: verify.message }));
     return;
   }
   // Idempotent grant — the webhook may have already granted this same
   // purchase. Dedup is keyed on the provider payment reference. Lifetime's
-  // subscription mutual-exclusion is applied inside the helper.
+  // local subscription mutual-exclusion is applied inside the helper.
   const { pass, deduped } = await db.transaction((tx) =>
     grantPurchasedPassTx(tx, {
       userId: user.id,
@@ -231,6 +242,12 @@ router.post("/passes/verify", async (req, res): Promise<void> => {
     { userId: user.id, kind: pass.kind, deduped },
     "Pass purchase verified",
   );
+  // First-time Lifetime grant also stops the real Stripe subscription from
+  // renewing (best-effort, outside the tx). Skipped on dedup — the webhook or
+  // an earlier verify already handled it.
+  if (pass.kind === "lifetime" && !deduped) {
+    await stopRenewingStripeSubscriptions(user.id);
+  }
   res.json(
     VerifyPassCheckoutResponse.parse({
       success: true,
