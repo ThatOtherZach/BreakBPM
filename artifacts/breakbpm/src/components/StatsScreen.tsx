@@ -3,6 +3,8 @@ import {
   useGetStats,
   getStats,
   getGetStatsQueryKey,
+  useGetGameHistory,
+  getGetGameHistoryQueryKey,
   exportMyGames,
   deleteMyGameData,
 } from "@workspace/api-client-react";
@@ -142,6 +144,19 @@ function SectionHeader({ emoji, title }: { emoji: string; title: string }) {
 export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers, onSignIn }: Props) {
   const qc = useQueryClient();
   const { isAuthenticated } = useAuth();
+
+  // A minimal history fetch (1 result) gives us totalCount for ALL the user's
+  // games regardless of the stats window, so we can disable Export/Delete
+  // when there is genuinely nothing to act on.
+  const historyCountQuery = useGetGameHistory(
+    undefined,
+    { query: { queryKey: getGetGameHistoryQueryKey(), enabled: isAuthenticated } },
+  );
+  const hasNoData =
+    isAuthenticated &&
+    historyCountQuery.data != null &&
+    historyCountQuery.data.totalCount === 0;
+
   const [window, setWindow] = useState<"24h" | "30d" | "365d" | "all">("24h");
   const [scope, setScope] = useState<"personal" | "global">("personal");
   const [refreshing, setRefreshing] = useState(false);
@@ -316,18 +331,18 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                 <button
                   className="btn"
                   style={{ flex: 1 }}
-                  disabled={exporting || deleting}
+                  disabled={exporting || deleting || hasNoData}
                   onClick={handleExport}
-                  title="Download all your games and shots as a CSV spreadsheet"
+                  title={hasNoData ? "No games to export" : "Download all your games and shots as a CSV spreadsheet"}
                 >
                   {exporting ? "🧳 Exporting…" : "🧳 Export"}
                 </button>
                 <button
                   className={`btn${confirmDelete ? " btn-primary" : ""}`}
                   style={{ flex: 1 }}
-                  disabled={deleting || exporting}
+                  disabled={deleting || exporting || hasNoData}
                   onClick={handleDelete}
-                  title="Permanently delete all your games and shots"
+                  title={hasNoData ? "No games to delete" : "Permanently delete all your games and shots"}
                 >
                   {deleting
                     ? "☢️ Deleting…"
