@@ -147,25 +147,12 @@ export interface CancelSubscriptionResult {
   subscription?: SubscriptionSummary;
 }
 
-export type DevActivateSubscriptionInputInterval = typeof DevActivateSubscriptionInputInterval[keyof typeof DevActivateSubscriptionInputInterval];
-
-
-export const DevActivateSubscriptionInputInterval = {
-  month: 'month',
-  year: 'year',
-} as const;
-
-export interface DevActivateSubscriptionInput {
-  interval: DevActivateSubscriptionInputInterval;
-}
-
 export interface MeResponse {
   signedIn: boolean;
   needsOnboarding: boolean;
   account?: Account;
   entitlement: Entitlement;
   passes?: PassSummary[];
-  devFreeUpgradeEnabled?: boolean;
 }
 
 export interface ScreenNameUpdate {
@@ -220,13 +207,6 @@ export interface VerifyCheckoutInput {
 export interface VerifyResult {
   success: boolean;
   message: string;
-  pass?: PassSummary;
-}
-
-export interface DevGrantLifetimeResult {
-  success: boolean;
-  message: string;
-  alreadyHad: boolean;
   pass?: PassSummary;
 }
 

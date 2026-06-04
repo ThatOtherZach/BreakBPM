@@ -21,9 +21,8 @@ vi.mock("../lib/auth", () => ({
   getOrCreateUser: vi.fn(async () => mocks.currentUser),
 }));
 
-// Stub the payment provider seam + keep the dev routes enabled.
+// Stub the payment provider seam.
 vi.mock("../lib/paymentProvider", () => ({
-  DEV_FREE_UPGRADE_ENABLED: true,
   paymentProvider: mocks.provider,
 }));
 
@@ -90,23 +89,6 @@ describe("Lifetime stops an active subscription from renewing", () => {
     expect(subs[0].canceledAt).not.toBeNull();
   });
 
-  it("via the dev Lifetime grant (passes/dev-grant-lifetime)", async () => {
-    const user = await createUser();
-    mocks.currentUser = user;
-    await seedSubscription(user.id, { cancelAtPeriodEnd: false });
-
-    const res = await request(app)
-      .post("/api/passes/dev-grant-lifetime")
-      .send({});
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.alreadyHad).toBe(false);
-
-    const subs = await getSubscriptions(user.id);
-    expect(subs[0].cancelAtPeriodEnd).toBe(true);
-  });
-
   it("via redeeming a Lifetime discount code (passes/redeem)", async () => {
     const user = await createUser();
     mocks.currentUser = user;
@@ -144,7 +126,7 @@ describe("Lifetime stops an active subscription from renewing", () => {
   });
 });
 
-describe("subscribe / dev-activate is refused when a Lifetime pass is held", () => {
+describe("subscribe is refused when a Lifetime pass is held", () => {
   it("subscriptions/checkout refuses and does not hit the provider", async () => {
     const user = await createUser();
     mocks.currentUser = user;
@@ -158,22 +140,5 @@ describe("subscribe / dev-activate is refused when a Lifetime pass is held", () 
     expect(res.body.success).toBe(false);
     expect(res.body.message).toMatch(/Lifetime/i);
     expect(mocks.provider.createSubscriptionCheckout).not.toHaveBeenCalled();
-  });
-
-  it("subscriptions/dev-activate refuses and creates no subscription row", async () => {
-    const user = await createUser();
-    mocks.currentUser = user;
-    await seedPass(user.id, "lifetime");
-
-    const res = await request(app)
-      .post("/api/subscriptions/dev-activate")
-      .send({ interval: "month" });
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(false);
-    expect(res.body.message).toMatch(/Lifetime/i);
-
-    const subs = await getSubscriptions(user.id);
-    expect(subs).toHaveLength(0);
   });
 });

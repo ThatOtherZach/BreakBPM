@@ -29,8 +29,6 @@ import type {
   CheckoutResult,
   CreateFindPlayerPostResult,
   DeleteGameDataResult,
-  DevActivateSubscriptionInput,
-  DevGrantLifetimeResult,
   DiscountRedeemInput,
   FindPlayerPostInput,
   FindPlayerPostsResult,
@@ -673,76 +671,6 @@ export const useVerifyPassCheckout = <TError = ErrorType<unknown>,
       return useMutation(getVerifyPassCheckoutMutationOptions(options));
     }
 
-export const getDevGrantLifetimeUrl = () => {
-
-
-
-
-  return `/api/passes/dev-grant-lifetime`
-}
-
-/**
- * @summary (DEV ONLY) Grant the signed-in user a Lifetime pass for free
- */
-export const devGrantLifetime = async ( options?: RequestInit): Promise<DevGrantLifetimeResult> => {
-
-  return customFetch<DevGrantLifetimeResult>(getDevGrantLifetimeUrl(),
-  {
-    ...options,
-    method: 'POST'
-
-
-  }
-);}
-
-
-
-
-export const getDevGrantLifetimeMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof devGrantLifetime>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof devGrantLifetime>>, TError,void, TContext> => {
-
-const mutationKey = ['devGrantLifetime'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof devGrantLifetime>>, void> = () => {
-
-
-          return  devGrantLifetime(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DevGrantLifetimeMutationResult = NonNullable<Awaited<ReturnType<typeof devGrantLifetime>>>
-
-    export type DevGrantLifetimeMutationError = ErrorType<unknown>
-
-    /**
- * @summary (DEV ONLY) Grant the signed-in user a Lifetime pass for free
- */
-export const useDevGrantLifetime = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof devGrantLifetime>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof devGrantLifetime>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getDevGrantLifetimeMutationOptions(options));
-    }
-
 export const getListPlansUrl = () => {
 
 
@@ -1032,77 +960,6 @@ export const useCancelSubscription = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCancelSubscriptionMutationOptions(options));
-    }
-
-export const getDevActivateSubscriptionUrl = () => {
-
-
-
-
-  return `/api/subscriptions/dev-activate`
-}
-
-/**
- * @summary (DEV ONLY) Activate a free subscription for the signed-in user
- */
-export const devActivateSubscription = async (devActivateSubscriptionInput: DevActivateSubscriptionInput, options?: RequestInit): Promise<SubscriptionVerifyResult> => {
-
-  return customFetch<SubscriptionVerifyResult>(getDevActivateSubscriptionUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      devActivateSubscriptionInput,)
-  }
-);}
-
-
-
-
-export const getDevActivateSubscriptionMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof devActivateSubscription>>, TError,{data: BodyType<DevActivateSubscriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof devActivateSubscription>>, TError,{data: BodyType<DevActivateSubscriptionInput>}, TContext> => {
-
-const mutationKey = ['devActivateSubscription'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof devActivateSubscription>>, {data: BodyType<DevActivateSubscriptionInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  devActivateSubscription(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DevActivateSubscriptionMutationResult = NonNullable<Awaited<ReturnType<typeof devActivateSubscription>>>
-    export type DevActivateSubscriptionMutationBody = BodyType<DevActivateSubscriptionInput>
-    export type DevActivateSubscriptionMutationError = ErrorType<unknown>
-
-    /**
- * @summary (DEV ONLY) Activate a free subscription for the signed-in user
- */
-export const useDevActivateSubscription = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof devActivateSubscription>>, TError,{data: BodyType<DevActivateSubscriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof devActivateSubscription>>,
-        TError,
-        {data: BodyType<DevActivateSubscriptionInput>},
-        TContext
-      > => {
-      return useMutation(getDevActivateSubscriptionMutationOptions(options));
     }
 
 export const getStartGameUrl = () => {

@@ -15,5 +15,4 @@ export interface MeResponse {
   account?: Account;
   entitlement: Entitlement;
   passes?: PassSummary[];
-  devFreeUpgradeEnabled?: boolean;
 }

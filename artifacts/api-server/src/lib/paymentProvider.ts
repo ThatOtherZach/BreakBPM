@@ -14,14 +14,6 @@
 
 import type { SubscriptionInterval } from "@workspace/db";
 
-// TODO(remove-before-launch): dev/QA-only flag that exposes the free Lifetime
-// upgrade button on the Account screen, the dev subscription activator, and the
-// matching POST routes. Gated to non-production so a deploy can never hand out
-// free Lifetime/subscriptions and bypass payment (the dev workflow runs with
-// NODE_ENV=development). Rip out together with the routes + AccountScreen
-// affordances before going live.
-export const DEV_FREE_UPGRADE_ENABLED = process.env.NODE_ENV !== "production";
-
 export type PassKind = "day" | "year" | "lifetime";
 
 export interface CreateCheckoutInput {

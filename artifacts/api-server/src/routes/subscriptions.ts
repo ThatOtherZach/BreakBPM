@@ -1,5 +1,4 @@
 import { Router, type IRouter } from "express";
-import { sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   ListPlansResponse,
@@ -8,8 +7,6 @@ import {
   VerifySubscriptionCheckoutBody,
   VerifySubscriptionCheckoutResponse,
   CancelSubscriptionResponse,
-  DevActivateSubscriptionBody,
-  DevActivateSubscriptionResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser } from "../lib/auth";
 import { getActivePasses, getActiveSubscription } from "../lib/entitlement";
@@ -17,7 +14,7 @@ import {
   activateSubscriptionTx,
   cancelSubscriptionTx,
 } from "../lib/subscriptions";
-import { paymentProvider, DEV_FREE_UPGRADE_ENABLED } from "../lib/paymentProvider";
+import { paymentProvider } from "../lib/paymentProvider";
 import { PLANS } from "../lib/pricing";
 
 const router: IRouter = Router();
@@ -167,75 +164,6 @@ router.post("/subscriptions/cancel", async (req, res): Promise<void> => {
         interval: active.interval,
         currentPeriodEnd: active.currentPeriodEnd,
         cancelAtPeriodEnd: true,
-      },
-    }),
-  );
-});
-
-// TODO(remove-before-launch): dev-only subscription activator. Returns 404
-// when DEV_FREE_UPGRADE_ENABLED is false. Lets QA simulate an active
-// subscription without a real billing provider. Rip out with the flag.
-router.post("/subscriptions/dev-activate", async (req, res): Promise<void> => {
-  if (!DEV_FREE_UPGRADE_ENABLED) {
-    res.status(404).json({ error: "Not found" });
-    return;
-  }
-  const parsed = DevActivateSubscriptionBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const user = await getOrCreateUser(req);
-  if (!user) {
-    res.status(401).json({ error: "Sign in first" });
-    return;
-  }
-  if (await hasLifetimePass(user.id)) {
-    res.json(
-      DevActivateSubscriptionResponse.parse({
-        success: false,
-        message: "You already have Lifetime access — no subscription needed.",
-      }),
-    );
-    return;
-  }
-  const row = await db.transaction(async (tx) => {
-    // Serialize concurrent dev-activations per user so double-clicks can't
-    // create two subscription rows.
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${user.id}, 0))`);
-    const existing = await getActiveSubscription(user.id);
-    if (existing) return null;
-    return activateSubscriptionTx(tx, {
-      userId: user.id,
-      interval: parsed.data.interval,
-      source: "grant",
-      provider: "dev",
-    });
-  });
-  if (!row) {
-    const existing = await getActiveSubscription(user.id);
-    res.json(
-      DevActivateSubscriptionResponse.parse({
-        success: true,
-        message: "You already have an active subscription.",
-        subscription: existing ?? undefined,
-      }),
-    );
-    return;
-  }
-  req.log.warn(
-    { userId: user.id, interval: row.interval },
-    "DEV: free subscription activated via /subscriptions/dev-activate",
-  );
-  res.json(
-    DevActivateSubscriptionResponse.parse({
-      success: true,
-      message: "Subscription activated. Enjoy!",
-      subscription: {
-        status: row.status,
-        interval: row.interval,
-        currentPeriodEnd: row.currentPeriodEnd,
-        cancelAtPeriodEnd: row.cancelAtPeriodEnd,
       },
     }),
   );

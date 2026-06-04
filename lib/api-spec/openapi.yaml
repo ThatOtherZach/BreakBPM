@@ -142,20 +142,6 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/VerifyResult" }
 
-  # TODO(remove-before-launch): dev-only free Lifetime grant endpoint.
-  # Gated server-side by DEV_FREE_UPGRADE_ENABLED flag; returns 404 when off.
-  /passes/dev-grant-lifetime:
-    post:
-      operationId: devGrantLifetime
-      tags: [passes]
-      summary: (DEV ONLY) Grant the signed-in user a Lifetime pass for free
-      responses:
-        "200":
-          description: Granted (or already had one)
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/DevGrantLifetimeResult" }
-
   /passes/plans:
     get:
       operationId: listPlans
@@ -217,26 +203,6 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CancelSubscriptionResult" }
-
-  # TODO(remove-before-launch): dev-only subscription activator, gated by
-  # DEV_FREE_UPGRADE_ENABLED. Lets QA simulate an active subscription without
-  # a real billing provider. Returns 404 when the flag is off.
-  /subscriptions/dev-activate:
-    post:
-      operationId: devActivateSubscription
-      tags: [passes]
-      summary: (DEV ONLY) Activate a free subscription for the signed-in user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/DevActivateSubscriptionInput" }
-      responses:
-        "200":
-          description: Activated (or rejected)
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/SubscriptionVerifyResult" }
 
   /games/start:
     post:
@@ -741,12 +707,6 @@ components:
         message: { type: string }
         subscription: { $ref: "#/components/schemas/SubscriptionSummary" }
 
-    DevActivateSubscriptionInput:
-      type: object
-      required: [interval]
-      properties:
-        interval: { type: string, enum: [month, year] }
-
     MeResponse:
       type: object
       required: [signedIn, entitlement, needsOnboarding]
@@ -760,11 +720,6 @@ components:
         passes:
           type: array
           items: { $ref: "#/components/schemas/PassSummary" }
-        # TODO(remove-before-launch): mirrors the server-side
-        # DEV_FREE_UPGRADE_ENABLED flag so the Account screen can hide the
-        # free-upgrade button when the matching route is disabled. Remove
-        # together with the flag, the route, and the button.
-        devFreeUpgradeEnabled: { type: boolean }
 
     ScreenNameUpdate:
       type: object
@@ -820,17 +775,6 @@ components:
       properties:
         success: { type: boolean }
         message: { type: string }
-        pass: { $ref: "#/components/schemas/PassSummary" }
-
-    # TODO(remove-before-launch): paired with /passes/dev-grant-lifetime.
-    DevGrantLifetimeResult:
-      type: object
-      required: [success, message, alreadyHad]
-      properties:
-        success: { type: boolean }
-        message: { type: string }
-        # True when the user already had a Lifetime pass (no new row issued).
-        alreadyHad: { type: boolean }
         pass: { $ref: "#/components/schemas/PassSummary" }
 
     StartGameInput:
