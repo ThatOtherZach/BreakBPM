@@ -17,7 +17,7 @@ import {
   ListMyGiftCodesResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser } from "../lib/auth";
-import { issuePassTx } from "../lib/passes";
+import { issuePassTx, grantPurchasedPassTx } from "../lib/passes";
 import { stopRenewingActiveSubscriptionsTx } from "../lib/subscriptions";
 import { getActivePasses } from "../lib/entitlement";
 import { paymentProvider } from "../lib/paymentProvider";
@@ -217,21 +217,20 @@ router.post("/passes/verify", async (req, res): Promise<void> => {
     res.json(VerifyPassCheckoutResponse.parse({ success: false, message: verify.message }));
     return;
   }
-  const pass = await db.transaction(async (tx) => {
-    const issued = await issuePassTx(tx, {
+  // Idempotent grant — the webhook may have already granted this same
+  // purchase. Dedup is keyed on the provider payment reference. Lifetime's
+  // subscription mutual-exclusion is applied inside the helper.
+  const { pass, deduped } = await db.transaction((tx) =>
+    grantPurchasedPassTx(tx, {
       userId: user.id,
       kind: verify.kind!,
-      source: "purchase",
-      sourceRef: verify.providerRef,
-    });
-    // Buying Lifetime while subscribed is the "switch" — stop the
-    // subscription from renewing (access is retained until it lapses).
-    if (issued.kind === "lifetime") {
-      await stopRenewingActiveSubscriptionsTx(tx, user.id);
-    }
-    return issued;
-  });
-  req.log.info({ userId: user.id, kind: pass.kind }, "Pass purchased");
+      sourceRef: verify.providerRef ?? parsed.data.opaqueToken,
+    }),
+  );
+  req.log.info(
+    { userId: user.id, kind: pass.kind, deduped },
+    "Pass purchase verified",
+  );
   res.json(
     VerifyPassCheckoutResponse.parse({
       success: true,

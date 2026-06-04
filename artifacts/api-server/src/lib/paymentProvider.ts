@@ -9,10 +9,23 @@
  *   - Recurring subscriptions (Monthly, Yearly): createSubscriptionCheckout →
  *     verifyAndActivateSubscription, plus cancelSubscription to stop renewal.
  *
- * Prices live in pricing.ts (single source of truth), not here.
+ * Prices live in pricing.ts (single source of truth), not here. The Stripe
+ * Price objects must be kept consistent with that catalog — see the
+ * seed-stripe-products.ts script, which tags each Price with metadata.planId
+ * so we can resolve the right Price at checkout time.
  */
 
-import type { SubscriptionInterval } from "@workspace/db";
+import type Stripe from "stripe";
+import { eq } from "drizzle-orm";
+import { db, usersTable, type SubscriptionInterval } from "@workspace/db";
+import { getUncachableStripeClient } from "./stripeClient";
+import { PLANS, type PlanId } from "./pricing";
+import { getActiveProviderSubscriptionId } from "./subscriptions";
+import {
+  readSubscriptionInterval,
+  readSubscriptionPeriodEnd,
+} from "./stripeMapping";
+import { logger } from "./logger";
 
 export type PassKind = "day" | "year" | "lifetime";
 
@@ -85,46 +98,322 @@ export interface PaymentProvider {
   ): Promise<CancelSubscriptionResult>;
 }
 
+const NOT_CONFIGURED_MSG =
+  "Card payments aren't configured yet. Use a discount code, or check back soon.";
+
 /**
- * No-op payment provider. Every method REJECTS — there's no real billing
- * wired up, so the only paths to entitlement right now are discount codes or
- * an admin/dev grant. Swap this out before going live with paid plans. The
- * cancel path is fully shaped (interface + route + UI) but also rejects, so a
- * real provider drops in cleanly.
+ * True when an error is "Stripe isn't connected yet" rather than a genuine
+ * billing failure — used to show the friendly not-configured message.
  */
-export class NoopPaymentProvider implements PaymentProvider {
-  async createCheckout(): Promise<CreateCheckoutResult> {
-    return {
-      success: false,
-      message:
-        "Card payments aren't configured yet. Use a discount code, or check back soon.",
-    };
+function isNotConnected(err: unknown): boolean {
+  const m = err instanceof Error ? err.message : "";
+  return (
+    m.includes("integration") ||
+    m.includes("connected") ||
+    m.includes("Replit environment") ||
+    m.includes("secret key") ||
+    m.includes("credentials")
+  );
+}
+
+function appOrigin(): string {
+  const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
+  if (!domain) {
+    throw new Error("REPLIT_DOMAINS not set — cannot build checkout return URL");
   }
-  async verifyAndGrant(): Promise<VerifyAndGrantResult> {
-    return {
-      success: false,
-      message: "Payments aren't configured yet. Nothing to verify.",
-    };
+  return `https://${domain}`;
+}
+
+async function getUserEmail(userId: string): Promise<string | null> {
+  const [u] = await db
+    .select({ email: usersTable.email })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+  return u?.email ?? null;
+}
+
+/**
+ * Resolve the live Stripe Price id for a plan via its metadata.planId tag.
+ * Returns null when no matching active price exists (products not seeded yet).
+ */
+async function resolvePriceId(
+  stripe: Stripe,
+  planId: PlanId,
+): Promise<string | null> {
+  const prices = await stripe.prices.list({ active: true, limit: 100 });
+  const match = prices.data.find((p) => p.metadata?.planId === planId);
+  return match?.id ?? null;
+}
+
+export class StripePaymentProvider implements PaymentProvider {
+  async createCheckout(
+    input: CreateCheckoutInput,
+  ): Promise<CreateCheckoutResult> {
+    try {
+      const plan = PLANS.find(
+        (p) => p.kind === "pass" && p.passKind === input.kind,
+      );
+      if (!plan) {
+        return { success: false, message: "That plan isn't available." };
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const priceId = await resolvePriceId(stripe, plan.id);
+      if (!priceId) {
+        return {
+          success: false,
+          message:
+            "Plans aren't set up in Stripe yet. Please check back shortly.",
+        };
+      }
+
+      const email = await getUserEmail(input.userId);
+      const origin = appOrigin();
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        payment_method_types: ["card"],
+        line_items: [{ price: priceId, quantity: 1 }],
+        client_reference_id: input.userId,
+        metadata: {
+          userId: input.userId,
+          planId: plan.id,
+          kind: "pass",
+          passKind: input.kind,
+        },
+        payment_intent_data: {
+          metadata: {
+            userId: input.userId,
+            planId: plan.id,
+            passKind: input.kind,
+          },
+        },
+        ...(email ? { customer_email: email } : {}),
+        success_url: `${origin}/passes?status=success&type=pass&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/passes?status=cancel`,
+      });
+
+      if (!session.url) {
+        return {
+          success: false,
+          message: "Couldn't start checkout. Please try again.",
+        };
+      }
+      return {
+        success: true,
+        message: "Redirecting to secure checkout…",
+        opaqueToken: session.id,
+        checkoutUrl: session.url,
+      };
+    } catch (err) {
+      logger.error({ err }, "Stripe createCheckout failed");
+      return {
+        success: false,
+        message: isNotConnected(err)
+          ? NOT_CONFIGURED_MSG
+          : "Couldn't start checkout. Please try again.",
+      };
+    }
   }
-  async createSubscriptionCheckout(): Promise<CreateCheckoutResult> {
-    return {
-      success: false,
-      message:
-        "Subscriptions aren't configured yet. Card billing is coming soon.",
-    };
+
+  async verifyAndGrant(opaqueToken: string): Promise<VerifyAndGrantResult> {
+    try {
+      const stripe = await getUncachableStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(opaqueToken);
+      if (session.mode !== "payment") {
+        return { success: false, message: "That checkout isn't a pass purchase." };
+      }
+      if (session.payment_status !== "paid") {
+        return { success: false, message: "Payment hasn't completed yet." };
+      }
+      const kind = session.metadata?.passKind as PassKind | undefined;
+      if (kind !== "day" && kind !== "lifetime") {
+        return {
+          success: false,
+          message: "Couldn't determine what was purchased.",
+        };
+      }
+      const providerRef =
+        typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : session.id;
+      return {
+        success: true,
+        message: `Your ${kind === "lifetime" ? "Lifetime" : "Day"} pass is active!`,
+        kind,
+        providerRef,
+      };
+    } catch (err) {
+      logger.error({ err }, "Stripe verifyAndGrant failed");
+      return {
+        success: false,
+        message: isNotConnected(err)
+          ? "Payments aren't configured yet. Nothing to verify."
+          : "We couldn't verify your payment. If you were charged, it'll activate shortly.",
+      };
+    }
   }
-  async verifyAndActivateSubscription(): Promise<VerifyAndActivateSubscriptionResult> {
-    return {
-      success: false,
-      message: "Subscriptions aren't configured yet. Nothing to verify.",
-    };
+
+  async createSubscriptionCheckout(
+    input: CreateSubscriptionCheckoutInput,
+  ): Promise<CreateCheckoutResult> {
+    try {
+      const plan = PLANS.find(
+        (p) => p.kind === "subscription" && p.interval === input.interval,
+      );
+      if (!plan) {
+        return { success: false, message: "That plan isn't available." };
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const priceId = await resolvePriceId(stripe, plan.id);
+      if (!priceId) {
+        return {
+          success: false,
+          message:
+            "Plans aren't set up in Stripe yet. Please check back shortly.",
+        };
+      }
+
+      const email = await getUserEmail(input.userId);
+      const origin = appOrigin();
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        payment_method_types: ["card"],
+        line_items: [{ price: priceId, quantity: 1 }],
+        client_reference_id: input.userId,
+        metadata: {
+          userId: input.userId,
+          planId: plan.id,
+          kind: "subscription",
+          interval: input.interval,
+        },
+        subscription_data: {
+          metadata: {
+            userId: input.userId,
+            planId: plan.id,
+            interval: input.interval,
+          },
+        },
+        ...(email ? { customer_email: email } : {}),
+        success_url: `${origin}/passes?status=success&type=sub&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/passes?status=cancel`,
+      });
+
+      if (!session.url) {
+        return {
+          success: false,
+          message: "Couldn't start checkout. Please try again.",
+        };
+      }
+      return {
+        success: true,
+        message: "Redirecting to secure checkout…",
+        opaqueToken: session.id,
+        checkoutUrl: session.url,
+      };
+    } catch (err) {
+      logger.error({ err }, "Stripe createSubscriptionCheckout failed");
+      return {
+        success: false,
+        message: isNotConnected(err)
+          ? NOT_CONFIGURED_MSG
+          : "Couldn't start checkout. Please try again.",
+      };
+    }
   }
-  async cancelSubscription(): Promise<CancelSubscriptionResult> {
-    return {
-      success: false,
-      message: "Subscription management isn't available yet. Check back soon.",
-    };
+
+  async verifyAndActivateSubscription(
+    opaqueToken: string,
+  ): Promise<VerifyAndActivateSubscriptionResult> {
+    try {
+      const stripe = await getUncachableStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(opaqueToken, {
+        expand: ["subscription"],
+      });
+      if (session.mode !== "subscription") {
+        return {
+          success: false,
+          message: "That checkout isn't a subscription.",
+        };
+      }
+      if (session.status !== "complete") {
+        return {
+          success: false,
+          message: "Subscription checkout hasn't completed yet.",
+        };
+      }
+      const sub = session.subscription;
+      if (!sub || typeof sub === "string") {
+        return {
+          success: false,
+          message: "Subscription isn't ready yet. Please refresh in a moment.",
+        };
+      }
+      const interval = readSubscriptionInterval(sub);
+      if (!interval) {
+        return {
+          success: false,
+          message: "Couldn't determine the subscription plan.",
+        };
+      }
+      const customerId =
+        typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+      return {
+        success: true,
+        message: `Your ${interval === "year" ? "Yearly" : "Monthly"} subscription is active!`,
+        interval,
+        currentPeriodEnd: readSubscriptionPeriodEnd(sub),
+        provider: "stripe",
+        providerCustomerId: customerId ?? undefined,
+        providerSubscriptionId: sub.id,
+      };
+    } catch (err) {
+      logger.error({ err }, "Stripe verifyAndActivateSubscription failed");
+      return {
+        success: false,
+        message: isNotConnected(err)
+          ? "Subscriptions aren't configured yet. Nothing to verify."
+          : "We couldn't verify your subscription. If you were charged, it'll activate shortly.",
+      };
+    }
+  }
+
+  async cancelSubscription(
+    input: CancelSubscriptionInput,
+  ): Promise<CancelSubscriptionResult> {
+    try {
+      const subId =
+        input.providerSubscriptionId ??
+        (await getActiveProviderSubscriptionId(input.userId));
+      if (!subId) {
+        return {
+          success: false,
+          message: "No active subscription to cancel.",
+        };
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const updated = await stripe.subscriptions.update(subId, {
+        cancel_at_period_end: true,
+      });
+      return {
+        success: true,
+        message:
+          "Your subscription will not renew. You keep full access until the end of the paid period.",
+        cancelAtPeriodEnd: true,
+        currentPeriodEnd: readSubscriptionPeriodEnd(updated),
+      };
+    } catch (err) {
+      logger.error({ err }, "Stripe cancelSubscription failed");
+      return {
+        success: false,
+        message: isNotConnected(err)
+          ? "Subscription management isn't available yet. Check back soon."
+          : "Couldn't cancel your subscription. Please try again.",
+      };
+    }
   }
 }
 
-export const paymentProvider: PaymentProvider = new NoopPaymentProvider();
+export const paymentProvider: PaymentProvider = new StripePaymentProvider();

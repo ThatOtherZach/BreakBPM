@@ -1,8 +1,10 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import {
   db,
   subscriptionsTable,
+  type Subscription,
   type SubscriptionInterval,
+  type SubscriptionStatus,
 } from "@workspace/db";
 import { newId } from "./ids";
 import { SUBSCRIPTION_PRICES_CENTS } from "./pricing";
@@ -91,6 +93,96 @@ export async function cancelSubscriptionTx(
   userId: string,
 ): Promise<number> {
   return stopRenewingActiveSubscriptionsTx(tx, userId);
+}
+
+export interface UpsertPurchasedSubscriptionInput {
+  userId: string;
+  interval: SubscriptionInterval;
+  /** Stripe subscription id — the idempotency key. */
+  providerSubscriptionId: string;
+  status?: SubscriptionStatus;
+  currentPeriodEnd?: Date;
+  cancelAtPeriodEnd?: boolean;
+  provider?: string | null;
+  providerCustomerId?: string | null;
+}
+
+/**
+ * Idempotently insert-or-update a subscription keyed on its Stripe
+ * subscription id. Both the verify endpoint (UX) and the webhook
+ * (authoritative) call this, so an existing row for the same
+ * providerSubscriptionId is updated in place rather than duplicated.
+ */
+export async function upsertPurchasedSubscriptionTx(
+  tx: Pick<typeof db, "insert" | "update" | "select">,
+  input: UpsertPurchasedSubscriptionInput,
+): Promise<Subscription> {
+  const existing = await tx
+    .select()
+    .from(subscriptionsTable)
+    .where(
+      eq(subscriptionsTable.providerSubscriptionId, input.providerSubscriptionId),
+    )
+    .limit(1);
+
+  if (existing[0]) {
+    const [updated] = await tx
+      .update(subscriptionsTable)
+      .set({
+        status: input.status ?? existing[0].status,
+        interval: input.interval,
+        ...(input.currentPeriodEnd
+          ? { currentPeriodEnd: input.currentPeriodEnd }
+          : {}),
+        ...(input.cancelAtPeriodEnd !== undefined
+          ? { cancelAtPeriodEnd: input.cancelAtPeriodEnd }
+          : {}),
+        ...(input.provider !== undefined ? { provider: input.provider } : {}),
+        ...(input.providerCustomerId !== undefined
+          ? { providerCustomerId: input.providerCustomerId }
+          : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(subscriptionsTable.id, existing[0].id))
+      .returning();
+    return updated;
+  }
+
+  return activateSubscriptionTx(tx, {
+    userId: input.userId,
+    interval: input.interval,
+    source: "purchase",
+    currentPeriodEnd: input.currentPeriodEnd,
+    provider: input.provider,
+    providerCustomerId: input.providerCustomerId,
+    providerSubscriptionId: input.providerSubscriptionId,
+  });
+}
+
+/**
+ * The Stripe subscription id of the user's current active subscription, if
+ * any. Used as a fallback when cancelling so we can target the right Stripe
+ * subscription without the caller threading the id through.
+ */
+export async function getActiveProviderSubscriptionId(
+  userId: string,
+): Promise<string | null> {
+  const now = new Date();
+  const rows = await db
+    .select({
+      providerSubscriptionId: subscriptionsTable.providerSubscriptionId,
+    })
+    .from(subscriptionsTable)
+    .where(
+      and(
+        eq(subscriptionsTable.userId, userId),
+        eq(subscriptionsTable.status, "active"),
+        sql`${subscriptionsTable.currentPeriodEnd} > ${now}`,
+      ),
+    )
+    .orderBy(desc(subscriptionsTable.currentPeriodEnd))
+    .limit(1);
+  return rows[0]?.providerSubscriptionId ?? null;
 }
 
 /** True when the user has any active (entitling) subscription right now. */

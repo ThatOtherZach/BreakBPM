@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   useGetMe,
   useListPlans,
@@ -43,6 +43,54 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
 
   const [code, setCode] = useState("");
   const [msg, setMsg] = useState("");
+
+  // Stripe Checkout returns the user to /passes?status=...&type=...&session_id=...
+  // We verify once on mount (verify is idempotent server-side and just confirms
+  // the entitlement the webhook will/has already granted), surface the result,
+  // refresh entitlement, then strip the query string so a refresh doesn't
+  // re-trigger it.
+  const returnHandled = useRef(false);
+  useEffect(() => {
+    if (returnHandled.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("status");
+    if (!status) return;
+    returnHandled.current = true;
+
+    const type = params.get("type");
+    const sessionId = params.get("session_id");
+    const cleanUrl = () =>
+      window.history.replaceState({}, "", window.location.pathname);
+
+    if (status === "cancel") {
+      setMsg("Checkout canceled — you haven't been charged.");
+      cleanUrl();
+      return;
+    }
+    if (status === "success" && sessionId) {
+      (async () => {
+        try {
+          const v =
+            type === "sub"
+              ? await subVerify.mutateAsync({ data: { opaqueToken: sessionId } })
+              : await passVerify.mutateAsync({
+                  data: { opaqueToken: sessionId },
+                });
+          setMsg(v.message);
+          qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+        } catch (e) {
+          setMsg(
+            e instanceof Error
+              ? e.message
+              : "We couldn't confirm your purchase. If you were charged, it'll activate shortly.",
+          );
+        } finally {
+          cleanUrl();
+        }
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!me.data?.signedIn) {
     return (
@@ -189,7 +237,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
               );
             })}
             <p style={{ fontSize: 10, color: "#888", marginTop: 4 }}>
-              Card payments aren't connected yet — Buy/Subscribe will report that. Use a discount code to grant a pass in the meantime.
+              Pay securely by card via Stripe. Prefer a code? Redeem a discount code below.
             </p>
           </div>
         </div>

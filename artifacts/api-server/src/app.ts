@@ -4,6 +4,9 @@ import pinoHttp from "pino-http";
 import { mountAuth } from "./lib/serverAuthAdapter";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { WebhookHandlers } from "./lib/webhookHandlers";
+import { constructStripeEvent } from "./lib/stripeClient";
+import { reconcileStripeEvent } from "./lib/stripeReconcile";
 
 const app: Express = express();
 
@@ -28,6 +31,35 @@ app.use(
       },
     },
   }),
+);
+
+// Stripe webhook MUST be registered before mountAuth and express.json — the
+// signature check needs the raw request body as a Buffer, and any upstream
+// body parser would consume/transform it first. StripeSync keeps the mirrored
+// `stripe` schema fresh; reconcileStripeEvent applies entitlement changes
+// (passes/subscriptions) authoritatively. Both are idempotent.
+app.post(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    const signature = req.headers["stripe-signature"];
+    if (!signature) {
+      res.status(400).json({ error: "Missing stripe-signature" });
+      return;
+    }
+    const sig = Array.isArray(signature) ? signature[0] : signature;
+    try {
+      await WebhookHandlers.processWebhook(req.body as Buffer, sig);
+      const event = await constructStripeEvent(req.body as Buffer, sig);
+      await reconcileStripeEvent(event);
+      res.status(200).json({ received: true });
+    } catch (err) {
+      // Non-2xx tells Stripe to retry. Our handlers are idempotent, so a
+      // retry after a transient failure is safe.
+      logger.error({ err }, "Stripe webhook processing failed");
+      res.status(500).json({ error: "Webhook processing error" });
+    }
+  },
 );
 
 // All auth-provider wiring (currently Clerk) lives behind this single call.

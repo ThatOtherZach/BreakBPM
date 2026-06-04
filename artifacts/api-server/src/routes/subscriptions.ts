@@ -11,7 +11,7 @@ import {
 import { getOrCreateUser } from "../lib/auth";
 import { getActivePasses, getActiveSubscription } from "../lib/entitlement";
 import {
-  activateSubscriptionTx,
+  upsertPurchasedSubscriptionTx,
   cancelSubscriptionTx,
 } from "../lib/subscriptions";
 import { paymentProvider } from "../lib/paymentProvider";
@@ -84,7 +84,7 @@ router.post("/subscriptions/verify", async (req, res): Promise<void> => {
   const verify = await paymentProvider.verifyAndActivateSubscription(
     parsed.data.opaqueToken,
   );
-  if (!verify.success || !verify.interval) {
+  if (!verify.success || !verify.interval || !verify.providerSubscriptionId) {
     res.json(
       VerifySubscriptionCheckoutResponse.parse({
         success: false,
@@ -93,20 +93,23 @@ router.post("/subscriptions/verify", async (req, res): Promise<void> => {
     );
     return;
   }
+  // Idempotent upsert keyed on the Stripe subscription id — the webhook's
+  // customer.subscription.created may have already inserted this row.
   const row = await db.transaction((tx) =>
-    activateSubscriptionTx(tx, {
+    upsertPurchasedSubscriptionTx(tx, {
       userId: user.id,
       interval: verify.interval!,
-      source: "purchase",
+      providerSubscriptionId: verify.providerSubscriptionId!,
+      status: "active",
       currentPeriodEnd: verify.currentPeriodEnd,
+      cancelAtPeriodEnd: false,
       provider: verify.provider,
       providerCustomerId: verify.providerCustomerId,
-      providerSubscriptionId: verify.providerSubscriptionId,
     }),
   );
   req.log.info(
     { userId: user.id, interval: row.interval },
-    "Subscription activated",
+    "Subscription verified",
   );
   res.json(
     VerifySubscriptionCheckoutResponse.parse({
@@ -123,9 +126,9 @@ router.post("/subscriptions/verify", async (req, res): Promise<void> => {
 });
 
 /**
- * Cancel the caller's subscription. Routes through the provider seam (which
- * rejects until a real provider is wired). When a provider confirms, we flag
- * the local row to stop renewing — access is retained until period end.
+ * Cancel the caller's subscription. Routes through the provider seam, which
+ * tells Stripe to stop renewing (cancel_at_period_end). On success we flag the
+ * local row to match — access is retained until period end.
  */
 router.post("/subscriptions/cancel", async (req, res): Promise<void> => {
   const user = await getOrCreateUser(req);
