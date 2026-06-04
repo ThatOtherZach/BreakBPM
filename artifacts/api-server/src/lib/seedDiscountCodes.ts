@@ -16,15 +16,19 @@ import { logger } from "./logger";
  * directly — the seed will not overwrite it.
  *
  * Format: comma-separated entries, each `code:kind[:maxRedemptions]`.
- *   - `code`  — the redeemable string (e.g. `LIFE-A7BHS2`). Stored uppercased
+ *   - `code`  — the redeemable string (e.g. `COMP-ABC123`). Stored uppercased
  *     to match /passes/redeem, which uppercases user input before lookup — a
  *     lowercase entry would otherwise seed but be impossible to redeem.
  *   - `kind`  — one of `day` | `year` | `lifetime`
  *   - `maxRedemptions` — optional positive integer; omit (or leave blank) for
  *     unlimited. Whitespace around entries/fields is tolerated.
  *
- * Example:
- *   LIFE-A7BHS2:lifetime:1, BREAKBPM-LIFETIME:lifetime:500
+ * Example (placeholder values — never commit real redeemable codes):
+ *   COMP-ABC123:lifetime:1, EXAMPLE-PASS:lifetime:500
+ *
+ * The live value is configured as a secret (BREAKBPM_COMP_CODES), NOT in any
+ * committed file — the codes are redeemable bearer tokens and must stay out of
+ * git.
  */
 
 const VALID_KINDS = new Set(["day", "year", "lifetime"]);

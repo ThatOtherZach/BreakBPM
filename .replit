@@ -45,4 +45,3 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.shared]
-BREAKBPM_COMP_CODES = "LIFE-A7BHS2:lifetime:1,LIFE-NAZXD2:lifetime:1,LIFE-JNMK9N:lifetime:1,LIFE-CNPT3S:lifetime:1,LIFE-Q5VTHT:lifetime:1,BREAKBPM-LIFETIME:lifetime:500"

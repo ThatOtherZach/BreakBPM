@@ -17,8 +17,8 @@ describe("parseCompCodes", () => {
   });
 
   it("parses a single entry with an explicit cap", () => {
-    expect(parseCompCodes("LIFE-A7BHS2:lifetime:1")).toEqual([
-      { code: "LIFE-A7BHS2", grantsPassKind: "lifetime", maxRedemptions: 1 },
+    expect(parseCompCodes("COMP-ONE:lifetime:1")).toEqual([
+      { code: "COMP-ONE", grantsPassKind: "lifetime", maxRedemptions: 1 },
     ]);
   });
 
@@ -30,10 +30,10 @@ describe("parseCompCodes", () => {
 
   it("parses multiple comma-separated entries and tolerates whitespace", () => {
     expect(
-      parseCompCodes(" LIFE-A:lifetime:1 , BREAKBPM-LIFETIME : lifetime : 500 "),
+      parseCompCodes(" COMP-A:lifetime:1 , COMP-MANY : lifetime : 500 "),
     ).toEqual([
-      { code: "LIFE-A", grantsPassKind: "lifetime", maxRedemptions: 1 },
-      { code: "BREAKBPM-LIFETIME", grantsPassKind: "lifetime", maxRedemptions: 500 },
+      { code: "COMP-A", grantsPassKind: "lifetime", maxRedemptions: 1 },
+      { code: "COMP-MANY", grantsPassKind: "lifetime", maxRedemptions: 500 },
     ]);
   });
 
