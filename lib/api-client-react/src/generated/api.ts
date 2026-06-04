@@ -2117,7 +2117,7 @@ export const getDeleteMyGameDataUrl = () => {
 }
 
 /**
- * Erases every game the signed-in caller hosted (which carry their shot logs) and removes their participation slots in other players' games. The user's account record, screen name, passes, and subscriptions are left intact. Requires authentication.
+ * Scrubs the signed-in caller from every game they took part in (as host or joiner). For each game, if no other real (signed-in) player remains, the whole game is deleted — its shot log lives in the game record, so it goes too. If other real players remain, only the caller is removed: their name is replaced with a placeholder ("Mr. X") throughout the stored game (player list, every shot-log entry, and the winner) and their participation link is severed, so the game stays intact and correct for the remaining players while disappearing from the caller's own history, stats, and export. The user's account record, screen name, passes, and subscriptions are left intact. Requires authentication.
 
  * @summary Permanently delete all of the caller's shot and game data
  */

@@ -1953,14 +1953,48 @@ router.get("/games/export", async (req, res): Promise<void> => {
   res.send(csv);
 });
 
+/** Placeholder name a departing player's identity collapses to on delete. */
+const ANON_PLAYER_BASE_NAME = "🕴️ Mr. X";
+
 /**
- * Permanently delete all of the caller's shot and game data. Runs in one
- * transaction: deletes every game they HOSTED (their shot logs live in
- * gameState, so the row deletion removes the shots; the FK cascade clears all
- * participant slots on those games), then removes their remaining slots in
- * OTHER hosts' games (joined games) so their attribution is gone while the
- * host's game stays intact. The user record, passes, and subscriptions are
- * untouched. Requires authentication.
+ * Pick a placeholder name that doesn't already exist in a game. Returns the
+ * base "🕴️ Mr. X" when free, otherwise appends " 2", " 3", … so two
+ * anonymized players in the same game never collide and merge stats.
+ */
+function uniqueAnonName(taken: Set<string>): string {
+  if (!taken.has(ANON_PLAYER_BASE_NAME)) return ANON_PLAYER_BASE_NAME;
+  for (let n = 2; ; n++) {
+    const candidate = `${ANON_PLAYER_BASE_NAME} ${n}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+}
+
+/**
+ * Permanently scrub the caller from all of their game data. Runs in one
+ * transaction over every COMPLETED game the user took part in (hosted or
+ * joined). In-progress games are deliberately skipped: they are live state
+ * the host re-syncs on every action (so any scrub would be clobbered), they
+ * carry no history/stats/export data yet, and detaching a still-playing host
+ * would leave them able to abandon a game they no longer belong to.
+ *
+ *   - If no OTHER real (signed-in) player remains, the whole game is deleted.
+ *     Its shot log lives in gameState, so the row delete removes the shots and
+ *     the FK cascade clears participant slots. Covers solo games, games nobody
+ *     joined, and the "both players delete" case (whoever deletes second finds
+ *     no real player left and the game is removed).
+ *   - Otherwise the caller alone is removed: their name is replaced with a
+ *     collision-safe "🕴️ Mr. X" placeholder throughout the stored game (the
+ *     player list, every shot-log entry, and the winner — both gameState and
+ *     the denormalized games.winner column), and their participant slot is
+ *     detached (userId nulled). The game stays correct for the remaining
+ *     players; it leaves the caller's history/stats/export because those key
+ *     off the participation link.
+ *
+ * Renaming is consistent and never removes shot entries — the game engine
+ * derives pace, accuracy, and rack state from the full ordered shot log, so
+ * dropping entries would corrupt the remaining players' game.
+ *
+ * The user record, passes, and subscriptions are untouched. Requires auth.
  */
 router.delete("/games/data", async (req, res): Promise<void> => {
   const user = await getOrCreateUser(req);
@@ -1970,29 +2004,135 @@ router.delete("/games/data", async (req, res): Promise<void> => {
   }
 
   const result = await db.transaction(async (tx) => {
-    const deletedGames = await tx
-      .delete(gamesTable)
-      .where(eq(gamesTable.userId, user.id))
-      .returning({ id: gamesTable.id });
-    const deletedParts = await tx
-      .delete(gameParticipantsTable)
-      .where(eq(gameParticipantsTable.userId, user.id))
-      .returning({ gameId: gameParticipantsTable.gameId });
-    return {
-      deletedGames: deletedGames.length,
-      deletedParticipations: deletedParts.length,
-    };
+    // Every COMPLETED game the caller touches: games they host + games they
+    // hold a participant slot in. In-progress games (endedAt null) are
+    // excluded — see the doc comment above. Sorted so concurrent deletes
+    // acquire row locks in a consistent order (no deadlocks).
+    const hosted = await tx
+      .select({ id: gamesTable.id })
+      .from(gamesTable)
+      .where(and(eq(gamesTable.userId, user.id), isNotNull(gamesTable.endedAt)));
+    const joined = await tx
+      .select({ gameId: gameParticipantsTable.gameId })
+      .from(gameParticipantsTable)
+      .innerJoin(gamesTable, eq(gamesTable.id, gameParticipantsTable.gameId))
+      .where(
+        and(eq(gameParticipantsTable.userId, user.id), isNotNull(gamesTable.endedAt)),
+      );
+    const gameIds = [
+      ...new Set<string>([...hosted.map((g) => g.id), ...joined.map((p) => p.gameId)]),
+    ].sort();
+
+    let deletedGames = 0;
+    let anonymizedGames = 0;
+
+    for (const gameId of gameIds) {
+      // Lock this game's participant rows for the rest of the transaction so
+      // two real players deleting the same game serialize: the second one
+      // then sees the first's slot already detached and full-deletes (which
+      // is the intended "second deleter removes the game" outcome).
+      const participants = await tx
+        .select()
+        .from(gameParticipantsTable)
+        .where(eq(gameParticipantsTable.gameId, gameId))
+        .for("update");
+
+      // Other REAL players = signed-in slots that aren't the caller. Guests
+      // (userId null) and already-anonymized slots do not count.
+      const realOthers = participants.filter(
+        (p) => p.userId != null && p.userId !== user.id,
+      );
+
+      if (realOthers.length === 0) {
+        // No one else would lose this game → delete it outright (cascade
+        // clears participant rows; the shot log goes with the row).
+        await tx.delete(gamesTable).where(eq(gamesTable.id, gameId));
+        deletedGames += 1;
+        continue;
+      }
+
+      // Someone else keeps this game → anonymize just the caller. This
+      // requires the caller to still hold a participant slot here. A hosted
+      // game can re-surface on a later delete call (we leave games.userId
+      // intact), but once the slot is detached the caller is no longer a
+      // real player in it, so skip — this keeps repeat calls idempotent and
+      // stops a detached caller from re-mutating a shared game.
+      const myPart = participants.find((p) => p.userId === user.id);
+      if (!myPart) continue;
+      const [game] = await tx
+        .select({ winner: gamesTable.winner, gameState: gamesTable.gameState })
+        .from(gamesTable)
+        .where(eq(gamesTable.id, gameId));
+      if (!game) continue;
+
+      const gs = (game.gameState ?? {}) as Record<string, unknown>;
+      const players = Array.isArray(gs["players"])
+        ? (gs["players"] as Array<Record<string, unknown>>)
+        : [];
+      const shotLog = Array.isArray(gs["shotLog"])
+        ? (gs["shotLog"] as Array<Record<string, unknown>>)
+        : [];
+
+      // The caller's name in this game, taken from their participant slot.
+      const myName = myPart.displayName;
+
+      // Build a collision-safe placeholder against every OTHER name present
+      // (gameState players + participant slots).
+      const otherNames = new Set<string>();
+      for (const p of players) {
+        const n = p["name"];
+        if (typeof n === "string" && n !== myName) otherNames.add(n);
+      }
+      for (const p of participants) {
+        if (p.userId !== user.id) otherNames.add(p.displayName);
+      }
+      const anonName = uniqueAnonName(otherNames);
+
+      // Rewrite every occurrence of the caller's name, consistently.
+      for (const p of players) {
+        if (p["name"] === myName) p["name"] = anonName;
+      }
+      for (const e of shotLog) {
+        if (e["playerName"] === myName) e["playerName"] = anonName;
+      }
+      if (gs["winner"] === myName) gs["winner"] = anonName;
+      const newWinner = game.winner === myName ? anonName : game.winner;
+
+      await tx
+        .update(gamesTable)
+        .set({ gameState: gs, winner: newWinner })
+        .where(eq(gamesTable.id, gameId));
+
+      // Detach the caller from this game so it leaves their history/stats/
+      // export, and stamp the placeholder on their (now ownerless) slot.
+      await tx
+        .update(gameParticipantsTable)
+        .set({ userId: null, displayName: anonName })
+        .where(
+          and(
+            eq(gameParticipantsTable.gameId, gameId),
+            eq(gameParticipantsTable.slotIndex, myPart.slotIndex),
+          ),
+        );
+
+      anonymizedGames += 1;
+    }
+
+    return { deletedGames, anonymizedGames };
   });
 
-  // Bust the user's cached personal stats so /stats recomputes (empty) now.
+  // Bust the user's cached personal stats so /stats recomputes now.
   clearUserStatsCache(user.id);
 
-  req.log.info({ userId: user.id, ...result }, "Deleted all game data for user");
+  req.log.info(
+    { userId: user.id, ...result },
+    "Deleted/anonymized game data for user",
+  );
   res.json(
     DeleteMyGameDataResponse.parse({
       deleted: true,
       deletedGames: result.deletedGames,
-      deletedParticipations: result.deletedParticipations,
+      anonymizedGames: result.anonymizedGames,
     }),
   );
 });

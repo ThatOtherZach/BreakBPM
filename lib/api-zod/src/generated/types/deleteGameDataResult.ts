@@ -9,5 +9,5 @@
 export interface DeleteGameDataResult {
   deleted: boolean;
   deletedGames: number;
-  deletedParticipations: number;
+  anonymizedGames: number;
 }

@@ -8,4 +8,4 @@
 - [Client fetch throws on non-2xx](client-fetch-throws-on-non-2xx.md) — customFetch throws ApiError on any non-2xx, so in-body error `reason` (e.g. rate_limited on 429) is unreachable as query.data; branch on ApiError.status.
 - [Clerk duplicate verification emails](clerk-duplicate-verification-emails.md) — inline `Route component={() => ...}` remounts Clerk's <SignIn>/<SignUp>, re-sending a 2nd code; use stable named route components.
 - [api-client-react vs api-zod date typing](api-client-react-date-typing.md) — client model types use `string` for date-time, api-zod uses `Date`; send ISO strings in mutation bodies, import frontend types from api-client-react.
-- [Delete-my-data scope](delete-my-data-scope.md) — "delete my game data" deletes hosted games but only UNLINKS joined participations (don't scrub other users' host gameState); bust stats cache after.
+- [Delete-my-data scope](delete-my-data-scope.md) — per-game: full-delete when no other real (signed-in) player remains, else anonymize caller to "🕴️ Mr. X" everywhere + null their slot; never drop shot entries; bust stats cache after.

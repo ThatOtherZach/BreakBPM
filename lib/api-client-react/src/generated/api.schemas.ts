@@ -594,7 +594,7 @@ export interface GameHistoryResponse {
 export interface DeleteGameDataResult {
   deleted: boolean;
   deletedGames: number;
-  deletedParticipations: number;
+  anonymizedGames: number;
 }
 
 export type PublicProfileResultReason = typeof PublicProfileResultReason[keyof typeof PublicProfileResultReason];
