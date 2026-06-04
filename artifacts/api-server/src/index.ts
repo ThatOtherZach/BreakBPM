@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { sweepAllStaleGames } from "./lib/forfeit";
+import { seedAdminDiscountCodes } from "./lib/seedDiscountCodes";
 
 const rawPort = process.env["PORT"];
 
@@ -23,6 +24,12 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Ensure admin-issued discount codes exist in this environment. Idempotent
+  // (ON CONFLICT DO NOTHING) so it's a safe no-op once seeded.
+  seedAdminDiscountCodes().catch((err) => {
+    logger.error({ err }, "Admin discount code seed failed");
+  });
 
   // Periodic global sweep — closes stale in-progress games even when no
   // user touches an endpoint. Belt-and-suspenders alongside the lazy
