@@ -101,7 +101,7 @@ function buildCheckoutMessage(p: {
  */
 function connectorLabel(c: { id: string; type: string; name: string }): string {
   if (c.type === "injected" || c.id === "injected") return "Browser Wallet";
-  if (c.id.toLowerCase().includes("coinbase")) return "Coinbase Wallet";
+  if (c.id.toLowerCase().includes("coinbase")) return "Mobile Wallet";
   return c.name;
 }
 
@@ -526,9 +526,20 @@ export default function CryptoCheckout({
                 <QRCodeSVG value={paymentUri(manualOrder)} size={168} />
               </div>
               <span style={{ fontSize: 11, color: "#888" }}>
-                Scan with a mobile wallet on {networkLabel}
+                On a computer? Scan with a mobile wallet on {networkLabel}
               </span>
             </div>
+
+            {/* On a phone, an EIP-681 ethereum: link lets the OS hand off to any
+               installed wallet app (the recipient + exact amount pre-filled) —
+               this is the no-WalletConnect way to "pick your wallet app". */}
+            <a
+              className="btn btn-big crypto-walletlink"
+              href={paymentUri(manualOrder)}
+              rel="noreferrer"
+            >
+              Open in wallet app
+            </a>
 
             {manualOrder.asset === "eth" ? (
               <div className="crypto-field">

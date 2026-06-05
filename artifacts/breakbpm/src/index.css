@@ -2103,6 +2103,11 @@ html, #root {
   align-self: flex-start;
 }
 .crypto-linkbtn:disabled { cursor: default; opacity: .6; }
+/* Anchor styled as a button — opens the EIP-681 deep link in a phone wallet. */
+.crypto-walletlink {
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none; text-align: center;
+}
 .crypto-divider {
   display: flex; align-items: center; gap: 8px;
   font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #888;
