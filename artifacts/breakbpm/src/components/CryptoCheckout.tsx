@@ -9,6 +9,7 @@ import {
   useSignMessage,
 } from "wagmi";
 import { erc20Abi } from "viem";
+import { QRCodeSVG } from "qrcode.react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useCreateCryptoQuote,
@@ -25,10 +26,12 @@ const LS_KEY = "breakbpm.crypto.pending";
 /** ~3 min of polling at 4s intervals — comfortably covers Base confirmations. */
 const MAX_POLLS = 45;
 const POLL_MS = 4000;
+const HASH_RE = /^0x[0-9a-fA-F]{64}$/;
 
 type Phase =
   | "idle"
   | "quoting"
+  | "awaiting_payment"
   | "awaiting_signature"
   | "confirming"
   | "done"
@@ -36,7 +39,14 @@ type Phase =
 
 interface Pending {
   orderId: string;
-  txHash: string;
+  /** Omitted for manual USDC orders, which the server auto-detects by amount. */
+  txHash?: string;
+  /**
+   * The full manual quote, persisted so a refresh can restore the pay screen
+   * (amount + address + QR, and the ETH tx-hash input). Without this, an ETH
+   * payer who refreshes before pasting their hash would have no way to finish.
+   */
+  order?: CryptoOrderQuote;
 }
 
 function shortAddr(a: string): string {
@@ -95,6 +105,23 @@ function connectorLabel(c: { id: string; type: string; name: string }): string {
   return c.name;
 }
 
+/**
+ * EIP-681 payment URI — what the QR encodes. A mobile wallet scanning it
+ * pre-fills the recipient + exact amount. USDC is an ERC-20 `transfer` call;
+ * ETH is a native value send.
+ */
+function paymentUri(order: CryptoOrderQuote): string {
+  if (order.asset === "eth") {
+    return `ethereum:${order.receivingAddress}@${order.chainId}?value=${order.expectedAmount}`;
+  }
+  return `ethereum:${order.tokenAddress}@${order.chainId}/transfer?address=${order.receivingAddress}&uint256=${order.expectedAmount}`;
+}
+
+/** Numeric part of "1.23 USDC" — what we copy so it pastes cleanly as an amount. */
+function amountValue(displayAmount: string): string {
+  return displayAmount.split(" ")[0] ?? displayAmount;
+}
+
 export default function CryptoCheckout({
   catalog,
   hasAccess,
@@ -129,6 +156,11 @@ export default function CryptoCheckout({
   const [progress, setProgress] = useState("");
   const [err, setErr] = useState("");
   const [pending, setPending] = useState<Pending | null>(null);
+  // The active manual (pay-to-address / QR) order awaiting payment.
+  const [manualOrder, setManualOrder] = useState<CryptoOrderQuote | null>(null);
+  const [txHashInput, setTxHashInput] = useState("");
+  const [showHashInput, setShowHashInput] = useState(false);
+  const [copied, setCopied] = useState("");
 
   // Surface a resumable payment saved before a refresh / accidental close so a
   // user who already paid can finish verifying without re-sending funds.
@@ -151,16 +183,28 @@ export default function CryptoCheckout({
     }
   }
 
+  async function copy(text: string, field: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(field);
+      setTimeout(() => setCopied(""), 1500);
+    } catch {
+      /* clipboard blocked — the value is still visible to copy by hand */
+    }
+  }
+
   const networkLabel =
     catalog.network === "base-sepolia" ? "Base Sepolia (testnet)" : "Base";
   const wrongChain = isConnected && chainId !== catalog.chainId;
 
-  async function pollVerify(orderId: string, txHash: string) {
+  async function pollVerify(orderId: string, txHash?: string) {
     setPhase("confirming");
     for (let i = 0; i < MAX_POLLS; i++) {
       let v;
       try {
-        v = await verify.mutateAsync({ data: { orderId, txHash } });
+        v = await verify.mutateAsync({
+          data: txHash ? { orderId, txHash } : { orderId },
+        });
       } catch (e) {
         setErr(errText(e));
         setPhase("error");
@@ -186,7 +230,8 @@ export default function CryptoCheckout({
         setPhase("error");
         return;
       }
-      // pending / not_found → keep waiting
+      // pending / not_found → keep waiting (manual USDC auto-detect lands here
+      // until the transfer is seen on-chain).
       setProgress(v.message);
       await delay(POLL_MS);
     }
@@ -196,7 +241,62 @@ export default function CryptoCheckout({
     setPhase("error");
   }
 
-  async function handlePay() {
+  // Primary flow: quote a manual order (no wallet binding) and show the
+  // pay-to-address details + QR. Works on mobile and desktop, any wallet.
+  async function handleGetDetails() {
+    setErr("");
+    setProgress("");
+    setManualOrder(null);
+    setTxHashInput("");
+    setShowHashInput(false);
+    setPhase("quoting");
+    try {
+      const q = await createQuote.mutateAsync({ data: { passKind, asset } });
+      if (!q.success || !q.order) {
+        setErr(q.message);
+        setPhase("error");
+        return;
+      }
+      setManualOrder(q.order);
+      savePending({ orderId: q.order.id, order: q.order });
+      setPhase("awaiting_payment");
+    } catch (e) {
+      setErr(errText(e));
+      setPhase("error");
+    }
+  }
+
+  // The user says they've paid → confirm. USDC with no pasted hash uses
+  // server-side auto-detect (by the unique amount); ETH (and the paste-a-hash
+  // fallback) confirm a specific transaction hash.
+  async function handleConfirmManual(order: CryptoOrderQuote) {
+    setErr("");
+    const h = txHashInput.trim();
+    if (order.asset === "eth" || h) {
+      if (!HASH_RE.test(h)) {
+        setErr("Enter the transaction hash from your wallet.");
+        return;
+      }
+      savePending({ orderId: order.id, txHash: h.toLowerCase(), order });
+      await pollVerify(order.id, h.toLowerCase());
+    } else {
+      await pollVerify(order.id);
+    }
+  }
+
+  function resetCheckout() {
+    setManualOrder(null);
+    setPhase("idle");
+    setProgress("");
+    setErr("");
+    setTxHashInput("");
+    setShowHashInput(false);
+    savePending(null);
+  }
+
+  // Optional shortcut: a connected browser-extension wallet signs ownership,
+  // then sends the payment in one click (no QR needed).
+  async function handlePayConnected() {
     setErr("");
     setProgress("");
     setPhase("quoting");
@@ -264,13 +364,35 @@ export default function CryptoCheckout({
   async function handleResume() {
     if (!pending) return;
     setErr("");
-    await pollVerify(pending.orderId, pending.txHash);
+    // Already have a settling tx (connected pay, or an ETH hash was pasted) —
+    // resume polling straight away.
+    if (pending.txHash) {
+      await pollVerify(pending.orderId, pending.txHash);
+      return;
+    }
+    // A manual order still awaiting payment: restore the full pay screen so a
+    // USDC payer can re-trigger auto-detect and an ETH payer can paste their
+    // hash (which a blind poll-without-hash couldn't accept).
+    if (pending.order) {
+      setManualOrder(pending.order);
+      setProgress("");
+      setTxHashInput("");
+      setShowHashInput(false);
+      setPhase("awaiting_payment");
+      return;
+    }
+    // Legacy saved shape (no persisted order): best-effort USDC auto-detect.
+    await pollVerify(pending.orderId);
   }
 
   const busy =
     phase === "quoting" ||
     phase === "awaiting_signature" ||
     phase === "confirming";
+  const locked = busy || phase === "awaiting_payment";
+  const showingOrder =
+    !!manualOrder &&
+    (phase === "awaiting_payment" || phase === "confirming");
 
   const selectedPass = passes.find((p) => p.passKind === passKind);
   const selectedPrice = selectedPass ? formatPrice(selectedPass.priceCents) : "";
@@ -296,8 +418,8 @@ export default function CryptoCheckout({
       >
         <p style={{ fontSize: 12, color: "#333", margin: 0 }}>
           Buy a one-time pass with <strong>USDC</strong> or <strong>ETH</strong>{" "}
-          on <strong>{networkLabel}</strong>. Self-custody — pay from your own
-          wallet, no account needed. All sales final.
+          on <strong>{networkLabel}</strong>. Pay from any wallet — scan the QR on
+          mobile or copy the amount &amp; address on desktop. All sales final.
         </p>
 
         {hasAccess && (
@@ -306,52 +428,7 @@ export default function CryptoCheckout({
           </div>
         )}
 
-        {/* Wallet connection */}
-        {!isConnected ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {connectors.map((c) => (
-              <button
-                key={c.uid}
-                className="btn btn-primary"
-                disabled={connecting}
-                onClick={() => connect({ connector: c })}
-              >
-                Connect {connectorLabel(c)}
-              </button>
-            ))}
-            {connectors.length === 0 && (
-              <p style={{ fontSize: 11, color: "#888", margin: 0 }}>
-                No wallet detected. Install a browser wallet to continue.
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="crypto-wallet">
-            <span className="crypto-wallet__addr">
-              <span className="crypto-wallet__dot" aria-hidden="true" />
-              Connected · <strong>{address ? shortAddr(address) : ""}</strong>
-            </span>
-            <button
-              className="btn"
-              style={{ fontSize: 11, minHeight: 28 }}
-              onClick={() => disconnect()}
-              disabled={busy}
-            >
-              Disconnect
-            </button>
-          </div>
-        )}
-
-        {wrongChain && (
-          <div style={{ fontSize: 11, color: "#a00" }}>
-            Wrong network selected — we'll switch you to {networkLabel} when you
-            pay.
-          </div>
-        )}
-
-        {/* Pass picker — selectable cards. Always visible so anyone can browse
-            the passes and prices (matching the card flow); sending payment
-            still requires a connected wallet. */}
+        {/* Pass picker — selectable cards. Locked once an order is quoted. */}
         <div className="crypto-field">
           <span className="crypto-field-label">Choose a pass</span>
           <div className="crypto-options">
@@ -362,7 +439,7 @@ export default function CryptoCheckout({
                   key={p.passKind}
                   type="button"
                   className={`crypto-option${active ? " crypto-option--active" : ""}`}
-                  disabled={busy}
+                  disabled={locked}
                   aria-pressed={active}
                   onClick={() => setPassKind(p.passKind)}
                 >
@@ -392,7 +469,7 @@ export default function CryptoCheckout({
                 type="button"
                 className={asset === a ? "btn btn-primary" : "btn"}
                 style={{ textTransform: "uppercase" }}
-                disabled={busy}
+                disabled={locked}
                 aria-pressed={asset === a}
                 onClick={() => setAsset(a)}
               >
@@ -402,30 +479,205 @@ export default function CryptoCheckout({
           </div>
         </div>
 
-        {isConnected ? (
-          <button
-            className="btn btn-primary btn-big"
-            disabled={busy}
-            onClick={handlePay}
-          >
-            {phase === "quoting"
-              ? "Getting a quote…"
-              : phase === "awaiting_signature"
-                ? "Confirm in wallet…"
-                : phase === "confirming"
-                  ? "Confirming on-chain…"
-                  : isLuckyBreakSelected
-                    ? `Roll the Rack — ${selectedPrice} with ${asset.toUpperCase()}`
-                    : `Pay ${selectedPrice} with ${asset.toUpperCase()}`}
-          </button>
-        ) : (
-          <p style={{ fontSize: 11, color: "#888", margin: 0 }}>
-            Connect a wallet above to pay with {asset.toUpperCase()}.
-          </p>
-        )}
+        {showingOrder && manualOrder ? (
+          /* ---- Manual order: pay-to-address details + QR ---- */
+          <div className="crypto-pay">
+            <p style={{ fontSize: 12, color: "#333", margin: 0 }}>
+              Send <strong>exactly</strong> this amount to the address below. The
+              exact amount is how we match your payment — sending a different
+              amount won't confirm.
+            </p>
+
+            <div className="crypto-pay__amount">
+              <span className="crypto-pay__label">Send exactly</span>
+              <span className="crypto-pay__value">{manualOrder.displayAmount}</span>
+              <button
+                type="button"
+                className="btn"
+                style={{ fontSize: 11, minHeight: 28 }}
+                onClick={() =>
+                  copy(amountValue(manualOrder.displayAmount), "amount")
+                }
+              >
+                {copied === "amount" ? "Copied!" : "Copy amount"}
+              </button>
+            </div>
+
+            <div className="crypto-pay__amount">
+              <span className="crypto-pay__label">To address</span>
+              <span
+                className="crypto-pay__value"
+                style={{ wordBreak: "break-all", fontSize: 13 }}
+              >
+                {manualOrder.receivingAddress}
+              </span>
+              <button
+                type="button"
+                className="btn"
+                style={{ fontSize: 11, minHeight: 28 }}
+                onClick={() => copy(manualOrder.receivingAddress, "addr")}
+              >
+                {copied === "addr" ? "Copied!" : "Copy address"}
+              </button>
+            </div>
+
+            <div className="crypto-pay__qr">
+              <div style={{ background: "#fff", padding: 10, borderRadius: 6 }}>
+                <QRCodeSVG value={paymentUri(manualOrder)} size={168} />
+              </div>
+              <span style={{ fontSize: 11, color: "#888" }}>
+                Scan with a mobile wallet on {networkLabel}
+              </span>
+            </div>
+
+            {manualOrder.asset === "eth" ? (
+              <div className="crypto-field">
+                <span className="crypto-field-label">
+                  After sending, paste your transaction hash
+                </span>
+                <input
+                  className="crypto-input"
+                  placeholder="0x…"
+                  value={txHashInput}
+                  disabled={busy}
+                  onChange={(e) => setTxHashInput(e.target.value)}
+                />
+                <button
+                  className="btn btn-primary btn-big"
+                  disabled={busy}
+                  onClick={() => handleConfirmManual(manualOrder)}
+                >
+                  {phase === "confirming" ? "Confirming…" : "Confirm payment"}
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  className="btn btn-primary btn-big"
+                  disabled={busy}
+                  onClick={() => handleConfirmManual(manualOrder)}
+                >
+                  {phase === "confirming"
+                    ? "Checking for your payment…"
+                    : "I've paid — confirm"}
+                </button>
+                {!showHashInput ? (
+                  <button
+                    type="button"
+                    className="crypto-linkbtn"
+                    disabled={busy}
+                    onClick={() => setShowHashInput(true)}
+                  >
+                    Paid from an exchange? Paste the transaction hash
+                  </button>
+                ) : (
+                  <div className="crypto-field">
+                    <span className="crypto-field-label">Transaction hash</span>
+                    <input
+                      className="crypto-input"
+                      placeholder="0x…"
+                      value={txHashInput}
+                      disabled={busy}
+                      onChange={(e) => setTxHashInput(e.target.value)}
+                    />
+                    <button
+                      className="btn"
+                      disabled={busy}
+                      onClick={() => handleConfirmManual(manualOrder)}
+                    >
+                      Confirm with hash
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+
+            <button
+              type="button"
+              className="crypto-linkbtn"
+              disabled={busy}
+              onClick={resetCheckout}
+            >
+              Start over
+            </button>
+          </div>
+        ) : phase !== "done" ? (
+          /* ---- Pre-payment: primary manual button + wallet shortcut ---- */
+          <>
+            <button
+              className="btn btn-primary btn-big"
+              disabled={busy}
+              onClick={handleGetDetails}
+            >
+              {phase === "quoting"
+                ? "Getting a quote…"
+                : isLuckyBreakSelected
+                  ? `Roll the Rack — ${selectedPrice} with ${asset.toUpperCase()}`
+                  : `Pay ${selectedPrice} with ${asset.toUpperCase()}`}
+            </button>
+
+            {/* Secondary shortcut for users with a browser-extension wallet */}
+            <div className="crypto-divider">
+              <span>or use a connected wallet</span>
+            </div>
+
+            {!isConnected ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {connectors.map((c) => (
+                  <button
+                    key={c.uid}
+                    className="btn"
+                    disabled={connecting || busy}
+                    onClick={() => connect({ connector: c })}
+                  >
+                    Connect {connectorLabel(c)}
+                  </button>
+                ))}
+                {connectors.length === 0 && (
+                  <p style={{ fontSize: 11, color: "#888", margin: 0 }}>
+                    No browser wallet detected — use the QR / copy flow above.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div className="crypto-wallet">
+                  <span className="crypto-wallet__addr">
+                    <span className="crypto-wallet__dot" aria-hidden="true" />
+                    Connected ·{" "}
+                    <strong>{address ? shortAddr(address) : ""}</strong>
+                  </span>
+                  <button
+                    className="btn"
+                    style={{ fontSize: 11, minHeight: 28 }}
+                    onClick={() => disconnect()}
+                    disabled={busy}
+                  >
+                    Disconnect
+                  </button>
+                </div>
+                {wrongChain && (
+                  <div style={{ fontSize: 11, color: "#a00" }}>
+                    Wrong network selected — we'll switch you to {networkLabel}{" "}
+                    when you pay.
+                  </div>
+                )}
+                <button
+                  className="btn"
+                  disabled={busy}
+                  onClick={handlePayConnected}
+                >
+                  {phase === "awaiting_signature"
+                    ? "Confirm in wallet…"
+                    : `Pay with wallet (${asset.toUpperCase()})`}
+                </button>
+              </div>
+            )}
+          </>
+        ) : null}
 
         {/* Resume an interrupted payment */}
-        {pending && phase !== "confirming" && phase !== "done" && (
+        {pending && !showingOrder && phase !== "confirming" && phase !== "done" && (
           <button
             className="btn"
             style={{ fontSize: 12 }}

@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { randomInt } from "node:crypto";
 import { and, eq, ne } from "drizzle-orm";
 import { getAddress, formatUnits } from "viem";
 import {
@@ -41,7 +42,21 @@ import {
   ethWeiAmount,
   verifyPayment,
   verifyPayerSignature,
+  findIncomingUsdcTx,
 } from "../lib/cryptoChain";
+
+/**
+ * A tiny random atomic tail added to a MANUAL order's amount so each one is
+ * unique — a single on-chain payment then maps to exactly one order, letting us
+ * claim it by amount (and auto-detect USDC) without binding a payer. Kept
+ * economically negligible:
+ *   - USDC (6dp): 1..9999 base units (< $0.01)
+ *   - ETH (18dp): 1..1e12 wei (< $0.01 at any realistic ETH price)
+ */
+function manualAmountTail(asset: CryptoAsset): bigint {
+  if (asset === "usdc") return BigInt(randomInt(1, 10_000));
+  return BigInt(randomInt(1, 1_000_000_000_000));
+}
 
 const router: IRouter = Router();
 
@@ -107,19 +122,6 @@ router.post("/crypto/quote", async (req, res): Promise<void> => {
     return;
   }
 
-  let payerAddress: `0x${string}`;
-  try {
-    payerAddress = getAddress(parsed.data.payerAddress);
-  } catch {
-    res.json(
-      CreateCryptoQuoteResponse.parse({
-        success: false,
-        message: "That doesn't look like a valid wallet address.",
-      }),
-    );
-    return;
-  }
-
   const plan = CRYPTO_PASS_PLANS.find((p) => p.passKind === parsed.data.passKind);
   if (!plan) {
     res.json(
@@ -131,26 +133,56 @@ router.post("/crypto/quote", async (req, res): Promise<void> => {
     return;
   }
 
-  // Prove the caller controls payerAddress before we bind a quote to it. Without
-  // this, anyone could quote a victim's address and race to claim the victim's
-  // public on-chain payment (fixed receiving address + USDC amounts).
-  const sigOk = await verifyPayerSignature({
-    payerAddress,
-    passKind: plan.passKind,
-    asset: parsed.data.asset,
-    issuedAt: parsed.data.issuedAt,
-    signature: parsed.data.signature,
-  });
-  if (!sigOk) {
-    res.json(
-      CreateCryptoQuoteResponse.parse({
-        success: false,
-        message:
-          "Couldn't verify wallet ownership — reconnect your wallet and try again.",
-      }),
-    );
-    return;
+  // Two order shapes. If a payerAddress is supplied, this is the connect-wallet
+  // shortcut: we must prove the caller controls that address (else anyone could
+  // quote a victim's address and race to claim their public on-chain payment),
+  // and the settling tx is later required to come from it. With no payerAddress
+  // it's a MANUAL order — payable from any wallet (mobile or desktop) and
+  // claimed by its unique exact amount instead.
+  let payerAddress: string | null = null;
+  if (parsed.data.payerAddress !== undefined) {
+    let addr: `0x${string}`;
+    try {
+      addr = getAddress(parsed.data.payerAddress);
+    } catch {
+      res.json(
+        CreateCryptoQuoteResponse.parse({
+          success: false,
+          message: "That doesn't look like a valid wallet address.",
+        }),
+      );
+      return;
+    }
+    if (parsed.data.signature === undefined || parsed.data.issuedAt === undefined) {
+      res.json(
+        CreateCryptoQuoteResponse.parse({
+          success: false,
+          message:
+            "Couldn't verify wallet ownership — reconnect your wallet and try again.",
+        }),
+      );
+      return;
+    }
+    const sigOk = await verifyPayerSignature({
+      payerAddress: addr,
+      passKind: plan.passKind,
+      asset: parsed.data.asset,
+      issuedAt: parsed.data.issuedAt,
+      signature: parsed.data.signature,
+    });
+    if (!sigOk) {
+      res.json(
+        CreateCryptoQuoteResponse.parse({
+          success: false,
+          message:
+            "Couldn't verify wallet ownership — reconnect your wallet and try again.",
+        }),
+      );
+      return;
+    }
+    payerAddress = addr.toLowerCase();
   }
+  const manual = payerAddress === null;
 
   const cfg = getNetworkConfig();
   const receivingAddress = getReceivingAddress();
@@ -165,7 +197,7 @@ router.post("/crypto/quote", async (req, res): Promise<void> => {
   }
 
   const asset = parsed.data.asset as CryptoAsset;
-  let expectedAmount: bigint;
+  let baseAmount: bigint;
   let decimals: number;
   let tokenAddress: string | null;
   let ethUsdRaw: string | null = null;
@@ -174,13 +206,13 @@ router.post("/crypto/quote", async (req, res): Promise<void> => {
   try {
     if (asset === "usdc") {
       decimals = cfg.usdcDecimals;
-      expectedAmount = usdcAtomicAmount(plan.priceCents, decimals);
+      baseAmount = usdcAtomicAmount(plan.priceCents, decimals);
       tokenAddress = cfg.usdcAddress;
       symbol = "USDC";
     } else {
       const eth = await readEthUsd();
       decimals = 18;
-      expectedAmount = ethWeiAmount(plan.priceCents, eth);
+      baseAmount = ethWeiAmount(plan.priceCents, eth);
       tokenAddress = null;
       ethUsdRaw = eth.raw.toString();
       symbol = "ETH";
@@ -196,25 +228,56 @@ router.post("/crypto/quote", async (req, res): Promise<void> => {
     return;
   }
 
-  const id = newId();
   const expiresAt = new Date(Date.now() + getQuoteTtlSeconds() * 1000);
 
-  await db.insert(cryptoOrdersTable).values({
-    id,
-    userId: user.id,
-    passKind: plan.passKind,
-    asset,
-    network: cfg.network,
-    chainId: cfg.chainId,
-    receivingAddress,
-    payerAddress: payerAddress.toLowerCase(),
-    tokenAddress,
-    expectedAmount: expectedAmount.toString(),
-    priceCents: plan.priceCents,
-    ethUsdRaw,
-    status: "pending",
-    expiresAt,
-  });
+  // Manual orders get a unique exact amount (base + tiny random tail) so a
+  // single payment maps to exactly one order. Uniqueness is enforced ATOMICALLY
+  // by the partial unique index on (receivingAddress, asset, expectedAmount) for
+  // live manual orders: we INSERT with ON CONFLICT DO NOTHING and retry with a
+  // fresh tail on collision — so concurrent quotes can never share an amount.
+  // Connected orders keep the base amount (they're bound to a payer, so the
+  // amount need not be unique) and never conflict on that index.
+  const id = newId();
+  let expectedAmount = baseAmount;
+  let reserved = false;
+  const attempts = manual ? 8 : 1;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const candidate = manual ? baseAmount + manualAmountTail(asset) : baseAmount;
+    const inserted = await db
+      .insert(cryptoOrdersTable)
+      .values({
+        id,
+        userId: user.id,
+        passKind: plan.passKind,
+        asset,
+        network: cfg.network,
+        chainId: cfg.chainId,
+        receivingAddress,
+        payerAddress,
+        tokenAddress,
+        expectedAmount: candidate.toString(),
+        priceCents: plan.priceCents,
+        ethUsdRaw,
+        status: "pending",
+        expiresAt,
+      })
+      .onConflictDoNothing()
+      .returning({ id: cryptoOrdersTable.id });
+    if (inserted.length > 0) {
+      expectedAmount = candidate;
+      reserved = true;
+      break;
+    }
+  }
+  if (!reserved) {
+    res.json(
+      CreateCryptoQuoteResponse.parse({
+        success: false,
+        message: "Couldn't reserve a payment amount just now — please try again.",
+      }),
+    );
+    return;
+  }
 
   res.json(
     CreateCryptoQuoteResponse.parse({
@@ -222,6 +285,7 @@ router.post("/crypto/quote", async (req, res): Promise<void> => {
       message: "Quote ready.",
       order: {
         id,
+        manual,
         passKind: plan.passKind,
         asset,
         network: cfg.network,
@@ -316,18 +380,6 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
     return;
   }
 
-  const txHash = parsed.data.txHash.trim().toLowerCase();
-  if (!/^0x[0-9a-f]{64}$/.test(txHash)) {
-    res.json(
-      VerifyCryptoPaymentResponse.parse({
-        success: false,
-        status: "failed",
-        message: "That doesn't look like a valid transaction hash.",
-      }),
-    );
-    return;
-  }
-
   // The active chain must still match the one this order was quoted on, or the
   // locked amount/oracle assumptions no longer hold.
   if (order.chainId !== getNetworkConfig().chainId) {
@@ -336,6 +388,59 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
         success: false,
         status: "failed",
         message: "The payment network changed — please start a new quote.",
+      }),
+    );
+    return;
+  }
+
+  // A manual order (no bound payer) is claimed by its unique exact amount, so we
+  // can resolve the settling tx ourselves for USDC by scanning recent transfers
+  // to our address. ETH emits no transfer logs, so a manual ETH order still
+  // needs the user to paste their tx hash.
+  const manual = order.payerAddress === null;
+  let txHash: string;
+  if (parsed.data.txHash !== undefined) {
+    txHash = parsed.data.txHash.trim().toLowerCase();
+    if (!/^0x[0-9a-f]{64}$/.test(txHash)) {
+      res.json(
+        VerifyCryptoPaymentResponse.parse({
+          success: false,
+          status: "failed",
+          message: "That doesn't look like a valid transaction hash.",
+        }),
+      );
+      return;
+    }
+  } else if (manual && order.asset === "usdc" && order.tokenAddress) {
+    const found = await findIncomingUsdcTx({
+      tokenAddress: getAddress(order.tokenAddress),
+      receivingAddress: getAddress(order.receivingAddress),
+      expectedAmount: BigInt(order.expectedAmount),
+      orderAgeSeconds: Math.max(
+        0,
+        Math.floor((Date.now() - order.createdAt.getTime()) / 1000),
+      ),
+    });
+    if (!found) {
+      res.json(
+        VerifyCryptoPaymentResponse.parse({
+          success: false,
+          status: "not_found",
+          message: "We haven't seen your payment yet — give it a moment.",
+        }),
+      );
+      return;
+    }
+    txHash = found;
+  } else {
+    // Manual ETH (or any order awaiting a hash): we can't auto-detect, so ask
+    // for the transaction hash.
+    res.json(
+      VerifyCryptoPaymentResponse.parse({
+        success: false,
+        status: "not_found",
+        message:
+          "Enter your transaction hash once you've sent the payment to confirm it.",
       }),
     );
     return;
@@ -370,7 +475,7 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
     txHash,
     asset: order.asset as CryptoAsset,
     receivingAddress: getAddress(order.receivingAddress),
-    payerAddress: getAddress(order.payerAddress),
+    payerAddress: order.payerAddress ? getAddress(order.payerAddress) : null,
     tokenAddress: order.tokenAddress
       ? getAddress(order.tokenAddress)
       : null,
@@ -460,6 +565,29 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
         status: "expired",
         message:
           "This ETH payment landed after the quote expired — start a new quote.",
+      }),
+    );
+    return;
+  }
+
+  // Manual replay guard (lower time bound). Manual orders are claimed by a unique
+  // exact amount, but an expired order's amount can be recycled — so a transfer
+  // that LANDED BEFORE this order existed must never settle it, regardless of how
+  // the hash arrived (auto-detect OR a pasted hash). The auto-detect scan is
+  // age-bounded for convenience, but the security check lives here so the pasted-
+  // hash path can't bypass it. blockTimestamp === 0 means we couldn't read the
+  // block; fall back to honoring (tx is mined + confirmed — the stronger signal).
+  if (
+    manual &&
+    outcome.blockTimestamp > 0 &&
+    outcome.blockTimestamp * 1000 < order.createdAt.getTime()
+  ) {
+    res.json(
+      VerifyCryptoPaymentResponse.parse({
+        success: false,
+        status: "mismatch",
+        message:
+          "That transaction predates this order — please send a new payment for the exact amount shown.",
       }),
     );
     return;

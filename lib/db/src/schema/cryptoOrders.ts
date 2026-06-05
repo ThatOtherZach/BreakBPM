@@ -58,9 +58,11 @@ export const cryptoOrdersTable = pgTable(
     chainId: integer("chain_id").notNull(),
     // Our receiving wallet snapshot at quote time (config can change later).
     receivingAddress: text("receiving_address").notNull(),
-    // The connected wallet expected to pay (lowercased). Verify requires the
-    // on-chain sender to match this.
-    payerAddress: text("payer_address").notNull(),
+    // The connected wallet expected to pay (lowercased), for the optional
+    // connect-wallet shortcut — verify then requires the on-chain sender to
+    // match. NULL for a "manual" order (pay-to-address / QR), which is instead
+    // claimed by its UNIQUE exact `expectedAmount` so any wallet can pay it.
+    payerAddress: text("payer_address"),
     // ERC-20 contract for USDC payments; NULL for native ETH.
     tokenAddress: text("token_address"),
     // Atomic units as a decimal string (wei / 6-dec USDC base units).
@@ -91,6 +93,17 @@ export const cryptoOrdersTable = pgTable(
     uniqueIndex("crypto_orders_tx_hash_uniq")
       .on(t.txHash)
       .where(sql`${t.txHash} IS NOT NULL`),
+    // Manual (payer-less) orders are claimed by their UNIQUE exact amount, so a
+    // single payment maps to exactly one order. Enforce that uniqueness ATOMICALLY
+    // at the DB level (the quote path inserts with ON CONFLICT + retry) — without
+    // this, two concurrent quotes could pick the same amount and one payment
+    // could ambiguously satisfy either order. Scoped to live (pending|paid)
+    // manual orders so expired/failed amounts can be safely recycled.
+    uniqueIndex("crypto_orders_manual_amount_uniq")
+      .on(t.receivingAddress, t.asset, t.expectedAmount)
+      .where(
+        sql`${t.payerAddress} IS NULL AND ${t.status} IN ('pending', 'paid')`,
+      ),
   ],
 );
 

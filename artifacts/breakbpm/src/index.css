@@ -2071,3 +2071,43 @@ html, #root {
   flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%;
   background: #00a000; box-shadow: 0 0 4px #00ff41;
 }
+
+/* Manual (pay-to-address / QR) order details */
+.crypto-pay { display: flex; flex-direction: column; gap: 10px; }
+.crypto-pay__amount {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: 6px 8px; background: var(--white); border: 2px solid;
+  border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
+}
+.crypto-pay__label {
+  flex: 0 0 auto; font-size: 10px; text-transform: uppercase;
+  letter-spacing: .05em; color: #666;
+}
+.crypto-pay__value {
+  font-family: 'VT323', monospace; font-size: 20px; color: var(--navy);
+  line-height: 1.1;
+}
+.crypto-pay__amount .btn { margin-left: auto; }
+.crypto-pay__qr {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 6px 0;
+}
+.crypto-input {
+  font-family: monospace; font-size: 13px; padding: 6px 8px;
+  background: var(--white); border: 2px solid;
+  border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
+}
+.crypto-linkbtn {
+  background: none; border: none; padding: 2px; cursor: pointer;
+  font-size: 11px; color: var(--navy); text-decoration: underline;
+  align-self: flex-start;
+}
+.crypto-linkbtn:disabled { cursor: default; opacity: .6; }
+.crypto-divider {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #888;
+  margin: 2px 0;
+}
+.crypto-divider::before, .crypto-divider::after {
+  content: ""; flex: 1; height: 1px; background: var(--dshadow); opacity: .4;
+}

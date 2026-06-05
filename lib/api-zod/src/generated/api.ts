@@ -282,9 +282,9 @@ export const createCryptoQuoteBodyPayerAddressMax = 42;
 export const CreateCryptoQuoteBody = zod.object({
   "passKind": zod.enum(['day', 'month', 'year', 'lifetime', 'lucky_break']),
   "asset": zod.enum(['usdc', 'eth']),
-  "payerAddress": zod.string().min(createCryptoQuoteBodyPayerAddressMin).max(createCryptoQuoteBodyPayerAddressMax),
-  "signature": zod.string(),
-  "issuedAt": zod.number()
+  "payerAddress": zod.string().min(createCryptoQuoteBodyPayerAddressMin).max(createCryptoQuoteBodyPayerAddressMax).optional(),
+  "signature": zod.string().optional(),
+  "issuedAt": zod.number().optional()
 })
 
 export const CreateCryptoQuoteResponse = zod.object({
@@ -292,6 +292,7 @@ export const CreateCryptoQuoteResponse = zod.object({
   "message": zod.string(),
   "order": zod.object({
   "id": zod.string(),
+  "manual": zod.boolean(),
   "passKind": zod.enum(['day', 'month', 'year', 'lifetime', 'lucky_break']),
   "asset": zod.enum(['usdc', 'eth']),
   "network": zod.enum(['base', 'base-sepolia']),
@@ -321,7 +322,7 @@ export const verifyCryptoPaymentBodyTxHashMax = 66;
 
 export const VerifyCryptoPaymentBody = zod.object({
   "orderId": zod.string().min(1).max(verifyCryptoPaymentBodyOrderIdMax),
-  "txHash": zod.string().min(verifyCryptoPaymentBodyTxHashMin).max(verifyCryptoPaymentBodyTxHashMax)
+  "txHash": zod.string().min(verifyCryptoPaymentBodyTxHashMin).max(verifyCryptoPaymentBodyTxHashMax).optional()
 })
 
 export const VerifyCryptoPaymentResponse = zod.object({

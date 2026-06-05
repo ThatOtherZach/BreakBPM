@@ -11,6 +11,7 @@ import type { CryptoOrderQuotePassKind } from './cryptoOrderQuotePassKind';
 
 export interface CryptoOrderQuote {
   id: string;
+  manual: boolean;
   passKind: CryptoOrderQuotePassKind;
   asset: CryptoOrderQuoteAsset;
   network: CryptoOrderQuoteNetwork;

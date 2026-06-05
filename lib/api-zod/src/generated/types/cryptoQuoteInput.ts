@@ -15,7 +15,7 @@ export interface CryptoQuoteInput {
      * @minLength 42
      * @maxLength 42
      */
-  payerAddress: string;
-  signature: string;
-  issuedAt: number;
+  payerAddress?: string;
+  signature?: string;
+  issuedAt?: number;
 }

@@ -16,5 +16,5 @@ export interface CryptoVerifyInput {
      * @minLength 66
      * @maxLength 66
      */
-  txHash: string;
+  txHash?: string;
 }

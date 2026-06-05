@@ -5,14 +5,19 @@
  * stays a thin orchestrator.
  *
  * Design notes:
- *   - Amounts are ATOMIC bigints (wei for ETH, 6-dec base units for USDC) and
- *     are compared with `>=` so an overpayment still settles (we never refund).
- *   - A payment is bound to the order's `payerAddress`: the on-chain sender must
- *     match, so a leaked public tx hash can't be replayed against someone
- *     else's order. (Caveat: native-ETH sends from smart-contract wallets, where
- *     tx.from is a bundler/entrypoint rather than the smart account, will not
- *     match — those users should pay with USDC, whose ERC-20 `from` is the
- *     account itself.)
+ *   - Amounts are ATOMIC bigints (wei for ETH, 6-dec base units for USDC).
+ *   - There are two order shapes:
+ *       • CONNECTED (payerAddress set): the on-chain sender must match and an
+ *         overpayment (`>=`) still settles. A leaked public tx hash can't be
+ *         replayed against someone else's order. (Caveat: native-ETH sends from
+ *         smart-contract wallets, where tx.from is a bundler/entrypoint rather
+ *         than the smart account, won't match — those users should pay USDC,
+ *         whose ERC-20 `from` is the account itself.)
+ *       • MANUAL (payerAddress null): the pay-to-address / QR flow used on
+ *         mobile + desktop. No sender is bound, so the order is claimed by its
+ *         UNIQUE EXACT amount instead — verify matches `=== expectedAmount` so
+ *         a different (e.g. larger, unrelated) payment can't claim it, and USDC
+ *         payments can be auto-detected from chain logs by that amount.
  *   - Network, RPC URL, and the oracle/USDC addresses are env-overridable so the
  *     same code runs on Base Sepolia for testing and Base mainnet in production.
  */
@@ -228,7 +233,10 @@ export interface VerifyInput {
   txHash: string;
   asset: CryptoAsset;
   receivingAddress: `0x${string}`;
-  payerAddress: `0x${string}`;
+  /** The bound payer for a connected order, or null for a manual (QR /
+   * pay-to-address) order — manual orders match on the unique exact amount and
+   * accept any sender. */
+  payerAddress: `0x${string}` | null;
   tokenAddress: `0x${string}` | null;
   expectedAmount: bigint;
 }
@@ -284,20 +292,34 @@ export async function verifyPayment(input: VerifyInput): Promise<VerifyOutcome> 
     if (!tx.to || !eqAddr(tx.to, input.receivingAddress)) {
       return { status: "mismatch", reason: "Payment was not sent to our address." };
     }
-    if (!eqAddr(tx.from, input.payerAddress)) {
-      return {
-        status: "mismatch",
-        reason: "Payment came from a different wallet than the one you connected.",
-      };
-    }
-    if (tx.value < input.expectedAmount) {
-      return { status: "mismatch", reason: "The amount paid was too low." };
+    if (input.payerAddress) {
+      // Connected order: bound sender, overpayment allowed.
+      if (!eqAddr(tx.from, input.payerAddress)) {
+        return {
+          status: "mismatch",
+          reason: "Payment came from a different wallet than the one you connected.",
+        };
+      }
+      if (tx.value < input.expectedAmount) {
+        return { status: "mismatch", reason: "The amount paid was too low." };
+      }
+    } else {
+      // Manual order: any sender, but the value must EXACTLY equal the unique
+      // amount so an unrelated (e.g. larger) payment can't claim this order.
+      if (tx.value !== input.expectedAmount) {
+        return {
+          status: "mismatch",
+          reason:
+            "That payment's amount doesn't match this order — send the exact amount shown.",
+        };
+      }
     }
     return { status: "granted", blockTimestamp };
   }
 
   // USDC: sum Transfer(value) logs emitted by the token contract that move
-  // funds from the payer to our receiving address.
+  // funds into our receiving address (for a connected order, only those from
+  // the bound payer).
   if (!input.tokenAddress) {
     return { status: "failed", reason: "Missing token address for a USDC order." };
   }
@@ -321,20 +343,100 @@ export async function verifyPayment(input: VerifyInput): Promise<VerifyOutcome> 
       value: bigint;
     };
     if (!eqAddr(to, input.receivingAddress)) continue;
-    if (!eqAddr(from, input.payerAddress)) continue;
-    sawFromPayer = true;
+    if (input.payerAddress) {
+      if (!eqAddr(from, input.payerAddress)) continue;
+      sawFromPayer = true;
+    }
     received += value;
   }
-  if (!sawFromPayer) {
-    return {
-      status: "mismatch",
-      reason: "No USDC transfer to our address from your wallet was found.",
-    };
-  }
-  if (received < input.expectedAmount) {
-    return { status: "mismatch", reason: "The USDC amount paid was too low." };
+  if (input.payerAddress) {
+    if (!sawFromPayer) {
+      return {
+        status: "mismatch",
+        reason: "No USDC transfer to our address from your wallet was found.",
+      };
+    }
+    if (received < input.expectedAmount) {
+      return { status: "mismatch", reason: "The USDC amount paid was too low." };
+    }
+  } else {
+    // Manual order: match on the unique EXACT amount from any sender.
+    if (received === 0n) {
+      return {
+        status: "mismatch",
+        reason: "No USDC transfer to our address was found in that transaction.",
+      };
+    }
+    if (received !== input.expectedAmount) {
+      return {
+        status: "mismatch",
+        reason:
+          "That payment's amount doesn't match this order — send the exact amount shown.",
+      };
+    }
   }
   return { status: "granted", blockTimestamp };
+}
+
+/**
+ * Auto-detect an incoming USDC payment for a MANUAL order: scan recent
+ * Transfer logs to our receiving address and return the hash of the one whose
+ * value EXACTLY matches the order's unique amount (newest first), or null if
+ * none seen yet. The unique amount is what makes this safe — it maps a single
+ * pending order to a single on-chain transfer. Bounded block range so a public
+ * RPC's getLogs limit is never exceeded. Native ETH emits no logs, so it has no
+ * auto-detect (the client falls back to a pasted tx hash for ETH).
+ */
+export async function findIncomingUsdcTx(input: {
+  tokenAddress: `0x${string}`;
+  receivingAddress: `0x${string}`;
+  expectedAmount: bigint;
+  /**
+   * Don't consider transfers older than the order. Even though amounts are
+   * unique among LIVE orders, an expired order's amount can be recycled — so a
+   * stale transfer for that amount must never be auto-matched to a new order.
+   * The caller passes the order's age (seconds) and we bound the scan to it.
+   */
+  orderAgeSeconds?: number;
+}): Promise<string | null> {
+  const client = getPublicClient();
+  let latest: bigint;
+  try {
+    latest = await client.getBlockNumber();
+  } catch {
+    return null;
+  }
+  // ~9000 blocks ≈ 5h on Base's ~2s blocks — well within the order TTL window
+  // and under common getLogs range caps. If the order is younger than that,
+  // tighten the window to the order's lifetime (≈1 block / 2s) plus a small
+  // buffer so we never auto-match a transfer that predates the order.
+  const SCAN_BLOCKS = 9000n;
+  let lookback = SCAN_BLOCKS;
+  if (typeof input.orderAgeSeconds === "number" && input.orderAgeSeconds >= 0) {
+    const ageBlocks = BigInt(Math.ceil(input.orderAgeSeconds / 2) + 30);
+    if (ageBlocks < lookback) lookback = ageBlocks;
+  }
+  const fromBlock = latest > lookback ? latest - lookback : 0n;
+  let logs;
+  try {
+    logs = await client.getLogs({
+      address: input.tokenAddress,
+      event: TRANSFER_EVENT,
+      args: { to: input.receivingAddress },
+      fromBlock,
+      toBlock: latest,
+    });
+  } catch {
+    return null;
+  }
+  for (let i = logs.length - 1; i >= 0; i--) {
+    const value = logs[i].args.value as bigint | undefined;
+    const txHash = logs[i].transactionHash;
+    if (value === input.expectedAmount && txHash) {
+      return txHash.toLowerCase();
+    }
+  }
+  return null;
 }
 
 /** Crypto checkout is open only when the flag is on AND a wallet is configured. */

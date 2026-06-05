@@ -780,12 +780,16 @@ components:
 
     CryptoQuoteInput:
       type: object
-      required: [passKind, asset, payerAddress, signature, issuedAt]
+      required: [passKind, asset]
       properties:
         passKind: { type: string, enum: [day, month, year, lifetime, lucky_break] }
         asset: { type: string, enum: [usdc, eth] }
-        # The connected wallet that will pay. The settling tx must originate
-        # here, so the quote is bound to this address.
+        # Optional connect-wallet shortcut. Supply all three to bind the order
+        # to this payer (the settling tx must originate here). OMIT all three
+        # for a "manual" order — payable from ANY wallet (mobile or desktop) by
+        # sending the returned unique exact amount to the receiving address via
+        # QR / copy. The manual flow is the default; this is just a one-click
+        # path for users with a browser-extension wallet.
         payerAddress: { type: string, minLength: 42, maxLength: 42 }
         # Wallet signature over the canonical checkout message, proving the
         # caller controls payerAddress (stops claiming someone else's payment).
@@ -796,9 +800,14 @@ components:
     CryptoOrderQuote:
       type: object
       required:
-        [id, passKind, asset, network, chainId, receivingAddress, expectedAmount, decimals, displayAmount, priceCents, expiresAt]
+        [id, passKind, asset, network, chainId, receivingAddress, expectedAmount, decimals, displayAmount, priceCents, expiresAt, manual]
       properties:
         id: { type: string }
+        # True when the order is NOT bound to a specific payer: pay by sending
+        # the exact unique `expectedAmount` to `receivingAddress` from any
+        # wallet (the client renders address + amount + QR). False for the
+        # connect-wallet shortcut (a specific payer is bound).
+        manual: { type: boolean }
         passKind: { type: string, enum: [day, month, year, lifetime, lucky_break] }
         asset: { type: string, enum: [usdc, eth] }
         network: { type: string, enum: [base, base-sepolia] }
@@ -825,9 +834,13 @@ components:
 
     CryptoVerifyInput:
       type: object
-      required: [orderId, txHash]
+      required: [orderId]
       properties:
         orderId: { type: string, minLength: 1, maxLength: 64 }
+        # Optional for manual USDC orders — the server auto-detects the incoming
+        # transfer by its unique exact amount, so the client can poll with just
+        # the orderId. Required for ETH and connect-wallet orders, and accepted
+        # for any order as a manual recovery path (paste the tx hash).
         txHash: { type: string, minLength: 66, maxLength: 66 }
 
     CryptoVerifyResult:

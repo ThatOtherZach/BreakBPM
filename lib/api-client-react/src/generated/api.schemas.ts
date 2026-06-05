@@ -200,9 +200,9 @@ export interface CryptoQuoteInput {
      * @minLength 42
      * @maxLength 42
      */
-  payerAddress: string;
-  signature: string;
-  issuedAt: number;
+  payerAddress?: string;
+  signature?: string;
+  issuedAt?: number;
 }
 
 export type CryptoOrderQuotePassKind = typeof CryptoOrderQuotePassKind[keyof typeof CryptoOrderQuotePassKind];
@@ -234,6 +234,7 @@ export const CryptoOrderQuoteNetwork = {
 
 export interface CryptoOrderQuote {
   id: string;
+  manual: boolean;
   passKind: CryptoOrderQuotePassKind;
   asset: CryptoOrderQuoteAsset;
   network: CryptoOrderQuoteNetwork;
@@ -264,7 +265,7 @@ export interface CryptoVerifyInput {
      * @minLength 66
      * @maxLength 66
      */
-  txHash: string;
+  txHash?: string;
 }
 
 export type CryptoVerifyResultStatus = typeof CryptoVerifyResultStatus[keyof typeof CryptoVerifyResultStatus];
