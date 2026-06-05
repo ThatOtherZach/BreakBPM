@@ -95,7 +95,7 @@ A pass unlocks everything:
 | Plan     | Price              | Access                                     |
 |----------|--------------------|--------------------------------------------|
 | Day Pass | $1.99 one-time     | Everything above for 24 hours              |
-| Monthly  | $4.99 / month      | Everything above, cancel anytime           |
+| Monthly  | $4.99 / 30 Days    | Everything above, cancel anytime           |
 | Yearly   | $14.99 / year      | Everything above, cancel anytime           |
 | Lifetime | $24.99 one-time    | Everything above forever + custom screen name |
 
