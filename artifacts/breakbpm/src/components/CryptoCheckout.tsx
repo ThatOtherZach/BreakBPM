@@ -83,6 +83,18 @@ function buildCheckoutMessage(p: {
   ].join("\n");
 }
 
+/**
+ * Friendlier connect-button labels. The generic `injected` connector reports its
+ * name as "Injected", which is confusing — it's really just the user's browser
+ * extension wallet (MetaMask/Coinbase/Rabby/etc.). Coinbase's SDK connector keeps
+ * its own name. Falls back to the connector's own name for anything else.
+ */
+function connectorLabel(c: { id: string; type: string; name: string }): string {
+  if (c.type === "injected" || c.id === "injected") return "Browser Wallet";
+  if (c.id.toLowerCase().includes("coinbase")) return "Coinbase Wallet";
+  return c.name;
+}
+
 export default function CryptoCheckout({
   catalog,
   hasAccess,
@@ -304,7 +316,7 @@ export default function CryptoCheckout({
                 disabled={connecting}
                 onClick={() => connect({ connector: c })}
               >
-                Connect {c.name}
+                Connect {connectorLabel(c)}
               </button>
             ))}
             {connectors.length === 0 && (
