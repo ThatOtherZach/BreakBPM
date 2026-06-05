@@ -1,14 +1,4 @@
 import { useState, useEffect } from "react";
-import {
-  useAccount,
-  useConnect,
-  useDisconnect,
-  useSwitchChain,
-  useSendTransaction,
-  useWriteContract,
-  useSignMessage,
-} from "wagmi";
-import { erc20Abi } from "viem";
 import { QRCodeSVG } from "qrcode.react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -49,10 +39,6 @@ interface Pending {
   order?: CryptoOrderQuote;
 }
 
-function shortAddr(a: string): string {
-  return `${a.slice(0, 6)}…${a.slice(-4)}`;
-}
-
 function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
@@ -73,35 +59,6 @@ function errText(e: unknown): string {
     if (anyErr.message) return anyErr.message;
   }
   return "Something went wrong.";
-}
-
-// MUST match buildCheckoutMessage in api-server/src/lib/cryptoChain.ts exactly —
-// the server recovers the signer from this string to prove wallet ownership.
-function buildCheckoutMessage(p: {
-  payerAddress: string;
-  passKind: string;
-  asset: string;
-  issuedAt: number;
-}): string {
-  return [
-    "BreakBPM crypto checkout",
-    "Authorize this wallet to pay for a pass.",
-    `Wallet: ${p.payerAddress}`,
-    `Pass: ${p.passKind}`,
-    `Asset: ${p.asset}`,
-    `Issued: ${p.issuedAt}`,
-  ].join("\n");
-}
-
-/**
- * Friendlier connect-button labels. The generic `injected` connector reports its
- * name as "Injected", which is confusing — it's really just the user's browser
- * extension wallet (MetaMask/Coinbase/Rabby/etc.). Falls back to the connector's
- * own name for anything else.
- */
-function connectorLabel(c: { id: string; type: string; name: string }): string {
-  if (c.type === "injected" || c.id === "injected") return "Browser Wallet";
-  return c.name;
 }
 
 /**
@@ -136,13 +93,6 @@ export default function CryptoCheckout({
   onLuckyBreakWin?: (result: LuckyBreakResult) => void;
 }) {
   const qc = useQueryClient();
-  const { address, isConnected, chainId } = useAccount();
-  const { connect, connectors, isPending: connecting } = useConnect();
-  const { disconnect } = useDisconnect();
-  const { switchChainAsync } = useSwitchChain();
-  const { sendTransactionAsync } = useSendTransaction();
-  const { writeContractAsync } = useWriteContract();
-  const { signMessageAsync } = useSignMessage();
   const createQuote = useCreateCryptoQuote();
   const verify = useVerifyCryptoPayment();
 
@@ -194,7 +144,6 @@ export default function CryptoCheckout({
 
   const networkLabel =
     catalog.network === "base-sepolia" ? "Base Sepolia (testnet)" : "Base";
-  const wrongChain = isConnected && chainId !== catalog.chainId;
 
   async function pollVerify(orderId: string, txHash?: string) {
     setPhase("confirming");
@@ -291,73 +240,6 @@ export default function CryptoCheckout({
     setTxHashInput("");
     setShowHashInput(false);
     savePending(null);
-  }
-
-  // Optional shortcut: a connected browser-extension wallet signs ownership,
-  // then sends the payment in one click (no QR needed).
-  async function handlePayConnected() {
-    setErr("");
-    setProgress("");
-    setPhase("quoting");
-    try {
-      if (chainId !== catalog.chainId) {
-        await switchChainAsync({ chainId: catalog.chainId });
-      }
-      if (!address) throw new Error("Connect a wallet first.");
-
-      // Prove wallet ownership so the server can bind the quote to this payer
-      // (blocks claiming someone else's public on-chain payment).
-      const issuedAt = Math.floor(Date.now() / 1000);
-      const signature = await signMessageAsync({
-        account: address,
-        message: buildCheckoutMessage({
-          payerAddress: address,
-          passKind,
-          asset,
-          issuedAt,
-        }),
-      });
-
-      const q = await createQuote.mutateAsync({
-        data: { passKind, asset, payerAddress: address, signature, issuedAt },
-      });
-      if (!q.success || !q.order) {
-        setErr(q.message);
-        setPhase("error");
-        return;
-      }
-      const order = q.order;
-
-      setPhase("awaiting_signature");
-      setProgress(`Confirm sending ${order.displayAmount} in your wallet…`);
-
-      let txHash: string;
-      if (order.asset === "eth") {
-        txHash = await sendTransactionAsync({
-          to: order.receivingAddress as `0x${string}`,
-          value: BigInt(order.expectedAmount),
-          chainId: catalog.chainId,
-        });
-      } else {
-        if (!order.tokenAddress) throw new Error("Missing token address.");
-        txHash = await writeContractAsync({
-          address: order.tokenAddress as `0x${string}`,
-          abi: erc20Abi,
-          functionName: "transfer",
-          args: [
-            order.receivingAddress as `0x${string}`,
-            BigInt(order.expectedAmount),
-          ],
-          chainId: catalog.chainId,
-        });
-      }
-
-      savePending({ orderId: order.id, txHash });
-      await pollVerify(order.id, txHash);
-    } catch (e) {
-      setErr(errText(e));
-      setPhase("error");
-    }
   }
 
   async function handleResume() {
@@ -635,64 +517,6 @@ export default function CryptoCheckout({
                   ? `Roll the Rack — ${selectedPrice} with ${asset.toUpperCase()}`
                   : `Pay ${selectedPrice} with ${asset.toUpperCase()}`}
             </button>
-
-            {/* Secondary shortcut for users with a browser-extension wallet */}
-            <div className="crypto-divider">
-              <span>or use a connected wallet</span>
-            </div>
-
-            {!isConnected ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {connectors.map((c) => (
-                  <button
-                    key={c.uid}
-                    className="btn"
-                    disabled={connecting || busy}
-                    onClick={() => connect({ connector: c })}
-                  >
-                    Connect {connectorLabel(c)}
-                  </button>
-                ))}
-                {connectors.length === 0 && (
-                  <p style={{ fontSize: 11, color: "#888", margin: 0 }}>
-                    No browser wallet detected — use the QR / copy flow above.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div className="crypto-wallet">
-                  <span className="crypto-wallet__addr">
-                    <span className="crypto-wallet__dot" aria-hidden="true" />
-                    Connected ·{" "}
-                    <strong>{address ? shortAddr(address) : ""}</strong>
-                  </span>
-                  <button
-                    className="btn"
-                    style={{ fontSize: 11, minHeight: 28 }}
-                    onClick={() => disconnect()}
-                    disabled={busy}
-                  >
-                    Disconnect
-                  </button>
-                </div>
-                {wrongChain && (
-                  <div style={{ fontSize: 11, color: "#a00" }}>
-                    Wrong network selected — we'll switch you to {networkLabel}{" "}
-                    when you pay.
-                  </div>
-                )}
-                <button
-                  className="btn"
-                  disabled={busy}
-                  onClick={handlePayConnected}
-                >
-                  {phase === "awaiting_signature"
-                    ? "Confirm in wallet…"
-                    : `Pay with wallet (${asset.toUpperCase()})`}
-                </button>
-              </div>
-            )}
           </>
         ) : null}
 
