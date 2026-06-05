@@ -14,6 +14,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "./Navbar";
 import LuckyBreakReveal from "./LuckyBreakReveal";
+import CryptoCheckout from "./CryptoCheckout";
 import { signInPath } from "../lib/authClient";
 
 function formatPrice(cents: number): string {
@@ -134,6 +135,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
     subVerify.isPending;
 
   const cardPaymentsEnabled = plans.data?.cardPaymentsEnabled ?? false;
+  const crypto = plans.data?.crypto;
   const luckyBreak = plans.data?.luckyBreak;
   const hasAccess =
     !!me.data.entitlement.activePass || !!me.data.entitlement.activeSubscription;
@@ -349,6 +351,12 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
               </p>
             </div>
           </div>
+        )}
+
+        {/* Self-custody on-chain checkout — behind a server flag, shown only when
+            a receiving wallet is configured. */}
+        {crypto?.enabled && (
+          <CryptoCheckout catalog={crypto} hasAccess={hasAccess} />
         )}
 
         {msg && (

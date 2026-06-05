@@ -24,7 +24,8 @@
     "pino": "^9.14.0",
     "pino-http": "^10.5.0",
     "stripe": "catalog:",
-    "stripe-replit-sync": "^1.0.0"
+    "stripe-replit-sync": "^1.0.0",
+    "viem": "^2.52.2"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",

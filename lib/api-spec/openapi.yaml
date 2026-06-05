@@ -204,6 +204,54 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/CancelSubscriptionResult" }
 
+  /crypto/quote:
+    post:
+      operationId: createCryptoQuote
+      tags: [passes]
+      summary: Quote a one-time pass for on-chain payment (USDC or ETH on Base)
+      description: >
+        Creates a server-side order locking the exact on-chain amount to pay for
+        the chosen one-time pass. For ETH the amount is locked against the
+        current Chainlink ETH/USD price and expires; for USDC it is the fixed
+        USD price. The caller pays the returned amount to the returned address
+        from the connected wallet, then calls /crypto/verify with the tx hash.
+        Rejected with success=false when crypto checkout is closed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CryptoQuoteInput" }
+      responses:
+        "200":
+          description: Quote created (or rejected)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CryptoQuoteResult" }
+
+  /crypto/verify:
+    post:
+      operationId: verifyCryptoPayment
+      tags: [passes]
+      summary: Verify an on-chain payment for a crypto order and grant the pass
+      description: >
+        Reads the submitted transaction on Base and, once it has enough
+        confirmations and matches the order (recipient, payer, asset, amount),
+        grants the pass idempotently (keyed on the tx hash). Doubles as a manual
+        recovery path — a user who paid but lost the redirect can re-submit their
+        tx hash. `status` discriminates granted / pending (keep polling) /
+        not_found / mismatch / failed / expired.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CryptoVerifyInput" }
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CryptoVerifyResult" }
+
   /games/start:
     post:
       operationId: startGame
@@ -690,7 +738,7 @@ components:
 
     PlanCatalog:
       type: object
-      required: [plans, cardPaymentsEnabled, luckyBreak]
+      required: [plans, cardPaymentsEnabled, luckyBreak, crypto]
       properties:
         plans:
           type: array
@@ -700,6 +748,103 @@ components:
         # purchase UI and leads with Lucky Break + redeem codes.
         cardPaymentsEnabled: { type: boolean }
         luckyBreak: { $ref: "#/components/schemas/LuckyBreakInfo" }
+        # Self-custody on-chain crypto checkout terms. `enabled` reflects both
+        # the feature flag AND a configured receiving wallet.
+        crypto: { $ref: "#/components/schemas/CryptoCatalog" }
+
+    CryptoPassPlanInfo:
+      type: object
+      required: [passKind, name, priceCents]
+      properties:
+        passKind: { type: string, enum: [day, month, lifetime] }
+        name: { type: string }
+        priceCents: { type: integer }
+
+    CryptoCatalog:
+      type: object
+      required: [enabled, network, chainId, assets, passes]
+      properties:
+        # True only when crypto payments are flagged on AND a receiving wallet
+        # is configured. The client hides the crypto panel when false.
+        enabled: { type: boolean }
+        network: { type: string, enum: [base, base-sepolia] }
+        chainId: { type: integer }
+        assets:
+          type: array
+          items: { type: string, enum: [usdc, eth] }
+        passes:
+          type: array
+          items: { $ref: "#/components/schemas/CryptoPassPlanInfo" }
+
+    CryptoQuoteInput:
+      type: object
+      required: [passKind, asset, payerAddress, signature, issuedAt]
+      properties:
+        passKind: { type: string, enum: [day, month, lifetime] }
+        asset: { type: string, enum: [usdc, eth] }
+        # The connected wallet that will pay. The settling tx must originate
+        # here, so the quote is bound to this address.
+        payerAddress: { type: string, minLength: 42, maxLength: 42 }
+        # Wallet signature over the canonical checkout message, proving the
+        # caller controls payerAddress (stops claiming someone else's payment).
+        signature: { type: string }
+        # Unix seconds when the message was signed (signature freshness window).
+        issuedAt: { type: integer }
+
+    CryptoOrderQuote:
+      type: object
+      required:
+        [id, passKind, asset, network, chainId, receivingAddress, expectedAmount, decimals, displayAmount, priceCents, expiresAt]
+      properties:
+        id: { type: string }
+        passKind: { type: string, enum: [day, month, lifetime] }
+        asset: { type: string, enum: [usdc, eth] }
+        network: { type: string, enum: [base, base-sepolia] }
+        chainId: { type: integer }
+        receivingAddress: { type: string }
+        # ERC-20 contract for USDC; null for native ETH.
+        tokenAddress: { type: ["string", "null"] }
+        # Atomic units to send, as a decimal string (wei / 6-dec USDC units).
+        expectedAmount: { type: string }
+        # Decimals of the asset (18 for ETH, 6 for USDC) — for client display.
+        decimals: { type: integer }
+        # Human-readable amount + symbol, e.g. "0.00213 ETH" or "1.99 USDC".
+        displayAmount: { type: string }
+        priceCents: { type: integer }
+        expiresAt: { type: string, format: date-time }
+
+    CryptoQuoteResult:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        order: { $ref: "#/components/schemas/CryptoOrderQuote" }
+
+    CryptoVerifyInput:
+      type: object
+      required: [orderId, txHash]
+      properties:
+        orderId: { type: string, minLength: 1, maxLength: 64 }
+        txHash: { type: string, minLength: 66, maxLength: 66 }
+
+    CryptoVerifyResult:
+      type: object
+      required: [success, status, message]
+      properties:
+        success: { type: boolean }
+        # granted = pass issued; pending = mined but awaiting confirmations
+        # (keep polling); not_found = tx not seen yet; mismatch = wrong
+        # recipient/payer/amount; failed = reverted/other; expired = quote
+        # lapsed before payment.
+        status:
+          type: string
+          enum: [granted, pending, not_found, mismatch, failed, expired]
+        message: { type: string }
+        pass: { $ref: "#/components/schemas/PassSummary" }
+        # Present when status=pending.
+        confirmations: { type: integer }
+        needed: { type: integer }
 
     SubscriptionCheckoutInput:
       type: object

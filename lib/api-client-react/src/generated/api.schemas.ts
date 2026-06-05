@@ -126,10 +126,160 @@ export interface LuckyBreakInfo {
   windowDays: number;
 }
 
+export type CryptoCatalogNetwork = typeof CryptoCatalogNetwork[keyof typeof CryptoCatalogNetwork];
+
+
+export const CryptoCatalogNetwork = {
+  base: 'base',
+  'base-sepolia': 'base-sepolia',
+} as const;
+
+export type CryptoCatalogAssetsItem = typeof CryptoCatalogAssetsItem[keyof typeof CryptoCatalogAssetsItem];
+
+
+export const CryptoCatalogAssetsItem = {
+  usdc: 'usdc',
+  eth: 'eth',
+} as const;
+
+export type CryptoPassPlanInfoPassKind = typeof CryptoPassPlanInfoPassKind[keyof typeof CryptoPassPlanInfoPassKind];
+
+
+export const CryptoPassPlanInfoPassKind = {
+  day: 'day',
+  month: 'month',
+  lifetime: 'lifetime',
+} as const;
+
+export interface CryptoPassPlanInfo {
+  passKind: CryptoPassPlanInfoPassKind;
+  name: string;
+  priceCents: number;
+}
+
+export interface CryptoCatalog {
+  enabled: boolean;
+  network: CryptoCatalogNetwork;
+  chainId: number;
+  assets: CryptoCatalogAssetsItem[];
+  passes: CryptoPassPlanInfo[];
+}
+
 export interface PlanCatalog {
   plans: Plan[];
   cardPaymentsEnabled: boolean;
   luckyBreak: LuckyBreakInfo;
+  crypto: CryptoCatalog;
+}
+
+export type CryptoQuoteInputPassKind = typeof CryptoQuoteInputPassKind[keyof typeof CryptoQuoteInputPassKind];
+
+
+export const CryptoQuoteInputPassKind = {
+  day: 'day',
+  month: 'month',
+  lifetime: 'lifetime',
+} as const;
+
+export type CryptoQuoteInputAsset = typeof CryptoQuoteInputAsset[keyof typeof CryptoQuoteInputAsset];
+
+
+export const CryptoQuoteInputAsset = {
+  usdc: 'usdc',
+  eth: 'eth',
+} as const;
+
+export interface CryptoQuoteInput {
+  passKind: CryptoQuoteInputPassKind;
+  asset: CryptoQuoteInputAsset;
+  /**
+     * @minLength 42
+     * @maxLength 42
+     */
+  payerAddress: string;
+  signature: string;
+  issuedAt: number;
+}
+
+export type CryptoOrderQuotePassKind = typeof CryptoOrderQuotePassKind[keyof typeof CryptoOrderQuotePassKind];
+
+
+export const CryptoOrderQuotePassKind = {
+  day: 'day',
+  month: 'month',
+  lifetime: 'lifetime',
+} as const;
+
+export type CryptoOrderQuoteAsset = typeof CryptoOrderQuoteAsset[keyof typeof CryptoOrderQuoteAsset];
+
+
+export const CryptoOrderQuoteAsset = {
+  usdc: 'usdc',
+  eth: 'eth',
+} as const;
+
+export type CryptoOrderQuoteNetwork = typeof CryptoOrderQuoteNetwork[keyof typeof CryptoOrderQuoteNetwork];
+
+
+export const CryptoOrderQuoteNetwork = {
+  base: 'base',
+  'base-sepolia': 'base-sepolia',
+} as const;
+
+export interface CryptoOrderQuote {
+  id: string;
+  passKind: CryptoOrderQuotePassKind;
+  asset: CryptoOrderQuoteAsset;
+  network: CryptoOrderQuoteNetwork;
+  chainId: number;
+  receivingAddress: string;
+  /** @nullable */
+  tokenAddress?: string | null;
+  expectedAmount: string;
+  decimals: number;
+  displayAmount: string;
+  priceCents: number;
+  expiresAt: string;
+}
+
+export interface CryptoQuoteResult {
+  success: boolean;
+  message: string;
+  order?: CryptoOrderQuote;
+}
+
+export interface CryptoVerifyInput {
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
+  orderId: string;
+  /**
+     * @minLength 66
+     * @maxLength 66
+     */
+  txHash: string;
+}
+
+export type CryptoVerifyResultStatus = typeof CryptoVerifyResultStatus[keyof typeof CryptoVerifyResultStatus];
+
+
+export const CryptoVerifyResultStatus = {
+  granted: 'granted',
+  pending: 'pending',
+  not_found: 'not_found',
+  mismatch: 'mismatch',
+  failed: 'failed',
+  expired: 'expired',
+} as const;
+
+export interface CryptoVerifyResult {
+  success: boolean;
+  status: CryptoVerifyResultStatus;
+  message: string;
+  pass?: PassSummary;
+  confirmations?: number;
+  needed?: number;
 }
 
 export type SubscriptionCheckoutInputInterval = typeof SubscriptionCheckoutInputInterval[keyof typeof SubscriptionCheckoutInputInterval];

@@ -30,3 +30,22 @@ export function cardPaymentsEnabled(): boolean {
 /** User-facing copy when a card flow is hit while card payments are off. */
 export const CARD_PAYMENTS_OFF_MESSAGE =
   "Card checkout is currently closed — unlock access with a Lucky Break code instead.";
+
+/**
+ * Self-custody on-chain crypto checkout (one-time passes paid in USDC or
+ * native ETH on Base L2).
+ *
+ * DEFAULT OFF. Even when this flag is on, the flow only actually opens once a
+ * receiving wallet address is configured (BREAKBPM_CRYPTO_RECEIVING_ADDRESS) —
+ * see `cryptoConfigured()` in cryptoChain.ts, which the /crypto routes and the
+ * /passes/plans catalog gate on. While off, /crypto/quote and /crypto/verify
+ * return a friendly { success: false } message and the client hides the crypto
+ * panel. There are NO crypto subscriptions — recurring plans stay card-only.
+ */
+export function cryptoPaymentsEnabled(): boolean {
+  return envFlag("BREAKBPM_CRYPTO_PAYMENTS_ENABLED", false);
+}
+
+/** User-facing copy when a crypto flow is hit while crypto payments are off. */
+export const CRYPTO_PAYMENTS_OFF_MESSAGE =
+  "Crypto checkout isn't open right now. Check back soon or use a code.";

@@ -15,8 +15,13 @@ import {
   cancelSubscriptionTx,
 } from "../lib/subscriptions";
 import { paymentProvider } from "../lib/paymentProvider";
-import { PLANS, LUCKY_BREAK_INFO } from "../lib/pricing";
-import { cardPaymentsEnabled, CARD_PAYMENTS_OFF_MESSAGE } from "../lib/config";
+import { PLANS, LUCKY_BREAK_INFO, CRYPTO_PASS_PLANS } from "../lib/pricing";
+import {
+  cardPaymentsEnabled,
+  CARD_PAYMENTS_OFF_MESSAGE,
+  cryptoPaymentsEnabled,
+} from "../lib/config";
+import { cryptoConfigured, getNetworkConfig } from "../lib/cryptoChain";
 
 const router: IRouter = Router();
 
@@ -28,11 +33,23 @@ async function hasLifetimePass(userId: string): Promise<boolean> {
 /** Public plan catalog — single source of truth for prices/metadata. Also
  * tells the client whether card checkout is open and the Lucky Break terms. */
 router.get("/passes/plans", async (_req, res): Promise<void> => {
+  const cryptoCfg = getNetworkConfig();
   res.json(
     ListPlansResponse.parse({
       plans: PLANS,
       cardPaymentsEnabled: cardPaymentsEnabled(),
       luckyBreak: LUCKY_BREAK_INFO,
+      crypto: {
+        enabled: cryptoConfigured(cryptoPaymentsEnabled()),
+        network: cryptoCfg.network,
+        chainId: cryptoCfg.chainId,
+        assets: ["usdc", "eth"],
+        passes: CRYPTO_PASS_PLANS.map((p) => ({
+          passKind: p.passKind,
+          name: p.name,
+          priceCents: p.priceCents,
+        })),
+      },
     }),
   );
 });

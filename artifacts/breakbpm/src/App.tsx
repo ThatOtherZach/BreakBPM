@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { WagmiProvider } from "wagmi";
+import { wagmiConfig } from "./lib/wagmi";
 
 import SetupScreen from "./components/SetupScreen";
 import GameScreen from "./components/GameScreen";
@@ -362,10 +364,12 @@ export default function App() {
   return (
     <WouterRouter base={basePath}>
       <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <CacheInvalidator />
-          <Routes />
-        </QueryClientProvider>
+        <WagmiProvider config={wagmiConfig}>
+          <QueryClientProvider client={queryClient}>
+            <CacheInvalidator />
+            <Routes />
+          </QueryClientProvider>
+        </WagmiProvider>
       </AuthProvider>
     </WouterRouter>
   );

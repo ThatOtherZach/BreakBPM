@@ -50,6 +50,40 @@ export const SUBSCRIPTION_PRICES_CENTS: Record<SubscriptionInterval, number> = {
   year: 2499,
 };
 
+/**
+ * One-time passes purchasable with crypto (USDC / native ETH on Base). Crypto
+ * sells time-based passes only — there are no crypto subscriptions — so unlike
+ * the card catalog (where "Monthly"/"Yearly" are recurring), here Month is a
+ * one-time 30-day pass. Prices reuse the single PASS_PRICES_CENTS source.
+ */
+export interface CryptoPassPlan {
+  passKind: Extract<PassKind, "day" | "month" | "lifetime">;
+  name: string;
+  priceCents: number;
+  description: string;
+}
+
+export const CRYPTO_PASS_PLANS: CryptoPassPlan[] = [
+  {
+    passKind: "day",
+    name: "Day Pass",
+    priceCents: PASS_PRICES_CENTS.day,
+    description: "Unlocks unlimited play & full history for 24 hours.",
+  },
+  {
+    passKind: "month",
+    name: "Month Pass",
+    priceCents: PASS_PRICES_CENTS.month,
+    description: "Full access for 30 days. One-time — does not auto-renew.",
+  },
+  {
+    passKind: "lifetime",
+    name: "Lifetime",
+    priceCents: PASS_PRICES_CENTS.lifetime,
+    description: "Pay once, play forever. Includes custom screen names.",
+  },
+];
+
 export type PlanId = "day" | "monthly" | "yearly" | "lifetime";
 
 export interface Plan {

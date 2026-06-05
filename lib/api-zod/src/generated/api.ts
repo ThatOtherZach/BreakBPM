@@ -201,6 +201,17 @@ export const ListPlansResponse = zod.object({
   "priceCents": zod.number(),
   "lifetimeProbability": zod.number(),
   "windowDays": zod.number()
+}),
+  "crypto": zod.object({
+  "enabled": zod.boolean(),
+  "network": zod.enum(['base', 'base-sepolia']),
+  "chainId": zod.number(),
+  "assets": zod.array(zod.enum(['usdc', 'eth'])),
+  "passes": zod.array(zod.object({
+  "passKind": zod.enum(['day', 'month', 'lifetime']),
+  "name": zod.string(),
+  "priceCents": zod.number()
+}))
 })
 })
 
@@ -255,6 +266,76 @@ export const CancelSubscriptionResponse = zod.object({
   "currentPeriodEnd": zod.coerce.date(),
   "cancelAtPeriodEnd": zod.boolean()
 }).optional()
+})
+
+
+/**
+ * Creates a server-side order locking the exact on-chain amount to pay for the chosen one-time pass. For ETH the amount is locked against the current Chainlink ETH/USD price and expires; for USDC it is the fixed USD price. The caller pays the returned amount to the returned address from the connected wallet, then calls /crypto/verify with the tx hash. Rejected with success=false when crypto checkout is closed.
+
+ * @summary Quote a one-time pass for on-chain payment (USDC or ETH on Base)
+ */
+export const createCryptoQuoteBodyPayerAddressMin = 42;
+export const createCryptoQuoteBodyPayerAddressMax = 42;
+
+
+
+export const CreateCryptoQuoteBody = zod.object({
+  "passKind": zod.enum(['day', 'month', 'lifetime']),
+  "asset": zod.enum(['usdc', 'eth']),
+  "payerAddress": zod.string().min(createCryptoQuoteBodyPayerAddressMin).max(createCryptoQuoteBodyPayerAddressMax),
+  "signature": zod.string(),
+  "issuedAt": zod.number()
+})
+
+export const CreateCryptoQuoteResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "order": zod.object({
+  "id": zod.string(),
+  "passKind": zod.enum(['day', 'month', 'lifetime']),
+  "asset": zod.enum(['usdc', 'eth']),
+  "network": zod.enum(['base', 'base-sepolia']),
+  "chainId": zod.number(),
+  "receivingAddress": zod.string(),
+  "tokenAddress": zod.string().nullish(),
+  "expectedAmount": zod.string(),
+  "decimals": zod.number(),
+  "displayAmount": zod.string(),
+  "priceCents": zod.number(),
+  "expiresAt": zod.coerce.date()
+}).optional()
+})
+
+
+/**
+ * Reads the submitted transaction on Base and, once it has enough confirmations and matches the order (recipient, payer, asset, amount), grants the pass idempotently (keyed on the tx hash). Doubles as a manual recovery path — a user who paid but lost the redirect can re-submit their tx hash. `status` discriminates granted / pending (keep polling) / not_found / mismatch / failed / expired.
+
+ * @summary Verify an on-chain payment for a crypto order and grant the pass
+ */
+export const verifyCryptoPaymentBodyOrderIdMax = 64;
+
+export const verifyCryptoPaymentBodyTxHashMin = 66;
+export const verifyCryptoPaymentBodyTxHashMax = 66;
+
+
+
+export const VerifyCryptoPaymentBody = zod.object({
+  "orderId": zod.string().min(1).max(verifyCryptoPaymentBodyOrderIdMax),
+  "txHash": zod.string().min(verifyCryptoPaymentBodyTxHashMin).max(verifyCryptoPaymentBodyTxHashMax)
+})
+
+export const VerifyCryptoPaymentResponse = zod.object({
+  "success": zod.boolean(),
+  "status": zod.enum(['granted', 'pending', 'not_found', 'mismatch', 'failed', 'expired']),
+  "message": zod.string(),
+  "pass": zod.object({
+  "kind": zod.enum(['day', 'month', 'year', 'lifetime']),
+  "startedAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date(),
+  "isLifetime": zod.boolean()
+}).optional(),
+  "confirmations": zod.number().optional(),
+  "needed": zod.number().optional()
 })
 
 

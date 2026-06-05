@@ -1,5 +1,6 @@
 export * from "./users";
 export * from "./passes";
+export * from "./cryptoOrders";
 export * from "./subscriptions";
 export * from "./discountCodes";
 export * from "./luckyBreak";

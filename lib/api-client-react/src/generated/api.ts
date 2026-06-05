@@ -28,6 +28,10 @@ import type {
   CancelSubscriptionResult,
   CheckoutResult,
   CreateFindPlayerPostResult,
+  CryptoQuoteInput,
+  CryptoQuoteResult,
+  CryptoVerifyInput,
+  CryptoVerifyResult,
   DeleteGameDataResult,
   DiscountRedeemInput,
   FindPlayerPostInput,
@@ -960,6 +964,152 @@ export const useCancelSubscription = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCancelSubscriptionMutationOptions(options));
+    }
+
+export const getCreateCryptoQuoteUrl = () => {
+
+
+
+
+  return `/api/crypto/quote`
+}
+
+/**
+ * Creates a server-side order locking the exact on-chain amount to pay for the chosen one-time pass. For ETH the amount is locked against the current Chainlink ETH/USD price and expires; for USDC it is the fixed USD price. The caller pays the returned amount to the returned address from the connected wallet, then calls /crypto/verify with the tx hash. Rejected with success=false when crypto checkout is closed.
+
+ * @summary Quote a one-time pass for on-chain payment (USDC or ETH on Base)
+ */
+export const createCryptoQuote = async (cryptoQuoteInput: CryptoQuoteInput, options?: RequestInit): Promise<CryptoQuoteResult> => {
+
+  return customFetch<CryptoQuoteResult>(getCreateCryptoQuoteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cryptoQuoteInput,)
+  }
+);}
+
+
+
+
+export const getCreateCryptoQuoteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCryptoQuote>>, TError,{data: BodyType<CryptoQuoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCryptoQuote>>, TError,{data: BodyType<CryptoQuoteInput>}, TContext> => {
+
+const mutationKey = ['createCryptoQuote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCryptoQuote>>, {data: BodyType<CryptoQuoteInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCryptoQuote(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCryptoQuoteMutationResult = NonNullable<Awaited<ReturnType<typeof createCryptoQuote>>>
+    export type CreateCryptoQuoteMutationBody = BodyType<CryptoQuoteInput>
+    export type CreateCryptoQuoteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Quote a one-time pass for on-chain payment (USDC or ETH on Base)
+ */
+export const useCreateCryptoQuote = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCryptoQuote>>, TError,{data: BodyType<CryptoQuoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCryptoQuote>>,
+        TError,
+        {data: BodyType<CryptoQuoteInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCryptoQuoteMutationOptions(options));
+    }
+
+export const getVerifyCryptoPaymentUrl = () => {
+
+
+
+
+  return `/api/crypto/verify`
+}
+
+/**
+ * Reads the submitted transaction on Base and, once it has enough confirmations and matches the order (recipient, payer, asset, amount), grants the pass idempotently (keyed on the tx hash). Doubles as a manual recovery path — a user who paid but lost the redirect can re-submit their tx hash. `status` discriminates granted / pending (keep polling) / not_found / mismatch / failed / expired.
+
+ * @summary Verify an on-chain payment for a crypto order and grant the pass
+ */
+export const verifyCryptoPayment = async (cryptoVerifyInput: CryptoVerifyInput, options?: RequestInit): Promise<CryptoVerifyResult> => {
+
+  return customFetch<CryptoVerifyResult>(getVerifyCryptoPaymentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cryptoVerifyInput,)
+  }
+);}
+
+
+
+
+export const getVerifyCryptoPaymentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyCryptoPayment>>, TError,{data: BodyType<CryptoVerifyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyCryptoPayment>>, TError,{data: BodyType<CryptoVerifyInput>}, TContext> => {
+
+const mutationKey = ['verifyCryptoPayment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyCryptoPayment>>, {data: BodyType<CryptoVerifyInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyCryptoPayment(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyCryptoPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof verifyCryptoPayment>>>
+    export type VerifyCryptoPaymentMutationBody = BodyType<CryptoVerifyInput>
+    export type VerifyCryptoPaymentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Verify an on-chain payment for a crypto order and grant the pass
+ */
+export const useVerifyCryptoPayment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyCryptoPayment>>, TError,{data: BodyType<CryptoVerifyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyCryptoPayment>>,
+        TError,
+        {data: BodyType<CryptoVerifyInput>},
+        TContext
+      > => {
+      return useMutation(getVerifyCryptoPaymentMutationOptions(options));
     }
 
 export const getStartGameUrl = () => {
