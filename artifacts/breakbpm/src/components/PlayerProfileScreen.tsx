@@ -2,6 +2,7 @@ import { useLocation } from "wouter";
 import Navbar from "./Navbar";
 import GameHistoryCard from "./GameHistoryCard";
 import { useGetPublicProfile, getGetPublicProfileQueryKey } from "@workspace/api-client-react";
+import ballImg from '/eightball_nobg.png';
 
 interface Props {
   name: string;
@@ -81,37 +82,19 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
                 style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 12px" }}
               >
                 {/* 8-ball avatar */}
-                <div
+                <img
+                  src={ballImg}
+                  alt="8-ball"
                   aria-hidden="true"
                   style={{
                     flexShrink: 0,
                     width: 54,
                     height: 54,
-                    borderRadius: "50%",
-                    background: "radial-gradient(circle at 35% 30%, #555 0%, #000 60%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    boxShadow: "0 0 12px rgba(0,255,65,0.25)",
+                    objectFit: "contain",
+                    imageRendering: "pixelated",
+                    filter: "drop-shadow(0 0 12px rgba(0,255,65,0.25))",
                   }}
-                >
-                  <span
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: "50%",
-                      background: "#fff",
-                      color: "#000",
-                      fontFamily: "VT323, monospace",
-                      fontSize: 18,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    8
-                  </span>
-                </div>
+                />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 11, letterSpacing: 2, color: "#00ff41", opacity: 0.8 }}>
                     PLAYER PROFILE
