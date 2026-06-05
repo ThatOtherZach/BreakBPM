@@ -93,7 +93,7 @@ A pass unlocks everything:
 - **Custom screen name** — *Lifetime only:* pick your own display name instead of the auto-assigned one.
 
 | Pass     | Price              | Access                                     |
-|----------|--------------------|--------------------------------------------|
+|----------|:------------------:|--------------------------------------------|
 | Day Pass | $1.99 one-time     | Everything above for 24 hours              |
 | Monthly  | $4.99              | Everything above for 30 days               |
 | Yearly   | $14.99             | Everything above for 30 days               |
