@@ -304,9 +304,7 @@ export default function CryptoCheckout({
         </p>
 
         {hasAccess && (
-          <div style={{ fontFamily: "VT323", fontSize: 18, color: "#006400" }}>
-            You already have active access — no need to buy another pass.
-          </div>
+          <div style={{ fontFamily: "VT323", fontSize: 18, color: "#006400" }}>You already have an active access :)</div>
         )}
 
         {/* Pass picker — selectable cards. Locked once an order is quoted. */}
@@ -362,13 +360,12 @@ export default function CryptoCheckout({
 
         {showingOrder && manualOrder ? (
           /* ---- Manual order: pay-to-address details + QR ---- */
-          <div className="crypto-pay">
+          (<div className="crypto-pay">
             <p style={{ fontSize: 12, color: "#333", margin: 0 }}>
               Send <strong>exactly</strong> this amount to the address below. The
               exact amount is how we match your payment — sending a different
               amount won't confirm.
             </p>
-
             <div className="crypto-pay__amount">
               <span className="crypto-pay__label">Send exactly</span>
               <span className="crypto-pay__value">{manualOrder.displayAmount}</span>
@@ -383,7 +380,6 @@ export default function CryptoCheckout({
                 {copied === "amount" ? "Copied!" : "Copy amount"}
               </button>
             </div>
-
             <div className="crypto-pay__amount">
               <span className="crypto-pay__label">To address</span>
               <span
@@ -401,7 +397,6 @@ export default function CryptoCheckout({
                 {copied === "addr" ? "Copied!" : "Copy address"}
               </button>
             </div>
-
             <div className="crypto-pay__qr">
               <div style={{ background: "#fff", padding: 10, borderRadius: 6 }}>
                 <QRCodeSVG value={paymentUri(manualOrder)} size={168} />
@@ -410,7 +405,6 @@ export default function CryptoCheckout({
                 On a computer? Scan with a mobile wallet on {networkLabel}
               </span>
             </div>
-
             {/* On a phone, an EIP-681 ethereum: link lets the OS hand off to any
                installed wallet app (the recipient + exact amount pre-filled) —
                this is the no-WalletConnect way to "pick your wallet app".
@@ -431,7 +425,6 @@ export default function CryptoCheckout({
               Coinbase Wallet, Rabby…). May not work on desktop; use the QR or
               copy flow there.
             </span>
-
             {manualOrder.asset === "eth" ? (
               <div className="crypto-field">
                 <span className="crypto-field-label">
@@ -493,7 +486,6 @@ export default function CryptoCheckout({
                 )}
               </>
             )}
-
             <button
               type="button"
               className="crypto-linkbtn"
@@ -502,10 +494,10 @@ export default function CryptoCheckout({
             >
               Start over
             </button>
-          </div>
+          </div>)
         ) : phase !== "done" ? (
           /* ---- Pre-payment: primary manual button + wallet shortcut ---- */
-          <>
+          (<>
             <button
               className="btn btn-primary btn-big"
               disabled={busy}
@@ -517,7 +509,7 @@ export default function CryptoCheckout({
                   ? `Roll the Rack — ${selectedPrice} with ${asset.toUpperCase()}`
                   : `Pay ${selectedPrice} with ${asset.toUpperCase()}`}
             </button>
-          </>
+          </>)
         ) : null}
 
         {/* Resume an interrupted payment */}
