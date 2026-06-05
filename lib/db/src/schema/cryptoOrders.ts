@@ -48,7 +48,10 @@ export const cryptoOrdersTable = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),
-    // The pass kind this order grants on payment: "day" | "month" | "lifetime".
+    // What this order grants on payment. Either a fixed one-time pass kind
+    // ("day" | "month" | "year" | "lifetime") OR the "lucky_break" sentinel,
+    // which runs the seeded Lucky Break draw on confirmation and grants the
+    // won tier (Monthly floor, fixed-odds Lifetime) instead of a fixed pass.
     passKind: text("pass_kind").notNull(),
     asset: text("asset").notNull(), // "usdc" | "eth"
     network: text("network").notNull(), // "base" | "base-sepolia"

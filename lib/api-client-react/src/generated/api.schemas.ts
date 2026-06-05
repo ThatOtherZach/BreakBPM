@@ -150,6 +150,7 @@ export const CryptoPassPlanInfoPassKind = {
   month: 'month',
   year: 'year',
   lifetime: 'lifetime',
+  lucky_break: 'lucky_break',
 } as const;
 
 export interface CryptoPassPlanInfo {
@@ -181,6 +182,7 @@ export const CryptoQuoteInputPassKind = {
   month: 'month',
   year: 'year',
   lifetime: 'lifetime',
+  lucky_break: 'lucky_break',
 } as const;
 
 export type CryptoQuoteInputAsset = typeof CryptoQuoteInputAsset[keyof typeof CryptoQuoteInputAsset];
@@ -211,6 +213,7 @@ export const CryptoOrderQuotePassKind = {
   month: 'month',
   year: 'year',
   lifetime: 'lifetime',
+  lucky_break: 'lucky_break',
 } as const;
 
 export type CryptoOrderQuoteAsset = typeof CryptoOrderQuoteAsset[keyof typeof CryptoOrderQuoteAsset];
@@ -276,6 +279,22 @@ export const CryptoVerifyResultStatus = {
   expired: 'expired',
 } as const;
 
+export type LuckyBreakResultOutcome = typeof LuckyBreakResultOutcome[keyof typeof LuckyBreakResultOutcome];
+
+
+export const LuckyBreakResultOutcome = {
+  month: 'month',
+  lifetime: 'lifetime',
+} as const;
+
+export interface LuckyBreakResult {
+  outcome: LuckyBreakResultOutcome;
+  lifetimeProbability: number;
+  windowDays: number;
+  seedHash?: string;
+  seededShotCount?: number;
+}
+
 export interface CryptoVerifyResult {
   success: boolean;
   status: CryptoVerifyResultStatus;
@@ -283,6 +302,7 @@ export interface CryptoVerifyResult {
   pass?: PassSummary;
   confirmations?: number;
   needed?: number;
+  luckyBreak?: LuckyBreakResult;
 }
 
 export type SubscriptionCheckoutInputInterval = typeof SubscriptionCheckoutInputInterval[keyof typeof SubscriptionCheckoutInputInterval];
@@ -331,22 +351,6 @@ export interface DiscountRedeemInput {
      * @maxLength 64
      */
   code: string;
-}
-
-export type LuckyBreakResultOutcome = typeof LuckyBreakResultOutcome[keyof typeof LuckyBreakResultOutcome];
-
-
-export const LuckyBreakResultOutcome = {
-  month: 'month',
-  lifetime: 'lifetime',
-} as const;
-
-export interface LuckyBreakResult {
-  outcome: LuckyBreakResultOutcome;
-  lifetimeProbability: number;
-  windowDays: number;
-  seedHash?: string;
-  seededShotCount?: number;
 }
 
 export interface RedeemResult {

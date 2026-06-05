@@ -16,6 +16,8 @@ import {
   getGetMeQueryKey,
   type CryptoCatalog,
   type CryptoOrderQuote,
+  type LuckyBreakInfo,
+  type LuckyBreakResult,
 } from "@workspace/api-client-react";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -84,9 +86,16 @@ function buildCheckoutMessage(p: {
 export default function CryptoCheckout({
   catalog,
   hasAccess,
+  luckyBreak,
+  onLuckyBreakWin,
 }: {
   catalog: CryptoCatalog;
   hasAccess: boolean;
+  /** Disclosed Lucky Break odds, used to describe the on-chain Lucky Break item. */
+  luckyBreak?: LuckyBreakInfo;
+  /** Fired when a Lucky Break crypto payment is granted, so the parent can play
+   * the "rolling the rack" reveal landing on the won tier. */
+  onLuckyBreakWin?: (result: LuckyBreakResult) => void;
 }) {
   const qc = useQueryClient();
   const { address, isConnected, chainId } = useAccount();
@@ -150,6 +159,9 @@ export default function CryptoCheckout({
         setProgress(v.message);
         setPhase("done");
         qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+        // A Lucky Break purchase lands on a won tier — hand the roll up so the
+        // parent can play the reveal overlay.
+        if (v.luckyBreak && onLuckyBreakWin) onLuckyBreakWin(v.luckyBreak);
         return;
       }
       if (
@@ -250,6 +262,14 @@ export default function CryptoCheckout({
 
   const selectedPass = passes.find((p) => p.passKind === passKind);
   const selectedPrice = selectedPass ? formatPrice(selectedPass.priceCents) : "";
+  const isLuckyBreakSelected = passKind === "lucky_break";
+  const oddsPct = luckyBreak
+    ? Math.round(luckyBreak.lifetimeProbability * 100)
+    : 20;
+  const blurbFor = (kind: string): string =>
+    kind === "lucky_break"
+      ? `Guaranteed Monthly · ${oddsPct}% shot at Lifetime`
+      : (PASS_BLURB[kind] ?? "One-time pass");
 
   return (
     <div className="panel">
@@ -338,7 +358,7 @@ export default function CryptoCheckout({
                   <span className="crypto-option__text">
                     <span className="crypto-option__name">{p.name}</span>
                     <span className="crypto-option__sub">
-                      {PASS_BLURB[p.passKind] ?? "One-time pass"}
+                      {blurbFor(p.passKind)}
                     </span>
                   </span>
                   <span className="crypto-option__price">
@@ -382,7 +402,9 @@ export default function CryptoCheckout({
                 ? "Confirm in wallet…"
                 : phase === "confirming"
                   ? "Confirming on-chain…"
-                  : `Pay ${selectedPrice} with ${asset.toUpperCase()}`}
+                  : isLuckyBreakSelected
+                    ? `Roll the Rack — ${selectedPrice} with ${asset.toUpperCase()}`
+                    : `Pay ${selectedPrice} with ${asset.toUpperCase()}`}
           </button>
         ) : (
           <p style={{ fontSize: 11, color: "#888", margin: 0 }}>

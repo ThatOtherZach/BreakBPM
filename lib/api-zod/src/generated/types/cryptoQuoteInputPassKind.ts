@@ -14,4 +14,5 @@ export const CryptoQuoteInputPassKind = {
   month: 'month',
   year: 'year',
   lifetime: 'lifetime',
+  lucky_break: 'lucky_break',
 } as const;

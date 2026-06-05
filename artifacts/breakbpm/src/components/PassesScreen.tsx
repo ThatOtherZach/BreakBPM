@@ -356,7 +356,15 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
         {/* Self-custody on-chain checkout — behind a server flag, shown only when
             a receiving wallet is configured. */}
         {crypto?.enabled && (
-          <CryptoCheckout catalog={crypto} hasAccess={hasAccess} />
+          <CryptoCheckout
+            catalog={crypto}
+            hasAccess={hasAccess}
+            luckyBreak={luckyBreak}
+            onLuckyBreakWin={(result) => {
+              setRevealResult(result);
+              setRevealState("result");
+            }}
+          />
         )}
 
         {msg && (

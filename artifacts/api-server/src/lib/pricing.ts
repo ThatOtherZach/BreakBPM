@@ -1,5 +1,6 @@
 import type { PassKind, SubscriptionInterval } from "@workspace/db";
 import {
+  LUCKY_BREAK_CODE_KIND,
   LUCKY_BREAK_LIFETIME_PROBABILITY,
   LUCKY_BREAK_WINDOW_DAYS,
 } from "./luckyBreak";
@@ -57,8 +58,18 @@ export const SUBSCRIPTION_PRICES_CENTS: Record<SubscriptionInterval, number> = {
  * Year are one-time, fixed-duration passes that do not auto-renew. Prices reuse
  * the single PASS_PRICES_CENTS source.
  */
+/**
+ * What a crypto checkout can buy. Either a fixed one-time pass kind, or the
+ * "lucky_break" sentinel — paid at the Lucky Break price, it runs the seeded
+ * draw on confirmation and grants the won tier (Monthly floor, fixed-odds
+ * Lifetime) instead of a predetermined pass.
+ */
+export type CryptoItemKind =
+  | Extract<PassKind, "day" | "month" | "year" | "lifetime">
+  | typeof LUCKY_BREAK_CODE_KIND;
+
 export interface CryptoPassPlan {
-  passKind: Extract<PassKind, "day" | "month" | "year" | "lifetime">;
+  passKind: CryptoItemKind;
   name: string;
   priceCents: number;
   description: string;
@@ -88,6 +99,13 @@ export const CRYPTO_PASS_PLANS: CryptoPassPlan[] = [
     name: "Lifetime",
     priceCents: PASS_PRICES_CENTS.lifetime,
     description: "Pay once, play forever. Includes custom screen names.",
+  },
+  {
+    passKind: LUCKY_BREAK_CODE_KIND,
+    name: "Lucky Break",
+    priceCents: LUCKY_BREAK_PRICE_CENTS,
+    description:
+      "Roll the rack — a guaranteed Monthly pass with a fixed chance at Lifetime.",
   },
 ];
 

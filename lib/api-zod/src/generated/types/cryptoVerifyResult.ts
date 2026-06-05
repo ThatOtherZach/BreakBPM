@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CryptoVerifyResultStatus } from './cryptoVerifyResultStatus';
+import type { LuckyBreakResult } from './luckyBreakResult';
 import type { PassSummary } from './passSummary';
 
 export interface CryptoVerifyResult {
@@ -15,4 +16,5 @@ export interface CryptoVerifyResult {
   pass?: PassSummary;
   confirmations?: number;
   needed?: number;
+  luckyBreak?: LuckyBreakResult;
 }

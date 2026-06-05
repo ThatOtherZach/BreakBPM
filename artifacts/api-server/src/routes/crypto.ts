@@ -5,6 +5,7 @@ import {
   db,
   cryptoOrdersTable,
   passesTable,
+  luckyBreakRollsTable,
   type PassKind,
   type CryptoAsset,
 } from "@workspace/db";
@@ -15,10 +16,17 @@ import {
   VerifyCryptoPaymentResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser } from "../lib/auth";
-import { grantPurchasedPassTx } from "../lib/passes";
+import { issuePassTx, grantPurchasedPassTx } from "../lib/passes";
+import { stopRenewingActiveSubscriptionsTx } from "../lib/subscriptions";
 import { stopRenewingStripeSubscriptions } from "../lib/paymentProvider";
 import { newId } from "../lib/ids";
 import { CRYPTO_PASS_PLANS } from "../lib/pricing";
+import {
+  LUCKY_BREAK_CODE_KIND,
+  LUCKY_BREAK_WINDOW_DAYS,
+  computeLuckyBreakRoll,
+} from "../lib/luckyBreak";
+import { gatherShotEntropy } from "../lib/luckyBreakEntropy";
 import {
   cryptoPaymentsEnabled,
   CRYPTO_PAYMENTS_OFF_MESSAGE,
@@ -52,6 +60,23 @@ function passToSummary(pass: {
         ? LIFETIME_EXPIRES_AT
         : new Date(pass.startedAt.getTime() + pass.durationSeconds * 1000),
     isLifetime: pass.kind === "lifetime",
+  };
+}
+
+/** Shape a persisted Lucky Break roll row into the API reveal payload. */
+function toLuckyBreakReveal(row: {
+  outcome: string;
+  lifetimeProbabilityBps: number;
+  windowDays: number;
+  seedHash: string;
+  entropyShotCount: number;
+}) {
+  return {
+    outcome: row.outcome as "month" | "lifetime",
+    lifetimeProbability: row.lifetimeProbabilityBps / 10_000,
+    windowDays: row.windowDays,
+    seedHash: row.seedHash,
+    seededShotCount: row.entropyShotCount,
   };
 }
 
@@ -261,19 +286,31 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
     return;
   }
 
-  // Already settled — return the granted pass idempotently.
+  // Already settled — return the granted pass idempotently. For a Lucky Break
+  // order, also replay the won roll so a resumed/re-verified checkout can still
+  // show the reveal (the draw is never re-run; we read the persisted result).
   if (order.status === "paid" && order.passId) {
     const [pass] = await db
       .select()
       .from(passesTable)
       .where(eq(passesTable.id, order.passId))
       .limit(1);
+    let luckyBreak;
+    if (order.passKind === LUCKY_BREAK_CODE_KIND) {
+      const [row] = await db
+        .select()
+        .from(luckyBreakRollsTable)
+        .where(eq(luckyBreakRollsTable.cryptoOrderId, order.id))
+        .limit(1);
+      if (row) luckyBreak = toLuckyBreakReveal(row);
+    }
     res.json(
       VerifyCryptoPaymentResponse.parse({
         success: true,
         status: "granted",
         message: "This payment was already confirmed — you're all set.",
         pass: pass ? passToSummary(pass) : undefined,
+        luckyBreak,
       }),
     );
     return;
@@ -428,13 +465,110 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
     return;
   }
 
-  // Granted — issue the pass and settle the order in one transaction. The grant
-  // is idempotent on the tx hash; Lifetime's local subscription mutual-exclusion
-  // is applied inside grantPurchasedPassTx.
+  // Granted. For a Lucky Break order we must SEED + run the draw before the
+  // grant; gather entropy outside the write tx (it can be a large read) exactly
+  // like the redeem path does. The draw itself happens inside the tx, once.
+  const isLuckyBreak = order.passKind === LUCKY_BREAK_CODE_KIND;
+  const entropy = isLuckyBreak ? await gatherShotEntropy() : [];
+
+  // Issue the pass and settle the order in one transaction. The grant is
+  // idempotent on the tx hash; for a Lucky Break order the roll is seeded by the
+  // stable order id, so a re-verify reproduces the same outcome and we never
+  // re-roll a settled payment. Lifetime's local subscription mutual-exclusion is
+  // applied in-tx on both paths.
   let pass;
   let deduped;
+  let luckyBreak: ReturnType<typeof toLuckyBreakReveal> | undefined;
   try {
-    ({ pass, deduped } = await db.transaction(async (tx) => {
+    ({ pass, deduped, luckyBreak } = await db.transaction(async (tx) => {
+      if (isLuckyBreak) {
+        // Idempotency guard: if a prior verify already granted this payment,
+        // return the existing pass + persisted roll WITHOUT drawing again.
+        const [existing] = await tx
+          .select()
+          .from(passesTable)
+          .where(
+            and(
+              eq(passesTable.sourceRef, txHash),
+              eq(passesTable.source, "purchase"),
+            ),
+          )
+          .limit(1);
+        if (existing) {
+          const [existingRoll] = await tx
+            .select()
+            .from(luckyBreakRollsTable)
+            .where(eq(luckyBreakRollsTable.cryptoOrderId, order.id))
+            .limit(1);
+          await tx
+            .update(cryptoOrdersTable)
+            .set({
+              status: "paid",
+              txHash,
+              passId: existing.id,
+              updatedAt: new Date(),
+            })
+            .where(eq(cryptoOrdersTable.id, order.id));
+          return {
+            pass: existing,
+            deduped: true,
+            luckyBreak: existingRoll
+              ? toLuckyBreakReveal(existingRoll)
+              : undefined,
+          };
+        }
+
+        const rollResult = computeLuckyBreakRoll(entropy, order.id);
+        const issued = await issuePassTx(tx, {
+          userId: user.id,
+          kind: rollResult.outcome,
+          source: "purchase",
+          sourceRef: txHash,
+          // Record what was actually paid (the Lucky Break price), not the
+          // catalog price of the won tier.
+          priceCents: order.priceCents,
+        });
+        if (issued.kind === "lifetime") {
+          await stopRenewingActiveSubscriptionsTx(tx, user.id);
+        }
+        await tx.insert(luckyBreakRollsTable).values({
+          id: newId(),
+          userId: user.id,
+          code: null,
+          redemptionId: null,
+          cryptoOrderId: order.id,
+          seedHash: rollResult.seedHash,
+          rolledValuePpm: Math.round(rollResult.value * 1_000_000),
+          lifetimeProbabilityBps: Math.round(
+            rollResult.lifetimeProbability * 10_000,
+          ),
+          outcome: rollResult.outcome,
+          entropyShotCount: rollResult.entropyShotCount,
+          windowDays: LUCKY_BREAK_WINDOW_DAYS,
+          passId: issued.id,
+        });
+        await tx
+          .update(cryptoOrdersTable)
+          .set({
+            status: "paid",
+            txHash,
+            passId: issued.id,
+            updatedAt: new Date(),
+          })
+          .where(eq(cryptoOrdersTable.id, order.id));
+        return {
+          pass: issued,
+          deduped: false,
+          luckyBreak: {
+            outcome: rollResult.outcome,
+            lifetimeProbability: rollResult.lifetimeProbability,
+            windowDays: LUCKY_BREAK_WINDOW_DAYS,
+            seedHash: rollResult.seedHash,
+            seededShotCount: rollResult.entropyShotCount,
+          },
+        };
+      }
+
       const grant = await grantPurchasedPassTx(tx, {
         userId: user.id,
         kind: order.passKind as PassKind,
@@ -449,12 +583,48 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
           updatedAt: new Date(),
         })
         .where(eq(cryptoOrdersTable.id, order.id));
-      return grant;
+      return { pass: grant.pass, deduped: grant.deduped, luckyBreak: undefined };
     }));
   } catch (e) {
-    // Unique-index race: the same tx settled another order between our check
-    // and the write.
+    // Unique-index race on the tx hash. Two outcomes are possible:
+    //   (a) a *concurrent verify of THIS order* won the race — the order is now
+    //       settled, our tx rolled back cleanly (no double roll/grant), and we
+    //       should return the already-granted result (replaying the roll for a
+    //       Lucky Break order so the reveal still plays); or
+    //   (b) the same tx hash was used to settle a *different* order — a genuine
+    //       mismatch.
     if ((e as { code?: string }).code === "23505") {
+      const [settled] = await db
+        .select()
+        .from(cryptoOrdersTable)
+        .where(eq(cryptoOrdersTable.id, order.id))
+        .limit(1);
+      if (settled?.status === "paid" && settled.passId) {
+        const [grantedPass] = await db
+          .select()
+          .from(passesTable)
+          .where(eq(passesTable.id, settled.passId))
+          .limit(1);
+        let luckyBreakReplay;
+        if (settled.passKind === LUCKY_BREAK_CODE_KIND) {
+          const [row] = await db
+            .select()
+            .from(luckyBreakRollsTable)
+            .where(eq(luckyBreakRollsTable.cryptoOrderId, order.id))
+            .limit(1);
+          if (row) luckyBreakReplay = toLuckyBreakReveal(row);
+        }
+        res.json(
+          VerifyCryptoPaymentResponse.parse({
+            success: true,
+            status: "granted",
+            message: "This payment was already confirmed — you're all set.",
+            pass: grantedPass ? passToSummary(grantedPass) : undefined,
+            luckyBreak: luckyBreakReplay,
+          }),
+        );
+        return;
+      }
       res.json(
         VerifyCryptoPaymentResponse.parse({
           success: false,
@@ -476,15 +646,29 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
   }
 
   req.log.info(
-    { userId: user.id, kind: pass.kind, orderId: order.id, deduped },
-    "Crypto payment verified",
+    {
+      userId: user.id,
+      kind: pass.kind,
+      orderId: order.id,
+      deduped,
+      luckyBreak: luckyBreak
+        ? { outcome: luckyBreak.outcome, seedHash: luckyBreak.seedHash }
+        : undefined,
+    },
+    luckyBreak ? "Crypto Lucky Break verified" : "Crypto payment verified",
   );
+  const message = luckyBreak
+    ? luckyBreak.outcome === "lifetime"
+      ? "JACKPOT — you rolled a Lifetime pass!"
+      : "Nice break — you rolled a Monthly pass!"
+    : `Paid — your ${pass.kind} pass is active!`;
   res.json(
     VerifyCryptoPaymentResponse.parse({
       success: true,
       status: "granted",
-      message: `Paid — your ${pass.kind} pass is active!`,
+      message,
       pass: passToSummary(pass),
+      luckyBreak,
     }),
   );
 });

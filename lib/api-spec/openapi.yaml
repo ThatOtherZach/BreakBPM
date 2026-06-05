@@ -756,7 +756,9 @@ components:
       type: object
       required: [passKind, name, priceCents]
       properties:
-        passKind: { type: string, enum: [day, month, year, lifetime] }
+        # "lucky_break" runs the seeded draw on payment instead of granting a
+        # fixed pass (guaranteed Monthly floor, fixed-odds Lifetime).
+        passKind: { type: string, enum: [day, month, year, lifetime, lucky_break] }
         name: { type: string }
         priceCents: { type: integer }
 
@@ -780,7 +782,7 @@ components:
       type: object
       required: [passKind, asset, payerAddress, signature, issuedAt]
       properties:
-        passKind: { type: string, enum: [day, month, year, lifetime] }
+        passKind: { type: string, enum: [day, month, year, lifetime, lucky_break] }
         asset: { type: string, enum: [usdc, eth] }
         # The connected wallet that will pay. The settling tx must originate
         # here, so the quote is bound to this address.
@@ -797,7 +799,7 @@ components:
         [id, passKind, asset, network, chainId, receivingAddress, expectedAmount, decimals, displayAmount, priceCents, expiresAt]
       properties:
         id: { type: string }
-        passKind: { type: string, enum: [day, month, year, lifetime] }
+        passKind: { type: string, enum: [day, month, year, lifetime, lucky_break] }
         asset: { type: string, enum: [usdc, eth] }
         network: { type: string, enum: [base, base-sepolia] }
         chainId: { type: integer }
@@ -845,6 +847,9 @@ components:
         # Present when status=pending.
         confirmations: { type: integer }
         needed: { type: integer }
+        # Present only when the order was a Lucky Break purchase — the won roll,
+        # so the client can play the "rolling the rack" reveal on the result.
+        luckyBreak: { $ref: "#/components/schemas/LuckyBreakResult" }
 
     SubscriptionCheckoutInput:
       type: object

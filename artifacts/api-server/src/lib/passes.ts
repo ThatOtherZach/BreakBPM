@@ -15,6 +15,13 @@ export interface IssuePassInput {
   kind: PassKind;
   source: "purchase" | "discount_code" | "grant";
   sourceRef?: string;
+  /**
+   * Override the recorded price. Defaults to the catalog price for `kind` on a
+   * purchase (0 otherwise). Used by Lucky Break crypto purchases, where the
+   * amount actually paid (the Lucky Break price) differs from the catalog price
+   * of the won tier.
+   */
+  priceCents?: number;
 }
 
 /**
@@ -29,7 +36,8 @@ export async function issuePassTx(
   const startedAt = new Date();
   const durationSeconds = PASS_DURATIONS_SECONDS[input.kind];
   const priceCents =
-    input.source === "purchase" ? PASS_PRICES_CENTS[input.kind] : 0;
+    input.priceCents ??
+    (input.source === "purchase" ? PASS_PRICES_CENTS[input.kind] : 0);
 
   const [row] = await tx
     .insert(passesTable)
