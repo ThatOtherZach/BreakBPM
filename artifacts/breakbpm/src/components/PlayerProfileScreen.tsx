@@ -88,8 +88,8 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
                   aria-hidden="true"
                   style={{
                     flexShrink: 0,
-                    width: 54,
-                    height: 54,
+                    width: 81,
+                    height: 81,
                     objectFit: "contain",
                     imageRendering: "pixelated",
                     filter: "drop-shadow(0 0 12px rgba(0,255,65,0.25))",
