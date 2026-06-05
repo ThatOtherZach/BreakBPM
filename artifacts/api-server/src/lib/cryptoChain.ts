@@ -111,6 +111,15 @@ export function getQuoteTtlSeconds(): number {
   return Number.isFinite(n) && n >= 60 ? Math.floor(n) : 900;
 }
 
+/** Max age of the Chainlink ETH/USD answer we'll accept before refusing to lock
+ * a price (default 1h). Base's ETH/USD feed updates far more often than this, so
+ * the guard only trips if the feed itself stalls — never on a healthy feed. */
+export function getOracleMaxStalenessSeconds(): number {
+  const raw = process.env.BREAKBPM_CRYPTO_ORACLE_MAX_STALENESS_SECONDS?.trim();
+  const n = raw ? Number(raw) : NaN;
+  return Number.isFinite(n) && n >= 60 ? Math.floor(n) : 3600;
+}
+
 function makeClient(rpcUrl: string, network: CryptoNetwork) {
   return createPublicClient({
     chain: network === "base-sepolia" ? baseSepolia : base,
@@ -159,7 +168,30 @@ export async function readEthUsd(): Promise<EthUsdQuote> {
     }),
   ]);
   const answer = round[1] as bigint;
+  const updatedAt = round[3] as bigint;
   if (answer <= 0n) throw new Error("ETH/USD oracle returned a non-positive price");
+  if (updatedAt <= 0n) throw new Error("ETH/USD oracle returned no update timestamp");
+
+  // Refuse to lock a price the feed hasn't refreshed recently. updatedAt is the
+  // on-chain timestamp of the latest round; if it's older than our tolerance the
+  // feed has stalled and we'd be billing on a stale ETH price.
+  const nowSec = BigInt(Math.floor(Date.now() / 1000));
+  const maxStale = BigInt(getOracleMaxStalenessSeconds());
+  if (nowSec > updatedAt && nowSec - updatedAt > maxStale) {
+    throw new Error(
+      `ETH/USD oracle price is stale (last updated ${nowSec - updatedAt}s ago)`,
+    );
+  }
+  // A timestamp far in the future means something's wrong with the feed (or our
+  // clock); allow a small skew but reject anything implausible rather than
+  // trusting it past the staleness check above.
+  const MAX_FUTURE_SKEW = 300n;
+  if (updatedAt > nowSec + MAX_FUTURE_SKEW) {
+    throw new Error(
+      `ETH/USD oracle timestamp is implausibly in the future (${updatedAt - nowSec}s ahead)`,
+    );
+  }
+
   return { raw: answer, decimals: Number(decimals) };
 }
 
