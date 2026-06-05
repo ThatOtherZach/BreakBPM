@@ -95,7 +95,7 @@ A pass unlocks everything:
 | Pass     | Price              | Access                                     |
 |----------|--------------------|--------------------------------------------|
 | Day Pass | $1.99 one-time     | Everything above for 24 hours              |
-| Monthly  | $4.99 / 30 Days    | Everything above for 30 days               |
+| Monthly  | $4.99              | Everything above for 30 days               |
 | Yearly   | $14.99             | Everything above for 30 days               |
 | Lifetime | $24.99 one-time    | Everything above forever + custom screen name |
 
