@@ -275,32 +275,24 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
               anyone shoots.
             </p>
 
-            {hasAccess ? (
-              <div style={{ fontFamily: "VT323", fontSize: 20, color: "#006400" }}>
-                You already have active access — save your roll for later.
-              </div>
-            ) : (
-              <>
-                <input
-                  className="input"
-                  placeholder="ENTER LUCKY BREAK CODE"
-                  maxLength={64}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  disabled={redeem.isPending || revealState !== "idle"}
-                />
-                <button
-                  className="btn btn-primary btn-big"
-                  disabled={redeem.isPending || revealState !== "idle" || !code.trim()}
-                  onClick={handleRedeem}
-                >
-                  {revealState === "rolling" ? "Rolling…" : "Roll the Rack 🎱"}
-                </button>
-                <p style={{ fontSize: 10, color: "#888", margin: 0 }}>
-                  Have a gifted Day, Year, or Lifetime code? Enter it here too.
-                </p>
-              </>
-            )}
+            <input
+              className="input"
+              placeholder="ENTER LUCKY BREAK CODE"
+              maxLength={64}
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              disabled={redeem.isPending || revealState !== "idle"}
+            />
+            <button
+              className="btn btn-primary btn-big"
+              disabled={redeem.isPending || revealState !== "idle" || !code.trim()}
+              onClick={handleRedeem}
+            >
+              {revealState === "rolling" ? "Rolling…" : "Roll the Rack 🎱"}
+            </button>
+            <p style={{ fontSize: 10, color: "#888", margin: 0 }}>
+              Have a gifted Day, Year, or Lifetime code? Enter it here too.
+            </p>
           </div>
         </div>
 
