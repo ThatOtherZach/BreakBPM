@@ -285,14 +285,8 @@ export default function CryptoCheckout({
     kind === "lucky_break"
       ? (
         <>
-          Guaranteed Monthly pass with a {oddsPct}% chance to get a Lifetime pass.
-          <br />
-          <span style={{ color: "#666" }}>
-            Fair play: the result is locked in by hashing your code with the last
-            30 days of shots across all players — it can't be predicted or
-            gamed. The {oddsPct}% Lifetime chance never changes, no matter how
-            anyone plays.
-          </span>
+          Pay once to get a Monthly pass — with a {oddsPct}% chance it upgrades
+          to a Lifetime pass instead.
         </>
       )
       : (PASS_BLURB[kind] ?? "One-time pass");
