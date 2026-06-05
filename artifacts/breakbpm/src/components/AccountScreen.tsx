@@ -452,10 +452,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
             </span>
           </div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <p style={{ fontSize: 12, color: "#444", margin: 0 }}>
-              Have a Lucky Break, Day, Year, or Lifetime code? Enter it here to
-              unlock your pass.
-            </p>
+            <p style={{ fontSize: 12, color: "#444", margin: 0 }}>Have gift code? Enter it here to unlock.</p>
             <input
               className="input"
               placeholder="ENTER CODE"
@@ -555,7 +552,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
           Sign Out
         </button>
       </div>
-
       {revealState !== "idle" && (
         <LuckyBreakReveal
           phase={revealState === "rolling" ? "rolling" : "result"}
