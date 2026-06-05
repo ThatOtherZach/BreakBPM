@@ -1699,6 +1699,9 @@ html, #root {
   padding: 10px;
 }
 .fpp-map {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
   width: 100%;
   border: 2px inset var(--silver);
   background: #aad3df;
