@@ -46,4 +46,6 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.shared]
-BREAKBPM_CARD_PAYMENTS_ENABLED = "true"
+BREAKBPM_CARD_PAYMENTS_ENABLED = "false"
+BREAKBPM_CRYPTO_PAYMENTS_ENABLED = "true"
+BREAKBPM_CRYPTO_NETWORK = "base-sepolia"
