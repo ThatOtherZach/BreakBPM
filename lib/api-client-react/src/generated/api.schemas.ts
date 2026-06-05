@@ -776,6 +776,10 @@ export interface PublicProfileResult {
   screenName?: string | null;
   /** @nullable */
   memberSince?: string | null;
+  /** @nullable */
+  gamesPlayed?: number | null;
+  /** @nullable */
+  winRate?: number | null;
   games: GameHistoryEntry[];
 }
 

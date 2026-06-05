@@ -15,5 +15,9 @@ export interface PublicProfileResult {
   screenName?: string | null;
   /** @nullable */
   memberSince?: Date | null;
+  /** @nullable */
+  gamesPlayed?: number | null;
+  /** @nullable */
+  winRate?: number | null;
   games: GameHistoryEntry[];
 }

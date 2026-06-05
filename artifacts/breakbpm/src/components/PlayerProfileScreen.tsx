@@ -117,6 +117,24 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
                       ? `Member since ${fmtMemberSince(profile.data.memberSince)}`
                       : "Member"}
                   </div>
+                  {(profile.data.gamesPlayed != null) && (
+                    <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
+                      <div>
+                        <div style={{ fontSize: 11, color: "#aaa", letterSpacing: 1 }}>GAMES</div>
+                        <div style={{ fontFamily: "VT323, monospace", fontSize: 22, color: "#00ff41", lineHeight: 1 }}>
+                          {profile.data.gamesPlayed}
+                        </div>
+                      </div>
+                      {profile.data.winRate != null && (
+                        <div>
+                          <div style={{ fontSize: 11, color: "#aaa", letterSpacing: 1 }}>WIN RATE</div>
+                          <div style={{ fontFamily: "VT323, monospace", fontSize: 22, color: "#00ff41", lineHeight: 1 }}>
+                            {Math.round(profile.data.winRate * 100)}%
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -1368,6 +1368,11 @@ components:
         # Account creation date. Null for legacy users with no recorded
         # createdAt — the header simply omits the "member since" line then.
         memberSince: { type: ["string", "null"], format: date-time }
+        # All-time count of completed non-practice games. Null when not found.
+        gamesPlayed: { type: ["integer", "null"] }
+        # Fraction of non-practice completed games (with a decisive winner)
+        # that the player won, all-time. Null when no qualifying games.
+        winRate: { type: ["number", "null"] }
         # Up to the five most recent completed games, newest-first. Same
         # shape (and rendered with the same cards) as the owner's own
         # account history. Empty when found is false.

@@ -545,6 +545,8 @@ export const GetPublicProfileResponse = zod.object({
   "reason": zod.enum(['not_found', 'rate_limited']).optional(),
   "screenName": zod.string().nullish(),
   "memberSince": zod.coerce.date().nullish(),
+  "gamesPlayed": zod.number().nullish(),
+  "winRate": zod.number().nullish(),
   "games": zod.array(zod.object({
   "id": zod.string(),
   "gameType": zod.string(),

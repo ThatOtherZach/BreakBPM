@@ -1570,6 +1570,52 @@ router.get("/games/profile", async (req, res): Promise<void> => {
     .where(eq(gameParticipantsTable.userId, host.id));
   const ids = participantGameIds.map((r) => r.gameId);
 
+  // All-time stats: gamesPlayed + winRate across all completed non-practice games.
+  let gamesPlayed: number | null = null;
+  let winRate: number | null = null;
+  if (ids.length > 0) {
+    const allEnded = await db
+      .select({
+        id: gamesTable.id,
+        gameType: gamesTable.gameType,
+        winner: gamesTable.winner,
+        outcome: gamesTable.outcome,
+        gameState: gamesTable.gameState,
+      })
+      .from(gamesTable)
+      .where(and(inArray(gamesTable.id, ids), isNotNull(gamesTable.endedAt)));
+
+    const allSlots = allEnded.length > 0
+      ? await db
+          .select({ gameId: gameParticipantsTable.gameId, slotIndex: gameParticipantsTable.slotIndex })
+          .from(gameParticipantsTable)
+          .where(and(
+            inArray(gameParticipantsTable.gameId, allEnded.map((g) => g.id)),
+            eq(gameParticipantsTable.userId, host.id),
+          ))
+      : [];
+    const slotByGame = new Map(allSlots.map((p) => [p.gameId, p.slotIndex]));
+
+    const nonPractice = allEnded.filter((g) => g.gameType !== "practice");
+    gamesPlayed = nonPractice.length;
+
+    const decisive = nonPractice.filter((g) => g.winner);
+    if (decisive.length > 0) {
+      let wins = 0;
+      for (const g of decisive) {
+        const slot = slotByGame.get(g.id) ?? null;
+        const gs = g.gameState as Record<string, unknown> | null;
+        const { outcome } = resolveSubjectResult(
+          g as GameRow,
+          gs,
+          { slot, name: host.screenName },
+        );
+        if (outcome === "won") wins++;
+      }
+      winRate = wins / decisive.length;
+    }
+  }
+
   let games: ReturnType<typeof toHistoryEntry>[] = [];
   if (ids.length > 0) {
     const visible = await db
@@ -1622,6 +1668,8 @@ router.get("/games/profile", async (req, res): Promise<void> => {
       found: true,
       screenName: host.screenName,
       memberSince: host.createdAt ?? null,
+      gamesPlayed,
+      winRate,
       games,
     }),
   );
