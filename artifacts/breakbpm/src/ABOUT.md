@@ -96,7 +96,7 @@ A pass unlocks everything:
 |----------|--------------------|--------------------------------------------|
 | Day Pass | $1.99 one-time     | Everything above for 24 hours              |
 | Monthly  | $4.99 / 30 Days    | Everything above, cancel anytime           |
-| Yearly   | $14.99 / year      | Everything above, cancel anytime           |
+| Yearly   | $14.99 / 30 Days   | Everything above, cancel anytime           |
 | Lifetime | $24.99 one-time    | Everything above forever + custom screen name |
 
 Day Pass and Lifetime are one-time purchases. Monthly and Yearly are recurring (cancel anytime). Buying Lifetime stops any active subscription from renewing.
