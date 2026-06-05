@@ -257,6 +257,18 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 )}
               </div>
             )}
+            {!editing && (
+              <div style={{ fontSize: 11, color: "#444", marginTop: 1 }}>
+                <a
+                  href={`/watch/${encodeURIComponent(account.screenName)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "#000080" }}
+                >
+                  breakbpm.com/watch/{account.screenName}
+                </a>
+              </div>
+            )}
             {!canEditName && !editing && (
               <div style={{ fontSize: 11, color: "#444" }}>
                 <button
