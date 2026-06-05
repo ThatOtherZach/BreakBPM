@@ -89,6 +89,13 @@ export const CRYPTO_PASS_PLANS: CryptoPassPlan[] = [
     description: "Full access for 30 days. One-time — does not auto-renew.",
   },
   {
+    passKind: LUCKY_BREAK_CODE_KIND,
+    name: "Lucky Break",
+    priceCents: LUCKY_BREAK_PRICE_CENTS,
+    description:
+      "Roll the rack — a guaranteed Monthly pass with a fixed chance at Lifetime.",
+  },
+  {
     passKind: "year",
     name: "Year Pass",
     priceCents: PASS_PRICES_CENTS.year,
@@ -99,13 +106,6 @@ export const CRYPTO_PASS_PLANS: CryptoPassPlan[] = [
     name: "Lifetime",
     priceCents: PASS_PRICES_CENTS.lifetime,
     description: "Pay once, play forever. Includes custom screen names.",
-  },
-  {
-    passKind: LUCKY_BREAK_CODE_KIND,
-    name: "Lucky Break",
-    priceCents: LUCKY_BREAK_PRICE_CENTS,
-    description:
-      "Roll the rack — a guaranteed Monthly pass with a fixed chance at Lifetime.",
   },
 ];
 
