@@ -12,5 +12,6 @@ export type CryptoPassPlanInfoPassKind = typeof CryptoPassPlanInfoPassKind[keyof
 export const CryptoPassPlanInfoPassKind = {
   day: 'day',
   month: 'month',
+  year: 'year',
   lifetime: 'lifetime',
 } as const;

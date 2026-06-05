@@ -208,7 +208,7 @@ export const ListPlansResponse = zod.object({
   "chainId": zod.number(),
   "assets": zod.array(zod.enum(['usdc', 'eth'])),
   "passes": zod.array(zod.object({
-  "passKind": zod.enum(['day', 'month', 'lifetime']),
+  "passKind": zod.enum(['day', 'month', 'year', 'lifetime']),
   "name": zod.string(),
   "priceCents": zod.number()
 }))
@@ -280,7 +280,7 @@ export const createCryptoQuoteBodyPayerAddressMax = 42;
 
 
 export const CreateCryptoQuoteBody = zod.object({
-  "passKind": zod.enum(['day', 'month', 'lifetime']),
+  "passKind": zod.enum(['day', 'month', 'year', 'lifetime']),
   "asset": zod.enum(['usdc', 'eth']),
   "payerAddress": zod.string().min(createCryptoQuoteBodyPayerAddressMin).max(createCryptoQuoteBodyPayerAddressMax),
   "signature": zod.string(),
@@ -292,7 +292,7 @@ export const CreateCryptoQuoteResponse = zod.object({
   "message": zod.string(),
   "order": zod.object({
   "id": zod.string(),
-  "passKind": zod.enum(['day', 'month', 'lifetime']),
+  "passKind": zod.enum(['day', 'month', 'year', 'lifetime']),
   "asset": zod.enum(['usdc', 'eth']),
   "network": zod.enum(['base', 'base-sepolia']),
   "chainId": zod.number(),

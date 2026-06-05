@@ -12,5 +12,6 @@ export type CryptoOrderQuotePassKind = typeof CryptoOrderQuotePassKind[keyof typ
 export const CryptoOrderQuotePassKind = {
   day: 'day',
   month: 'month',
+  year: 'year',
   lifetime: 'lifetime',
 } as const;

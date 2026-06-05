@@ -148,6 +148,7 @@ export type CryptoPassPlanInfoPassKind = typeof CryptoPassPlanInfoPassKind[keyof
 export const CryptoPassPlanInfoPassKind = {
   day: 'day',
   month: 'month',
+  year: 'year',
   lifetime: 'lifetime',
 } as const;
 
@@ -178,6 +179,7 @@ export type CryptoQuoteInputPassKind = typeof CryptoQuoteInputPassKind[keyof typ
 export const CryptoQuoteInputPassKind = {
   day: 'day',
   month: 'month',
+  year: 'year',
   lifetime: 'lifetime',
 } as const;
 
@@ -207,6 +209,7 @@ export type CryptoOrderQuotePassKind = typeof CryptoOrderQuotePassKind[keyof typ
 export const CryptoOrderQuotePassKind = {
   day: 'day',
   month: 'month',
+  year: 'year',
   lifetime: 'lifetime',
 } as const;
 

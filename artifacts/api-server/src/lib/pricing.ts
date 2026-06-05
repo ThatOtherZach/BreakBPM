@@ -16,13 +16,13 @@ import {
  *   - Lifetime $49.99 one-time pass (premium anchor = 2 years of Yearly)
  */
 
-/** Prices for one-time passes. `year` is retained only so any legacy Year
- * pass rows still resolve a price; the product issues no new Year passes
- * (the only "Yearly" is now the subscription). */
+/** Prices for one-time passes. The one-time `year` pass is sold via crypto
+ * checkout, priced to match the Yearly subscription; legacy Year pass rows
+ * resolve their own stored price. */
 export const PASS_PRICES_CENTS: Record<PassKind, number> = {
   day: 199,
   month: 499,
-  year: 1299,
+  year: 2499,
   lifetime: 4999,
 };
 
@@ -53,11 +53,12 @@ export const SUBSCRIPTION_PRICES_CENTS: Record<SubscriptionInterval, number> = {
 /**
  * One-time passes purchasable with crypto (USDC / native ETH on Base). Crypto
  * sells time-based passes only — there are no crypto subscriptions — so unlike
- * the card catalog (where "Monthly"/"Yearly" are recurring), here Month is a
- * one-time 30-day pass. Prices reuse the single PASS_PRICES_CENTS source.
+ * the card catalog (where "Monthly"/"Yearly" are recurring), here Month and
+ * Year are one-time, fixed-duration passes that do not auto-renew. Prices reuse
+ * the single PASS_PRICES_CENTS source.
  */
 export interface CryptoPassPlan {
-  passKind: Extract<PassKind, "day" | "month" | "lifetime">;
+  passKind: Extract<PassKind, "day" | "month" | "year" | "lifetime">;
   name: string;
   priceCents: number;
   description: string;
@@ -75,6 +76,12 @@ export const CRYPTO_PASS_PLANS: CryptoPassPlan[] = [
     name: "Month Pass",
     priceCents: PASS_PRICES_CENTS.month,
     description: "Full access for 30 days. One-time — does not auto-renew.",
+  },
+  {
+    passKind: "year",
+    name: "Year Pass",
+    priceCents: PASS_PRICES_CENTS.year,
+    description: "Full access for 365 days. One-time — does not auto-renew.",
   },
   {
     passKind: "lifetime",
