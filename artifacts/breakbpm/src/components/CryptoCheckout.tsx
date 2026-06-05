@@ -288,8 +288,10 @@ export default function CryptoCheckout({
           Guaranteed Monthly pass with a {oddsPct}% chance to get a Lifetime pass.
           <br />
           <span style={{ color: "#666" }}>
-            Fair Play: the draw is seeded by the last 30 days across BreakBPM shots.
-            The odds stay fixed at {oddsPct}%.
+            Fair play: the result is locked in by hashing your code with the last
+            30 days of shots across all players — it can't be predicted or
+            gamed. The {oddsPct}% Lifetime chance never changes, no matter how
+            anyone plays.
           </span>
         </>
       )
