@@ -532,14 +532,24 @@ export default function CryptoCheckout({
 
             {/* On a phone, an EIP-681 ethereum: link lets the OS hand off to any
                installed wallet app (the recipient + exact amount pre-filled) —
-               this is the no-WalletConnect way to "pick your wallet app". */}
+               this is the no-WalletConnect way to "pick your wallet app".
+               target="_top" breaks out of the workspace preview iframe so the
+               custom scheme reaches the OS; on a real phone it opens the wallet
+               chooser. It's a no-op on desktop (no wallet handler registered). */}
             <a
               className="btn btn-big crypto-walletlink"
               href={paymentUri(manualOrder)}
-              rel="noreferrer"
+              target="_top"
+              rel="noopener noreferrer"
+              aria-label="Open payment request in an installed wallet app"
             >
-              Open in wallet app
+              <span aria-hidden="true">📱 </span>Open in wallet app
             </a>
+            <span style={{ fontSize: 11, color: "#888", textAlign: "center" }}>
+              Tap on your phone — opens an installed wallet app (MetaMask,
+              Coinbase Wallet, Rabby…). May not work on desktop; use the QR or
+              copy flow there.
+            </span>
 
             {manualOrder.asset === "eth" ? (
               <div className="crypto-field">
