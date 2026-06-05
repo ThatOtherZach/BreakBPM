@@ -33,7 +33,7 @@ export const PASS_PRICES_CENTS: Record<PassKind, number> = {
  * recipe live in the pure engine (`luckyBreak.ts`); the price lives here with
  * the rest of the catalog so there is a single source of truth.
  */
-export const LUCKY_BREAK_PRICE_CENTS = 599;
+export const LUCKY_BREAK_PRICE_CENTS = 499;
 
 /** Public Lucky Break catalog entry surfaced via /passes/plans. Mirrors the
  * disclosed odds + entropy window from the pure engine so the client shows the
