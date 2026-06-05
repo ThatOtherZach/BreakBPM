@@ -2029,3 +2029,45 @@ html, #root {
     animation: none;
   }
 }
+
+/* ── Crypto checkout ── */
+.crypto-field { display: flex; flex-direction: column; gap: 5px; }
+.crypto-field-label {
+  font-size: 11px; color: #444; font-weight: bold;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.crypto-options { display: flex; flex-direction: column; gap: 6px; }
+.crypto-option {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 8px 10px; cursor: pointer; text-align: left;
+  background: var(--white); border: 2px solid;
+  border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
+  font-family: inherit;
+}
+.crypto-option:disabled { cursor: default; opacity: .6; }
+.crypto-option:focus-visible { outline: 1px dotted var(--black); outline-offset: -4px; }
+.crypto-option--active { border: 2px solid var(--navy); background: #eaf1ff; }
+.crypto-option__radio {
+  flex: 0 0 auto; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--dark); background: var(--white);
+}
+.crypto-option--active .crypto-option__radio {
+  border-color: var(--navy);
+  background: radial-gradient(var(--navy) 0 42%, var(--white) 48%);
+}
+.crypto-option__text { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+.crypto-option__name { font-family: 'VT323', monospace; font-size: 22px; color: var(--navy); line-height: 1; }
+.crypto-option__sub { font-size: 10px; color: #666; }
+.crypto-option__price { font-weight: bold; font-size: 14px; white-space: nowrap; margin-left: auto; }
+.crypto-assets { display: flex; gap: 6px; }
+.crypto-assets .btn { flex: 1; }
+.crypto-wallet {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  font-size: 12px; padding: 6px 8px; background: var(--white); border: 2px solid;
+  border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
+}
+.crypto-wallet__addr { display: inline-flex; align-items: center; gap: 6px; }
+.crypto-wallet__dot {
+  flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%;
+  background: #00a000; box-shadow: 0 0 4px #00ff41;
+}

@@ -45,6 +45,15 @@ function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+/** Short, human duration blurb per pass kind (the catalog only ships name +
+ * price, so we derive the sub-line here). */
+const PASS_BLURB: Record<string, string> = {
+  day: "Full access for 24 hours",
+  month: "Full access for 30 days",
+  year: "Full access for 365 days",
+  lifetime: "Pay once, play forever",
+};
+
 function errText(e: unknown): string {
   if (e && typeof e === "object") {
     const anyErr = e as { shortMessage?: string; message?: string };
@@ -239,6 +248,9 @@ export default function CryptoCheckout({
     phase === "awaiting_signature" ||
     phase === "confirming";
 
+  const selectedPass = passes.find((p) => p.passKind === passKind);
+  const selectedPrice = selectedPass ? formatPrice(selectedPass.priceCents) : "";
+
   return (
     <div className="panel">
       <div className="panel-header">
@@ -282,20 +294,14 @@ export default function CryptoCheckout({
             )}
           </div>
         ) : (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              fontSize: 12,
-            }}
-          >
-            <span>
-              Wallet: <strong>{address ? shortAddr(address) : ""}</strong>
+          <div className="crypto-wallet">
+            <span className="crypto-wallet__addr">
+              <span className="crypto-wallet__dot" aria-hidden="true" />
+              Connected · <strong>{address ? shortAddr(address) : ""}</strong>
             </span>
             <button
               className="btn"
-              style={{ fontSize: 11 }}
+              style={{ fontSize: 11, minHeight: 28 }}
               onClick={() => disconnect()}
               disabled={busy}
             >
@@ -311,36 +317,51 @@ export default function CryptoCheckout({
           </div>
         )}
 
-        {/* Pass + asset selectors — always visible so anyone can browse the
-            passes and prices (matching the card flow). Sending payment still
-            requires a connected wallet, so the Pay button only appears once a
-            wallet is connected. */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ fontSize: 11, color: "#444" }}>Pass</span>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {passes.map((p) => (
-              <button
-                key={p.passKind}
-                className={passKind === p.passKind ? "btn btn-primary" : "btn"}
-                style={{ fontSize: 12 }}
-                disabled={busy}
-                onClick={() => setPassKind(p.passKind)}
-              >
-                {p.name} · {formatPrice(p.priceCents)}
-              </button>
-            ))}
+        {/* Pass picker — selectable cards. Always visible so anyone can browse
+            the passes and prices (matching the card flow); sending payment
+            still requires a connected wallet. */}
+        <div className="crypto-field">
+          <span className="crypto-field-label">Choose a pass</span>
+          <div className="crypto-options">
+            {passes.map((p) => {
+              const active = passKind === p.passKind;
+              return (
+                <button
+                  key={p.passKind}
+                  type="button"
+                  className={`crypto-option${active ? " crypto-option--active" : ""}`}
+                  disabled={busy}
+                  aria-pressed={active}
+                  onClick={() => setPassKind(p.passKind)}
+                >
+                  <span className="crypto-option__radio" aria-hidden="true" />
+                  <span className="crypto-option__text">
+                    <span className="crypto-option__name">{p.name}</span>
+                    <span className="crypto-option__sub">
+                      {PASS_BLURB[p.passKind] ?? "One-time pass"}
+                    </span>
+                  </span>
+                  <span className="crypto-option__price">
+                    {formatPrice(p.priceCents)}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ fontSize: 11, color: "#444" }}>Pay with</span>
-          <div style={{ display: "flex", gap: 6 }}>
+        {/* Asset toggle — split control */}
+        <div className="crypto-field">
+          <span className="crypto-field-label">Pay with</span>
+          <div className="crypto-assets">
             {catalog.assets.map((a) => (
               <button
                 key={a}
+                type="button"
                 className={asset === a ? "btn btn-primary" : "btn"}
-                style={{ fontSize: 12, textTransform: "uppercase" }}
+                style={{ textTransform: "uppercase" }}
                 disabled={busy}
+                aria-pressed={asset === a}
                 onClick={() => setAsset(a)}
               >
                 {a}
@@ -361,7 +382,7 @@ export default function CryptoCheckout({
                 ? "Confirm in wallet…"
                 : phase === "confirming"
                   ? "Confirming on-chain…"
-                  : `Pay with ${asset.toUpperCase()}`}
+                  : `Pay ${selectedPrice} with ${asset.toUpperCase()}`}
           </button>
         ) : (
           <p style={{ fontSize: 11, color: "#888", margin: 0 }}>
