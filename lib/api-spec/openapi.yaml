@@ -634,7 +634,7 @@ components:
       type: object
       required: [kind, startedAt, expiresAt, isLifetime]
       properties:
-        kind: { type: string, enum: [day, year, lifetime] }
+        kind: { type: string, enum: [day, month, year, lifetime] }
         startedAt: { type: string, format: date-time }
         expiresAt: { type: string, format: date-time }
         isLifetime: { type: boolean }
@@ -677,13 +677,29 @@ components:
         # Present for subscriptions — the billing interval.
         interval: { type: string, enum: [month, year] }
 
+    LuckyBreakInfo:
+      type: object
+      required: [priceCents, lifetimeProbability, windowDays]
+      properties:
+        priceCents: { type: integer }
+        # Disclosed odds of a Lifetime upgrade (0.2 = 20%). The other rolls
+        # land on the guaranteed Monthly floor.
+        lifetimeProbability: { type: number }
+        # Days of shot history used to SEED the draw (entropy, not odds).
+        windowDays: { type: integer }
+
     PlanCatalog:
       type: object
-      required: [plans]
+      required: [plans, cardPaymentsEnabled, luckyBreak]
       properties:
         plans:
           type: array
           items: { $ref: "#/components/schemas/Plan" }
+        # When false, in-app card checkout + subscription endpoints are turned
+        # off (see BREAKBPM_CARD_PAYMENTS_ENABLED). The client hides the card
+        # purchase UI and leads with Lucky Break + redeem codes.
+        cardPaymentsEnabled: { type: boolean }
+        luckyBreak: { $ref: "#/components/schemas/LuckyBreakInfo" }
 
     SubscriptionCheckoutInput:
       type: object
@@ -733,6 +749,20 @@ components:
       properties:
         code: { type: string, minLength: 1, maxLength: 64 }
 
+    LuckyBreakResult:
+      type: object
+      required: [outcome, lifetimeProbability, windowDays]
+      properties:
+        # The tier won by this roll. "month" is the guaranteed floor.
+        outcome: { type: string, enum: [month, lifetime] }
+        lifetimeProbability: { type: number }
+        windowDays: { type: integer }
+        # SHA-256 of the seed (shot data | redemption id) — lets the player
+        # verify the draw was not tampered with after the fact.
+        seedHash: { type: string }
+        # How many shots from the window seeded this particular draw.
+        seededShotCount: { type: integer }
+
     RedeemResult:
       type: object
       required: [success, message]
@@ -740,6 +770,8 @@ components:
         success: { type: boolean }
         message: { type: string }
         pass: { $ref: "#/components/schemas/PassSummary" }
+        # Present only when the redeemed code was a Lucky Break roll.
+        luckyBreak: { $ref: "#/components/schemas/LuckyBreakResult" }
 
     PassCheckoutInput:
       type: object

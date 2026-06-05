@@ -19,7 +19,7 @@ import { logger } from "./logger";
  *   - `code`  — the redeemable string (e.g. `COMP-ABC123`). Stored uppercased
  *     to match /passes/redeem, which uppercases user input before lookup — a
  *     lowercase entry would otherwise seed but be impossible to redeem.
- *   - `kind`  — one of `day` | `year` | `lifetime`
+ *   - `kind`  — one of `day` | `year` | `lifetime` | `lucky_break`
  *   - `maxRedemptions` — optional positive integer; omit (or leave blank) for
  *     unlimited. Whitespace around entries/fields is tolerated.
  *
@@ -31,11 +31,16 @@ import { logger } from "./logger";
  * git.
  */
 
-const VALID_KINDS = new Set(["day", "year", "lifetime"]);
+// `lucky_break` codes don't grant a fixed tier — redeeming one runs the
+// seeded Lucky Break draw (guaranteed Monthly, 20% Lifetime). Supported here
+// so comp/test Lucky Break codes can be seeded the same way as fixed codes.
+const VALID_KINDS = new Set(["day", "year", "lifetime", "lucky_break"]);
+
+type SeedKind = "day" | "year" | "lifetime" | "lucky_break";
 
 interface SeedCode {
   code: string;
-  grantsPassKind: "day" | "year" | "lifetime";
+  grantsPassKind: SeedKind;
   maxRedemptions: number | null;
 }
 
@@ -71,7 +76,7 @@ export function parseCompCodes(raw: string | undefined): SeedCode[] {
     }
     rows.push({
       code,
-      grantsPassKind: kind as "day" | "year" | "lifetime",
+      grantsPassKind: kind as SeedKind,
       maxRedemptions,
     });
   }

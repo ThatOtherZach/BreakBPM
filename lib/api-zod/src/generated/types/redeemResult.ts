@@ -5,10 +5,12 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { LuckyBreakResult } from './luckyBreakResult';
 import type { PassSummary } from './passSummary';
 
 export interface RedeemResult {
   success: boolean;
   message: string;
   pass?: PassSummary;
+  luckyBreak?: LuckyBreakResult;
 }

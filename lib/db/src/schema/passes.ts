@@ -20,14 +20,16 @@ import { usersTable } from "./users";
  * can stack — we never modify or extend an existing row; we only insert
  * new ones.
  */
-export const passKindEnum = ["day", "year", "lifetime"] as const;
+export const passKindEnum = ["day", "month", "year", "lifetime"] as const;
 export type PassKind = (typeof passKindEnum)[number];
 
 const SECONDS_DAY = 24 * 60 * 60;
+const SECONDS_MONTH = 30 * SECONDS_DAY;
 const SECONDS_YEAR = 365 * SECONDS_DAY;
 
 export const PASS_DURATIONS_SECONDS: Record<PassKind, number | null> = {
   day: SECONDS_DAY,
+  month: SECONDS_MONTH,
   year: SECONDS_YEAR,
   lifetime: null,
 };
@@ -39,7 +41,7 @@ export const passesTable = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),
-    kind: text("kind").notNull(), // "day" | "year" | "lifetime"
+    kind: text("kind").notNull(), // "day" | "month" | "year" | "lifetime"
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
     durationSeconds: integer("duration_seconds"), // NULL = lifetime (no expiry)
     source: text("source").notNull(), // "purchase" | "discount_code" | "grant"

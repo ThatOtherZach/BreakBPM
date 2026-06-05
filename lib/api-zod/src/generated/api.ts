@@ -33,7 +33,7 @@ export const GetMeResponse = zod.object({
   "hasActivePass": zod.boolean(),
   "historyVisibleLimit": zod.number().nullable(),
   "activePass": zod.object({
-  "kind": zod.enum(['day', 'year', 'lifetime']),
+  "kind": zod.enum(['day', 'month', 'year', 'lifetime']),
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
   "isLifetime": zod.boolean()
@@ -46,7 +46,7 @@ export const GetMeResponse = zod.object({
 }).optional()
 }),
   "passes": zod.array(zod.object({
-  "kind": zod.enum(['day', 'year', 'lifetime']),
+  "kind": zod.enum(['day', 'month', 'year', 'lifetime']),
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
   "isLifetime": zod.boolean()
@@ -88,10 +88,17 @@ export const RedeemDiscountCodeResponse = zod.object({
   "success": zod.boolean(),
   "message": zod.string(),
   "pass": zod.object({
-  "kind": zod.enum(['day', 'year', 'lifetime']),
+  "kind": zod.enum(['day', 'month', 'year', 'lifetime']),
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
   "isLifetime": zod.boolean()
+}).optional(),
+  "luckyBreak": zod.object({
+  "outcome": zod.enum(['month', 'lifetime']),
+  "lifetimeProbability": zod.number(),
+  "windowDays": zod.number(),
+  "seedHash": zod.string().optional(),
+  "seededShotCount": zod.number().optional()
 }).optional()
 })
 
@@ -166,7 +173,7 @@ export const VerifyPassCheckoutResponse = zod.object({
   "success": zod.boolean(),
   "message": zod.string(),
   "pass": zod.object({
-  "kind": zod.enum(['day', 'year', 'lifetime']),
+  "kind": zod.enum(['day', 'month', 'year', 'lifetime']),
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
   "isLifetime": zod.boolean()
@@ -188,7 +195,13 @@ export const ListPlansResponse = zod.object({
   "kind": zod.enum(['pass', 'subscription']),
   "passKind": zod.enum(['day', 'lifetime']).optional(),
   "interval": zod.enum(['month', 'year']).optional()
-}))
+})),
+  "cardPaymentsEnabled": zod.boolean(),
+  "luckyBreak": zod.object({
+  "priceCents": zod.number(),
+  "lifetimeProbability": zod.number(),
+  "windowDays": zod.number()
+})
 })
 
 

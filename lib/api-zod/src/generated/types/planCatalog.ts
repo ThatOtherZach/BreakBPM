@@ -5,8 +5,11 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { LuckyBreakInfo } from './luckyBreakInfo';
 import type { Plan } from './plan';
 
 export interface PlanCatalog {
   plans: Plan[];
+  cardPaymentsEnabled: boolean;
+  luckyBreak: LuckyBreakInfo;
 }

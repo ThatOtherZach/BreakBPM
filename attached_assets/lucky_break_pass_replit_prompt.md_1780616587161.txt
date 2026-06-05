@@ -1,0 +1,181 @@
+# Replit Agent Prompt: Implement "Lucky Break Pass" for BreakBPM
+
+You are an expert full-stack developer helping me build on my existing BreakBPM project (a billiards/pool scoring and stats tracking web app running on Replit). The app already has game modes (starting with 8-ball), shot logging, stats tracking (including BPM - balls per minute), user accounts, and game history.
+
+## Vision & Goal
+
+Implement **Lucky Break Pass** as the primary (and initially the only) way for users to unlock paid access/features in the app.
+
+**Core mechanic**:
+- User pays a one-time **$5.99 USD** (in crypto, preferably USDC or other stables via Coinbase Commerce).
+- They are **guaranteed at least a Monthly pass**.
+- A server-side RNG (driven purely by global/collective shot data across all users) then decides if they get upgraded all the way to a **Lifetime pass** instead.
+- This replaces traditional recurring subscriptions (which testing showed reduces enthusiasm).
+- **Lifetime holders get a powerful perk**: They can generate a free redeemable **Day Pass** (24h access) every 12 hours. This can be used by the lifetime holder themselves or shared/gifted to friends or new players. This turns big winners into ongoing "pass distributors" and makes the app very welcoming to newbies.
+- The whole system is intentionally generous — we're almost giving away access — but the gamble + shared global data + lifetime sharing mechanic makes it fun, viral, and sustainable.
+
+**Name to use**: "Lucky Break Pass" (or "Luck Break Pass" if you prefer the shorter version).
+
+## Step 1: Explore the Existing Codebase First
+
+Before writing any new code, thoroughly explore the project:
+- Understand the current user model / auth system
+- How game data, shot logs, and stats are stored (especially per-user shot history)
+- Current database schema (or Replit DB / whatever is used)
+- Any existing pass, subscription, or access control logic
+- Frontend structure (pages, modals, components)
+- Backend routes / API structure
+- How the app currently handles payments or user upgrades (if anything exists)
+
+Report back a short summary of the relevant architecture so I can confirm before you proceed with implementation.
+
+## Core Requirements
+
+### 1. Payment Integration (Coinbase Commerce)
+
+- Integrate **Coinbase Commerce** for one-time crypto payments of $5.99.
+- Support USDC as the primary currency (stable, low fees). Allow other coins if easy.
+- Use Coinbase Commerce hosted checkout or embedded checkout + webhooks for confirmation.
+- On successful payment confirmation (via webhook):
+  - Trigger the RNG logic
+  - Grant the appropriate pass to the user
+  - Update their account access immediately
+- Handle payment states properly (pending, confirmed, failed, expired).
+- Store the Coinbase Commerce transaction ID / charge code linked to the user for auditing.
+- Make the integration easy to configure with environment variables (API keys, webhook secret, etc.).
+
+If the user has an active pass already, the new Lucky Break Pass should **extend or upgrade** their access (e.g. add time or promote to better tier). Decide on sensible behavior and confirm with me.
+
+### 2. RNG & Global Shot Data Logic (The Heart of the Feature)
+
+**Important shift**: We are **not** using individual user shot logs for personalization or bias. Instead, the RNG is driven entirely by the **global/collective shot data** across *all* users. This creates a living, shared randomness pool that grows every time anyone (including you) logs shots and games. New and existing players all contribute to and benefit from the same evolving dataset.
+
+**Base odds** (make these easily configurable in one place, e.g. a constants file or admin setting). Suggested starting point (adjust as needed):
+- Monthly pass: **90%**
+- Lifetime pass: **10%**
+
+(The removal of the Yearly tier keeps the reveal cleaner and more exciting — you either get the safe monthly floor or you hit the big Lifetime win.)
+
+**How the global data drives the RNG**:
+- Maintain a rolling/global stats object or recent activity buffer that aggregates meaningful signals from *all* shot logs in the system. Examples of useful aggregates:
+  - Total shots logged across the entire user base (running total)
+  - Recent shot volume / activity level (last 1h, 24h, 7d)
+  - Global average pot rate / accuracy
+  - Distribution or patterns in ball numbers, break outcomes, BPM spikes, etc.
+  - Any other derived metrics that already exist or are easy to compute from the shot logging system.
+- On each Lucky Break purchase, the RNG samples from (or is seeded by) this global dataset + the payment transaction hash. 
+- The exact sampling method is flexible — you can propose a clean implementation (hashing recent global records, using aggregate stats as entropy/weighting factors, weighted random based on current global "energy", etc.). The goal is that the odds feel influenced by the living, collective activity of the entire BreakBPM community rather than pure server randomness or any single user's data.
+- As more people play and log shots, the global dataset grows and evolves, making future rolls feel connected to the community's momentum.
+
+**Flavor text on reveal**:
+- Reference the *global/collective* energy instead of personal stats. Examples:
+  - "The global break community just logged 12,847 shots this week — the cue gods are feeling generous..."
+  - "With the recent surge in 8-ball activity across the app, your roll caught the wave..."
+  - "The pool is alive tonight. Lifetime unlocked."
+
+**Transparency & Trust**:
+- On the result/reveal screen, show a "Roll verified" section that includes:
+  - Transaction / charge ID from Coinbase
+  - A seed or hash used for the roll (so advanced users can verify fairness if they want)
+  - The final tier they received + the current base odds
+  - A short note like "Seeded from global shot activity + tx hash"
+
+Make the RNG deterministic given the same seed + global data snapshot so it can be reproduced for support/debugging. Store a snapshot of the relevant global stats at the time of each roll if needed for auditability.
+
+### 3. Pass / Access Management + Lifetime Day Pass Generator
+
+Define clear pass types (simplified — no Yearly tier):
+- **Monthly**: 30 days of access from purchase/activation date
+- **Lifetime**: Permanent / no expiry
+
+You may need to create or extend:
+- A `passes` or `user_access` table/model
+- Fields like: `pass_type`, `activated_at`, `expires_at`, `is_lifetime`, `source` (e.g. "lucky_break")
+- Helper functions to check if a user currently has active access and what tier they have
+
+**Lifetime Day Pass Generator (key retention + virality feature)**:
+- Lifetime pass holders get a special ability: Every **12 hours** they can generate one free **Day Pass** (24 hours of access).
+- This Day Pass should be **redeemable by anyone** (the lifetime holder can use it themselves or, more importantly, share/gift the code or link to friends, new players, or the community).
+- Implementation needs:
+  - Cooldown timer / last generated timestamp per lifetime user
+  - A way to generate a unique, single-use or time-limited redeem code / claim link
+  - Redemption flow: Anyone who redeems it gets 24h access (even if they have no account yet — create a temp/grace access or prompt signup)
+  - Clear UI for lifetime holders: Big friendly button "Generate Free Day Pass (resets in X hours)" with nice visual feedback
+  - Optional: Track how many day passes each lifetime holder has distributed (fun leaderboard or profile stat later)
+- This mechanic turns Lifetime winners into ongoing "access distributors." It's intentionally generous and makes the app feel welcoming to newbies while rewarding the big gamble winners.
+
+The app should gracefully handle checking access for protected features (you don't need to implement all protected features yet — just the pass granting + checking infrastructure).
+
+### 4. User Experience & UI Flow
+
+Create a clean, exciting flow:
+
+1. **Entry point**: Prominent button or card somewhere in the app (e.g. in a "Get Full Access" or settings area) labeled something like:
+   - "Lucky Break Pass – $5.99"
+   - Subtitle: "Guaranteed at least 1 month. 10% chance at Lifetime access + the power to generate free Day Passes every 12h."
+
+2. **Payment screen / modal**: Clear explanation of what they get, the current base odds (driven by global shot activity), and the Coinbase Commerce checkout. Mention the Lifetime perk (free Day Passes every 12h that can be shared).
+
+3. **Post-payment reveal experience** (this is the memorable moment):
+   - Loading / "Rolling the rack..." state with pool-themed animation or visual (simple canvas pool break, spinning cue ball, slot-machine style with pool icons, or satisfying confetti + big tier reveal).
+   - Big celebratory (or cheeky) result: "You got a YEARLY PASS!" with flavor text based on their shot data.
+   - Show the verified roll details.
+   - Clear next steps ("Your access is now active — start tracking!").
+
+Make the reveal fun and shareable (users love posting big wins).
+
+### 5. Configuration & Maintainability
+
+- All key values in one easy place:
+  - Base odds
+  - Pass durations (30 days, 365 days)
+  - Personalization bias strength / thresholds
+  - Coinbase Commerce credentials (env vars)
+- Add clear comments and a short README section explaining the Lucky Break system.
+- Make it easy for me to tweak odds later without touching core logic.
+
+### 6. Edge Cases & Polish to Handle
+
+- User already has an active pass → sensible upgrade/extension behavior
+- Payment fails or webhook doesn't fire → clear user messaging + manual recovery path if needed
+- Multiple rapid purchases → prevent abuse / handle gracefully
+- New users with zero data → still great experience using global stats fallback
+- Mobile responsiveness of the flow
+- Loading states, error handling, and accessibility
+- Rate limiting / basic abuse prevention on the purchase endpoint
+
+## Implementation Order (Do This Sequentially)
+
+1. Explore codebase and summarize architecture (especially user model, shot data, auth, and any existing access logic).
+2. Design and implement the data model changes for passes/access.
+3. Set up Coinbase Commerce integration (test mode first) + webhook handler + basic payment flow.
+4. Implement the core RNG + global shot data logic as a clean, testable function (including how global aggregates are maintained and sampled).
+5. Build the frontend entry point + payment trigger.
+6. Build the post-payment reveal screen with animation and flavor text.
+7. Wire everything together end-to-end and test the full flow.
+8. Add configuration, comments, and basic documentation.
+9. (Optional but nice) Add a simple "My Passes / Access" view showing current status and history of Lucky Break rolls.
+
+After each major step, pause and show me what you've done + ask for confirmation before continuing (especially after step 1 and after the RNG logic).
+
+## Tone & Style Notes
+
+- Keep the code clean, well-commented, and maintainable.
+- The feature should feel playful and pool-themed without being childish.
+- Since I love retro/PC-98 and early internet aesthetics, feel free to suggest light visual nods in the reveal screen (old terminal style loading text, neon pool hall vibes, etc.) if it fits naturally — but don't overdo it if it conflicts with the current app design.
+- Prioritize speed to a working MVP so I can test with real payments and iterate.
+
+## Questions for You (Answer These Early)
+
+After exploring the code, please answer:
+- What does the current user model and shot logging schema look like? (Especially how easy it is to query/aggregate global stats across all users' shots.)
+- Are there already any concepts of "passes", "access tiers", or paid features?
+- What frontend framework / component library is the app using?
+- Any preference on where the Lucky Break entry point should live in the UI?
+- Confirm Monthly duration (I suggested 30 days) and whether you want any other pass lengths besides Monthly + Lifetime.
+- For the Lifetime Day Pass Generator: Do you want the generated Day Passes to be single-use redeem codes, shareable links, or something else? Any preference on how gifting/sharing should work technically (e.g. public claim page, code entry in-app, etc.)?
+- Any specific global aggregate metrics from the shot data you want to prioritize for influencing the RNG (total shots, recent activity volume, pot rates, ball distributions, BPM, etc.)?
+
+Once you have a good understanding of the existing code, start with Step 1 summary and then we can proceed.
+
+Let's build something fun that no other pool app has. I'm excited.

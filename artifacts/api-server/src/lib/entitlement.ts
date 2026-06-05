@@ -13,7 +13,7 @@ import {
 export type Tier = "public" | "account" | "pass";
 
 export interface PassSummary {
-  kind: "day" | "year" | "lifetime";
+  kind: "day" | "month" | "year" | "lifetime";
   startedAt: Date;
   expiresAt: Date;
   isLifetime: boolean;

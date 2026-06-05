@@ -22,6 +22,7 @@ export type PassSummaryKind = typeof PassSummaryKind[keyof typeof PassSummaryKin
 
 export const PassSummaryKind = {
   day: 'day',
+  month: 'month',
   year: 'year',
   lifetime: 'lifetime',
 } as const;
@@ -119,8 +120,16 @@ export interface Plan {
   interval?: PlanInterval;
 }
 
+export interface LuckyBreakInfo {
+  priceCents: number;
+  lifetimeProbability: number;
+  windowDays: number;
+}
+
 export interface PlanCatalog {
   plans: Plan[];
+  cardPaymentsEnabled: boolean;
+  luckyBreak: LuckyBreakInfo;
 }
 
 export type SubscriptionCheckoutInputInterval = typeof SubscriptionCheckoutInputInterval[keyof typeof SubscriptionCheckoutInputInterval];
@@ -171,10 +180,27 @@ export interface DiscountRedeemInput {
   code: string;
 }
 
+export type LuckyBreakResultOutcome = typeof LuckyBreakResultOutcome[keyof typeof LuckyBreakResultOutcome];
+
+
+export const LuckyBreakResultOutcome = {
+  month: 'month',
+  lifetime: 'lifetime',
+} as const;
+
+export interface LuckyBreakResult {
+  outcome: LuckyBreakResultOutcome;
+  lifetimeProbability: number;
+  windowDays: number;
+  seedHash?: string;
+  seededShotCount?: number;
+}
+
 export interface RedeemResult {
   success: boolean;
   message: string;
   pass?: PassSummary;
+  luckyBreak?: LuckyBreakResult;
 }
 
 export type PassCheckoutInputKind = typeof PassCheckoutInputKind[keyof typeof PassCheckoutInputKind];

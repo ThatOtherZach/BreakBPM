@@ -6,12 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type PassSummaryKind = typeof PassSummaryKind[keyof typeof PassSummaryKind];
+export type LuckyBreakResultOutcome = typeof LuckyBreakResultOutcome[keyof typeof LuckyBreakResultOutcome];
 
 
-export const PassSummaryKind = {
-  day: 'day',
+export const LuckyBreakResultOutcome = {
   month: 'month',
-  year: 'year',
   lifetime: 'lifetime',
 } as const;

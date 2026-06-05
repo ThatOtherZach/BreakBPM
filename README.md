@@ -51,11 +51,18 @@ A fully functional **React + Vite + TypeScript** web app styled like genuine 199
 - Full game history saved per account (limited for free users)
 
 **Plans**
+- **Lucky Break** — $5.99 "roll the rack" unlock, sold via redeem code. Every roll is a guaranteed win: at minimum a 30-day **Monthly Pass**, with a fixed **20% chance** of a **Lifetime Pass**.
 - **Day Pass** — $1.99 one-time, 24 hours of full access
 - **Monthly** — $4.99 / month subscription, cancel anytime
 - **Yearly** — $24.99 / year subscription, cancel anytime
 - **Lifetime** — $49.99 one-time, full access forever (stops any active subscription from renewing)
-- Redeemable via Stripe checkout or a code
+- Redeemable via a code (card checkout via Stripe is gated behind an env flag and currently off)
+
+**Lucky Break — provably fair**
+- Redeeming a Lucky Break code triggers a server-side draw with **fixed 80/20 odds** (20% Lifetime, 80% Monthly). The odds never change based on how you play.
+- The draw is **seeded** — not biased — by data: BreakBPM hashes (SHA-256) the **global** shot activity across all players from the **last 30 days** together with the roll's server-assigned redemption id, maps the hash to a number in `[0, 1)`, and awards Lifetime when that number is `< 0.20`.
+- "Seeded" means that shot history only shuffles *which* deterministic outcome a given roll lands on; it cannot move the 20% line. The redemption id makes every code's draw unique and impossible to re-roll.
+- Each roll's seed hash, shot-window count, outcome, and odds are recorded server-side and shown on the reveal screen for transparency.
 
 ## How to Run
 

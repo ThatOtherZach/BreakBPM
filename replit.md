@@ -44,7 +44,8 @@ artifacts/
         JoinedGameScreen.tsx  View-only HUD for joiners + spectators (/join/:code)
         WatchByNameScreen.tsx  Spectate by player name (/watch/:name)
         AccountScreen.tsx  Profile, pass/subscription status, history
-        PassesScreen.tsx   Pass + subscription purchase/redeem
+        PassesScreen.tsx   Lucky Break roll + (env-gated) card purchase + redeem
+        LuckyBreakReveal.tsx  "Rolling the rack" reveal overlay (reuses .hud-chip)
         AboutScreen.tsx    Renders ABOUT.md
         Navbar.tsx
   api-server/         Express backend
@@ -56,6 +57,10 @@ artifacts/
         stats.ts        Tiered /stats aggregation (personal vs global)
         entitlement.ts  Resolves a user's Tier (public/account/pass) from passes + subs
         subscriptions.ts  Recurring subscription lifecycle
+        luckyBreak.ts   Pure seeded-draw engine (entropy + redemption id → outcome)
+        luckyBreakEntropy.ts  Gathers last-30d global shot data as draw entropy
+        pricing.ts      Plan catalog, PASS_PRICES_CENTS, LUCKY_BREAK_INFO
+        config.ts       Env flags (cardPaymentsEnabled, default OFF)
         shareCode.ts    5-char share-code generation + normalization
         forfeit.ts      Server forfeit/timeout constants
 
@@ -64,9 +69,10 @@ lib/
     users.ts          users table (Clerk ID → screenName, onboarding)
     games.ts          games table (gameState JSONB, bpm_x10, last_activity_at)
                       + game_participants (per-player slots, displayName, stats window)
-    passes.ts         passes table (Day/Lifetime one-time entitlements)
+    passes.ts         passes table (Day/Month/Lifetime one-time entitlements)
     subscriptions.ts  subscriptions table (Monthly/Yearly recurring entitlements)
-    discountCodes.ts  one-time/limited-use codes
+    discountCodes.ts  one-time/limited-use codes (incl. lucky_break code kind)
+    luckyBreak.ts     lucky_break_rolls audit table (seed hash, window, outcome)
   api-spec/openapi.yaml   OpenAPI 3.1 (source of truth for API contract)
   api-zod/            Generated Zod schemas from spec
   api-client-react/   Generated React Query hooks from spec
@@ -79,7 +85,9 @@ lib/
 - **Pure game engine**: `gameLogic.ts` is side-effect-free. `GameScreen.tsx` owns all state mutations and calls into the engine for derivations. This makes the BPM logic and ball tracking unit-testable without rendering.
 - **Dual persistence**: In-progress games are mirrored to `localStorage` (for tab-refresh) and synced to the DB via `/games/activity` (for cross-device resume). Recovery priority: localStorage first, then server prompt.
 - **BPM is per-player**: `calculatePlayerBPM(shotLog, playerName)` anchors at that player's first pocketing entry and measures to their latest. Shark steals use the `🦈 Shark` player name and are excluded from human BPM automatically.
-- **Tiered entitlements**: `entitlement.ts` resolves a caller into one of three `Tier`s — `public` (anonymous), `account` (signed in, no entitlement), `pass` (active pass OR subscription). One-time passes (Day/Lifetime) live in `passes`; recurring plans (Monthly/Yearly) live in `subscriptions` as a separate source. `entitlement.hasActivePass` reflects one-time passes only; gate "paid host" features on `tier === 'pass'`. Buying Lifetime stops any active subscription from renewing (enforced in-tx on every grant path).
+- **Tiered entitlements**: `entitlement.ts` resolves a caller into one of three `Tier`s — `public` (anonymous), `account` (signed in, no entitlement), `pass` (active pass OR subscription). One-time passes (Day/Month/Lifetime) live in `passes`; recurring plans (Monthly/Yearly) live in `subscriptions` as a separate source. `entitlement.hasActivePass` reflects one-time passes only; gate "paid host" features on `tier === 'pass'`. Buying Lifetime stops any active subscription from renewing (enforced in-tx on every grant path).
+- **Lucky Break (provably-fair roll)**: A `lucky_break` discount-code kind that, on redeem, runs a server-side draw instead of granting a fixed tier. `luckyBreak.ts` is a **pure** engine: it SHA-256-hashes the gathered entropy (last-30d global shot data, via `luckyBreakEntropy.ts`) together with the roll's server-assigned `redemptionId`, maps the hash to `[0,1)`, and returns Lifetime when `< 0.20` else Monthly. The odds (`LUCKY_BREAK_INFO.lifetimeProbability = 0.20`) are **fixed and disclosed** — shot data only *seeds* (selects) the deterministic outcome, it cannot shift the threshold. The whole roll runs in-tx: gather entropy pre-tx → `computeLuckyBreakRoll` → `issuePassTx(month|lifetime)` → Lifetime stops subs → insert the redemption row (`id = redemptionId`) + a `lucky_break_rolls` audit row. The redemption id guarantees one draw per code (no re-roll). Reuse, don't re-implement: Lifetime perks (Day-Pass gifting) already include Lifetime via `giftCodes.ts` `ELIGIBLE_KINDS`.
+- **Card payments behind an env flag**: `config.ts` `cardPaymentsEnabled()` defaults **OFF**. While off, `/passes/checkout`, `/passes/verify`, `/subscriptions/checkout`, `/subscriptions/verify` reject with `CARD_PAYMENTS_OFF_MESSAGE` (subscription *cancel* stays on so existing subs can still be stopped), and `/passes/plans` reports `cardPaymentsEnabled:false` so the frontend hides the card UI. Endpoints + UI are intact, not deleted — flip the flag to restore them.
 - **Tiered stats**: `GET /stats` is gated by tier. Anonymous → global scope, 24h window. Signed-in (no pass) → personal scope, 24h. Pass holders → personal stats with selectable window (24h/30d/365d/all) and a global toggle, plus `refresh=true` to bypass the 1h server cache. Personal stats are recomputed from each game's `shotLog` (the denormalized `games.bpm`/`accuracy` columns are host-centric); the per-player math in `stats.ts` deliberately mirrors `gameLogic.ts` and must be kept in lockstep.
 - **One host, many viewers**: The host device is the canonical scorekeeper. Others get a view-only mirror — either by **joining** an open seat before the break (`/join/:code`, occupies a slot, guests get a `guestToken`) or **spectating** any time (`/watch/:name` resolves a player's live game). Both render `JoinedGameScreen` and poll `/games/state`; neither can score or undo. Spectating requires the host to be a paid tier.
 
@@ -93,7 +101,8 @@ lib/
 - **Join & spectate**: Each game has a 5-char share code. Others can join an open seat before the break (view-only, guests allowed, can leave/forfeit) or spectate a player's live game by name. Joiners and spectators see the host's HUD, shot log, and BPM live but never score.
 - **Stats page**: `/stats` shows shooting stats (results, accuracy, pace, ball/pattern breakdowns) with retro CRT styling. Windows and personal/global scope are unlocked by tier (see Tiered stats above).
 - **Resume**: Logged-in users can resume an in-progress game from a different device via the server-side snapshot.
-- **History, passes & subscriptions**: Game history is stored per-user. Free users see limited history; Day/Lifetime passes and Monthly/Yearly subscriptions unlock full access (redeemable via code or Stripe checkout). Subscriptions renew until cancelled; access lasts through the paid period.
+- **Lucky Break**: A $5.99 "roll the rack" unlock sold via redeem code (no card processor). Every roll is a guaranteed win — at minimum a 30-day Monthly Pass, with a fixed, disclosed 20% chance of a Lifetime Pass. Redeeming plays a retro "rolling the rack" reveal (reusing the in-game ball chips) that lands on the won tier and shows the odds + a fair-play note. The draw is SEEDED (not biased) by the last 30 days of GLOBAL shot activity (all players) hashed with the roll's redemption id; the odds never move based on how anyone plays. See "Lucky Break (provably-fair roll)" under Architecture decisions.
+- **History, passes & subscriptions**: Game history is stored per-user. Free users see limited history; Day/Month/Lifetime passes and Monthly/Yearly subscriptions unlock full access (redeemable via code; card checkout via Stripe is behind an env flag, currently off). Subscriptions renew until cancelled; access lasts through the paid period.
 
 ## User preferences
 

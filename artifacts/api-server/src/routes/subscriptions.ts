@@ -15,7 +15,8 @@ import {
   cancelSubscriptionTx,
 } from "../lib/subscriptions";
 import { paymentProvider } from "../lib/paymentProvider";
-import { PLANS } from "../lib/pricing";
+import { PLANS, LUCKY_BREAK_INFO } from "../lib/pricing";
+import { cardPaymentsEnabled, CARD_PAYMENTS_OFF_MESSAGE } from "../lib/config";
 
 const router: IRouter = Router();
 
@@ -24,9 +25,16 @@ async function hasLifetimePass(userId: string): Promise<boolean> {
   return passes.some((p) => p.isLifetime);
 }
 
-/** Public plan catalog — single source of truth for prices/metadata. */
+/** Public plan catalog — single source of truth for prices/metadata. Also
+ * tells the client whether card checkout is open and the Lucky Break terms. */
 router.get("/passes/plans", async (_req, res): Promise<void> => {
-  res.json(ListPlansResponse.parse({ plans: PLANS }));
+  res.json(
+    ListPlansResponse.parse({
+      plans: PLANS,
+      cardPaymentsEnabled: cardPaymentsEnabled(),
+      luckyBreak: LUCKY_BREAK_INFO,
+    }),
+  );
 });
 
 /**
@@ -42,6 +50,15 @@ router.post("/subscriptions/checkout", async (req, res): Promise<void> => {
   const user = await getOrCreateUser(req);
   if (!user) {
     res.status(401).json({ error: "Sign in to subscribe" });
+    return;
+  }
+  if (!cardPaymentsEnabled()) {
+    res.json(
+      CreateSubscriptionCheckoutResponse.parse({
+        success: false,
+        message: CARD_PAYMENTS_OFF_MESSAGE,
+      }),
+    );
     return;
   }
   if (await hasLifetimePass(user.id)) {
@@ -70,6 +87,15 @@ router.post("/subscriptions/verify", async (req, res): Promise<void> => {
   const user = await getOrCreateUser(req);
   if (!user) {
     res.status(401).json({ error: "Sign in to verify a subscription" });
+    return;
+  }
+  if (!cardPaymentsEnabled()) {
+    res.json(
+      VerifySubscriptionCheckoutResponse.parse({
+        success: false,
+        message: CARD_PAYMENTS_OFF_MESSAGE,
+      }),
+    );
     return;
   }
   if (await hasLifetimePass(user.id)) {

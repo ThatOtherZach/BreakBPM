@@ -9,9 +9,11 @@ import {
   useRedeemDiscountCode,
   getGetMeQueryKey,
   type Plan,
+  type LuckyBreakResult,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "./Navbar";
+import LuckyBreakReveal from "./LuckyBreakReveal";
 import { signInPath } from "../lib/authClient";
 
 function formatPrice(cents: number): string {
@@ -31,6 +33,13 @@ function recurringNote(plan: Plan): string | null {
     : "Renews yearly · cancel anytime";
 }
 
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// The rack tumbles for at least this long so the seeded draw always feels like
+// a genuine roll, even when the server responds instantly.
+const MIN_ROLL_MS = 2200;
+
+type RevealState = "idle" | "rolling" | "result";
+
 export default function PassesScreen({ onBack }: { onBack: () => void }) {
   const me = useGetMe();
   const plans = useListPlans();
@@ -43,6 +52,8 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
 
   const [code, setCode] = useState("");
   const [msg, setMsg] = useState("");
+  const [revealState, setRevealState] = useState<RevealState>("idle");
+  const [revealResult, setRevealResult] = useState<LuckyBreakResult | null>(null);
 
   // Stripe Checkout returns the user to /passes?status=...&type=...&session_id=...
   // We verify once on mount (verify is idempotent server-side and just confirms
@@ -101,7 +112,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
             <div className="panel-header"><span>Sign In Required</span></div>
             <div className="panel-body">
               <p style={{ fontSize: 13, marginBottom: 10 }}>
-                Sign in to redeem codes or buy a pass.
+                Sign in to redeem a Lucky Break code or buy a pass.
               </p>
               <button
                 className="btn btn-primary btn-big w-full"
@@ -121,6 +132,11 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
     passVerify.isPending ||
     subCheckout.isPending ||
     subVerify.isPending;
+
+  const cardPaymentsEnabled = plans.data?.cardPaymentsEnabled ?? false;
+  const luckyBreak = plans.data?.luckyBreak;
+  const hasAccess =
+    !!me.data.entitlement.activePass || !!me.data.entitlement.activeSubscription;
 
   /**
    * One-time pass purchase. Two-step: createCheckout returns an opaqueToken;
@@ -177,113 +193,176 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
     }
   }
 
+  /**
+   * Redeem a code. Lucky Break codes resolve to a server-seeded roll, so we
+   * play the "rolling the rack" overlay for suspense, enforce a minimum roll
+   * duration, then reveal the won tier. Plain codes (e.g. gifted Day/Year/
+   * Lifetime passes) skip the animation and just surface their message.
+   */
   async function handleRedeem() {
     setMsg("");
-    if (!code.trim()) return;
+    const trimmed = code.trim();
+    if (!trimmed) return;
+
+    setRevealResult(null);
+    setRevealState("rolling");
+    const startedAt = Date.now();
+
     try {
-      const result = await redeem.mutateAsync({ data: { code: code.trim() } });
-      setMsg(result.message);
-      if (result.success) setCode("");
-      qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      const result = await redeem.mutateAsync({ data: { code: trimmed } });
+      const isRoll = !!result.luckyBreak;
+      const elapsed = Date.now() - startedAt;
+      // Always let the rack tumble a beat; longer for an actual roll.
+      await delay(Math.max(0, (isRoll ? MIN_ROLL_MS : 500) - elapsed));
+
+      if (result.success) {
+        setCode("");
+        qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      }
+
+      if (isRoll && result.luckyBreak) {
+        setRevealResult(result.luckyBreak);
+        setRevealState("result");
+        setMsg(result.message);
+      } else {
+        setRevealState("idle");
+        setMsg(result.message);
+      }
     } catch (e) {
+      setRevealState("idle");
       setMsg(e instanceof Error ? e.message : "Redeem failed");
     }
   }
 
   const planList = plans.data?.plans ?? [];
+  const lifetimeOdds = luckyBreak
+    ? Math.round(luckyBreak.lifetimeProbability * 100)
+    : 20;
 
   return (
     <div className="app-window app-window--page">
       <Navbar onBack={onBack} />
       <div className="app-body">
 
+        {/* Lucky Break — the lead unlock. Redeem a $5.99 code to roll the rack. */}
         <div className="panel">
-          <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🎟️</span>Get a Pass</span></div>
-          <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {plans.isLoading && <p style={{ fontSize: 12 }}>Loading plans…</p>}
-            {planList.map((plan) => {
-              const note = recurringNote(plan);
-              return (
-                <div
-                  key={plan.id}
-                  style={{
-                    border: "1px solid #888",
-                    background: "#fff",
-                    padding: 8,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 4,
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontFamily: "VT323", fontSize: 22, color: "#000080" }}>{plan.name}</span>
-                    <span style={{ fontWeight: "bold" }}>
-                      {formatPrice(plan.priceCents)}
-                      <span style={{ fontWeight: "normal", fontSize: 12 }}>{priceSuffix(plan)}</span>
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 11, color: "#444" }}>{plan.description}</div>
-                  {note && (
-                    <div style={{ fontSize: 10, color: "#006400" }}>↻ {note}</div>
-                  )}
-                  <button
-                    className="btn btn-primary"
-                    disabled={busy}
-                    onClick={() => handlePlanAction(plan)}
-                  >
-                    {plan.kind === "subscription" ? "Subscribe" : "Buy"}
-                  </button>
-                </div>
-              );
-            })}
-            <p style={{ fontSize: 10, color: "#888", marginTop: 4 }}>
-              Pay securely by card via Stripe. Prefer a code? Redeem a discount code below.
-            </p>
+          <div className="panel-header">
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <span aria-hidden="true">🎱</span>Lucky Break
+            </span>
           </div>
-        </div>
+          <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <span style={{ fontFamily: "VT323", fontSize: 26, color: "#000080" }}>
+                Roll the Rack
+              </span>
+              {luckyBreak && (
+                <span style={{ fontWeight: "bold" }}>{formatPrice(luckyBreak.priceCents)}</span>
+              )}
+            </div>
+            <p style={{ fontSize: 12, color: "#333", margin: 0 }}>
+              Every Lucky Break code is a guaranteed win. You'll always get at
+              least a <strong>Monthly Pass</strong> — and there's a{" "}
+              <strong>{lifetimeOdds}%</strong> chance the rack breaks your way for
+              a <strong>Lifetime Pass</strong>.
+            </p>
+            <p style={{ fontSize: 10, color: "#666", margin: 0, lineHeight: 1.5 }}>
+              Fair play: the draw is <strong>seeded</strong> by the last 30 days
+              of shots across all of BreakBPM combined with your code — not
+              weighted by it. The odds stay fixed at {lifetimeOdds}% no matter how
+              anyone shoots.
+            </p>
 
-        <div className="panel">
-          <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🎁</span>Redeem Code</span></div>
-          <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {me.data.entitlement.activePass || me.data.entitlement.activeSubscription ? (
-              // We hide the input entirely when entitlement is already active so
-              // a recipient with, say, a gifted Day Pass can't accidentally
-              // burn a second code. The server also enforces this — see the
-              // pre-check in /passes/redeem.
-              <>
-                <div style={{ fontFamily: "VT323", fontSize: 22, color: "#006400" }}>
-                  {me.data.entitlement.activeSubscription ? "Subscription Active" : "Pass Active"}
-                </div>
-                <p style={{ fontSize: 12, color: "#444" }}>
-                  You already have active access — no need to redeem a code
-                  right now.
-                </p>
-              </>
+            {hasAccess ? (
+              <div style={{ fontFamily: "VT323", fontSize: 20, color: "#006400" }}>
+                You already have active access — save your roll for later.
+              </div>
             ) : (
               <>
                 <input
                   className="input"
-                  placeholder="ENTER CODE"
+                  placeholder="ENTER LUCKY BREAK CODE"
                   maxLength={64}
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  disabled={redeem.isPending || revealState !== "idle"}
                 />
                 <button
                   className="btn btn-primary btn-big"
-                  disabled={redeem.isPending || !code.trim()}
+                  disabled={redeem.isPending || revealState !== "idle" || !code.trim()}
                   onClick={handleRedeem}
                 >
-                  Redeem
+                  {revealState === "rolling" ? "Rolling…" : "Roll the Rack 🎱"}
                 </button>
+                <p style={{ fontSize: 10, color: "#888", margin: 0 }}>
+                  Have a gifted Day, Year, or Lifetime code? Enter it here too.
+                </p>
               </>
             )}
           </div>
         </div>
 
+        {/* Card purchase — turned off behind an env flag while we run on codes
+            only. The endpoints + UI stay intact so this can flip back on. */}
+        {cardPaymentsEnabled && (
+          <div className="panel">
+            <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🎟️</span>Get a Pass</span></div>
+            <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {plans.isLoading && <p style={{ fontSize: 12 }}>Loading plans…</p>}
+              {planList.map((plan) => {
+                const note = recurringNote(plan);
+                return (
+                  <div
+                    key={plan.id}
+                    style={{
+                      border: "1px solid #888",
+                      background: "#fff",
+                      padding: 8,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 4,
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontFamily: "VT323", fontSize: 22, color: "#000080" }}>{plan.name}</span>
+                      <span style={{ fontWeight: "bold" }}>
+                        {formatPrice(plan.priceCents)}
+                        <span style={{ fontWeight: "normal", fontSize: 12 }}>{priceSuffix(plan)}</span>
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 11, color: "#444" }}>{plan.description}</div>
+                    {note && (
+                      <div style={{ fontSize: 10, color: "#006400" }}>↻ {note}</div>
+                    )}
+                    <button
+                      className="btn btn-primary"
+                      disabled={busy}
+                      onClick={() => handlePlanAction(plan)}
+                    >
+                      {plan.kind === "subscription" ? "Subscribe" : "Buy"}
+                    </button>
+                  </div>
+                );
+              })}
+              <p style={{ fontSize: 10, color: "#888", marginTop: 4 }}>
+                Pay securely by card via Stripe. Prefer a code? Redeem one above.
+              </p>
+            </div>
+          </div>
+        )}
+
         {msg && (
           <div className="notice"><span>ℹ</span><span>{msg}</span></div>
         )}
       </div>
+
+      {revealState !== "idle" && (
+        <LuckyBreakReveal
+          phase={revealState === "rolling" ? "rolling" : "result"}
+          result={revealResult}
+          onClose={() => setRevealState("idle")}
+        />
+      )}
     </div>
   );
 }

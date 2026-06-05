@@ -1,4 +1,8 @@
 import type { PassKind, SubscriptionInterval } from "@workspace/db";
+import {
+  LUCKY_BREAK_LIFETIME_PROBABILITY,
+  LUCKY_BREAK_WINDOW_DAYS,
+} from "./luckyBreak";
 
 /**
  * Single source of truth for all prices and plan metadata. The client reads
@@ -17,9 +21,28 @@ import type { PassKind, SubscriptionInterval } from "@workspace/db";
  * (the only "Yearly" is now the subscription). */
 export const PASS_PRICES_CENTS: Record<PassKind, number> = {
   day: 199,
+  month: 499,
   year: 1299,
   lifetime: 4999,
 };
+
+/**
+ * Lucky Break — a single $5.99 "roll the rack" unlock sold via redeem codes
+ * (no in-app card checkout). Every roll grants at least a Monthly pass; a
+ * fixed, disclosed share of rolls upgrade to Lifetime. The odds and entropy
+ * recipe live in the pure engine (`luckyBreak.ts`); the price lives here with
+ * the rest of the catalog so there is a single source of truth.
+ */
+export const LUCKY_BREAK_PRICE_CENTS = 599;
+
+/** Public Lucky Break catalog entry surfaced via /passes/plans. Mirrors the
+ * disclosed odds + entropy window from the pure engine so the client shows the
+ * exact same numbers the server rolls against. */
+export const LUCKY_BREAK_INFO = {
+  priceCents: LUCKY_BREAK_PRICE_CENTS,
+  lifetimeProbability: LUCKY_BREAK_LIFETIME_PROBABILITY,
+  windowDays: LUCKY_BREAK_WINDOW_DAYS,
+} as const;
 
 /** Prices for recurring subscriptions, by billing interval. */
 export const SUBSCRIPTION_PRICES_CENTS: Record<SubscriptionInterval, number> = {

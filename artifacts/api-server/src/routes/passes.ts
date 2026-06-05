@@ -4,6 +4,7 @@ import {
   db,
   discountCodesTable,
   discountRedemptionsTable,
+  luckyBreakRollsTable,
   type PassKind,
 } from "@workspace/db";
 import {
@@ -30,6 +31,15 @@ import {
   listMyGiftCodes,
   GiftCodeFailure,
 } from "../lib/giftCodes";
+import { cardPaymentsEnabled, CARD_PAYMENTS_OFF_MESSAGE } from "../lib/config";
+import {
+  LUCKY_BREAK_CODE_KIND,
+  LUCKY_BREAK_WINDOW_DAYS,
+  computeLuckyBreakRoll,
+  type EntropyShot,
+  type LuckyBreakRollResult,
+} from "../lib/luckyBreak";
+import { gatherShotEntropy } from "../lib/luckyBreakEntropy";
 
 const router: IRouter = Router();
 
@@ -90,6 +100,23 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
     return;
   }
 
+  // The redemption id is assigned up-front so it can be folded into the Lucky
+  // Break seed (making each roll unique + unpredictable) AND used as the
+  // discount_redemptions primary key, tying the roll record to the redemption.
+  const redemptionId = newId();
+
+  // Peek (non-locking) to learn whether this is a Lucky Break code so we can
+  // gather the potentially-large shot entropy BEFORE opening the write
+  // transaction. The authoritative validation still happens under FOR UPDATE
+  // inside the tx; this read only decides whether to pay for entropy.
+  const [peek] = await db
+    .select({ kind: discountCodesTable.grantsPassKind })
+    .from(discountCodesTable)
+    .where(eq(discountCodesTable.code, code))
+    .limit(1);
+  const isLuckyBreak = peek?.kind === LUCKY_BREAK_CODE_KIND;
+  const entropy: EntropyShot[] = isLuckyBreak ? await gatherShotEntropy() : [];
+
   // We use a thrown sentinel for any "validation failed" path INSIDE the
   // transaction so that pg rolls back any writes that already happened
   // (e.g. the cap-claim UPDATE) before we hit the failure. Returning a
@@ -101,10 +128,12 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
   }
 
   type Pass = { kind: string; startedAt: Date; durationSeconds: number | null };
+  type RedeemTxResult = { pass: Pass; roll: LuckyBreakRollResult | null };
 
   let pass: Pass;
+  let roll: LuckyBreakRollResult | null;
   try {
-    pass = await db.transaction(async (tx): Promise<Pass> => {
+    ({ pass, roll } = await db.transaction(async (tx): Promise<RedeemTxResult> => {
       const [discount] = await tx
         .select()
         .from(discountCodesTable)
@@ -129,26 +158,41 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
         .returning({ id: discountCodesTable.code });
       if (claim.length === 0) throw new RedeemFailure("Code fully redeemed");
 
+      // Lucky Break: SEED the draw from the pre-gathered shot entropy folded
+      // with this redemption's id. The roll happens exactly once, here, inside
+      // the same tx that grants the pass — there is no separate "roll" call to
+      // retry, so a player can never re-roll a result they didn't like. The
+      // outcome is the pass kind to issue ("month" floor or "lifetime").
+      let rollResult: LuckyBreakRollResult | null = null;
+      let kindToIssue: PassKind;
+      if (discount.grantsPassKind === LUCKY_BREAK_CODE_KIND) {
+        rollResult = computeLuckyBreakRoll(entropy, redemptionId);
+        kindToIssue = rollResult.outcome;
+      } else {
+        kindToIssue = discount.grantsPassKind as PassKind;
+      }
+
       const issued = await issuePassTx(tx, {
         userId: user.id,
-        kind: discount.grantsPassKind as PassKind,
+        kind: kindToIssue,
         source: "discount_code",
         sourceRef: code,
       });
 
-      // A code can grant Lifetime — apply the same mutual exclusion as the
-      // purchase/grant paths so an active subscription stops renewing.
+      // A code (or a Lucky Break roll) can grant Lifetime — apply the same
+      // mutual exclusion as the purchase/grant paths so an active subscription
+      // stops renewing.
       if (issued.kind === "lifetime") {
         await stopRenewingActiveSubscriptionsTx(tx, user.id);
       }
 
       // Insert the redemption AFTER the pass so we can wire passId
       // correctly. The unique (code, user_id) index catches duplicate
-      // redeems; the throw below rolls back BOTH the pass insert and
-      // the cap increment so partial entitlement state can never leak.
+      // redeems; the throw below rolls back the pass insert, the cap
+      // increment, and any Lucky Break record so partial state can never leak.
       try {
         await tx.insert(discountRedemptionsTable).values({
-          id: newId(),
+          id: redemptionId,
           code,
           userId: user.id,
           passId: issued.id,
@@ -159,8 +203,28 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
         }
         throw e;
       }
-      return issued;
-    });
+
+      // Persist the audit trail in the same tx so the roll is reproducible and
+      // can never be silently re-rolled. rolledValuePpm/lifetimeProbabilityBps
+      // are integer-scaled so the [0,1) draw and odds round-trip exactly.
+      if (rollResult) {
+        await tx.insert(luckyBreakRollsTable).values({
+          id: newId(),
+          userId: user.id,
+          code,
+          redemptionId,
+          seedHash: rollResult.seedHash,
+          rolledValuePpm: Math.round(rollResult.value * 1_000_000),
+          lifetimeProbabilityBps: Math.round(rollResult.lifetimeProbability * 10_000),
+          outcome: rollResult.outcome,
+          entropyShotCount: rollResult.entropyShotCount,
+          windowDays: LUCKY_BREAK_WINDOW_DAYS,
+          passId: issued.id,
+        });
+      }
+
+      return { pass: issued, roll: rollResult };
+    }));
   } catch (err) {
     if (err instanceof RedeemFailure) {
       res.json(RedeemDiscountCodeResponse.parse({ success: false, message: err.reason }));
@@ -172,8 +236,15 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
   }
 
   req.log.info(
-    { userId: user.id, code, passKind: pass.kind },
-    "Discount code redeemed",
+    {
+      userId: user.id,
+      code,
+      passKind: pass.kind,
+      luckyBreak: roll
+        ? { outcome: roll.outcome, seedHash: roll.seedHash, shots: roll.entropyShotCount }
+        : undefined,
+    },
+    roll ? "Lucky Break code redeemed" : "Discount code redeemed",
   );
   // Mirror the local mutual-exclusion to Stripe: a redeemed Lifetime must also
   // stop a real subscription from renewing (best-effort, outside the tx).
@@ -183,8 +254,21 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
   res.json(
     RedeemDiscountCodeResponse.parse({
       success: true,
-      message: `Granted ${pass.kind} pass`,
+      message: roll
+        ? roll.outcome === "lifetime"
+          ? "JACKPOT — you rolled a Lifetime pass!"
+          : "Nice break — you rolled a Monthly pass!"
+        : `Granted ${pass.kind} pass`,
       pass: passToSummary(pass),
+      luckyBreak: roll
+        ? {
+            outcome: roll.outcome,
+            lifetimeProbability: roll.lifetimeProbability,
+            windowDays: LUCKY_BREAK_WINDOW_DAYS,
+            seedHash: roll.seedHash,
+            seededShotCount: roll.entropyShotCount,
+          }
+        : undefined,
     }),
   );
 });
@@ -199,6 +283,15 @@ router.post("/passes/checkout", async (req, res): Promise<void> => {
   const user = await getOrCreateUser(req);
   if (!user) {
     res.status(401).json({ error: "Sign in to purchase a pass" });
+    return;
+  }
+  if (!cardPaymentsEnabled()) {
+    res.json(
+      CreatePassCheckoutResponse.parse({
+        success: false,
+        message: CARD_PAYMENTS_OFF_MESSAGE,
+      }),
+    );
     return;
   }
   const result = await paymentProvider.createCheckout({
@@ -218,6 +311,15 @@ router.post("/passes/verify", async (req, res): Promise<void> => {
   const user = await getOrCreateUser(req);
   if (!user) {
     res.status(401).json({ error: "Sign in to verify a pass" });
+    return;
+  }
+  if (!cardPaymentsEnabled()) {
+    res.json(
+      VerifyPassCheckoutResponse.parse({
+        success: false,
+        message: CARD_PAYMENTS_OFF_MESSAGE,
+      }),
+    );
     return;
   }
   const verify = await paymentProvider.verifyAndGrant(

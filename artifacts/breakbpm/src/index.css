@@ -1889,3 +1889,143 @@ html, #root {
   margin-top: 12px;
 }
 .fpp-page-label { font-size: 12px; }
+
+/* ===== Lucky Break reveal =====================================================
+   The "rolling the rack" overlay. Reuses .hud-chip ball art for both the
+   tumbling rack and the final result ball, with a scaled-up result chip. */
+.lb-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 32, 0.62);
+}
+.lb-card {
+  width: 100%;
+  max-width: 340px;
+}
+.lb-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 16px 14px;
+}
+.lb-headline {
+  font-family: 'VT323', monospace;
+  font-size: 30px;
+  line-height: 1;
+  color: #000080;
+}
+.lb-subtle {
+  font-size: 11px;
+  color: #555;
+}
+.lb-blink {
+  animation: lb-blink 0.9s steps(2, start) infinite;
+}
+@keyframes lb-blink {
+  50% { opacity: 0.35; }
+}
+
+/* Tumbling rack — chips bounce + spin while the draw settles. */
+.lb-rack {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+.lb-chip-roll {
+  animation: lb-roll 0.55s ease-in-out infinite alternate;
+}
+@keyframes lb-roll {
+  from { transform: translateY(0) rotate(-12deg); }
+  to   { transform: translateY(-9px) rotate(12deg); }
+}
+
+/* Result stage — a single big ball lands. */
+.lb-result-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  margin: 4px 0;
+}
+.lb-jackpot {
+  background: radial-gradient(circle, rgba(253, 211, 7, 0.55) 0%, rgba(253, 211, 7, 0) 70%);
+  animation: lb-glow 1s ease-in-out infinite alternate;
+}
+@keyframes lb-glow {
+  from { box-shadow: 0 0 0 rgba(253, 211, 7, 0); }
+  to   { box-shadow: 0 0 22px 6px rgba(253, 211, 7, 0.7); }
+}
+.lb-result-chip {
+  --chip-size: 72px;
+  --chip-border: 3px;
+}
+.lb-result-chip::after {
+  width: 38px;
+  height: 38px;
+  border-width: 2.5px;
+  font-size: 22px;
+}
+.lb-result-chip.hud-chip-stripe::before {
+  height: 30px;
+}
+.lb-pop {
+  animation: lb-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes lb-pop {
+  from { transform: scale(0.2); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.lb-tier {
+  font-family: 'VT323', monospace;
+  font-size: 26px;
+  line-height: 1;
+  color: #006400;
+}
+.lb-tier-gold {
+  color: #9a6b00;
+  text-shadow: 0 0 6px rgba(253, 211, 7, 0.8);
+}
+.lb-desc {
+  font-size: 12px;
+  color: #333;
+  margin: 0;
+}
+.lb-odds {
+  font-size: 11px;
+  color: #444;
+  background: #fffef2;
+  border: 1px solid #888;
+  padding: 6px 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.lb-seed {
+  font-size: 10px;
+  color: #777;
+  line-height: 1.4;
+}
+.lb-seed-hash {
+  font-family: 'Courier New', Courier, monospace;
+  word-break: break-all;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lb-chip-roll,
+  .lb-jackpot,
+  .lb-pop,
+  .lb-blink {
+    animation: none;
+  }
+}
