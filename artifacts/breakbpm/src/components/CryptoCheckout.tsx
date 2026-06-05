@@ -311,59 +311,62 @@ export default function CryptoCheckout({
           </div>
         )}
 
-        {/* Pass + asset selectors (only useful once connected and without access) */}
-        {isConnected && !hasAccess && (
-          <>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={{ fontSize: 11, color: "#444" }}>Pass</span>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {passes.map((p) => (
-                  <button
-                    key={p.passKind}
-                    className={
-                      passKind === p.passKind ? "btn btn-primary" : "btn"
-                    }
-                    style={{ fontSize: 12 }}
-                    disabled={busy}
-                    onClick={() => setPassKind(p.passKind)}
-                  >
-                    {p.name} · {formatPrice(p.priceCents)}
-                  </button>
-                ))}
-              </div>
-            </div>
+        {/* Pass + asset selectors — always visible so anyone can browse the
+            passes and prices (matching the card flow). Sending payment still
+            requires a connected wallet, so the Pay button only appears once a
+            wallet is connected. */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontSize: 11, color: "#444" }}>Pass</span>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {passes.map((p) => (
+              <button
+                key={p.passKind}
+                className={passKind === p.passKind ? "btn btn-primary" : "btn"}
+                style={{ fontSize: 12 }}
+                disabled={busy}
+                onClick={() => setPassKind(p.passKind)}
+              >
+                {p.name} · {formatPrice(p.priceCents)}
+              </button>
+            ))}
+          </div>
+        </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={{ fontSize: 11, color: "#444" }}>Pay with</span>
-              <div style={{ display: "flex", gap: 6 }}>
-                {catalog.assets.map((a) => (
-                  <button
-                    key={a}
-                    className={asset === a ? "btn btn-primary" : "btn"}
-                    style={{ fontSize: 12, textTransform: "uppercase" }}
-                    disabled={busy}
-                    onClick={() => setAsset(a)}
-                  >
-                    {a}
-                  </button>
-                ))}
-              </div>
-            </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontSize: 11, color: "#444" }}>Pay with</span>
+          <div style={{ display: "flex", gap: 6 }}>
+            {catalog.assets.map((a) => (
+              <button
+                key={a}
+                className={asset === a ? "btn btn-primary" : "btn"}
+                style={{ fontSize: 12, textTransform: "uppercase" }}
+                disabled={busy}
+                onClick={() => setAsset(a)}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+        </div>
 
-            <button
-              className="btn btn-primary btn-big"
-              disabled={busy}
-              onClick={handlePay}
-            >
-              {phase === "quoting"
-                ? "Getting a quote…"
-                : phase === "awaiting_signature"
-                  ? "Confirm in wallet…"
-                  : phase === "confirming"
-                    ? "Confirming on-chain…"
-                    : `Pay with ${asset.toUpperCase()}`}
-            </button>
-          </>
+        {isConnected ? (
+          <button
+            className="btn btn-primary btn-big"
+            disabled={busy}
+            onClick={handlePay}
+          >
+            {phase === "quoting"
+              ? "Getting a quote…"
+              : phase === "awaiting_signature"
+                ? "Confirm in wallet…"
+                : phase === "confirming"
+                  ? "Confirming on-chain…"
+                  : `Pay with ${asset.toUpperCase()}`}
+          </button>
+        ) : (
+          <p style={{ fontSize: 11, color: "#888", margin: 0 }}>
+            Connect a wallet above to pay with {asset.toUpperCase()}.
+          </p>
         )}
 
         {/* Resume an interrupted payment */}
