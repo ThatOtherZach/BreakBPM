@@ -281,9 +281,18 @@ export default function CryptoCheckout({
   const oddsPct = luckyBreak
     ? Math.round(luckyBreak.lifetimeProbability * 100)
     : 20;
-  const blurbFor = (kind: string): string =>
+  const blurbFor = (kind: string): React.ReactNode =>
     kind === "lucky_break"
-      ? `Guaranteed Monthly · ${oddsPct}% shot at Lifetime`
+      ? (
+        <>
+          Guaranteed Monthly pass with a {oddsPct}% chance to get a Lifetime pass.
+          <br />
+          <span style={{ color: "#666" }}>
+            Fair Play: the draw is seeded by the last 30 days across BreakBPM shots.
+            The odds stay fixed at {oddsPct}%.
+          </span>
+        </>
+      )
       : (PASS_BLURB[kind] ?? "One-time pass");
 
   return (
