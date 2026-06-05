@@ -109,7 +109,7 @@ Lucky Break is a $4.99 roll that guarantees you a pass — you always win someth
 
 The outcome is determined by a seeded draw using the last 30 days of global shot activity across all players, hashed together with your unique roll ID. The odds never change based on how you or anyone else plays — the shot data only selects which outcome you land on, it doesn't shift the 20% threshold.
 
-Lucky Break codes are available on your passes page and can be redeemed from your account page.
+Lucky Break is available to purchase on your passes page — your pass is granted automatically when payment is confirmed.
 
 ---
 
