@@ -4,7 +4,7 @@
 - [breakbpm test harness](breakbpm-test-harness.md) — vitest runs via a separate vitest.config.ts (not vite.config.ts, which throws without PORT/BASE_PATH); `*.test.ts` already excluded from tsc.
 - [Lifetime mutual exclusion](lifetime-mutual-exclusion.md) — issuing Lifetime must stop active subscriptions renewing on EVERY grant path (purchase/dev-grant/redeem), in-tx.
 - [Paid-host gating uses tier not hasActivePass](entitlement-paid-flag.md) — entitlement.hasActivePass = one-time passes only; subscriptions set tier==='pass'. Gate "paid host" features on tier==='pass'.
-- [History card subject-relative outcome](history-subject-relative-outcome.md) — stored outcome/winner isn't viewer-aware; recompute WIN/LOSS per-subject, locate subject by participant slotIndex not name.
+- [History card subject-relative outcome](history-subject-relative-outcome.md) — stored outcome/winner isn't viewer-aware; recompute WIN/LOSS per-subject by slotIndex; also per-participant pace (BPM+sunk count) from slot player name, not host row.
 - [Client fetch throws on non-2xx](client-fetch-throws-on-non-2xx.md) — customFetch throws ApiError on any non-2xx, so in-body error `reason` (e.g. rate_limited on 429) is unreachable as query.data; branch on ApiError.status.
 - [Clerk duplicate verification emails](clerk-duplicate-verification-emails.md) — inline `Route component={() => ...}` remounts Clerk's <SignIn>/<SignUp>, re-sending a 2nd code; use stable named route components.
 - [api-client-react vs api-zod date typing](api-client-react-date-typing.md) — client model types use `string` for date-time, api-zod uses `Date`; send ISO strings in mutation bodies, import frontend types from api-client-react.

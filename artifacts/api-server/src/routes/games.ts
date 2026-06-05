@@ -150,18 +150,91 @@ function resolveSubjectResult(
   return { outcome, opponent };
 }
 
+/** Minimal shot-log entry shape parsed out of the gameState JSONB for pace. */
+interface PaceShot {
+  playerName?: string;
+  ball?: number;
+  timestamp?: number;
+}
+
+/**
+ * Per-participant pace for a finished game. With share-code joining a single
+ * game row stores the HOST's `bpm` / `sunkBallsCount`, but BPM is per-player —
+ * a joiner's pace and ball count are their own, not the host's. We recompute
+ * them from the shot log filtered to the participant's SLOT player name
+ * (`gameState.players[slot].name` — the same key the host uses to attribute
+ * per-slot accuracy at save time) and bounded by the participant's
+ * `statsStartAt` cutoff so a joiner only accrues shots from when they joined.
+ *
+ * Mirrors `calculatePlayerBPM` in gameLogic.ts: anchored at the participant's
+ * first pocket, measured to their latest own entry; null with no pockets, 0 for
+ * sub-millisecond. Falls back to the row-level host values when the
+ * participant's own shots can't be attributed (legacy rows with no participant
+ * record, or a name mismatch) AND the subject is the host; a joiner with no
+ * attributable shots correctly shows none.
+ */
+function resolveParticipantPace(
+  g: GameRow,
+  subject: { slot: number | null; statsStartAt: Date | null; isHost: boolean; known: boolean },
+): { bpm: number | null; sunkBallsCount: number } {
+  const fallback = {
+    bpm: g.bpm == null ? null : g.bpm / 10,
+    sunkBallsCount: g.sunkBallsCount,
+  };
+  // No participant row at all (legacy) → row-level host values.
+  if (!subject.known) return fallback;
+
+  const gs = g.gameState as Record<string, unknown> | null;
+  const players = Array.isArray(gs?.["players"])
+    ? (gs!["players"] as Array<Record<string, unknown>>)
+    : [];
+  const slot = subject.slot;
+  const playerName =
+    slot != null && slot >= 0 && slot < players.length && typeof players[slot]?.["name"] === "string"
+      ? (players[slot]["name"] as string)
+      : null;
+  if (!playerName) return subject.isHost ? fallback : { bpm: null, sunkBallsCount: 0 };
+
+  const shotLog = Array.isArray(gs?.["shotLog"]) ? (gs!["shotLog"] as PaceShot[]) : [];
+  const startMs = subject.statsStartAt ? subject.statsStartAt.getTime() : -Infinity;
+  const mine = shotLog.filter(
+    (e) =>
+      e.playerName === playerName &&
+      typeof e.timestamp === "number" &&
+      (e.timestamp as number) >= startMs,
+  );
+  // Couldn't attribute any of this participant's own entries: host keeps the
+  // row-level values (legacy / name-mismatch safety); a joiner has genuinely
+  // none of their own.
+  if (mine.length === 0) return subject.isHost ? fallback : { bpm: null, sunkBallsCount: 0 };
+
+  // A "pocketed" entry is any one where a ball was sunk (sink, or a terminal
+  // win/lose that pocketed) — keyed off `ball` being a number, mirroring
+  // calculatePlayerBPM. Misses/fouls/safeties and Shark steals don't count.
+  const sinks = mine.filter((e) => typeof e.ball === "number");
+  const sunkBallsCount = sinks.length;
+  if (sinks.length === 0) return { bpm: null, sunkBallsCount };
+  const firstSinkAt = sinks[0].timestamp as number;
+  const lastAt = (mine[mine.length - 1].timestamp as number) ?? firstSinkAt;
+  const elapsed = (lastAt - firstSinkAt) / 60000;
+  const bpm = elapsed < 0.001 ? 0 : Math.round((sinks.length / elapsed) * 10) / 10;
+  return { bpm, sunkBallsCount };
+}
+
 /**
  * Map a stored game row into a GameHistoryEntry — the shape rendered by the
  * shared history cards on both the owner's account page and the public
  * /watch/{name} profile. `accuracy` is resolved by the caller (per-participant
- * where known, row-level fallback). `subject` identifies the player whose
- * history this is (by stable slot, with name fallback), used to make the
- * outcome/opponent viewer-relative.
+ * where known, row-level fallback). `pace` carries the subject's own BPM and
+ * sunk-ball count (see `resolveParticipantPace`). `subject` identifies the
+ * player whose history this is (by stable slot, with name fallback), used to
+ * make the outcome/opponent viewer-relative.
  */
 function toHistoryEntry(
   g: GameRow,
   accuracy: number | null,
   subject: { slot: number | null; name: string | null },
+  pace: { bpm: number | null; sunkBallsCount: number },
 ) {
   const gs = g.gameState as Record<string, unknown> | null;
   const rawReason =
@@ -185,10 +258,10 @@ function toHistoryEntry(
     gameType: g.gameType,
     winner: g.winner,
     opponent,
-    bpm: g.bpm == null ? null : g.bpm / 10,
+    bpm: pace.bpm,
     accuracy,
     durationMs: g.durationMs,
-    sunkBallsCount: g.sunkBallsCount,
+    sunkBallsCount: pace.sunkBallsCount,
     outcome,
     shareCode: g.shareCode,
     endedAt: g.endedAt!,
@@ -1515,6 +1588,8 @@ router.get("/games/profile", async (req, res): Promise<void> => {
               gameId: gameParticipantsTable.gameId,
               accuracy: gameParticipantsTable.accuracy,
               slotIndex: gameParticipantsTable.slotIndex,
+              statsStartAt: gameParticipantsTable.statsStartAt,
+              isHost: gameParticipantsTable.isHost,
             })
             .from(gameParticipantsTable)
             .where(
@@ -1524,15 +1599,22 @@ router.get("/games/profile", async (req, res): Promise<void> => {
               ),
             )
         : [];
-    const accByGame = new Map<string, number | null>(parts.map((p) => [p.gameId, p.accuracy]));
-    const slotByGame = new Map<string, number>(parts.map((p) => [p.gameId, p.slotIndex]));
-    games = visible.map((g) =>
-      toHistoryEntry(
+    const partByGame = new Map(parts.map((p) => [p.gameId, p]));
+    games = visible.map((g) => {
+      const part = partByGame.get(g.id);
+      const pace = resolveParticipantPace(g, {
+        slot: part?.slotIndex ?? null,
+        statsStartAt: part?.statsStartAt ?? null,
+        isHost: part?.isHost ?? false,
+        known: part !== undefined,
+      });
+      return toHistoryEntry(
         g,
-        accByGame.has(g.id) ? (accByGame.get(g.id) ?? null) : (g.accuracy ?? null),
-        { slot: slotByGame.has(g.id) ? (slotByGame.get(g.id) ?? null) : null, name: host.screenName },
-      ),
-    );
+        part ? (part.accuracy ?? null) : (g.accuracy ?? null),
+        { slot: part?.slotIndex ?? null, name: host.screenName },
+        pace,
+      );
+    });
   }
 
   res.json(
@@ -1715,17 +1797,17 @@ router.get("/games/history", async (req, res): Promise<void> => {
     .limit(rowLimit)
     .offset(offset);
 
-  // Pre-break-only joining (v0.8) means every participant in a game
-  // experienced the same shots — there's no mid-game joiner cutoff to
-  // honor, so everyone (host and joiners alike) sees the host's stored
-  // BPM and sunk-ball count for their history row. `statsStartAt` /
-  // `leftAt` are kept on `game_participants` for forensic/debug
-  // purposes but are no longer used by history math.
+  // BPM is per-player: the game row stores the HOST's bpm / sunk-ball
+  // count, but a joiner's pace and ball count are their own. Both are
+  // recomputed per participant from the shot log (see
+  // `resolveParticipantPace`), filtered to the participant's slot player
+  // name and bounded by their `statsStartAt` cutoff, with a row-level
+  // host fallback for legacy / name-mismatch rows.
   //
-  // Accuracy is the one stat that IS per-participant: each joiner sees
-  // their OWN accuracy (snapshotted on their game_participants row at
-  // save time), falling back to the row-level winner/host accuracy for
-  // legacy rows that predate per-participant accuracy.
+  // Accuracy is likewise per-participant: each joiner sees their OWN
+  // accuracy (snapshotted on their game_participants row at save time),
+  // falling back to the row-level winner/host accuracy for legacy rows
+  // that predate per-participant accuracy.
   const visibleIds = visible.map((g) => g.id);
   const myParts =
     visibleIds.length > 0
@@ -1734,6 +1816,8 @@ router.get("/games/history", async (req, res): Promise<void> => {
             gameId: gameParticipantsTable.gameId,
             accuracy: gameParticipantsTable.accuracy,
             slotIndex: gameParticipantsTable.slotIndex,
+            statsStartAt: gameParticipantsTable.statsStartAt,
+            isHost: gameParticipantsTable.isHost,
           })
           .from(gameParticipantsTable)
           .where(
@@ -1743,20 +1827,23 @@ router.get("/games/history", async (req, res): Promise<void> => {
             ),
           )
       : [];
-  const myAccuracyByGame = new Map<string, number | null>(
-    myParts.map((p) => [p.gameId, p.accuracy]),
-  );
-  const mySlotByGame = new Map<string, number>(myParts.map((p) => [p.gameId, p.slotIndex]));
+  const myPartByGame = new Map(myParts.map((p) => [p.gameId, p]));
 
-  const games = visible.map((g) =>
-    toHistoryEntry(
+  const games = visible.map((g) => {
+    const part = myPartByGame.get(g.id);
+    const pace = resolveParticipantPace(g, {
+      slot: part?.slotIndex ?? null,
+      statsStartAt: part?.statsStartAt ?? null,
+      isHost: part?.isHost ?? false,
+      known: part !== undefined,
+    });
+    return toHistoryEntry(
       g,
-      myAccuracyByGame.has(g.id)
-        ? (myAccuracyByGame.get(g.id) ?? null)
-        : (g.accuracy ?? null),
-      { slot: mySlotByGame.has(g.id) ? (mySlotByGame.get(g.id) ?? null) : null, name: user.screenName },
-    ),
-  );
+      part ? (part.accuracy ?? null) : (g.accuracy ?? null),
+      { slot: part?.slotIndex ?? null, name: user.screenName },
+      pace,
+    );
+  });
 
   res.json(
     GetGameHistoryResponse.parse({
