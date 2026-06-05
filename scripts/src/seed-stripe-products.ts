@@ -41,14 +41,14 @@ const PLANS: SeedPlan[] = [
     planId: "yearly",
     name: "BreakBPM Yearly",
     description: "Best value — full access billed yearly. Cancel anytime.",
-    unitAmount: 2499,
+    unitAmount: 1499,
     recurring: "year",
   },
   {
     planId: "lifetime",
     name: "BreakBPM Lifetime",
     description: "Pay once, play forever. Includes custom screen names.",
-    unitAmount: 4999,
+    unitAmount: 2499,
   },
 ];
 

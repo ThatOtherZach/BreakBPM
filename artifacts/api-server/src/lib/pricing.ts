@@ -13,8 +13,8 @@ import {
  * Pricing ladder:
  *   - Day      $1.99  one-time pass (impulse unlock)
  *   - Monthly  $4.99/mo subscription (low-commitment on-ramp)
- *   - Yearly   $24.99/yr subscription ("best value" — ~58% off monthly)
- *   - Lifetime $49.99 one-time pass (premium anchor = 2 years of Yearly)
+ *   - Yearly   $14.99/yr subscription ("best value" — ~75% off monthly)
+ *   - Lifetime $24.99 one-time pass (premium anchor)
  */
 
 /** Prices for one-time passes. The one-time `year` pass is sold via crypto
@@ -23,8 +23,8 @@ import {
 export const PASS_PRICES_CENTS: Record<PassKind, number> = {
   day: 199,
   month: 499,
-  year: 2499,
-  lifetime: 4999,
+  year: 1499,
+  lifetime: 2499,
 };
 
 /**
@@ -48,7 +48,7 @@ export const LUCKY_BREAK_INFO = {
 /** Prices for recurring subscriptions, by billing interval. */
 export const SUBSCRIPTION_PRICES_CENTS: Record<SubscriptionInterval, number> = {
   month: 499,
-  year: 2499,
+  year: 1499,
 };
 
 /**

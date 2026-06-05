@@ -88,8 +88,8 @@ BreakBPM is free to play. Sign in to unlock full game history and cross-device r
 |----------|--------------------|---------------------------------|
 | Day Pass | $1.99 one-time     | 24 hours of full access         |
 | Monthly  | $4.99 / month      | Full access, cancel anytime     |
-| Yearly   | $24.99 / year      | Full access, cancel anytime     |
-| Lifetime | $49.99 one-time    | Full access, forever            |
+| Yearly   | $14.99 / year      | Full access, cancel anytime     |
+| Lifetime | $24.99 one-time    | Full access, forever            |
 
 Day Pass and Lifetime are one-time purchases. Monthly and Yearly are recurring (cancel anytime). Buying Lifetime stops any active subscription from renewing.
 
