@@ -7,10 +7,14 @@ import {
   subscriptionsTable,
   discountCodesTable,
   discountRedemptionsTable,
+  gamesTable,
+  gameParticipantsTable,
   PASS_DURATIONS_SECONDS,
   type User,
   type Pass,
   type Subscription,
+  type Game,
+  type GameParticipant,
   type PassKind,
   type SubscriptionInterval,
   type SubscriptionStatus,
@@ -24,9 +28,22 @@ import {
 
 const createdUserIds: string[] = [];
 const createdCodes: string[] = [];
+const createdGameIds: string[] = [];
 
 function rid(): string {
   return randomBytes(16).toString("hex");
+}
+
+/** Safe 5-char share-code alphabet (mirrors lib/shareCode.ts). */
+const SHARE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+
+/** A normalized (uppercase, alphabet-only) 5-char share code. */
+export function uniqueShareCode(): string {
+  let out = "";
+  for (let i = 0; i < 5; i++) {
+    out += SHARE_ALPHABET[Math.floor(Math.random() * SHARE_ALPHABET.length)];
+  }
+  return out;
 }
 
 /** A code guaranteed not to collide with seed/admin codes. */
@@ -119,6 +136,102 @@ export async function seedDiscountCode(
   createdCodes.push(code);
 }
 
+/**
+ * Insert an in-progress game row plus its host participant (slot 0). The
+ * host is `hostUserId`. Returns the game row. The game and its participants
+ * are tracked for cleanup.
+ */
+export async function seedGame(
+  hostUserId: string,
+  opts: {
+    gameType?: string;
+    maxPlayers?: number;
+    shareCode?: string;
+    hostName?: string;
+    shotLog?: Array<Record<string, unknown>>;
+    endedAt?: Date | null;
+    startedAt?: Date;
+  } = {},
+): Promise<Game> {
+  const id = rid();
+  const shareCode = opts.shareCode ?? uniqueShareCode();
+  const startedAt = opts.startedAt ?? new Date();
+  const gameType = opts.gameType ?? "8ball";
+  const maxPlayers = opts.maxPlayers ?? 2;
+  const [row] = await db
+    .insert(gamesTable)
+    .values({
+      id,
+      userId: hostUserId,
+      gameType,
+      maxPlayers,
+      shareCode,
+      gameState: {
+        gameType,
+        startedAt: startedAt.toISOString(),
+        shareCode,
+        ...(opts.shotLog ? { shotLog: opts.shotLog } : {}),
+      },
+      startedAt,
+      lastActivityAt: startedAt,
+      endedAt: opts.endedAt ?? null,
+      outcome: opts.endedAt ? "completed" : null,
+    })
+    .returning();
+  createdGameIds.push(id);
+  await db.insert(gameParticipantsTable).values({
+    gameId: id,
+    slotIndex: 0,
+    userId: hostUserId,
+    displayName: opts.hostName ?? "Host",
+    isHost: true,
+    joinedAt: startedAt,
+    statsStartAt: startedAt,
+  });
+  return row;
+}
+
+/** Insert a (non-host) participant row into an existing game. */
+export async function seedParticipant(
+  gameId: string,
+  slotIndex: number,
+  opts: {
+    userId?: string | null;
+    displayName?: string;
+    guestToken?: string | null;
+    leftAt?: Date | null;
+  } = {},
+): Promise<GameParticipant> {
+  const now = new Date();
+  const [row] = await db
+    .insert(gameParticipantsTable)
+    .values({
+      gameId,
+      slotIndex,
+      userId: opts.userId ?? null,
+      displayName: opts.displayName ?? `Player ${slotIndex + 1}`,
+      isHost: false,
+      joinedAt: now,
+      statsStartAt: now,
+      leftAt: opts.leftAt ?? null,
+      guestToken: opts.guestToken ?? null,
+    })
+    .returning();
+  return row;
+}
+
+export async function getGame(gameId: string): Promise<Game | undefined> {
+  const rows = await db.select().from(gamesTable).where(eq(gamesTable.id, gameId)).limit(1);
+  return rows[0];
+}
+
+export async function getParticipants(gameId: string): Promise<GameParticipant[]> {
+  return db
+    .select()
+    .from(gameParticipantsTable)
+    .where(eq(gameParticipantsTable.gameId, gameId));
+}
+
 export async function getSubscriptions(userId: string): Promise<Subscription[]> {
   return db
     .select()
@@ -132,6 +245,12 @@ export async function getPasses(userId: string): Promise<Pass[]> {
 
 /** Delete everything created by the factories during a test. */
 export async function cleanup(): Promise<void> {
+  if (createdGameIds.length > 0) {
+    // Deleting the game cascades to its game_participants rows. Done before
+    // users so guest participant rows (null userId) are also removed.
+    await db.delete(gamesTable).where(inArray(gamesTable.id, createdGameIds));
+    createdGameIds.length = 0;
+  }
   if (createdUserIds.length > 0) {
     // discount_redemptions has no FK to users, so remove those explicitly.
     // passes + subscriptions cascade on user delete.
