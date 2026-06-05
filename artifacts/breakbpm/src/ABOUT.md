@@ -103,6 +103,14 @@ Day Pass and Lifetime are one-time purchases. Monthly and Yearly are recurring (
 
 Plans can be purchased from your account page or redeemed with a code.
 
+### 🎱 Lucky Break
+
+Lucky Break is a $4.99 roll that guarantees you a pass — you always win something. Every roll lands on at least a 30-day Monthly Pass, with a fixed **20% chance** of upgrading to a Lifetime Pass instead.
+
+The outcome is determined by a seeded draw using the last 30 days of global shot activity across all players, hashed together with your unique roll ID. The odds never change based on how you or anyone else plays — the shot data only selects which outcome you land on, it doesn't shift the 20% threshold.
+
+Lucky Break codes are available on your passes page and can be redeemed from your account page.
+
 ---
 
 *Built by [@ThatOtherZach](https://github.com/ThatOtherZach). Owned and operated by Saym Services Inc. in Vancouver, Canada.*
