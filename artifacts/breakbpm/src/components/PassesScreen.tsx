@@ -6,7 +6,6 @@ import {
   useVerifyPassCheckout,
   useCreateSubscriptionCheckout,
   useVerifySubscriptionCheckout,
-  useRedeemDiscountCode,
   getGetMeQueryKey,
   type Plan,
   type LuckyBreakResult,
@@ -48,10 +47,8 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
   const passVerify = useVerifyPassCheckout();
   const subCheckout = useCreateSubscriptionCheckout();
   const subVerify = useVerifySubscriptionCheckout();
-  const redeem = useRedeemDiscountCode();
   const qc = useQueryClient();
 
-  const [code, setCode] = useState("");
   const [msg, setMsg] = useState("");
   const [revealState, setRevealState] = useState<RevealState>("idle");
   const [revealResult, setRevealResult] = useState<LuckyBreakResult | null>(null);
@@ -195,106 +192,12 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
     }
   }
 
-  /**
-   * Redeem a code. Lucky Break codes resolve to a server-seeded roll, so we
-   * play the "rolling the rack" overlay for suspense, enforce a minimum roll
-   * duration, then reveal the won tier. Plain codes (e.g. gifted Day/Year/
-   * Lifetime passes) skip the animation and just surface their message.
-   */
-  async function handleRedeem() {
-    setMsg("");
-    const trimmed = code.trim();
-    if (!trimmed) return;
-
-    setRevealResult(null);
-    setRevealState("rolling");
-    const startedAt = Date.now();
-
-    try {
-      const result = await redeem.mutateAsync({ data: { code: trimmed } });
-      const isRoll = !!result.luckyBreak;
-      const elapsed = Date.now() - startedAt;
-      // Always let the rack tumble a beat; longer for an actual roll.
-      await delay(Math.max(0, (isRoll ? MIN_ROLL_MS : 500) - elapsed));
-
-      if (result.success) {
-        setCode("");
-        qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
-      }
-
-      if (isRoll && result.luckyBreak) {
-        setRevealResult(result.luckyBreak);
-        setRevealState("result");
-        setMsg(result.message);
-      } else {
-        setRevealState("idle");
-        setMsg(result.message);
-      }
-    } catch (e) {
-      setRevealState("idle");
-      setMsg(e instanceof Error ? e.message : "Redeem failed");
-    }
-  }
-
   const planList = plans.data?.plans ?? [];
-  const lifetimeOdds = luckyBreak
-    ? Math.round(luckyBreak.lifetimeProbability * 100)
-    : 20;
 
   return (
     <div className="app-window app-window--page">
       <Navbar onBack={onBack} />
       <div className="app-body">
-
-        {/* Lucky Break — the lead unlock. Redeem a $5.99 code to roll the rack. */}
-        <div className="panel">
-          <div className="panel-header">
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <span aria-hidden="true">🎱</span>Lucky Break
-            </span>
-          </div>
-          <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span style={{ fontFamily: "VT323", fontSize: 26, color: "#000080" }}>
-                Roll the Rack
-              </span>
-              {luckyBreak && (
-                <span style={{ fontWeight: "bold" }}>{formatPrice(luckyBreak.priceCents)}</span>
-              )}
-            </div>
-            <p style={{ fontSize: 12, color: "#333", margin: 0 }}>
-              Every Lucky Break code is a guaranteed win. You'll always get at
-              least a <strong>Monthly Pass</strong> — and there's a{" "}
-              <strong>{lifetimeOdds}%</strong> chance the rack breaks your way for
-              a <strong>Lifetime Pass</strong>.
-            </p>
-            <p style={{ fontSize: 10, color: "#666", margin: 0, lineHeight: 1.5 }}>
-              Fair play: the draw is <strong>seeded</strong> by the last 30 days
-              of shots across all of BreakBPM combined with your code — not
-              weighted by it. The odds stay fixed at {lifetimeOdds}% no matter how
-              anyone shoots.
-            </p>
-
-            <input
-              className="input"
-              placeholder="ENTER LUCKY BREAK CODE"
-              maxLength={64}
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              disabled={redeem.isPending || revealState !== "idle"}
-            />
-            <button
-              className="btn btn-primary btn-big"
-              disabled={redeem.isPending || revealState !== "idle" || !code.trim()}
-              onClick={handleRedeem}
-            >
-              {revealState === "rolling" ? "Rolling…" : "Roll the Rack 🎱"}
-            </button>
-            <p style={{ fontSize: 10, color: "#888", margin: 0 }}>
-              Have a gifted Day, Year, or Lifetime code? Enter it here too.
-            </p>
-          </div>
-        </div>
 
         {/* Card purchase — turned off behind an env flag while we run on codes
             only. The endpoints + UI stay intact so this can flip back on. */}
@@ -339,7 +242,8 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
                 );
               })}
               <p style={{ fontSize: 10, color: "#888", marginTop: 4 }}>
-                Pay securely by card via Stripe. Prefer a code? Redeem one above.
+                Pay securely by card via Stripe. Have a code? Redeem it on your
+                Account page.
               </p>
             </div>
           </div>

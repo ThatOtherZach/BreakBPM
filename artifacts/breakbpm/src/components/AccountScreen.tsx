@@ -7,13 +7,23 @@ import {
   useCancelSubscription,
   useListMyGiftCodes,
   useGenerateGiftCode,
+  useRedeemDiscountCode,
   getGetMeQueryKey,
   getGetGameHistoryQueryKey,
   getListMyGiftCodesQueryKey,
+  type LuckyBreakResult,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "./Navbar";
 import GameHistoryCard, { fmtDate } from "./GameHistoryCard";
+import LuckyBreakReveal from "./LuckyBreakReveal";
+
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// The rack tumbles for at least this long so a seeded Lucky Break draw always
+// feels like a genuine roll, even when the server responds instantly.
+const MIN_ROLL_MS = 2200;
+
+type RevealState = "idle" | "rolling" | "result";
 
 interface Props {
   onBack: () => void;
@@ -48,6 +58,10 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   const [historyPage, setHistoryPage] = useState(1);
   const [giftMsg, setGiftMsg] = useState("");
   const [giftCopied, setGiftCopied] = useState(false);
+  const [code, setCode] = useState("");
+  const [redeemMsg, setRedeemMsg] = useState("");
+  const [revealState, setRevealState] = useState<RevealState>("idle");
+  const [revealResult, setRevealResult] = useState<LuckyBreakResult | null>(null);
   // Force a re-render every 5 minutes so the cooldown / "expires in ~Xh"
   // labels in the gift panel drift naturally without spamming setInterval.
   const [, setClockTick] = useState(0);
@@ -58,6 +72,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   const cancelSub = useCancelSubscription();
   const myGiftCodes = useListMyGiftCodes();
   const generateGift = useGenerateGiftCode();
+  const redeem = useRedeemDiscountCode();
 
   useEffect(() => {
     const id = setInterval(() => setClockTick((n) => n + 1), 5 * 60 * 1000);
@@ -143,6 +158,45 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
     } catch {
       // Some sandboxed iframes block clipboard writes — surface that gently.
       setGiftMsg("Couldn't copy automatically — long-press to copy manually.");
+    }
+  }
+
+  /**
+   * Redeem a code. Lucky Break codes resolve to a server-seeded roll, so we
+   * play the "rolling the rack" overlay for suspense, enforce a minimum roll
+   * duration, then reveal the won tier. Plain codes (e.g. gifted Day/Year/
+   * Lifetime passes) skip the animation and just surface their message.
+   */
+  async function handleRedeem() {
+    setRedeemMsg("");
+    const trimmed = code.trim();
+    if (!trimmed) return;
+
+    setRevealResult(null);
+
+    try {
+      const result = await redeem.mutateAsync({ data: { code: trimmed } });
+
+      if (result.success) {
+        setCode("");
+        qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+        qc.invalidateQueries({ queryKey: getGetGameHistoryQueryKey() });
+      }
+
+      if (result.luckyBreak) {
+        // Lucky Break code → tumble the rack for a beat, then land on the
+        // server-decided tier. Plain gift codes skip the overlay entirely.
+        setRevealState("rolling");
+        await delay(MIN_ROLL_MS);
+        setRevealResult(result.luckyBreak);
+        setRevealState("result");
+        setRedeemMsg(result.message);
+      } else {
+        setRedeemMsg(result.message);
+      }
+    } catch (e) {
+      setRevealState("idle");
+      setRedeemMsg(e instanceof Error ? e.message : "Redeem failed");
     }
   }
 
@@ -389,6 +443,43 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
           </div>
         </div>
 
+        {/* Redeem a Code panel — handles both Lucky Break roll codes (animated
+            reveal) and plain gifted Day/Year/Lifetime codes (plain message). */}
+        <div className="panel">
+          <div className="panel-header">
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🎟️</span>Redeem a Code
+            </span>
+          </div>
+          <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <p style={{ fontSize: 12, color: "#444", margin: 0 }}>
+              Have a Lucky Break, Day, Year, or Lifetime code? Enter it here to
+              unlock your pass.
+            </p>
+            <input
+              className="input"
+              placeholder="ENTER CODE"
+              maxLength={64}
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              disabled={redeem.isPending || revealState !== "idle"}
+            />
+            <button
+              className="btn btn-primary btn-big w-full"
+              disabled={redeem.isPending || revealState !== "idle" || !code.trim()}
+              onClick={handleRedeem}
+            >
+              {redeem.isPending || revealState === "rolling" ? "Redeeming…" : "Redeem"}
+            </button>
+            {redeemMsg && revealState !== "result" && (
+              <div className="notice">
+                <span>ℹ</span>
+                <span>{redeemMsg}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* History panel */}
         <div className="panel">
           <div className="panel-header">
@@ -464,6 +555,14 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
           Sign Out
         </button>
       </div>
+
+      {revealState !== "idle" && (
+        <LuckyBreakReveal
+          phase={revealState === "rolling" ? "rolling" : "result"}
+          result={revealResult}
+          onClose={() => setRevealState("idle")}
+        />
+      )}
     </div>
   );
 }
