@@ -361,8 +361,14 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
             hasAccess={hasAccess}
             luckyBreak={luckyBreak}
             onLuckyBreakWin={(result) => {
-              setRevealResult(result);
-              setRevealState("result");
+              // Mirror the redeem-code roll: tumble the rack for a beat, then
+              // land on the server-decided tier (the draw already happened).
+              setRevealResult(null);
+              setRevealState("rolling");
+              void delay(MIN_ROLL_MS).then(() => {
+                setRevealResult(result);
+                setRevealState("result");
+              });
             }}
           />
         )}
