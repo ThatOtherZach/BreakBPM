@@ -265,7 +265,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                   rel="noopener noreferrer"
                   style={{ color: "#000080" }}
                 >
-                  👁 breakbpm.com/watch/{account.screenName}
+                  📺 breakbpm.com/watch/{account.screenName}
                 </a>
               </div>
             )}
