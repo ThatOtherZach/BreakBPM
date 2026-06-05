@@ -92,7 +92,7 @@ A pass unlocks everything:
 - **Full stats** — switch between 24-hour, 30-day, 365-day, and all-time windows, overlay global averages, and refresh on demand. Free accounts see personal stats for the last 24 hours only.
 - **Custom screen name** — *Lifetime only:* pick your own display name instead of the auto-assigned one.
 
-| Plan     | Price              | Access                                     |
+| Pass     | Price              | Access                                     |
 |----------|--------------------|--------------------------------------------|
 | Day Pass | $1.99 one-time     | Everything above for 24 hours              |
 | Monthly  | $4.99 / 30 Days    | Everything above, cancel anytime           |
