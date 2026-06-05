@@ -133,6 +133,14 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
                           </div>
                         </div>
                       )}
+                      {profile.data.avgBpm != null && (
+                        <div>
+                          <div style={{ fontSize: 11, color: "#aaa", letterSpacing: 1 }}>AVG BPM</div>
+                          <div style={{ fontFamily: "VT323, monospace", fontSize: 22, color: "#00ff41", lineHeight: 1 }}>
+                            {profile.data.avgBpm.toFixed(1)}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

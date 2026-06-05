@@ -1373,6 +1373,9 @@ components:
         # Fraction of non-practice completed games (with a decisive winner)
         # that the player won, all-time. Null when no qualifying games.
         winRate: { type: ["number", "null"] }
+        # Average BPM across the last 5 completed games (same set shown in the
+        # profile). Null when none of those games have a recorded BPM.
+        avgBpm: { type: ["number", "null"] }
         # Up to the five most recent completed games, newest-first. Same
         # shape (and rendered with the same cards) as the owner's own
         # account history. Empty when found is false.

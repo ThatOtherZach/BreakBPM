@@ -1663,6 +1663,11 @@ router.get("/games/profile", async (req, res): Promise<void> => {
     });
   }
 
+  const bpmValues = games.map((g) => g.bpm).filter((b): b is number => b != null);
+  const avgBpm = bpmValues.length > 0
+    ? bpmValues.reduce((sum, b) => sum + b, 0) / bpmValues.length
+    : null;
+
   res.json(
     GetPublicProfileResponse.parse({
       found: true,
@@ -1670,6 +1675,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
       memberSince: host.createdAt ?? null,
       gamesPlayed,
       winRate,
+      avgBpm,
       games,
     }),
   );

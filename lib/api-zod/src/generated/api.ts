@@ -547,6 +547,7 @@ export const GetPublicProfileResponse = zod.object({
   "memberSince": zod.coerce.date().nullish(),
   "gamesPlayed": zod.number().nullish(),
   "winRate": zod.number().nullish(),
+  "avgBpm": zod.number().nullish(),
   "games": zod.array(zod.object({
   "id": zod.string(),
   "gameType": zod.string(),

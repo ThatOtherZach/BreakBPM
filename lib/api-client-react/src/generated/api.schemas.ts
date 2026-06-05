@@ -780,6 +780,8 @@ export interface PublicProfileResult {
   gamesPlayed?: number | null;
   /** @nullable */
   winRate?: number | null;
+  /** @nullable */
+  avgBpm?: number | null;
   games: GameHistoryEntry[];
 }
 
