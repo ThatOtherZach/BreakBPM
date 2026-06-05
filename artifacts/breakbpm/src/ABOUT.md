@@ -82,14 +82,22 @@ Every miss or foul gives the Shark a chance to pocket a ball. This is an honor s
 
 ## Passes
 
-BreakBPM is free to play. Sign in to unlock full game history and cross-device resume.
+BreakBPM is free to play. Sign in (no charge) to save your games — you'll keep your 3 most recent — and resume an in-progress game on any device.
 
-| Plan     | Price              | Access                          |
-|----------|--------------------|---------------------------------|
-| Day Pass | $1.99 one-time     | 24 hours of full access         |
-| Monthly  | $4.99 / month      | Full access, cancel anytime     |
-| Yearly   | $14.99 / year      | Full access, cancel anytime     |
-| Lifetime | $24.99 one-time    | Full access, forever            |
+A pass unlocks everything:
+
+- **Post to Find Players** — create meetup posts so other players can find your game. Free accounts can browse the board and map, but only pass holders can post.
+- **Let others spectate** — when you host a game with a pass, anyone can watch it live, by share code or by your name. Without a pass, your games can't be spectated.
+- **Full game history** — every game you've ever played, not just your last 3, with pagination.
+- **Full stats** — switch between 24-hour, 30-day, 365-day, and all-time windows, overlay global averages, and refresh on demand. Free accounts see personal stats for the last 24 hours only.
+- **Custom screen name** — *Lifetime only:* pick your own display name instead of the auto-assigned one.
+
+| Plan     | Price              | Access                                     |
+|----------|--------------------|--------------------------------------------|
+| Day Pass | $1.99 one-time     | Everything above for 24 hours              |
+| Monthly  | $4.99 / month      | Everything above, cancel anytime           |
+| Yearly   | $14.99 / year      | Everything above, cancel anytime           |
+| Lifetime | $24.99 one-time    | Everything above forever + custom screen name |
 
 Day Pass and Lifetime are one-time purchases. Monthly and Yearly are recurring (cancel anytime). Buying Lifetime stops any active subscription from renewing.
 
