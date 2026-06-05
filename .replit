@@ -46,3 +46,4 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.shared]
+BREAKBPM_CARD_PAYMENTS_ENABLED = "true"

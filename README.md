@@ -56,7 +56,7 @@ A fully functional **React + Vite + TypeScript** web app styled like genuine 199
 - **Monthly** — $4.99 / month subscription, cancel anytime
 - **Yearly** — $24.99 / year subscription, cancel anytime
 - **Lifetime** — $49.99 one-time, full access forever (stops any active subscription from renewing)
-- Redeemable via a code (card checkout via Stripe is gated behind an env flag and currently off)
+- Redeemable via a code or by card via Stripe checkout (card checkout is gated behind the `BREAKBPM_CARD_PAYMENTS_ENABLED` env flag, currently on)
 
 **Lucky Break — provably fair**
 - Redeeming a Lucky Break code triggers a server-side draw with **fixed 80/20 odds** (20% Lifetime, 80% Monthly). The odds never change based on how you play.
