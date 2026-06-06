@@ -237,6 +237,9 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
   const canChooseWindow = stats?.canChooseWindow ?? false;
   const canToggleGlobal = stats?.canToggleGlobal ?? false;
   const canRefresh = stats?.canRefresh ?? false;
+  // Free signed-in tier: their export is capped to the last 24h, so the button
+  // says so; pass holders get a plain "Export" of their full history.
+  const isFreeTier = stats?.tier === "account";
   const appliedScope = stats?.appliedScope ?? "personal";
   const appliedWindow = stats?.appliedWindow ?? "24h";
   const isPersonal = appliedScope === "personal";
@@ -293,28 +296,28 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
               </button>
             </div>
 
-            {/* Window selector */}
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <span style={{ fontSize: 11, color: "#555", width: 48 }}>Window</span>
-              <div style={{ display: "flex", gap: 4, flex: 1 }}>
-                {WINDOWS.map((w) => {
-                  const active = appliedWindow === w;
-                  const locked = !canChooseWindow && w !== "24h";
-                  return (
-                    <button
-                      key={w}
-                      className={`btn${active ? " btn-primary" : ""}`}
-                      style={{ flex: 1, padding: "6px 4px", opacity: locked ? 0.5 : 1 }}
-                      disabled={locked}
-                      onClick={() => canChooseWindow && setWindow(w)}
-                      title={locked ? "Get a pass to unlock longer windows" : undefined}
-                    >
-                      {WINDOW_LABEL[w]}
-                    </button>
-                  );
-                })}
+            {/* Window selector — pass-only. Free/anon tiers have a fixed window
+                (24h personal / all-time global), so the selector is hidden. */}
+            {canChooseWindow && (
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <span style={{ fontSize: 11, color: "#555", width: 48 }}>Window</span>
+                <div style={{ display: "flex", gap: 4, flex: 1 }}>
+                  {WINDOWS.map((w) => {
+                    const active = appliedWindow === w;
+                    return (
+                      <button
+                        key={w}
+                        className={`btn${active ? " btn-primary" : ""}`}
+                        style={{ flex: 1, padding: "6px 4px" }}
+                        onClick={() => setWindow(w)}
+                      >
+                        {WINDOW_LABEL[w]}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {canRefresh && (
               <button
@@ -333,9 +336,15 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   style={{ flex: 1 }}
                   disabled={exporting || deleting || hasNoData}
                   onClick={handleExport}
-                  title={hasNoData ? "No games to export" : "Download all your games and shots as a CSV spreadsheet"}
+                  title={
+                    hasNoData
+                      ? "No games to export"
+                      : isFreeTier
+                        ? "Download your last 24 hours of games as a CSV spreadsheet — get a pass to export your full history"
+                        : "Download all your games and shots as a CSV spreadsheet"
+                  }
                 >
-                  {exporting ? "🧳 Exporting…" : "🧳 Export"}
+                  {exporting ? "🧳 Exporting…" : isFreeTier ? "🧳 Export (24h)" : "🧳 Export"}
                 </button>
                 <button
                   className={`btn${confirmDelete ? " btn-primary" : ""}`}

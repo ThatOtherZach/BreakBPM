@@ -22,6 +22,13 @@ import { db, gamesTable, gameParticipantsTable } from "@workspace/db";
 export type StatWindow = "24h" | "30d" | "365d" | "all";
 export type StatScope = "personal" | "global";
 
+/**
+ * The single stats/export window granted to the free (account) tier. Both the
+ * `/stats` clamp (personal scope) and the `/games/export` cap key off this so
+ * the two stay in lockstep if the free window ever changes.
+ */
+export const FREE_TIER_WINDOW: StatWindow = "24h";
+
 const EIGHT_BALL = 8;
 const SHARK_PLAYER_NAME = "Shark";
 
@@ -82,7 +89,7 @@ function round3(x: number): number {
   return Math.round(x * 1000) / 1000;
 }
 
-function windowCutoff(window: StatWindow): Date | null {
+export function windowCutoff(window: StatWindow): Date | null {
   const day = 24 * 60 * 60 * 1000;
   const now = Date.now();
   switch (window) {

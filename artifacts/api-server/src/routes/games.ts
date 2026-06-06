@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { randomUUID } from "node:crypto";
-import { and, count, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { db, gamesTable, gameParticipantsTable, usersTable } from "@workspace/db";
 import {
   StartGameBody,
@@ -31,7 +31,7 @@ import {
 } from "@workspace/api-zod";
 import { getOrCreateUser, getVerifiedSubject } from "../lib/auth";
 import { computeEntitlement, getActivePasses, getActiveSubscription } from "../lib/entitlement";
-import { resolveStats, clearUserStatsCache, type StatScope, type StatWindow } from "../lib/stats";
+import { resolveStats, clearUserStatsCache, windowCutoff, FREE_TIER_WINDOW, type StatScope, type StatWindow } from "../lib/stats";
 import { sweepStaleGames, INACTIVITY_FORFEIT_MS, MAX_GAME_DURATION_MS } from "../lib/forfeit";
 import { newId } from "../lib/ids";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
@@ -1948,8 +1948,10 @@ router.get("/stats", async (req, res): Promise<void> => {
     appliedScope = "global";
     appliedWindow = "24h";
   } else if (!isPass) {
-    appliedScope = "personal";
-    appliedWindow = "24h";
+    // Free signed-in: personal stats stay capped at the free window, but the
+    // global "Everyone" view is offered as a taste — at the all-time window.
+    appliedScope = scope;
+    appliedWindow = scope === "global" ? "all" : FREE_TIER_WINDOW;
   } else {
     appliedScope = scope;
     appliedWindow = window;
@@ -1972,7 +1974,7 @@ router.get("/stats", async (req, res): Promise<void> => {
       appliedScope,
       appliedWindow,
       canChooseWindow: isPass,
-      canToggleGlobal: isPass,
+      canToggleGlobal: isPass || tier === "account",
       canRefresh: isPass,
       cached,
       computedAt: new Date(computedAt).toISOString(),
@@ -2017,6 +2019,12 @@ router.get("/games/export", async (req, res): Promise<void> => {
     return;
   }
 
+  // Free (non-pass) accounts can only export their most recent window of games,
+  // mirroring what the free stats tier can see; pass holders export everything.
+  const entitlement = await computeEntitlement(user);
+  const exportCutoff =
+    entitlement.tier === "pass" ? null : windowCutoff(FREE_TIER_WINDOW);
+
   // Every game this user has a participation slot in (host or joiner).
   const parts = await db
     .select({ gameId: gameParticipantsTable.gameId })
@@ -2033,12 +2041,16 @@ router.get("/games/export", async (req, res): Promise<void> => {
   ];
   const rows: string[] = [header.join(",")];
 
+  let exportedGames = 0;
   if (ids.length > 0) {
+    const conds = [inArray(gamesTable.id, ids)];
+    if (exportCutoff) conds.push(gte(gamesTable.startedAt, exportCutoff));
     const games = await db
       .select()
       .from(gamesTable)
-      .where(inArray(gamesTable.id, ids))
+      .where(and(...conds))
       .orderBy(desc(gamesTable.startedAt));
+    exportedGames = games.length;
 
     for (const g of games) {
       const gs = (g.gameState ?? {}) as Record<string, unknown>;
@@ -2088,7 +2100,10 @@ router.get("/games/export", async (req, res): Promise<void> => {
 
   const csv = rows.join("\r\n") + "\r\n";
   const filename = `breakbpm-export-${new Date().toISOString().slice(0, 10)}.csv`;
-  req.log.info({ userId: user.id, games: ids.length }, "Exported game data");
+  req.log.info(
+    { userId: user.id, candidateGames: ids.length, exportedGames, capped: !!exportCutoff },
+    "Exported game data",
+  );
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
   res.send(csv);
