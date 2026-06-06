@@ -20,7 +20,9 @@ The higher the BPM, the faster the game moves. It’s calculated per-player from
 
 Every game has a **5-character share code**. One device is the scorekeeper while everyone else follows live.
 
-Join with the code (`breakbpm.com/join/CODE`) before the first ball drops and you’re in the game as a player. Players not signed in will be identified by "Player #". If all spots ae filled, you join as a spectator. Spectators can join anytime to watch, but as a player you should sign in to save the game history.
+Join with the code (`breakbpm.com/join/CODE`) before the first ball drops and you’re in the game as a player. Players not signed in will be identified by "Player #".
+
+If all spots ae filled, you join as a spectator. Spectators can join anytime to watch, but as a player you should sign in to save the game history.
 
 **Spectate by name** at `breakbpm.com/watch/USERNAME` to follow someone’s game without needing the code.
 
