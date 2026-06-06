@@ -357,7 +357,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
                 <span className="hud-mode-players"> · {players.length || 0}P</span>
               </span>
               <span
-                style={{ display: 'inline-flex', alignItems: 'center', color: '#ff5fb4', marginLeft: 6 }}
+                style={{ display: 'inline-flex', alignItems: 'center', color: '#ff5fb4' }}
                 title={viewNotice}
                 role="img"
                 aria-label={viewNotice}
