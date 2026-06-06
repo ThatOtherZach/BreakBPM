@@ -356,14 +356,8 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
                   : '9-BALL'}
                 <span className="hud-mode-players"> · {players.length || 0}P</span>
               </span>
-            </div>
-            <div className="hud-right-row">
-              <span className="hud-meta-label">TIME</span>
-              <span className="hud-timer">{formatTime(elapsed)}</span>
-            </div>
-            <div className="hud-right-row">
               <span
-                style={{ display: 'inline-flex', alignItems: 'center', color: '#ff5fb4' }}
+                style={{ display: 'inline-flex', alignItems: 'center', color: '#ff5fb4', marginLeft: 6 }}
                 title={viewNotice}
                 role="img"
                 aria-label={viewNotice}
@@ -373,6 +367,10 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
                   <circle cx="12" cy="12" r="3" />
                 </svg>
               </span>
+            </div>
+            <div className="hud-right-row">
+              <span className="hud-meta-label">TIME</span>
+              <span className="hud-timer">{formatTime(elapsed)}</span>
             </div>
           </div>
         </div>
