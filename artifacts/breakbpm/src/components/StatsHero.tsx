@@ -177,7 +177,7 @@ export default function StatsHero({
                   />
                 );
               })()}
-              <span className="stats-hero-name text-[28px]">{screenName}</span>
+              <span className="stats-hero-name text-[28px]">{isPersonal ? screenName : "Everyone"}</span>
             </div>
             {(stats.sharkLevel ?? 0) > 0 && (
               <span className="stats-hero-shark">
