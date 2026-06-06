@@ -576,9 +576,9 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         </div>
                       )}
 
-                      <div className="stats-card-grid">
-                        <StatCard emoji="🎱" value={fmtInt(stats.totalShots)} label="SHOTS" sub={`${fmtNum(stats.avgShotsPerGame)}/game`} />
-                      </div>
+                      <p style={{ fontSize: 12, color: "#444", margin: 0 }}>
+                        🎱 You've taken {fmtInt(stats.totalShots)} shots. {fmtNum(stats.avgShotsPerGame)} avg. per game
+                      </p>
 
                       {/* Solids vs stripes split */}
                       {((stats.solidsCount ?? 0) > 0 || (stats.stripesCount ?? 0) > 0) && (() => {
