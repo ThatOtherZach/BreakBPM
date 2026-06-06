@@ -1528,6 +1528,10 @@ html, #root {
   white-space: nowrap;
   text-shadow: 0 0 8px rgba(255, 179, 0, 0.35);
 }
+.stats-hero-shark-emoji {
+  font-size: 11px;
+  text-shadow: none;
+}
 
 .stats-hero-side {
   flex: 0 0 auto;

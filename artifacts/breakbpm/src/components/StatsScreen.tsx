@@ -473,7 +473,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       )}
                       {(stats.sharkLevel ?? 0) > 0 && (
                         <div className="stats-hero-shark">
-                          🦈 Level {fmtInt(stats.sharkLevel)} Shark
+                          <span className="stats-hero-shark-emoji" aria-hidden="true">🦈</span> Level {fmtInt(stats.sharkLevel)} Shark
                         </div>
                       )}
                     </div>
