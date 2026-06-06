@@ -710,35 +710,33 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       {stats.topBalls.length > 0 && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                           <span style={{ fontSize: 10, color: "#f4e7c8", textShadow: "0 1px 1px rgba(0,0,0,0.7)", letterSpacing: 0.5 }}>⭐ MOST-SUNK BALLS</span>
-                          {stats.topBalls.map((b) => {
-                            const chipClass =
-                              b.ball === 8
-                                ? "hud-chip-eight"
-                                : SOLIDS.includes(b.ball)
-                                  ? "hud-chip-solid"
-                                  : "hud-chip-stripe";
-                            return (
-                              <div key={b.ball} className="stats-ball-row">
-                                <span
-                                  className={`hud-chip ${chipClass}`}
-                                  data-number={b.ball}
-                                  style={{ "--chip-color": BALL_COLORS[b.ball] } as React.CSSProperties}
-                                  aria-label={`Ball ${b.ball}`}
-                                />
-                                <span className="stats-ball-bar-track">
+                          <div className="stats-ball-grid">
+                            {stats.topBalls.map((b) => {
+                              const chipClass =
+                                b.ball === 8
+                                  ? "hud-chip-eight"
+                                  : SOLIDS.includes(b.ball)
+                                    ? "hud-chip-solid"
+                                    : "hud-chip-stripe";
+                              return (
+                                <div key={b.ball} className="stats-ball-item">
                                   <span
-                                    className="stats-ball-bar-fill"
-                                    style={{ width: `${(b.count / maxBallCount) * 100}%`, display: "block" }}
+                                    className={`hud-chip ${chipClass}`}
+                                    data-number={b.ball}
+                                    style={{ "--chip-color": BALL_COLORS[b.ball] } as React.CSSProperties}
+                                    aria-label={`Ball ${b.ball}`}
                                   />
-                                </span>
-                                <span className="stats-ball-count">×{b.count}</span>
-                              </div>
-                            );
-                          })}
+                                  <span className="stats-ball-count">×{b.count}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
 
-                      <p style={{ fontSize: 12, color: "#f4e7c8", textShadow: "0 1px 1px rgba(0,0,0,0.7)", margin: 0 }}>
+                      <p
+                        style={{ fontSize: 12, color: "#f4e7c8", textShadow: "0 1px 1px rgba(0,0,0,0.7)", margin: 0 }}
+                        className="text-center">
                         🎱 You take {fmtNum(stats.avgShotsPerGame)} shots per game on average
                       </p>
 
