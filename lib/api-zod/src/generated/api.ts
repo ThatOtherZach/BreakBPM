@@ -780,7 +780,7 @@ export const ListFindPlayerPostsResponse = zod.object({
 
 
 /**
- * Only callers with `tier === 'pass'` may create posts. Enforces one active post per UTC calendar date, a maximum of 5 active posts, a numeric table number, and a scheduled time that is today or later (any time of day) and at most one year out.
+ * Only callers with `tier === 'pass'` may create posts. Enforces one active post per UTC calendar date, a maximum of 5 active posts, a numeric table number, and a scheduled time that is the poster's local today or later (any time of day) and at most one year out.
 
  * @summary Create a meetup post (paid tier only)
  */

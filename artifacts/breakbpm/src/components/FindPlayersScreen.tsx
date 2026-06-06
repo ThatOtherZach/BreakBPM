@@ -99,9 +99,9 @@ function p2(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-/** YYYY-MM-DD for a Date, read in UTC. */
-function utcDateStr(d: Date): string {
-  return `${d.getUTCFullYear()}-${p2(d.getUTCMonth() + 1)}-${p2(d.getUTCDate())}`;
+/** YYYY-MM-DD for a Date, read in the viewer's local timezone. */
+function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
 }
 
 /**
@@ -253,11 +253,11 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
     return () => { cancelled = true; };
   }, [position]);
 
-  const today = useMemo(() => utcDateStr(new Date()), []);
+  const today = useMemo(() => localDateStr(new Date()), []);
   const maxDate = useMemo(() => {
     const d = new Date();
-    d.setUTCFullYear(d.getUTCFullYear() + 1);
-    return utcDateStr(d);
+    d.setFullYear(d.getFullYear() + 1);
+    return localDateStr(d);
   }, []);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getListFindPlayerPostsQueryKey() });
@@ -324,11 +324,10 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
       setFormError("Invalid date or time.");
       return;
     }
-    // Allow any time on the current UTC date (or later) — only reject dates
-    // before today. Mirrors the server's start-of-UTC-day boundary.
-    const startOfTodayUtc = new Date();
-    startOfTodayUtc.setUTCHours(0, 0, 0, 0);
-    if (scheduledAt.getTime() < startOfTodayUtc.getTime()) {
+    // Reject only past calendar dates in the poster's LOCAL frame (what the
+    // date picker shows); any time on today or later is allowed. The typed
+    // date is the canonical label, so a plain string compare is correct.
+    if (dateStr < localDateStr(new Date())) {
       setFormError(CREATE_REASONS.in_past);
       return;
     }
@@ -366,11 +365,11 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
   };
 
   const canCreate = data?.canCreate ?? false;
-  const todayStr = useMemo(() => utcDateStr(new Date()), []);
+  const todayStr = useMemo(() => localDateStr(new Date()), []);
   const next30Str = useMemo(() => {
     const d = new Date();
-    d.setUTCDate(d.getUTCDate() + 30);
-    return utcDateStr(d);
+    d.setDate(d.getDate() + 30);
+    return localDateStr(d);
   }, []);
   const filterPosts = <
     T extends { scheduledAt?: string | null; latitude?: number | null; longitude?: number | null },
