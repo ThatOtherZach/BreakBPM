@@ -121,6 +121,8 @@ function BpmSparkline({
   ariaLabel = "BPM trend over recent games",
   step = false,
   strokeWidth = 1.5,
+  endDot = true,
+  edgeToEdge = false,
 }: {
   data: number[];
   stroke?: string;
@@ -128,15 +130,20 @@ function BpmSparkline({
   ariaLabel?: string;
   step?: boolean;
   strokeWidth?: number;
+  endDot?: boolean;
+  edgeToEdge?: boolean;
 }) {
   const W = 100;
   const H = 36;
   const pad = 2;
+  // `edgeToEdge` drops the horizontal inset so the trace touches the left/right
+  // borders; vertical inset stays so peaks/troughs don't clip.
+  const padX = edgeToEdge ? 0 : pad;
   const max = Math.max(...data);
   const min = Math.min(...data);
   const span = max - min || 1;
   const n = data.length;
-  const x = (i: number) => (n === 1 ? W / 2 : pad + (i * (W - pad * 2)) / (n - 1));
+  const x = (i: number) => (n === 1 ? W / 2 : padX + (i * (W - padX * 2)) / (n - 1));
   const y = (v: number) => H - pad - ((v - min) / span) * (H - pad * 2);
   // `step` draws right-angle segments (horizontal hold, then vertical jump) so
   // the trace reads as a square-wave; otherwise it's a straight diagonal line.
@@ -160,7 +167,7 @@ function BpmSparkline({
     >
       <path d={area} fill={fill} stroke="none" />
       <path d={line} fill="none" stroke={stroke} strokeWidth={strokeWidth} strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={x(n - 1)} cy={y(data[n - 1])} r="1.8" fill={stroke} />
+      {endDot && <circle cx={x(n - 1)} cy={y(data[n - 1])} r="1.8" fill={stroke} />}
     </svg>
   );
 }
@@ -577,6 +584,8 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           ariaLabel="Accuracy trend over recent games"
                           step
                           strokeWidth={0.75}
+                          endDot={false}
+                          edgeToEdge
                         />
                         <span className="stats-trend-box-label">
                           ACCURACY · LAST {stats.accuracyTrend.length}
