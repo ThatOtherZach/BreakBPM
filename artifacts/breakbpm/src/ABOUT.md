@@ -24,6 +24,8 @@ Join with the code (or `breakbpm.com/join/CODE`) before the first ball drops and
 
 **Spectate by name** at `breakbpm.com/watch/USERNAME` to follow someone’s game without needing the code.
 
+**Streaming?** Add `?obs=1` to a watch link for a chrome-free, transparent overlay you can drop straight into OBS as a Browser Source: `breakbpm.com/watch/USERNAME?obs=1`. Chain extra flags with `&` — `&log=1` adds a compact shot log and `&scale=1.5` resizes the overlay (0.2–5). So `?obs=1&log=1&scale=1.5` does all three. When there's no live game it just shows a quiet `:(`.
+
 Sign in for full game history, cross-device resume, and persistent stats. Your username auto-fills as Player 1.
 
 ## Why BPM?
