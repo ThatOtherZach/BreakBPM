@@ -1498,7 +1498,7 @@ html, #root {
   min-width: 120px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-end;
   gap: 3px;
   padding-left: 12px;
 }
