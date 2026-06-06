@@ -585,7 +585,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       )}
 
                       <p style={{ fontSize: 12, color: "#444", margin: 0 }}>
-                        🎱 You've taken {fmtInt(stats.totalShots)} shots. {fmtNum(stats.avgShotsPerGame)} avg. per game
+                        🎱 You take {fmtNum(stats.avgShotsPerGame)} shots per game on average
                       </p>
 
                       {/* Solids vs stripes split */}
