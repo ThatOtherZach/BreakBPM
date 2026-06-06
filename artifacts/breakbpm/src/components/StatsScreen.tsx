@@ -530,7 +530,13 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     <div className="stats-hero-graph">
                       {stats.bpmTrend.length >= 2 && (
                         <div className="stats-hero-graph-item">
-                          <BpmSparkline data={stats.bpmTrend} />
+                          <BpmSparkline
+                            data={stats.bpmTrend}
+                            step
+                            strokeWidth={0.75}
+                            endDot={false}
+                            edgeToEdge
+                          />
                           <span className="stats-hero-graph-label">
                             BPM · LAST {stats.bpmTrend.length} GAMES
                           </span>
