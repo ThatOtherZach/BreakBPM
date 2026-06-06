@@ -505,7 +505,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                               />
                             );
                           })()}
-                          <span className="stats-hero-name">{user.screenName}</span>
+                          <span className="stats-hero-name text-[28px]">{user.screenName}</span>
                         </div>
                         {(stats.sharkLevel ?? 0) > 0 && (
                           <span className="stats-hero-shark">
