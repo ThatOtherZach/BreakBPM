@@ -1424,6 +1424,7 @@ components:
           playTimeByType,
           topBalls,
           bpmTrend,
+          sharkLevel,
         ]
       properties:
         # The caller's resolved entitlement tier.
@@ -1499,6 +1500,9 @@ components:
         # Shark-mode wins / total shark games. Null when no shark games.
         sharkWinRate: { type: ["number", "null"] }
         sharkGames: { type: integer }
+        # All-time count of the caller's completed Shark-mode games (window-
+        # independent). Null in global scope; 0 when the user has none.
+        sharkLevel: { type: ["integer", "null"] }
 
     FindPlayerPost:
       type: object

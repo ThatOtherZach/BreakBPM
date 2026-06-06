@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNotNull } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
 import { db, gamesTable, gameParticipantsTable } from "@workspace/db";
 
 /**
@@ -83,6 +83,7 @@ export interface StatsCore {
   stripesCount: number;
   sharkWinRate: number | null;
   sharkGames: number;
+  sharkLevel: number | null;
   computedAt: number;
 }
 
@@ -204,6 +205,7 @@ function emptyCore(): StatsCore {
     stripesCount: 0,
     sharkWinRate: null,
     sharkGames: 0,
+    sharkLevel: null,
     computedAt: Date.now(),
   };
 }
@@ -447,6 +449,22 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
     .slice(0, 3)
     .map(([ball, count]) => ({ ball, count }));
   core.sharkWinRate = core.sharkGames > 0 ? round3(sharkWins / core.sharkGames) : null;
+
+  // Shark Level is the user's ALL-TIME count of completed Shark-mode games
+  // (window-independent, unlike sharkGames above). Shark games are flagged by a
+  // top-level `sharkAggression` key in the gameState JSONB; count them in SQL
+  // across every game the caller participated in, regardless of the window.
+  const sharkRows = await db
+    .select({ c: count() })
+    .from(gamesTable)
+    .where(
+      and(
+        inArray(gamesTable.id, ids),
+        isNotNull(gamesTable.endedAt),
+        sql`${gamesTable.gameState} ->> 'sharkAggression' IS NOT NULL`,
+      ),
+    );
+  core.sharkLevel = Number(sharkRows[0]?.c ?? 0);
   core.computedAt = Date.now();
   return core;
 }

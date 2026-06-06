@@ -57,4 +57,6 @@ export interface StatsResult {
   /** @nullable */
   sharkWinRate?: number | null;
   sharkGames?: number;
+  /** @nullable */
+  sharkLevel: number | null;
 }

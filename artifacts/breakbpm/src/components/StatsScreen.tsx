@@ -482,6 +482,12 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       <span className="stats-hero-side-val">{stats.accuracy == null ? "--" : `${stats.accuracy}%`}</span>
                       <span className="stats-hero-side-label">AVG ACCURACY</span>
                     </div>
+                    {(stats.sharkLevel ?? 0) > 0 && (
+                      <div className="stats-hero-side-item">
+                        <span className="stats-hero-side-val amber">🦈 {fmtInt(stats.sharkLevel)}</span>
+                        <span className="stats-hero-side-label">SHARK LVL</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 

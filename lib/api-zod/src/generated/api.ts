@@ -739,7 +739,8 @@ export const GetStatsResponse = zod.object({
   "solidsCount": zod.number().optional(),
   "stripesCount": zod.number().optional(),
   "sharkWinRate": zod.number().nullish(),
-  "sharkGames": zod.number().optional()
+  "sharkGames": zod.number().optional(),
+  "sharkLevel": zod.number().nullable()
 })
 
 
