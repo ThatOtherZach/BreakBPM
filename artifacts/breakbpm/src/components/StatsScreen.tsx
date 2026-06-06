@@ -66,7 +66,7 @@ function fmtWhen(iso: string | undefined): string {
   }
 }
 
-type Tone = "green" | "amber" | "cyan";
+type Tone = "green" | "amber" | "cyan" | "red";
 
 /** A recessed CRT gauge: glowing notched fill bar scaled 0..100. */
 function PixelMeter({
@@ -656,7 +656,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       emoji={<span className="cue-ball-icon" style={{ fontSize: 14, verticalAlign: "baseline" }} />}
                       pct={stats.totalShots > 0 ? (stats.totalFouls / stats.totalShots) * 100 : null}
                       display={stats.totalShots > 0 ? `${Math.round((stats.totalFouls / stats.totalShots) * 100)}%` : "—"}
-                      tone="amber"
+                      tone="red"
                     />
                     <div className="stats-card-grid">
                       <StatCard emoji="❌" value={fmtNum(stats.avgMissesPerGame)} label="MISSES" sub="per game" />

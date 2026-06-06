@@ -1753,6 +1753,10 @@ html, #root {
   background-color: #36c5f0;
   box-shadow: 0 0 6px rgba(54, 197, 240, 0.55);
 }
+.stats-meter-fill.red {
+  background-color: #ff3b3b;
+  box-shadow: 0 0 6px rgba(255, 59, 59, 0.55);
+}
 
 /* Split meter — solids vs stripes in one track. */
 .stats-split-track {
