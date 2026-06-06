@@ -484,7 +484,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       tone="cyan"
                     />
                     <div className="stats-card-grid">
-                      <StatCard emoji="🎱" value={fmtInt(stats.totalShots)} label="SHOTS" sub={`${fmtNum(stats.avgShotsPerGame)}/game`} />
                       <StatCard emoji="❌" value={fmtInt(stats.totalMisses)} label="MISSES" sub={`${fmtNum(stats.avgMissesPerGame)}/game`} />
                       <StatCard emoji={<span className="cue-ball-icon" style={{ fontSize: 14, verticalAlign: "baseline" }} />} value={fmtInt(stats.totalFouls)} label="FOULS" sub={`${fmtNum(stats.avgFoulsPerGame)}/game`} />
                       <StatCard emoji="🛡️" value={fmtInt(stats.totalSafeties)} label="SAFETIES" sub={`${fmtNum(stats.avgSafetiesPerGame)}/game`} />
@@ -576,6 +575,10 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           })}
                         </div>
                       )}
+
+                      <div className="stats-card-grid">
+                        <StatCard emoji="🎱" value={fmtInt(stats.totalShots)} label="SHOTS" sub={`${fmtNum(stats.avgShotsPerGame)}/game`} />
+                      </div>
 
                       {/* Solids vs stripes split */}
                       {((stats.solidsCount ?? 0) > 0 || (stats.stripesCount ?? 0) > 0) && (() => {
