@@ -109,6 +109,38 @@ function PixelMeter({
   );
 }
 
+/**
+ * Phosphor-green BPM trend sparkline. Plots a series of per-game BPM values
+ * (oldest→newest) as a filled line in an SVG that scales to its container, so
+ * it sits beside the big AVG BPM readout like a CRT oscilloscope trace.
+ */
+function BpmSparkline({ data }: { data: number[] }) {
+  const W = 100;
+  const H = 36;
+  const pad = 2;
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const span = max - min || 1;
+  const n = data.length;
+  const x = (i: number) => (n === 1 ? W / 2 : pad + (i * (W - pad * 2)) / (n - 1));
+  const y = (v: number) => H - pad - ((v - min) / span) * (H - pad * 2);
+  const line = data.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const area = `${line} L${x(n - 1).toFixed(1)},${H} L${x(0).toFixed(1)},${H} Z`;
+  return (
+    <svg
+      className="stats-hero-spark"
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="none"
+      role="img"
+      aria-label="BPM trend over recent games"
+    >
+      <path d={area} fill="rgba(0, 255, 65, 0.12)" stroke="none" />
+      <path d={line} fill="none" stroke="#00ff41" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={x(n - 1)} cy={y(data[n - 1])} r="1.8" fill="#00ff41" />
+    </svg>
+  );
+}
+
 /** Raised silver chip with an emoji glyph + big VT323 value. */
 function StatCard({
   emoji,
@@ -429,6 +461,14 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       BEST {stats.bestBpm == null ? "--" : stats.bestBpm.toFixed(1)}
                     </span>
                   </div>
+                  {stats.bpmTrend.length >= 2 && (
+                    <div className="stats-hero-graph">
+                      <BpmSparkline data={stats.bpmTrend} />
+                      <span className="stats-hero-graph-label">
+                        BPM · LAST {stats.bpmTrend.length}
+                      </span>
+                    </div>
+                  )}
                   <div className="stats-hero-side">
                     <div className="stats-hero-side-item">
                       <span className="stats-hero-side-val">{fmtInt(stats.gamesPlayed)}</span>

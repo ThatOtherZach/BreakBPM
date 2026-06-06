@@ -1493,6 +1493,32 @@ html, #root {
   margin-top: 4px;
 }
 
+.stats-hero-graph {
+  flex: 1 1 0;
+  min-width: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding-left: 12px;
+  border-left: 1px solid #1a5a1a;
+}
+
+.stats-hero-spark {
+  width: 100%;
+  height: 40px;
+  display: block;
+  filter: drop-shadow(0 0 4px rgba(0, 255, 65, 0.35));
+}
+
+.stats-hero-graph-label {
+  font-family: 'Courier New', monospace;
+  font-size: 8px;
+  color: #3a7a3a;
+  letter-spacing: 1px;
+  align-self: flex-end;
+}
+
 .stats-hero-side {
   flex: 0 0 auto;
   display: flex;

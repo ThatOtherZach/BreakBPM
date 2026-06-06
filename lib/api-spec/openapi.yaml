@@ -1423,6 +1423,7 @@ components:
           avgSafetiesPerGame,
           playTimeByType,
           topBalls,
+          bpmTrend,
         ]
       properties:
         # The caller's resolved entitlement tier.
@@ -1477,6 +1478,12 @@ components:
         # Mean / peak per-game BPM. Null when no game has a BPM yet.
         avgBpm: { type: ["number", "null"] }
         bestBpm: { type: ["number", "null"] }
+        # Per-game BPM for up to the last 24 games in the scope/window, ordered
+        # oldest→newest so a sparkline reads left-to-right as time progresses.
+        # Only games that produced a BPM are included; empty when none.
+        bpmTrend:
+          type: array
+          items: { type: number }
         playTimeByType:
           type: array
           items: { $ref: "#/components/schemas/StatPlayTime" }

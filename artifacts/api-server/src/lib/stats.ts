@@ -38,6 +38,9 @@ const STATS_CACHE_TTL_MS = 60 * 60 * 1000;
 /** Defensive upper bound on rows parsed in one pass (cached, so cheap amortized). */
 const MAX_ROWS = 5000;
 
+/** Cap on the BPM trend sparkline series (last N games, oldest→newest). */
+const TREND_MAX = 24;
+
 /** Minimal shot-log entry shape parsed out of the gameState JSONB. */
 interface ShotEntry {
   type?: string;
@@ -73,6 +76,7 @@ export interface StatsCore {
   avgSafetiesPerGame: number;
   avgBpm: number | null;
   bestBpm: number | null;
+  bpmTrend: number[];
   playTimeByType: Array<{ gameType: "8ball" | "9ball" | "practice"; avgDurationMs: number; gameCount: number }>;
   topBalls: Array<{ ball: number; count: number }>;
   solidsCount: number;
@@ -193,6 +197,7 @@ function emptyCore(): StatsCore {
     avgSafetiesPerGame: 0,
     avgBpm: null,
     bestBpm: null,
+    bpmTrend: [],
     playTimeByType: [],
     topBalls: [],
     solidsCount: 0,
@@ -284,6 +289,9 @@ async function computeGlobalStats(window: StatWindow): Promise<StatsCore> {
   core.bestAccuracy = accuracies.length > 0 ? Math.max(...accuracies) : null;
   core.avgBpm = bpms.length > 0 ? round1(bpms.reduce((a, b) => a + b, 0) / bpms.length) : null;
   core.bestBpm = bpms.length > 0 ? round1(Math.max(...bpms)) : null;
+  // bpms are collected newest-first (desc endedAt); take the most recent N and
+  // reverse so the sparkline reads oldest→newest left-to-right.
+  core.bpmTrend = bpms.slice(0, TREND_MAX).reverse();
   core.avgShotsPerGame = round1(core.totalShots / core.gamesPlayed);
   core.avgMissesPerGame = round1(core.totalMisses / core.gamesPlayed);
   core.avgFoulsPerGame = round1(core.totalFouls / core.gamesPlayed);
@@ -422,6 +430,9 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
   core.bestAccuracy = bestAccuracy;
   core.avgBpm = bpms.length > 0 ? round1(bpms.reduce((a, b) => a + b, 0) / bpms.length) : null;
   core.bestBpm = bpms.length > 0 ? round1(Math.max(...bpms)) : null;
+  // bpms are collected newest-first (desc endedAt); take the most recent N and
+  // reverse so the sparkline reads oldest→newest left-to-right.
+  core.bpmTrend = bpms.slice(0, TREND_MAX).reverse();
   core.avgShotsPerGame = round1(core.totalShots / core.gamesPlayed);
   core.avgMissesPerGame = round1(core.totalMisses / core.gamesPlayed);
   core.avgFoulsPerGame = round1(core.totalFouls / core.gamesPlayed);

@@ -49,6 +49,7 @@ export interface StatsResult {
   avgBpm?: number | null;
   /** @nullable */
   bestBpm?: number | null;
+  bpmTrend: number[];
   playTimeByType: StatPlayTime[];
   topBalls: StatBall[];
   solidsCount?: number;
