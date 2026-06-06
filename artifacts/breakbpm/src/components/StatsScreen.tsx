@@ -453,6 +453,14 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       display={fmtPct(rateValue)}
                       tone="green"
                     />
+                    {(stats.sharkGames ?? 0) > 0 && (
+                      <PixelMeter
+                        label="🦈 SHARK WIN RATE"
+                        pct={stats.sharkWinRate == null ? null : stats.sharkWinRate * 100}
+                        display={`${fmtPct(stats.sharkWinRate)} · ${fmtInt(stats.sharkGames)} games`}
+                        tone="cyan"
+                      />
+                    )}
                     {(stats.eightBallDecidedGames ?? 0) > 0 && (
                       <PixelMeter
                         label="8-BALL SINK RATE"
@@ -604,15 +612,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           </div>
                         );
                       })()}
-
-                      {(stats.sharkGames ?? 0) > 0 && (
-                        <PixelMeter
-                          label="🦈 SHARK WIN RATE"
-                          pct={stats.sharkWinRate == null ? null : stats.sharkWinRate * 100}
-                          display={`${fmtPct(stats.sharkWinRate)} · ${fmtInt(stats.sharkGames)} games`}
-                          tone="cyan"
-                        />
-                      )}
                     </div>
                   </div>
                 )}
