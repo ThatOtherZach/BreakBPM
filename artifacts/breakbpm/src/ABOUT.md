@@ -18,15 +18,13 @@ The higher the BPM, the faster the game moves. It’s calculated per-player from
 
 ## Play anywhere, with anyone
 
-Every game gets a **5-character share code**. One phone is the scorekeeper while everyone else follows live.
+Every game has a **5-character share code**. One device is the scorekeeper while everyone else follows live.
 
-Join with the code (or `breakbpm.com/join/CODE`) before the first ball drops and you’re in the game with live BPM. After that, you spectate. Spectators can join anytime to watch the full HUD and shot log without taking a seat.
+Join with the code (`breakbpm.com/join/CODE`) before the first ball drops and you’re in the game as a player. Players not signed in will be identified by "Player #". If all spots ae filled, you join as a spectator. Spectators can join anytime to watch, but as a player you should sign in to save the game history.
 
 **Spectate by name** at `breakbpm.com/watch/USERNAME` to follow someone’s game without needing the code.
 
-**Streaming?** Add `?obs=1` to a watch link for a chrome-free, transparent overlay you can drop straight into OBS as a Browser Source: `breakbpm.com/watch/USERNAME?obs=1`. Chain extra flags with `&` — `&log=1` adds a compact shot log and `&scale=1.5` resizes the overlay (0.2–5). So `?obs=1&log=1&scale=1.5` does all three. When there's no live game it just shows a quiet `:(`.
-
-Sign in for full game history, cross-device resume, and persistent stats. Your username auto-fills as Player 1.
+**Streaming?** Add `?obs=1` to a watch link for an overlay you can drop straight into OBS as a browser source (`breakbpm.com/watch/USERNAME?obs=1`). Chain flags such as `&log=1` to add a compact shot log and `&scale=1.5` to resize.
 
 ## Why BPM?
 
