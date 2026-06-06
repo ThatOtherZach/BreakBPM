@@ -76,8 +76,10 @@ function toPostResponse(
   const cancelled = row.cancelledAt != null;
   return {
     id: row.id,
-    displayName: `${screenName}, Table #${row.tableNumber}`,
-    userName: screenName,
+    // Cancelled posts hide the host's identity (along with place/time below) —
+    // the card just reads "Open Table" until the original time passes.
+    displayName: cancelled ? "Open Table" : `${screenName}, Table #${row.tableNumber}`,
+    userName: cancelled ? "Open Table" : screenName,
     tableNumber: row.tableNumber,
     latitude: cancelled ? null : row.latitude,
     longitude: cancelled ? null : row.longitude,
