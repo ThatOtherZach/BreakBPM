@@ -736,7 +736,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                               <div className="stats-ball-grid">{[1, 2, 3, 4, 5, 6, 7].map(renderBall)}</div>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                              <span style={labelStyle}>🔴 STRIPES</span>
+                              <span style={labelStyle} className="font-semibold">🔴 STRIPES</span>
                               <div className="stats-ball-grid">{[9, 10, 11, 12, 13, 14, 15].map(renderBall)}</div>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
