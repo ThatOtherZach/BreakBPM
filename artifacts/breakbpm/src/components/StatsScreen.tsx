@@ -473,7 +473,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       )}
                       {(stats.sharkLevel ?? 0) > 0 && (
                         <div className="stats-hero-shark">
-                          Level {fmtInt(stats.sharkLevel)} 🦈 Shark
+                          🦈 Level {fmtInt(stats.sharkLevel)} Shark
                         </div>
                       )}
                     </div>
