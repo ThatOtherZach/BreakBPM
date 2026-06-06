@@ -86,7 +86,7 @@ function PixelMeter({
   return (
     <div className="stats-meter-row">
       <div className="stats-meter-top">
-        <span className="stats-meter-name">
+        <span className="stats-meter-name font-semibold">
           {emoji && <span aria-hidden="true">{emoji}</span>}
           {label}
         </span>
