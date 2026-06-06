@@ -358,9 +358,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverGameId, state.lastActionTime, state.phase]);
 
-  // Auto-scroll log
+  // Auto-scroll log to newest entry (rendered at the top)
   useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+    if (logRef.current) logRef.current.scrollTop = 0;
   }, [state.shotLog]);
 
   const cur = state.players[state.currentPlayerIndex];
@@ -933,7 +933,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             <div className="shot-log" ref={logRef}>
               {state.shotLog.length === 0
                 ? <div style={{ color: '#006600' }}>_ no shots yet...</div>
-                : state.shotLog.map((e, i) => {
+                : state.shotLog.map((e, i) => ({ e, i })).reverse().map(({ e, i }) => {
                   const t = formatTime(e.gameTime);
                   let line = '';
                   if (e.type === 'sink') line = `[${t}] ${e.playerName} » SINK ${ballLabel(e.ball!)}`;
