@@ -660,6 +660,7 @@ router.post("/games/save", async (req, res): Promise<void> => {
     }
   }
 
+  if (id) await bustGameStatsCache(id);
   req.log.info({ userId: user.id, gameId: id, outcome: parsed.data.outcome }, "Game saved");
   res.json(SaveGameResponse.parse({ saved: true, gameId: id, message: "Game saved" }));
 });
@@ -750,6 +751,7 @@ router.post("/games/abandon", async (req, res): Promise<void> => {
     );
     return;
   }
+  await bustGameStatsCache(parsed.data.gameId);
   req.log.info({ userId: user.id, gameId: parsed.data.gameId }, "Game abandoned");
   res.json(AbandonGameResponse.parse({ abandoned: true }));
 });
@@ -785,6 +787,22 @@ function rateLimit(ip: string, bucket: string = "resolve"): boolean {
   if (b.count >= RESOLVE_RATE_MAX) return false;
   b.count += 1;
   return true;
+}
+
+/**
+ * Bust every participant's cached personal-stats snapshot for a finalized
+ * game. Stats are cached up to an hour, so without this a freshly-completed
+ * game wouldn't surface on live views (the /watch/{name} profile header) until
+ * the TTL expired. Clearing on completion lets the next poll recompute now.
+ */
+async function bustGameStatsCache(gameId: string): Promise<void> {
+  const parts = await db
+    .select({ userId: gameParticipantsTable.userId })
+    .from(gameParticipantsTable)
+    .where(eq(gameParticipantsTable.gameId, gameId));
+  for (const p of parts) {
+    if (p.userId) clearUserStatsCache(p.userId);
+  }
 }
 
 /**
@@ -1787,6 +1805,7 @@ router.post("/games/leave", async (req, res): Promise<void> => {
       .returning({ id: gamesTable.id });
     gameEnded = closed.length > 0;
   }
+  if (gameEnded) await bustGameStatsCache(parsed.data.gameId);
   res.json(LeaveGameResponse.parse({ left: true, gameEnded }));
 });
 

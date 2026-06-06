@@ -1,5 +1,6 @@
 import { and, eq, isNull, lt, ne, or } from "drizzle-orm";
-import { db, gamesTable } from "@workspace/db";
+import { db, gamesTable, gameParticipantsTable } from "@workspace/db";
+import { clearUserStatsCache } from "./stats";
 
 /**
  * Inactivity cutoff — versus games auto-forfeit after this much idle
@@ -42,7 +43,7 @@ async function finalizeStaleRow(row: GameRow, reason: string, now: Date): Promis
   // CAS-style guard — only finalize if the row is still in-progress.
   // Prevents a sweep from clobbering a legitimate client-submitted
   // outcome (won/lost/completed) that landed between SELECT and UPDATE.
-  await db
+  const finalized = await db
     .update(gamesTable)
     .set({
       endedAt: now,
@@ -54,7 +55,21 @@ async function finalizeStaleRow(row: GameRow, reason: string, now: Date): Promis
         forfeitedPlayer: forfeitingPlayer,
       },
     })
-    .where(and(eq(gamesTable.id, row.id), isNull(gamesTable.endedAt)));
+    .where(and(eq(gamesTable.id, row.id), isNull(gamesTable.endedAt)))
+    .returning({ id: gamesTable.id });
+  // Only bust caches when this sweep actually closed the row (the CAS guard
+  // may have lost to a client-submitted outcome). Clearing each participant's
+  // cached personal stats lets live views (the /watch/{name} profile header)
+  // reflect the just-expired game on their next poll.
+  if (finalized.length > 0) {
+    const parts = await db
+      .select({ userId: gameParticipantsTable.userId })
+      .from(gameParticipantsTable)
+      .where(eq(gameParticipantsTable.gameId, row.id));
+    for (const p of parts) {
+      if (p.userId) clearUserStatsCache(p.userId);
+    }
+  }
 }
 
 /**

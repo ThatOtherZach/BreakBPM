@@ -18,3 +18,4 @@
 - [Drizzle wraps pg error codes](drizzle-pg-error-code-on-cause.md) — SQLSTATE (23505 etc) lives on err.cause?.code through drizzle, not err.code; inline `.code==="23505"` guards silently never fire (500 instead of friendly refusal).
 - [Public profile reuses /stats shaping](public-profile-stats-shaping.md) — /games/profile returns a full StatsResult (personal/24h) so the Watch profile renders the shared StatsHero; keep its capability-flag shaping in lockstep with the /stats route.
 - [Stats hero trend granularity](stats-hero-trend-granularity.md) — trend buckets by window (per-game 24h / daily 30d / monthly 365d+all), not last-N-games; label unit must track appliedWindow.
+- [Stats cache bust on completion](stats-cache-bust-on-completion.md) — every game-completion path (save/abandon/leave/stale-sweep) must clear all participants' stats cache or live /watch profile hero stays stale up to TTL.

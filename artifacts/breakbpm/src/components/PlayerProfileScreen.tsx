@@ -30,9 +30,18 @@ function fmtMemberSince(d: string): string {
  */
 export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, onSignIn }: Props) {
   const [, setLocation] = useLocation();
+  // Poll the profile so the hero readout and recent games stay live while a
+  // watcher sits on the page — roughly the same cadence as the live spectator
+  // view. The server busts the player's stats cache when they finish a game,
+  // so each poll picks up freshly-completed games instead of cached numbers.
   const profile = useGetPublicProfile(
     { name },
-    { query: { queryKey: getGetPublicProfileQueryKey({ name }) } },
+    {
+      query: {
+        queryKey: getGetPublicProfileQueryKey({ name }),
+        refetchInterval: 5000,
+      },
+    },
   );
 
   const notFound = profile.data && !profile.data.found;
