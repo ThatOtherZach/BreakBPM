@@ -695,7 +695,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       return (
                         <p
                           style={{ fontSize: 12, color: "#fff", textShadow: "0 1px 1px rgba(0,0,0,0.7)", margin: 0 }}
-                          className="text-center">🕐 You've played {totalHours.toFixed(1)}hours, {avgPerGameMin.toFixed(1)}average per game.
+                          className="text-center">🕐 {totalHours.toFixed(1)} Hours Played - {avgPerGameMin.toFixed(1)} Per Game (Average)
                                                   </p>
                       );
                     })()}
