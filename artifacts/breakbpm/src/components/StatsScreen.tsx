@@ -291,7 +291,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
             )}
 
             {(canRefresh || isAuthenticated) && (
-              <div style={{ display: "flex", gap: 6 }}>
+              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
                 {canRefresh && (
                   <button
                     className="btn"
