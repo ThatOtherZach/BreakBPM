@@ -526,6 +526,24 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   </div>
                 </div>
 
+                {stats.accuracyTrend.length >= 2 && (
+                  <div className="stats-trend-box">
+                    <BpmSparkline
+                      data={stats.accuracyTrend}
+                      stroke="#36c5f0"
+                      fill="rgba(54, 197, 240, 0.12)"
+                      ariaLabel="Accuracy trend over recent games"
+                      step
+                      strokeWidth={0.75}
+                      endDot={false}
+                      edgeToEdge
+                    />
+                    <span className="stats-trend-box-label">
+                      ACCURACY · LAST {stats.accuracyTrend.length} GAMES
+                    </span>
+                  </div>
+                )}
+
                 {/* ── Results ── */}
                 <div className="panel">
                   <SectionHeader emoji="🏆" title="Results" />
@@ -575,23 +593,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       display={stats.bestAccuracy == null ? "—" : `${stats.bestAccuracy}%`}
                       tone="cyan"
                     />
-                    {stats.accuracyTrend.length >= 2 && (
-                      <div className="stats-trend-box">
-                        <BpmSparkline
-                          data={stats.accuracyTrend}
-                          stroke="#36c5f0"
-                          fill="rgba(54, 197, 240, 0.12)"
-                          ariaLabel="Accuracy trend over recent games"
-                          step
-                          strokeWidth={0.75}
-                          endDot={false}
-                          edgeToEdge
-                        />
-                        <span className="stats-trend-box-label">
-                          ACCURACY · LAST {stats.accuracyTrend.length} GAMES
-                        </span>
-                      </div>
-                    )}
                     <div className="stats-card-grid">
                       <StatCard emoji="❌" value={fmtInt(stats.totalMisses)} label="MISSES" sub={`${fmtNum(stats.avgMissesPerGame)}/game`} />
                       <StatCard emoji={<span className="cue-ball-icon" style={{ fontSize: 14, verticalAlign: "baseline" }} />} value={fmtInt(stats.totalFouls)} label="FOULS" sub={`${fmtNum(stats.avgFoulsPerGame)}/game`} />
