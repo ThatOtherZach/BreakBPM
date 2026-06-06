@@ -123,6 +123,7 @@ function BpmSparkline({
   strokeWidth = 1.5,
   endDot = true,
   edgeToEdge = false,
+  className = "",
 }: {
   data: number[];
   stroke?: string;
@@ -132,6 +133,7 @@ function BpmSparkline({
   strokeWidth?: number;
   endDot?: boolean;
   edgeToEdge?: boolean;
+  className?: string;
 }) {
   const W = 100;
   const H = 36;
@@ -159,7 +161,7 @@ function BpmSparkline({
   const area = `${line} L${x(n - 1).toFixed(1)},${H} L${x(0).toFixed(1)},${H} Z`;
   return (
     <svg
-      className="stats-hero-spark"
+      className={`stats-hero-spark${className ? ` ${className}` : ""}`}
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
       role="img"
@@ -521,12 +523,34 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       BEST {stats.bestBpm == null ? "--" : stats.bestBpm.toFixed(1)}
                     </span>
                   </div>
-                  {stats.bpmTrend.length >= 2 && (
+                  {(stats.bpmTrend.length >= 2 || stats.accuracyTrend.length >= 2) && (
                     <div className="stats-hero-graph">
-                      <BpmSparkline data={stats.bpmTrend} />
-                      <span className="stats-hero-graph-label">
-                        BPM · LAST {stats.bpmTrend.length} GAMES
-                      </span>
+                      {stats.bpmTrend.length >= 2 && (
+                        <div className="stats-hero-graph-item">
+                          <BpmSparkline data={stats.bpmTrend} />
+                          <span className="stats-hero-graph-label">
+                            BPM · LAST {stats.bpmTrend.length} GAMES
+                          </span>
+                        </div>
+                      )}
+                      {stats.accuracyTrend.length >= 2 && (
+                        <div className="stats-hero-graph-item">
+                          <BpmSparkline
+                            data={stats.accuracyTrend}
+                            stroke="#36c5f0"
+                            fill="rgba(54, 197, 240, 0.12)"
+                            ariaLabel="Accuracy trend over recent games"
+                            step
+                            strokeWidth={0.75}
+                            endDot={false}
+                            edgeToEdge
+                            className="spark-cyan"
+                          />
+                          <span className="stats-hero-graph-label cyan">
+                            ACCURACY · LAST {stats.accuracyTrend.length} GAMES
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
                   <div className="stats-hero-side">
@@ -544,24 +568,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     </div>
                   </div>
                 </div>
-
-                {stats.accuracyTrend.length >= 2 && (
-                  <div className="stats-trend-box">
-                    <BpmSparkline
-                      data={stats.accuracyTrend}
-                      stroke="#36c5f0"
-                      fill="rgba(54, 197, 240, 0.12)"
-                      ariaLabel="Accuracy trend over recent games"
-                      step
-                      strokeWidth={0.75}
-                      endDot={false}
-                      edgeToEdge
-                    />
-                    <span className="stats-trend-box-label">
-                      ACCURACY · LAST {stats.accuracyTrend.length} GAMES
-                    </span>
-                  </div>
-                )}
 
                 {/* ── Results ── */}
                 <div className="panel">
