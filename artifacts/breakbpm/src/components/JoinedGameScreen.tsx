@@ -5,6 +5,8 @@ import SharkIcon from './SharkIcon';
 import type { GameState } from '../lib/gameLogic';
 import {
   calculatePlayerBPM,
+  calculatePlayerAccuracy,
+  playerAccuracyCounts,
   formatTime,
   ballLabel,
   normalizeSharkIdentity,
@@ -283,6 +285,10 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
     ? (state?.winner ?? cur?.name)
     : cur?.name;
   const dispBpm = dispPlayerName ? calculatePlayerBPM(shotLog, dispPlayerName) : null;
+  // Accuracy mirrors BPM exactly: same display-player (current shooter, or
+  // winner once the game has ended).
+  const dispAcc = dispPlayerName ? calculatePlayerAccuracy(shotLog, dispPlayerName) : null;
+  const dispAccCounts = dispPlayerName ? playerAccuracyCounts(shotLog, dispPlayerName) : null;
   const elapsed = state?.timerStartTime != null
     ? Math.max(0, Date.now() - state.timerStartTime)
     : 0;
@@ -325,6 +331,19 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
             </div>
             <div className="hud-bpm-sub">
               {dispBpm === null ? 'AWAITING PLAY' : `${dispPlayerName?.toUpperCase() ?? ''}`}
+            </div>
+          </div>
+          <div className="hud-divider" />
+          {/* Accuracy — twin hero number, equal weight to BPM */}
+          <div className="hud-bpm-block">
+            <div className="hud-bpm-label">ACCURACY</div>
+            <div className={`hud-bpm-value${dispAcc === null ? ' hud-bpm-dim' : ''}`}>
+              {dispAcc !== null ? `${dispAcc}%` : '--%'}
+            </div>
+            <div className="hud-bpm-sub text-[#00ff41]">
+              {dispAcc === null || dispAccCounts === null
+                ? 'AWAITING PLAY'
+                : `${dispAccCounts.made}/${dispAccCounts.attempts} MADE`}
             </div>
           </div>
           <div className="hud-divider" />
