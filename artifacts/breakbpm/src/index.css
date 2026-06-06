@@ -1494,7 +1494,8 @@ html, #root {
 .stats-hero-sub {
   font-family: 'Courier New', monospace;
   font-size: 9px;
-  color: #5a9a5a;
+  color: #ffd24a;
+  text-shadow: 0 0 8px rgba(255, 179, 0, 0.35);
   letter-spacing: 1px;
   margin-top: 4px;
 }
