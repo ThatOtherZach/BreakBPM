@@ -176,7 +176,7 @@ function SectionHeader({ emoji, title }: { emoji: string; title: string }) {
 
 export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers, onSignIn, onPasses }: Props) {
   const qc = useQueryClient();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   // A minimal history fetch (1 result) gives us totalCount for ALL the user's
   // games regardless of the stats window, so we can disable Export/Delete
@@ -452,6 +452,16 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                 {/* ── CRT hero readout ── */}
                 <div className="stats-hero">
                   <div className="stats-hero-main">
+                    {user?.screenName && (
+                      <div className="stats-hero-player">
+                        <span className="stats-hero-name">{user.screenName}</span>
+                        {(stats.sharkLevel ?? 0) > 0 && (
+                          <span className="stats-hero-shark">
+                            <span className="stats-hero-shark-emoji" aria-hidden="true">🦈</span> Level {fmtInt(stats.sharkLevel)} Shark
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <span className="stats-hero-label">▲ AVG BPM</span>
                     <span className={`stats-hero-value${stats.avgBpm == null ? " dim" : ""}`}>
                       {stats.avgBpm == null ? "--" : stats.avgBpm.toFixed(1)}
@@ -461,21 +471,12 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       BEST {stats.bestBpm == null ? "--" : stats.bestBpm.toFixed(1)}
                     </span>
                   </div>
-                  {(stats.bpmTrend.length >= 2 || (stats.sharkLevel ?? 0) > 0) && (
+                  {stats.bpmTrend.length >= 2 && (
                     <div className="stats-hero-graph">
-                      {stats.bpmTrend.length >= 2 && (
-                        <>
-                          <BpmSparkline data={stats.bpmTrend} />
-                          <span className="stats-hero-graph-label">
-                            BPM · LAST {stats.bpmTrend.length}
-                          </span>
-                        </>
-                      )}
-                      {(stats.sharkLevel ?? 0) > 0 && (
-                        <div className="stats-hero-shark">
-                          <span className="stats-hero-shark-emoji" aria-hidden="true">🦈</span> Level {fmtInt(stats.sharkLevel)} Shark
-                        </div>
-                      )}
+                      <BpmSparkline data={stats.bpmTrend} />
+                      <span className="stats-hero-graph-label">
+                        BPM · LAST {stats.bpmTrend.length}
+                      </span>
                     </div>
                   )}
                   <div className="stats-hero-side">

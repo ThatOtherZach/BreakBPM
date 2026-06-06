@@ -1518,13 +1518,29 @@ html, #root {
   align-self: flex-end;
 }
 
+.stats-hero-player {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+.stats-hero-name {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 22px;
+  line-height: 1;
+  color: #e8e8e8;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .stats-hero-shark {
   font-family: 'VT323', 'Courier New', monospace;
   font-size: 16px;
   line-height: 1;
   color: var(--amber);
   letter-spacing: 0.5px;
-  margin-top: 6px;
   white-space: nowrap;
   text-shadow: 0 0 8px rgba(255, 179, 0, 0.35);
 }
