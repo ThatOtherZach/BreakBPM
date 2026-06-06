@@ -4,6 +4,8 @@ export const TAGLINES: string[] = [
   'IN THE KITCHEN',
   'STRIPES OR SOLIDS?',
   'STATS ON RACKS!',
+  'NICE RACK,\nTRACK IT!',
+  'BANK IT,\nRANK IT',
 ];
 
 export function pickTagline(): string {
