@@ -488,7 +488,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       <StatCard emoji="❌" value={fmtInt(stats.totalMisses)} label="MISSES" sub={`${fmtNum(stats.avgMissesPerGame)}/game`} />
                       <StatCard emoji={<span className="cue-ball-icon" style={{ fontSize: 14, verticalAlign: "baseline" }} />} value={fmtInt(stats.totalFouls)} label="FOULS" sub={`${fmtNum(stats.avgFoulsPerGame)}/game`} />
                       <StatCard emoji="🛡️" value={fmtInt(stats.totalSafeties)} label="SAFETIES" sub={`${fmtNum(stats.avgSafetiesPerGame)}/game`} />
-                      <StatCard emoji="↩️" value={fmtInt(stats.totalUndos)} label="UNDOS" />
+                      <StatCard emoji="↩️" value={fmtInt(stats.totalUndos)} label="TIMES NO ONE SAW THAT (UNDOS)" />
                     </div>
                   </div>
                 </div>
