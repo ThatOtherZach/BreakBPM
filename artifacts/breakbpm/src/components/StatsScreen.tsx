@@ -116,7 +116,7 @@ function StatCard({
   label,
   sub,
 }: {
-  emoji: string;
+  emoji: React.ReactNode;
   value: string;
   label: string;
   sub?: string;
@@ -486,7 +486,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     <div className="stats-card-grid">
                       <StatCard emoji="🎱" value={fmtInt(stats.totalShots)} label="SHOTS" sub={`${fmtNum(stats.avgShotsPerGame)}/game`} />
                       <StatCard emoji="❌" value={fmtInt(stats.totalMisses)} label="MISSES" sub={`${fmtNum(stats.avgMissesPerGame)}/game`} />
-                      <StatCard emoji="🚫" value={fmtInt(stats.totalFouls)} label="FOULS" sub={`${fmtNum(stats.avgFoulsPerGame)}/game`} />
+                      <StatCard emoji={<span className="cue-ball-icon" style={{ fontSize: 14, verticalAlign: "baseline" }} />} value={fmtInt(stats.totalFouls)} label="FOULS" sub={`${fmtNum(stats.avgFoulsPerGame)}/game`} />
                       <StatCard emoji="🛡️" value={fmtInt(stats.totalSafeties)} label="SAFETIES" sub={`${fmtNum(stats.avgSafetiesPerGame)}/game`} />
                       <StatCard emoji="↩️" value={fmtInt(stats.totalUndos)} label="UNDOS" />
                     </div>
