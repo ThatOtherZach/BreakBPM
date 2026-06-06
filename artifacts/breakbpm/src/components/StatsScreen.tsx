@@ -245,9 +245,11 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
             )}
           </div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {/* Scope toggle */}
+            {/* Scope + Timeframe selectors share one row (above the action
+                buttons). The window buttons are pass-only — free/anon tiers have
+                a fixed window (24h personal / all-time global), so for them this
+                row is just the Me/Everyone scope toggle. */}
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <span style={{ fontSize: 11, color: "#555", width: 48 }}>Scope</span>
               <button
                 className={`btn${appliedScope === "personal" ? " btn-primary" : ""}`}
                 style={{ flex: 1 }}
@@ -265,30 +267,21 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
               >
                 🌍 Everyone {canToggleGlobal ? "" : "🔒"}
               </button>
+              {canChooseWindow &&
+                WINDOWS.map((w) => {
+                  const active = appliedWindow === w;
+                  return (
+                    <button
+                      key={w}
+                      className={`btn${active ? " btn-primary" : ""}`}
+                      style={{ flex: 1, padding: "6px 4px" }}
+                      onClick={() => setWindow(w)}
+                    >
+                      {WINDOW_LABEL[w]}
+                    </button>
+                  );
+                })}
             </div>
-
-            {/* Window selector — pass-only. Free/anon tiers have a fixed window
-                (24h personal / all-time global), so the selector is hidden. */}
-            {canChooseWindow && (
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <span style={{ fontSize: 11, color: "#555", width: 48 }}>Timeframe</span>
-                <div style={{ display: "flex", gap: 4, flex: 1 }}>
-                  {WINDOWS.map((w) => {
-                    const active = appliedWindow === w;
-                    return (
-                      <button
-                        key={w}
-                        className={`btn${active ? " btn-primary" : ""}`}
-                        style={{ flex: 1, padding: "6px 4px" }}
-                        onClick={() => setWindow(w)}
-                      >
-                        {WINDOW_LABEL[w]}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             {(canRefresh || isAuthenticated) && (
               <div style={{ display: "flex", gap: 6, marginTop: 6 }}>

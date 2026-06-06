@@ -563,7 +563,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
           >
             <span
               style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
-              className="justify-start items-center flex-row text-left text-[13px] text-[#000000] font-semibold">
+              className="justify-start items-center flex-row text-left text-[13px] font-semibold text-[#ffffff]">
               JOIN SHARED GAME
             </span>
             <span aria-hidden="true" className="text-[#000000]">{joinOpen ? '▼' : '▶'}</span>
