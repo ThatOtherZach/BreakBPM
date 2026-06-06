@@ -532,7 +532,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         <div className="stats-hero-graph-item">
                           <BpmSparkline
                             data={stats.bpmTrend}
-                            step
                             strokeWidth={0.75}
                             endDot={false}
                             edgeToEdge
