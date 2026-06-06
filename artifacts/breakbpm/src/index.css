@@ -1518,6 +1518,28 @@ html, #root {
   align-self: flex-end;
 }
 
+/* Standalone trend chart (e.g. accuracy) in its own black CRT box. */
+.stats-trend-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: #060a08;
+  border: 1px solid rgba(54, 197, 240, 0.25);
+  border-radius: 4px;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.8);
+}
+.stats-trend-box .stats-hero-spark {
+  filter: drop-shadow(0 0 4px rgba(54, 197, 240, 0.35));
+}
+.stats-trend-box-label {
+  font-family: 'Courier New', monospace;
+  font-size: 8px;
+  color: #2c7a96;
+  letter-spacing: 1px;
+  align-self: flex-end;
+}
+
 .stats-hero-player {
   display: flex;
   flex-direction: column;

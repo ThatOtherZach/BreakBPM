@@ -77,6 +77,7 @@ export interface StatsCore {
   avgBpm: number | null;
   bestBpm: number | null;
   bpmTrend: number[];
+  accuracyTrend: number[];
   playTimeByType: Array<{ gameType: "8ball" | "9ball" | "practice"; avgDurationMs: number; gameCount: number }>;
   topBalls: Array<{ ball: number; count: number }>;
   solidsCount: number;
@@ -199,6 +200,7 @@ function emptyCore(): StatsCore {
     avgBpm: null,
     bestBpm: null,
     bpmTrend: [],
+    accuracyTrend: [],
     playTimeByType: [],
     topBalls: [],
     solidsCount: 0,
@@ -294,6 +296,7 @@ async function computeGlobalStats(window: StatWindow): Promise<StatsCore> {
   // bpms are collected newest-first (desc endedAt); take the most recent N and
   // reverse so the sparkline reads oldest→newest left-to-right.
   core.bpmTrend = bpms.slice(0, TREND_MAX).reverse();
+  core.accuracyTrend = accuracies.slice(0, TREND_MAX).reverse();
   core.avgShotsPerGame = round1(core.totalShots / core.gamesPlayed);
   core.avgMissesPerGame = round1(core.totalMisses / core.gamesPlayed);
   core.avgFoulsPerGame = round1(core.totalFouls / core.gamesPlayed);
@@ -344,6 +347,7 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
 
   const byType = new Map<string, { total: number; count: number }>();
   const bpms: number[] = [];
+  const accs: number[] = [];
   const ballCounts = new Map<number, number>();
   let totalMade = 0;
   let totalAttempts = 0;
@@ -380,6 +384,7 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
     totalAttempts += attempts;
     if (attempts > 0) {
       const acc = Math.round((made / attempts) * 100);
+      accs.push(acc);
       bestAccuracy = bestAccuracy == null ? acc : Math.max(bestAccuracy, acc);
     }
 
@@ -435,6 +440,7 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
   // bpms are collected newest-first (desc endedAt); take the most recent N and
   // reverse so the sparkline reads oldest→newest left-to-right.
   core.bpmTrend = bpms.slice(0, TREND_MAX).reverse();
+  core.accuracyTrend = accs.slice(0, TREND_MAX).reverse();
   core.avgShotsPerGame = round1(core.totalShots / core.gamesPlayed);
   core.avgMissesPerGame = round1(core.totalMisses / core.gamesPlayed);
   core.avgFoulsPerGame = round1(core.totalFouls / core.gamesPlayed);

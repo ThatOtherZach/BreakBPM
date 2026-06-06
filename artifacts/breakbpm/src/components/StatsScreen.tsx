@@ -114,7 +114,17 @@ function PixelMeter({
  * (oldest→newest) as a filled line in an SVG that scales to its container, so
  * it sits beside the big AVG BPM readout like a CRT oscilloscope trace.
  */
-function BpmSparkline({ data }: { data: number[] }) {
+function BpmSparkline({
+  data,
+  stroke = "#00ff41",
+  fill = "rgba(0, 255, 65, 0.12)",
+  ariaLabel = "BPM trend over recent games",
+}: {
+  data: number[];
+  stroke?: string;
+  fill?: string;
+  ariaLabel?: string;
+}) {
   const W = 100;
   const H = 36;
   const pad = 2;
@@ -132,11 +142,11 @@ function BpmSparkline({ data }: { data: number[] }) {
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
       role="img"
-      aria-label="BPM trend over recent games"
+      aria-label={ariaLabel}
     >
-      <path d={area} fill="rgba(0, 255, 65, 0.12)" stroke="none" />
-      <path d={line} fill="none" stroke="#00ff41" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={x(n - 1)} cy={y(data[n - 1])} r="1.8" fill="#00ff41" />
+      <path d={area} fill={fill} stroke="none" />
+      <path d={line} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={x(n - 1)} cy={y(data[n - 1])} r="1.8" fill={stroke} />
     </svg>
   );
 }
@@ -544,6 +554,19 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       display={stats.bestAccuracy == null ? "—" : `${stats.bestAccuracy}%`}
                       tone="cyan"
                     />
+                    {stats.accuracyTrend.length >= 2 && (
+                      <div className="stats-trend-box">
+                        <BpmSparkline
+                          data={stats.accuracyTrend}
+                          stroke="#36c5f0"
+                          fill="rgba(54, 197, 240, 0.12)"
+                          ariaLabel="Accuracy trend over recent games"
+                        />
+                        <span className="stats-trend-box-label">
+                          ACCURACY · LAST {stats.accuracyTrend.length}
+                        </span>
+                      </div>
+                    )}
                     <div className="stats-card-grid">
                       <StatCard emoji="❌" value={fmtInt(stats.totalMisses)} label="MISSES" sub={`${fmtNum(stats.avgMissesPerGame)}/game`} />
                       <StatCard emoji={<span className="cue-ball-icon" style={{ fontSize: 14, verticalAlign: "baseline" }} />} value={fmtInt(stats.totalFouls)} label="FOULS" sub={`${fmtNum(stats.avgFoulsPerGame)}/game`} />

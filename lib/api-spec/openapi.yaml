@@ -1424,6 +1424,7 @@ components:
           playTimeByType,
           topBalls,
           bpmTrend,
+          accuracyTrend,
           sharkLevel,
         ]
       properties:
@@ -1483,6 +1484,12 @@ components:
         # oldest→newest so a sparkline reads left-to-right as time progresses.
         # Only games that produced a BPM are included; empty when none.
         bpmTrend:
+          type: array
+          items: { type: number }
+        # Per-game accuracy percentage (0–100) for up to the last 24 games in
+        # the scope/window, ordered oldest→newest so a sparkline reads left-to-
+        # right. Only games with qualifying shots are included; empty when none.
+        accuracyTrend:
           type: array
           items: { type: number }
         playTimeByType:

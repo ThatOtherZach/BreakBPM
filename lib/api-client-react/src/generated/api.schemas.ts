@@ -887,6 +887,7 @@ export interface StatsResult {
   /** @nullable */
   bestBpm?: number | null;
   bpmTrend: number[];
+  accuracyTrend: number[];
   playTimeByType: StatPlayTime[];
   topBalls: StatBall[];
   solidsCount?: number;
