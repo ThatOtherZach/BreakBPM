@@ -510,7 +510,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       <PixelMeter
                         label="🦈 SHARK WIN RATE"
                         pct={stats.sharkWinRate == null ? null : stats.sharkWinRate * 100}
-                        display={`${fmtPct(stats.sharkWinRate)} · Lvl. ${fmtInt(stats.sharkGames)}`}
+                        display={fmtPct(stats.sharkWinRate)}
                         tone="cyan"
                       />
                     )}
