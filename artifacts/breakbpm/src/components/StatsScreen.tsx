@@ -271,7 +271,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                 (24h personal / all-time global), so the selector is hidden. */}
             {canChooseWindow && (
               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <span style={{ fontSize: 11, color: "#555", width: 48 }}>Window</span>
+                <span style={{ fontSize: 11, color: "#555", width: 48 }}>Timeframe</span>
                 <div style={{ display: "flex", gap: 4, flex: 1 }}>
                   {WINDOWS.map((w) => {
                     const active = appliedWindow === w;
