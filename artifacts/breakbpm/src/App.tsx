@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
+import { Switch, Route, useLocation, useSearch, Router as WouterRouter } from "wouter";
+import { clampObsScale } from "./components/ObsOverlay";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 
 import SetupScreen from "./components/SetupScreen";
@@ -314,10 +315,18 @@ function JoinRoute({ params }: { params: { code: string } }) {
 
 function WatchRoute({ params }: { params: { name: string } }) {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   // Guard against malformed percent-encoding (e.g. a stray `%`), which would
   // otherwise throw a URIError and crash the route. Fall back to the raw value.
   let name = params.name;
   try { name = decodeURIComponent(params.name); } catch { /* keep raw */ }
+  // OBS overlay flags. `?obs=1` strips all chrome and goes transparent so the
+  // HUD can be dropped into OBS as a Browser Source; `?log=1` adds a compact
+  // shot log; `?scale=<n>` CSS-scales the overlay for crisp resizing.
+  const sp = new URLSearchParams(search);
+  const obs = sp.get("obs") === "1";
+  const obsLog = sp.get("log") === "1";
+  const obsScale = clampObsScale(parseFloat(sp.get("scale") ?? "1"));
   return (
     <WatchByNameScreen
       name={name}
@@ -325,6 +334,9 @@ function WatchRoute({ params }: { params: { name: string } }) {
       onAbout={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onSignIn={() => setLocation("/sign-in")}
+      obs={obs}
+      obsLog={obsLog}
+      obsScale={obsScale}
     />
   );
 }

@@ -41,8 +41,9 @@ artifacts/
         SetupScreen.tsx  Game setup — mode, player count, names, Shark aggression
         GameScreen.tsx   Active game HUD, shot logging, BPM display
         StatsScreen.tsx  Tiered shooting stats (retro CRT/PC-98 styling)
-        JoinedGameScreen.tsx  View-only HUD for joiners + spectators (/join/:code)
-        WatchByNameScreen.tsx  Spectate by player name (/watch/:name)
+        JoinedGameScreen.tsx  View-only HUD for joiners + spectators (/join/:code); also renders the OBS overlay (?obs=1)
+        WatchByNameScreen.tsx  Spectate by player name (/watch/:name); routes ?obs=1 into overlay mode
+        ObsOverlay.tsx    OBS overlay primitives (transparent body class, scale clamp, `:(` idle face)
         AccountScreen.tsx  Profile, pass/subscription status, history
         PassesScreen.tsx   Lucky Break roll + (env-gated) card purchase + redeem
         LuckyBreakReveal.tsx  "Rolling the rack" reveal overlay (reuses .hud-chip)
@@ -90,6 +91,7 @@ lib/
 - **Card payments behind an env flag**: `config.ts` `cardPaymentsEnabled()` reads `BREAKBPM_CARD_PAYMENTS_ENABLED` (code default **OFF**, but currently set **ON** via env). While off, `/passes/checkout`, `/passes/verify`, `/subscriptions/checkout`, `/subscriptions/verify` reject with `CARD_PAYMENTS_OFF_MESSAGE` (subscription *cancel* stays on so existing subs can still be stopped), and `/passes/plans` reports `cardPaymentsEnabled:false` so the frontend hides the card UI. Endpoints + UI are intact regardless — flip the env var to toggle. Stripe credentials come from the Replit Stripe connector (not env secrets). Restart the api-server workflow after changing the flag.
 - **Tiered stats**: `GET /stats` is gated by tier. Anonymous → global scope, 24h window. Signed-in (no pass) → personal scope, 24h. Pass holders → personal stats with selectable window (24h/30d/365d/all) and a global toggle, plus `refresh=true` to bypass the 1h server cache. Personal stats are recomputed from each game's `shotLog` (the denormalized `games.bpm`/`accuracy` columns are host-centric); the per-player math in `stats.ts` deliberately mirrors `gameLogic.ts` and must be kept in lockstep.
 - **One host, many viewers**: The host device is the canonical scorekeeper. Others get a view-only mirror — either by **joining** an open seat before the break (`/join/:code`, occupies a slot, guests get a `guestToken`) or **spectating** any time (`/watch/:name` resolves a player's live game). Both render `JoinedGameScreen` and poll `/games/state`; neither can score or undo. Spectating requires the host to be a paid tier.
+- **OBS overlay**: `/watch/:name?obs=1` renders the same live HUD as a chrome-free, transparent overlay for use as an OBS **Browser Source** (no new route, no extra backend — it reuses spectator resolution + polling). The page canvas goes transparent (a `obs-mode` class on `<html>`/`<body>`) so the video shows through behind the themed PC-98 panel; the overlay hugs its content (no navbar/back/status chrome) and stays live via the existing poll. Whenever there is nothing to show — no live game, host without an active paid pass, ended game, or an unresolved name — it collapses to a single themed `:(` face (never an error card or sign-in UI). Optional flags: `&log=1` adds a compact (≤6-line) newest-first shot log; `&scale=<n>` CSS-`transform: scale`s the whole overlay (clamped 0.2–5, default 1) so streamers get crisp resizing instead of OBS-side blur. Overlay primitives live in `ObsOverlay.tsx`; styles are the `.obs-*` / `body.obs-mode` rules in `index.css`. **OBS setup**: add a Browser Source, set the URL to the published `/watch/<name>?obs=1` (append `&log=1`/`&scale=1.5` as desired), leave "Shutdown source when not visible" off so it keeps polling, and size the source to the HUD (the panel is 480px wide at scale 1).
 
 ## Product
 

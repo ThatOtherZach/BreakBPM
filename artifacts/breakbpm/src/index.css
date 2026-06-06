@@ -2119,3 +2119,51 @@ html, #root {
 .crypto-divider::before, .crypto-divider::after {
   content: ""; flex: 1; height: 1px; background: var(--dshadow); opacity: .4;
 }
+
+/* ── OBS overlay mode ──
+   `/watch/:name?obs=1` renders a chrome-free, transparent HUD intended to be
+   dropped into OBS as a Browser Source. The page canvas goes transparent so
+   the live video shows through behind the themed PC-98 panel. */
+html.obs-mode,
+body.obs-mode {
+  background: transparent !important;
+  overflow: hidden;
+}
+body.obs-mode #root {
+  background: transparent;
+  min-height: 0;
+}
+
+.obs-overlay {
+  display: inline-block;
+  width: 480px;
+  max-width: 100vw;
+  background: transparent;
+  transform-origin: top left;
+}
+
+/* Compact shot log under the overlay HUD (only with `?log=1`). */
+.obs-log {
+  background: #000;
+  border: 2px solid;
+  border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
+  padding: 4px 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--green);
+}
+
+/* Idle face shown when there is nothing live to display. */
+.obs-idle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+}
+.obs-idle-face {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 72px;
+  line-height: 1;
+  color: var(--green, #00ff41);
+  text-shadow: 0 0 12px rgba(0, 255, 65, 0.5);
+}

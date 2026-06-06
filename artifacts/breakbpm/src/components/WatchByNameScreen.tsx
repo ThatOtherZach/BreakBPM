@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import JoinedGameScreen from './JoinedGameScreen';
 import PlayerProfileScreen from './PlayerProfileScreen';
+import { ObsIdle, useObsBodyClass } from './ObsOverlay';
 import {
   useResolveWatchByName,
   getResolveWatchByNameQueryKey,
@@ -12,6 +13,12 @@ interface Props {
   onAbout: () => void;
   onAccount: () => void;
   onSignIn: () => void;
+  /** OBS overlay mode — chrome-free, transparent HUD for a Browser Source. */
+  obs?: boolean;
+  /** Also render a compact shot log in the overlay. */
+  obsLog?: boolean;
+  /** CSS transform scale applied to the whole overlay. */
+  obsScale?: number;
 }
 
 /**
@@ -26,8 +33,9 @@ interface Props {
  * and JoinedGameScreen owns everything from there (polling + the ended state);
  * to follow a later game, reload the page.
  */
-export default function WatchByNameScreen({ name, onBack, onAbout, onAccount, onSignIn }: Props) {
+export default function WatchByNameScreen({ name, onBack, onAbout, onAccount, onSignIn, obs = false, obsLog = false, obsScale = 1 }: Props) {
   const [liveCode, setLiveCode] = useState<string | null>(null);
+  useObsBodyClass(obs);
 
   const resolve = useResolveWatchByName(
     { name },
@@ -55,14 +63,24 @@ export default function WatchByNameScreen({ name, onBack, onAbout, onAccount, on
         onAccount={onAccount}
         onSignIn={onSignIn}
         spectatorOnly
+        obs={obs}
+        obsLog={obsLog}
+        obsScale={obsScale}
       />
     );
   }
 
-  // No live game (yet). Show the player's public profile while we keep polling
-  // in the background; the effect above promotes us to the live spectator view
-  // the moment they break. The profile screen owns its own loading / not-found
-  // / rate-limited / error states.
+  // No live game (yet). In OBS overlay mode we never show the profile/error
+  // chrome — just the `:(` idle face — while polling continues to promote us
+  // to the live HUD the moment the host breaks.
+  if (obs) {
+    return <ObsIdle scale={obsScale} />;
+  }
+
+  // Normal spectator view: show the player's public profile while we keep
+  // polling in the background; the effect above promotes us to the live
+  // spectator view the moment they break. The profile screen owns its own
+  // loading / not-found / rate-limited / error states.
   return (
     <PlayerProfileScreen
       name={name}

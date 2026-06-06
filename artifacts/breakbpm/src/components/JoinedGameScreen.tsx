@@ -21,6 +21,7 @@ import {
   getGetGameStateByCodeQueryKey,
   useLeaveGame,
 } from '@workspace/api-client-react';
+import { ObsIdle } from './ObsOverlay';
 
 const BALL_COLORS: Record<number, string> = {
   1: '#FDD307', 2: '#1F4E9E', 3: '#C3342B', 4: '#5B247A',
@@ -42,6 +43,17 @@ interface Props {
    * (no slot to reserve / forfeit), so a watcher never occupies a seat.
    */
   spectatorOnly?: boolean;
+  /**
+   * OBS overlay mode. Renders ONLY the HUD panel on a transparent background
+   * with no navbar/back/status chrome, so it can be dropped into OBS as a
+   * Browser Source. Idle/ended/unpaid-host/error states collapse to a single
+   * `:(` face — never an error card or sign-in UI.
+   */
+  obs?: boolean;
+  /** Also render a compact (few-line) shot log below the overlay HUD. */
+  obsLog?: boolean;
+  /** CSS transform scale applied to the whole overlay. */
+  obsScale?: number;
 }
 
 /**
@@ -52,7 +64,7 @@ interface Props {
  * Renders an overlay banner that explicitly states "View only — host is
  * scorekeeping" so joiners aren't confused about why they can't tap.
  */
-export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onSignIn, spectatorOnly = false }: Props) {
+export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onSignIn, spectatorOnly = false, obs = false, obsLog = false, obsScale = 1 }: Props) {
   const [, setLocation] = useLocation();
   const join = useJoinGame();
   const leave = useLeaveGame();
@@ -169,11 +181,16 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
   // If the host opens their own join URL, redirect them back to the main
   // setup/game flow so they don't end up in the read-only joiner view
   // (where the "Leave" button would forfeit their own game).
+  //
+  // EXCEPT in OBS overlay mode: a streamer who is the host legitimately opens
+  // their own /watch/:name?obs=1 to pipe the HUD into OBS. The overlay has no
+  // Leave button (nothing to forfeit) and redirecting would dump the full app
+  // chrome onto their stream — so stay on the overlay and render the HUD.
   useEffect(() => {
-    if (joinResult?.role === 'already_joined' && joinResult.reason === 'host') {
+    if (!obs && joinResult?.role === 'already_joined' && joinResult.reason === 'host') {
       setLocation('/');
     }
-  }, [joinResult, setLocation]);
+  }, [obs, joinResult, setLocation]);
 
   // Pull and normalize the host's gameState snapshot. The shape mirrors
   // GameState — we read it defensively so a partial snapshot doesn't
@@ -221,6 +238,10 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
   }
 
   if (joinError) {
+    // In overlay mode every failure (not found, ended, rate-limited, or the
+    // host lacking an active paid pass) collapses to the `:(` face — never an
+    // error card or Back button on stream.
+    if (obs) return <ObsIdle scale={obsScale} />;
     return (
       <div className="app-window">
         <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
@@ -237,6 +258,9 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
   }
 
   if (!joinResult || !snap.data?.found) {
+    // Brief connecting window: show `:(` in overlay mode rather than a
+    // "Connecting…" notice with app chrome.
+    if (obs) return <ObsIdle scale={obsScale} />;
     return (
       <div className="app-window">
         <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
@@ -318,11 +342,8 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
     );
   };
 
-  return (
-    <div className="app-window">
-      <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
-
-      <div className="hud-panel">
+  const hudPanel = (
+    <div className="hud-panel">
         <div className="hud-top">
           <div className="hud-bpm-block">
             <div className="hud-bpm-label">BALLS/MIN</div>
@@ -471,7 +492,54 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
             </span>
           </div>
         )}
+    </div>
+  );
+
+  // Compact overlay shot log: newest-first, trimmed to a few lines so it
+  // doesn't grow unbounded on stream. Only built when `?log=1`.
+  const compactLog = obsLog ? (
+    <div className="obs-log">
+      {shotLog.length === 0
+        ? <div style={{ color: '#006600' }}>_ no shots yet...</div>
+        : shotLog.map((e, i) => ({ e, i })).reverse().slice(0, 6).map(({ e, i }) => {
+          const t = formatTime(e.gameTime);
+          let line = '';
+          if (e.type === 'sink') line = `[${t}] ${e.playerName} » SINK ${ballLabel(e.ball!)}`;
+          else if (e.type === 'foul') line = `[${t}] ${e.playerName} » FOUL`;
+          else if (e.type === 'safety') line = `[${t}] ${e.playerName} » SAFETY`;
+          else if (e.type === 'miss') line = `[${t}] ${e.playerName} » MISS`;
+          else if (e.type === 'win') line = `[${t}] ${e.playerName} » WIN! ${e.ball ? ballLabel(e.ball) : ''}`;
+          else if (e.type === 'lose') line = `[${t}] ${e.playerName} » LOSS`;
+          const bpmTag = e.bpm !== undefined ? ` · ${e.bpm.toFixed(1)} BPM` : '';
+          return (
+            <div key={i} className={`log-entry ${e.type}`}>
+              {line}{bpmTag}
+            </div>
+          );
+        })
+      }
+    </div>
+  ) : null;
+
+  if (obs) {
+    // No active game once it has ended → `:(` (never the winner banner/chrome).
+    if (ended) return <ObsIdle scale={obsScale} />;
+    return (
+      <div
+        className="obs-overlay"
+        style={{ transform: `scale(${obsScale})`, transformOrigin: 'top left' }}
+      >
+        {hudPanel}
+        {compactLog}
       </div>
+    );
+  }
+
+  return (
+    <div className="app-window">
+      <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
+
+      {hudPanel}
 
       <div className="app-body">
         <div>
