@@ -1520,11 +1520,12 @@ html, #root {
 
 .stats-hero-shark {
   font-family: 'VT323', 'Courier New', monospace;
-  font-size: 22px;
-  line-height: 0.9;
+  font-size: 16px;
+  line-height: 1;
   color: var(--amber);
   letter-spacing: 0.5px;
   margin-top: 6px;
+  white-space: nowrap;
   text-shadow: 0 0 8px rgba(255, 179, 0, 0.35);
 }
 
