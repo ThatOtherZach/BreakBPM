@@ -89,7 +89,8 @@ A pass unlocks everything:
 - **Post to Find Players** — create meetup posts so other players can find your game. Free accounts can browse the board and map, but only pass holders can post.
 - **Let others spectate** — when you host a game with a pass, anyone can watch it live, by share code or by your name. Without a pass, your games can't be spectated.
 - **Full game history** — every game you've ever played, not just your last 3, with pagination.
-- **Full stats** — switch between 24-hour, 30-day, 365-day, and all-time windows, overlay global averages, and refresh on demand. Free accounts see personal stats for the last 24 hours only.
+- **Full stats** — switch between 24-hour, 30-day, 365-day, and all-time windows, and refresh on demand. Free accounts see personal stats for the last 24 hours only, but can still toggle over to the all-time global "Everyone" view as a taste.
+- **Full data export** — download every game and shot you've ever logged as a CSV. Free accounts can export their last 24 hours only.
 - **Custom screen name** — *Lifetime only:* pick your own display name instead of the auto-assigned one.
 
 | Pass     | Price              | Access                                     |
