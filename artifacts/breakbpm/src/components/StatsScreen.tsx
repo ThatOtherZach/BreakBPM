@@ -707,32 +707,39 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   <div className="panel panel--wood">
                     <SectionHeader emoji="🎱" title="Ball Patterns" />
                     <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      {stats.topBalls.length > 0 && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          <span style={{ fontSize: 10, color: "#f4e7c8", textShadow: "0 1px 1px rgba(0,0,0,0.7)", letterSpacing: 0.5 }}>⭐ MOST-SUNK BALLS</span>
-                          <div className="stats-ball-grid">
-                            {stats.topBalls.map((b) => {
-                              const chipClass =
-                                b.ball === 8
-                                  ? "hud-chip-eight"
-                                  : SOLIDS.includes(b.ball)
-                                    ? "hud-chip-solid"
-                                    : "hud-chip-stripe";
-                              return (
-                                <div key={b.ball} className="stats-ball-item">
-                                  <span
-                                    className={`hud-chip ${chipClass}`}
-                                    data-number={b.ball}
-                                    style={{ "--chip-color": BALL_COLORS[b.ball] } as React.CSSProperties}
-                                    aria-label={`Ball ${b.ball}`}
-                                  />
-                                  <span className="stats-ball-count">×{b.count}</span>
-                                </div>
-                              );
-                            })}
+                      {(() => {
+                        const ballCounts = new Map(stats.topBalls.map((b) => [b.ball, b.count]));
+                        return (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            <span style={{ fontSize: 10, color: "#f4e7c8", textShadow: "0 1px 1px rgba(0,0,0,0.7)", letterSpacing: 0.5 }}>⭐ BALLS SUNK</span>
+                            <div className="stats-ball-grid">
+                              <div className="stats-ball-item">
+                                <span className="cue-ball-icon cue-ball-icon--chip" aria-label="Cue ball" />
+                                <span className="stats-ball-count">×{fmtInt(stats.totalFouls)}</span>
+                              </div>
+                              {Array.from({ length: 15 }, (_, i) => i + 1).map((ball) => {
+                                const chipClass =
+                                  ball === 8
+                                    ? "hud-chip-eight"
+                                    : SOLIDS.includes(ball)
+                                      ? "hud-chip-solid"
+                                      : "hud-chip-stripe";
+                                return (
+                                  <div key={ball} className="stats-ball-item">
+                                    <span
+                                      className={`hud-chip ${chipClass}`}
+                                      data-number={ball}
+                                      style={{ "--chip-color": BALL_COLORS[ball] } as React.CSSProperties}
+                                      aria-label={`Ball ${ball}`}
+                                    />
+                                    <span className="stats-ball-count">×{ballCounts.get(ball) ?? 0}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       <p
                         style={{ fontSize: 12, color: "#f4e7c8", textShadow: "0 1px 1px rgba(0,0,0,0.7)", margin: 0 }}
