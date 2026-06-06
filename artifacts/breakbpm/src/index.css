@@ -1518,6 +1518,23 @@ html, #root {
   align-self: flex-end;
 }
 
+.stats-hero-shark {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  color: var(--amber);
+  letter-spacing: 1px;
+  margin-top: 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.stats-hero-shark span {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 22px;
+  line-height: 0.9;
+  text-shadow: 0 0 8px rgba(255, 179, 0, 0.35);
+}
+
 .stats-hero-side {
   flex: 0 0 auto;
   display: flex;

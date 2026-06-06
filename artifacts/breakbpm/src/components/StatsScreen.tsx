@@ -461,12 +461,21 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       BEST {stats.bestBpm == null ? "--" : stats.bestBpm.toFixed(1)}
                     </span>
                   </div>
-                  {stats.bpmTrend.length >= 2 && (
+                  {(stats.bpmTrend.length >= 2 || (stats.sharkLevel ?? 0) > 0) && (
                     <div className="stats-hero-graph">
-                      <BpmSparkline data={stats.bpmTrend} />
-                      <span className="stats-hero-graph-label">
-                        BPM · LAST {stats.bpmTrend.length}
-                      </span>
+                      {stats.bpmTrend.length >= 2 && (
+                        <>
+                          <BpmSparkline data={stats.bpmTrend} />
+                          <span className="stats-hero-graph-label">
+                            BPM · LAST {stats.bpmTrend.length}
+                          </span>
+                        </>
+                      )}
+                      {(stats.sharkLevel ?? 0) > 0 && (
+                        <div className="stats-hero-shark">
+                          🦈 SHARK LVL <span>{fmtInt(stats.sharkLevel)}</span>
+                        </div>
+                      )}
                     </div>
                   )}
                   <div className="stats-hero-side">
@@ -482,12 +491,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       <span className="stats-hero-side-val">{stats.accuracy == null ? "--" : `${stats.accuracy}%`}</span>
                       <span className="stats-hero-side-label">AVG ACCURACY</span>
                     </div>
-                    {(stats.sharkLevel ?? 0) > 0 && (
-                      <div className="stats-hero-side-item">
-                        <span className="stats-hero-side-val amber">🦈 {fmtInt(stats.sharkLevel)}</span>
-                        <span className="stats-hero-side-label">SHARK LVL</span>
-                      </div>
-                    )}
                   </div>
                 </div>
 
