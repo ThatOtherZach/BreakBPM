@@ -20,6 +20,7 @@ interface Props {
   onAccount: () => void;
   onFindPlayers: () => void;
   onSignIn: () => void;
+  onPasses: () => void;
 }
 
 const BALL_COLORS: Record<number, string> = {
@@ -141,7 +142,7 @@ function SectionHeader({ emoji, title }: { emoji: string; title: string }) {
   );
 }
 
-export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers, onSignIn }: Props) {
+export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers, onSignIn, onPasses }: Props) {
   const qc = useQueryClient();
   const { isAuthenticated } = useAuth();
 
@@ -360,6 +361,28 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       : "☢️ Delete"}
                 </button>
               </div>
+            )}
+
+            {isAuthenticated && isFreeTier && (
+              <p style={{ fontSize: 11, color: "#555", margin: 0, lineHeight: 1.4 }}>
+                🔓 Free exports cover the last 24h —{" "}
+                <button
+                  type="button"
+                  onClick={onPasses}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    color: "#1F4E9E",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                    font: "inherit",
+                  }}
+                >
+                  get a pass
+                </button>{" "}
+                for your full history.
+              </p>
             )}
           </div>
         </div>
