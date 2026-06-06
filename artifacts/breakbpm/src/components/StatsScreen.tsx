@@ -578,7 +578,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       <p
                         style={{ fontSize: 12, color: "#fff", textShadow: "0 1px 1px rgba(0,0,0,0.7)", margin: 0 }}
                         className="text-center font-semibold">
-                        🎱 ~{Math.ceil(stats.avgShotsPerGame)} Shots per game (Average)
+                        🎱 {Math.ceil(stats.avgShotsPerGame)} Shots Per Game (Average)
                       </p>
                     </div>
                   </div>
