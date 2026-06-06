@@ -707,6 +707,31 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   <div className="panel panel--wood">
                     <SectionHeader emoji="🎱" title="Ball Patterns" />
                     <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      {/* Solids vs stripes split */}
+                      {((stats.solidsCount ?? 0) > 0 || (stats.stripesCount ?? 0) > 0) && (() => {
+                        const solids = stats.solidsCount ?? 0;
+                        const stripes = stats.stripesCount ?? 0;
+                        const total = solids + stripes;
+                        const solidsPct = total > 0 ? (solids / total) * 100 : 0;
+                        const stripesPct = total > 0 ? (stripes / total) * 100 : 0;
+                        return (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <div className="stats-bar-top">
+                              <span className="font-semibold">🟡 Solids {Math.round(solidsPct)}%</span>
+                              <span className="font-semibold">{Math.round(stripesPct)}% Stripes 🔴</span>
+                            </div>
+                            <div className="stats-split-track">
+                              <span className="stats-split-seg solids" style={{ width: `${solidsPct}%` }} />
+                              <span className="stats-split-seg stripes" style={{ width: `${stripesPct}%` }} />
+                            </div>
+                            <div className="stats-bar-top">
+                              <span style={{ color: "#fff" }} className="font-semibold">{solids} games</span>
+                              <span style={{ color: "#fff" }} className="font-semibold">{stripes} games</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       {(() => {
                         const ballCounts = new Map(stats.topBalls.map((b) => [b.ball, b.count]));
                         const renderBall = (ball: number) => {
@@ -748,31 +773,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         className="text-center font-semibold">
                         🎱 {fmtNum(stats.avgShotsPerGame)} shots per game on average
                       </p>
-
-                      {/* Solids vs stripes split */}
-                      {((stats.solidsCount ?? 0) > 0 || (stats.stripesCount ?? 0) > 0) && (() => {
-                        const solids = stats.solidsCount ?? 0;
-                        const stripes = stats.stripesCount ?? 0;
-                        const total = solids + stripes;
-                        const solidsPct = total > 0 ? (solids / total) * 100 : 0;
-                        const stripesPct = total > 0 ? (stripes / total) * 100 : 0;
-                        return (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            <div className="stats-bar-top">
-                              <span className="font-semibold">🟡 Solids {Math.round(solidsPct)}%</span>
-                              <span className="font-semibold">{Math.round(stripesPct)}% Stripes 🔴</span>
-                            </div>
-                            <div className="stats-split-track">
-                              <span className="stats-split-seg solids" style={{ width: `${solidsPct}%` }} />
-                              <span className="stats-split-seg stripes" style={{ width: `${stripesPct}%` }} />
-                            </div>
-                            <div className="stats-bar-top">
-                              <span style={{ color: "#fff" }} className="font-semibold">{solids} games</span>
-                              <span style={{ color: "#fff" }} className="font-semibold">{stripes} games</span>
-                            </div>
-                          </div>
-                        );
-                      })()}
                     </div>
                   </div>
                 )}
