@@ -740,7 +740,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                               <div className="stats-ball-grid">{[9, 10, 11, 12, 13, 14, 15].map(renderBall)}</div>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                              <span style={labelStyle}>🎱 8-BALL &amp; CUE (FOULS)</span>
+                              <span style={labelStyle} className="font-semibold">🎱 8-BALL &amp; CUE (FOULS)</span>
                               <div className="stats-ball-grid">
                                 {renderBall(8)}
                                 <div className="stats-ball-item">
