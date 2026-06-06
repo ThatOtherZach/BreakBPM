@@ -484,10 +484,9 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
               <>
                 {/* ── CRT hero readout ── */}
                 <div className="stats-hero">
-                  <div className="stats-hero-main">
-                    {user?.screenName && (
-                      <div className="stats-hero-player">
-                        <div className="stats-hero-name-row">
+                  {user?.screenName && (
+                    <div className="stats-hero-player">
+                      <div className="stats-hero-name-row">
                           {stats.topBalls.length > 0 && (() => {
                             const top = stats.topBalls[0].ball;
                             const chipClass =
@@ -512,8 +511,10 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                             <span className="stats-hero-shark-emoji" aria-hidden="true">🦈</span> Level {fmtInt(stats.sharkLevel)} Shark
                           </span>
                         )}
-                      </div>
-                    )}
+                    </div>
+                  )}
+                  <div className="stats-hero-row">
+                  <div className="stats-hero-main">
                     <span className="stats-hero-label">▲ AVG BPM</span>
                     <span className={`stats-hero-value${stats.avgBpm == null ? " dim" : ""}`}>
                       {stats.avgBpm == null ? "--" : stats.avgBpm.toFixed(1)}
@@ -566,6 +567,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       <span className="stats-hero-side-val">{stats.accuracy == null ? "--" : `${stats.accuracy}%`}</span>
                       <span className="stats-hero-side-label">AVG ACCURACY</span>
                     </div>
+                  </div>
                   </div>
                 </div>
 

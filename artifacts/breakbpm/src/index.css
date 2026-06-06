@@ -1445,6 +1445,12 @@ html, #root {
     );
   padding: 12px 14px;
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stats-hero-row {
+  display: flex;
   align-items: stretch;
   gap: 12px;
 }
@@ -1534,7 +1540,6 @@ html, #root {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin-bottom: 8px;
 }
 .stats-hero-name-row {
   display: flex;
