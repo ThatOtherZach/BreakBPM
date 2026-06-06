@@ -212,7 +212,18 @@ export default function StatsHero({
                 </span>
               </div>
               <span className="stats-hero-graph-label">
-                LAST {stats.trend.length} GAMES
+                {(() => {
+                  const n = stats.trend.length;
+                  // The trend's granularity tracks the window: per-game at 24h,
+                  // per-day at 30d, per-month for the longer windows.
+                  const unit =
+                    stats.appliedWindow === "24h"
+                      ? "GAMES"
+                      : stats.appliedWindow === "30d"
+                        ? "DAYS"
+                        : "MONTHS";
+                  return `LAST ${n} ${unit}`;
+                })()}
               </span>
             </div>
           </div>

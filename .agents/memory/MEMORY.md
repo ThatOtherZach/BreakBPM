@@ -17,3 +17,4 @@
 - [Find Players active boundary](find-players-active-boundary.md) — "today" gate is the poster's LOCAL date (picker shows local), but storage/display stay UTC wall-clock; server uses startOfUtcDay−24h grace across create/list/count/in-tx/purge.
 - [Drizzle wraps pg error codes](drizzle-pg-error-code-on-cause.md) — SQLSTATE (23505 etc) lives on err.cause?.code through drizzle, not err.code; inline `.code==="23505"` guards silently never fire (500 instead of friendly refusal).
 - [Public profile reuses /stats shaping](public-profile-stats-shaping.md) — /games/profile returns a full StatsResult (personal/24h) so the Watch profile renders the shared StatsHero; keep its capability-flag shaping in lockstep with the /stats route.
+- [Stats hero trend granularity](stats-hero-trend-granularity.md) — trend buckets by window (per-game 24h / daily 30d / monthly 365d+all), not last-N-games; label unit must track appliedWindow.

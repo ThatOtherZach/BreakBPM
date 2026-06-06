@@ -176,6 +176,7 @@ interface RowLike {
   bpm: number | null;
   accuracy: number | null;
   gameState: unknown;
+  endedAt: Date | null;
 }
 
 function emptyCore(): StatsCore {
@@ -223,6 +224,74 @@ function rollUpPlayTime(
   return out;
 }
 
+/** One raw, pre-aggregation trend sample: a single game's pace/accuracy plus
+ *  when it ended (used to bucket games into per-period points). */
+interface RawTrendPoint {
+  endedAt: number;
+  bpm: number | null;
+  accuracy: number | null;
+}
+
+/**
+ * Collapse raw per-game trend samples (newest-first) into the chart series the
+ * hero plots, with a granularity that follows the selected window so widening
+ * the window genuinely reshapes the line instead of re-showing the same recent
+ * games:
+ *   - 24h  → per-game, the most recent TREND_MAX games
+ *   - 30d  → one point per calendar day (UTC), averaged, last 31 days
+ *   - 365d → one point per calendar month (UTC), averaged, last 12 months
+ *   - all  → one point per calendar month (UTC), averaged, last 24 months
+ * Bucketing naturally bounds the point count regardless of how many games fall
+ * in the window. Each bucket averages BPM and accuracy independently (skipping
+ * the null side) so a game missing one metric still contributes the other.
+ * Returns points oldest→newest so the chart reads left-to-right.
+ */
+function buildWindowedTrend(
+  points: RawTrendPoint[],
+  window: StatWindow,
+): Array<{ bpm: number | null; accuracy: number | null }> {
+  if (window === "24h") {
+    return points
+      .slice(0, TREND_MAX)
+      .reverse()
+      .map((p) => ({ bpm: p.bpm, accuracy: p.accuracy }));
+  }
+  const byDay = window === "30d";
+  const maxBuckets = window === "30d" ? 31 : window === "365d" ? 12 : 24;
+  // points are newest-first, so each bucket is first created by its newest game
+  // → the Map's insertion order is newest-bucket-first.
+  const buckets = new Map<
+    string,
+    { bpmSum: number; bpmN: number; accSum: number; accN: number }
+  >();
+  for (const p of points) {
+    const d = new Date(p.endedAt);
+    const key = byDay
+      ? `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`
+      : `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
+    let b = buckets.get(key);
+    if (!b) {
+      b = { bpmSum: 0, bpmN: 0, accSum: 0, accN: 0 };
+      buckets.set(key, b);
+    }
+    if (p.bpm != null) {
+      b.bpmSum += p.bpm;
+      b.bpmN += 1;
+    }
+    if (p.accuracy != null) {
+      b.accSum += p.accuracy;
+      b.accN += 1;
+    }
+  }
+  return [...buckets.values()]
+    .slice(0, maxBuckets)
+    .reverse()
+    .map((b) => ({
+      bpm: b.bpmN > 0 ? round1(b.bpmSum / b.bpmN) : null,
+      accuracy: b.accN > 0 ? Math.round(b.accSum / b.accN) : null,
+    }));
+}
+
 async function computeGlobalStats(window: StatWindow): Promise<StatsCore> {
   const cutoff = windowCutoff(window);
   const conds = [isNotNull(gamesTable.endedAt)];
@@ -236,6 +305,7 @@ async function computeGlobalStats(window: StatWindow): Promise<StatsCore> {
       bpm: gamesTable.bpm,
       accuracy: gamesTable.accuracy,
       gameState: gamesTable.gameState,
+      endedAt: gamesTable.endedAt,
     })
     .from(gamesTable)
     .where(and(...conds))
@@ -249,8 +319,8 @@ async function computeGlobalStats(window: StatWindow): Promise<StatsCore> {
   const byType = new Map<string, { total: number; count: number }>();
   const bpms: number[] = [];
   const accuracies: number[] = [];
-  // Aligned per-game trend pairs (newest-first; sliced + reversed at the end).
-  const trend: Array<{ bpm: number | null; accuracy: number | null }> = [];
+  // Raw per-game trend samples (newest-first); bucketed by window at the end.
+  const trend: RawTrendPoint[] = [];
   let finished = 0;
   let eightDecided = 0;
   let eightClean = 0;
@@ -265,7 +335,8 @@ async function computeGlobalStats(window: StatWindow): Promise<StatsCore> {
     if (gameBpm != null) bpms.push(gameBpm);
     if (gameAccuracy != null) accuracies.push(gameAccuracy);
     // One aligned trend point per game with any data (lockstep across series).
-    if (gameBpm != null || gameAccuracy != null) trend.push({ bpm: gameBpm, accuracy: gameAccuracy });
+    if ((gameBpm != null || gameAccuracy != null) && r.endedAt)
+      trend.push({ endedAt: r.endedAt.getTime(), bpm: gameBpm, accuracy: gameAccuracy });
     // Play time grouped by type.
     const agg = byType.get(r.gameType) ?? { total: 0, count: 0 };
     agg.total += r.durationMs;
@@ -297,9 +368,8 @@ async function computeGlobalStats(window: StatWindow): Promise<StatsCore> {
   core.bestAccuracy = accuracies.length > 0 ? Math.max(...accuracies) : null;
   core.avgBpm = bpms.length > 0 ? round1(bpms.reduce((a, b) => a + b, 0) / bpms.length) : null;
   core.bestBpm = bpms.length > 0 ? round1(Math.max(...bpms)) : null;
-  // trend is collected newest-first (desc endedAt); take the most recent N and
-  // reverse so the chart reads oldest→newest left-to-right.
-  core.trend = trend.slice(0, TREND_MAX).reverse();
+  // Bucket the raw samples into per-period points sized to the window.
+  core.trend = buildWindowedTrend(trend, window);
   core.avgShotsPerGame = round1(core.totalShots / core.gamesPlayed);
   core.avgMissesPerGame = round1(core.totalMisses / core.gamesPlayed);
   core.avgFoulsPerGame = round1(core.totalFouls / core.gamesPlayed);
@@ -339,6 +409,7 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
       bpm: gamesTable.bpm,
       accuracy: gamesTable.accuracy,
       gameState: gamesTable.gameState,
+      endedAt: gamesTable.endedAt,
     })
     .from(gamesTable)
     .where(and(...conds))
@@ -351,8 +422,8 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
   const byType = new Map<string, { total: number; count: number }>();
   const bpms: number[] = [];
   const accs: number[] = [];
-  // Aligned per-game trend pairs (newest-first; sliced + reversed at the end).
-  const trend: Array<{ bpm: number | null; accuracy: number | null }> = [];
+  // Raw per-game trend samples (newest-first); bucketed by window at the end.
+  const trend: RawTrendPoint[] = [];
   const ballCounts = new Map<number, number>();
   let totalMade = 0;
   let totalAttempts = 0;
@@ -394,7 +465,8 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
     }
 
     // One aligned trend point per game with any data (lockstep across series).
-    if (bpm != null || gameAccuracy != null) trend.push({ bpm, accuracy: gameAccuracy });
+    if ((bpm != null || gameAccuracy != null) && r.endedAt)
+      trend.push({ endedAt: r.endedAt.getTime(), bpm, accuracy: gameAccuracy });
 
     // Event counts (own shots only).
     for (const e of mine) {
@@ -445,9 +517,8 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
   core.bestAccuracy = bestAccuracy;
   core.avgBpm = bpms.length > 0 ? round1(bpms.reduce((a, b) => a + b, 0) / bpms.length) : null;
   core.bestBpm = bpms.length > 0 ? round1(Math.max(...bpms)) : null;
-  // trend is collected newest-first (desc endedAt); take the most recent N and
-  // reverse so the chart reads oldest→newest left-to-right.
-  core.trend = trend.slice(0, TREND_MAX).reverse();
+  // Bucket the raw samples into per-period points sized to the window.
+  core.trend = buildWindowedTrend(trend, window);
   core.avgShotsPerGame = round1(core.totalShots / core.gamesPlayed);
   core.avgMissesPerGame = round1(core.totalMisses / core.gamesPlayed);
   core.avgFoulsPerGame = round1(core.totalFouls / core.gamesPlayed);
