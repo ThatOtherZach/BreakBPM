@@ -5,6 +5,8 @@ import {
   getGetStatsQueryKey,
   useGetGameHistory,
   getGetGameHistoryQueryKey,
+  useGetMe,
+  getGetMeQueryKey,
   exportMyGames,
   deleteMyGameData,
 } from "@workspace/api-client-react";
@@ -246,6 +248,9 @@ function SectionHeader({ emoji, title }: { emoji: string; title: string }) {
 export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers, onSignIn, onPasses }: Props) {
   const qc = useQueryClient();
   const { isAuthenticated, user } = useAuth();
+
+  const meQuery = useGetMe({ query: { queryKey: getGetMeQueryKey(), enabled: isAuthenticated } });
+  const joinedAt = meQuery.data?.account?.createdAt;
 
   // A minimal history fetch (1 result) gives us totalCount for ALL the user's
   // games regardless of the stats window, so we can disable Export/Delete
@@ -805,6 +810,12 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   {stats.tier === "public" ? "Sign In" : "Get a Pass"}
                 </button>
               </div>
+            )}
+
+            {joinedAt && (
+              <p style={{ fontSize: 11, color: "#888", textAlign: "center", margin: "4px 0 0" }}>
+                Joined on {new Date(joinedAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+              </p>
             )}
           </>
         )}
