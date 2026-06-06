@@ -650,13 +650,17 @@ function PostCard({
         <span className="fpp-card-name">{post.displayName}</span>
         <span className="fpp-card-rank">
           {cancelled && <span className="fpp-badge">Cancelled</span>}
-          {rank <= 10 && (
-            <span
-              className={`hud-chip ${chipClass}`}
-              data-number={rank}
-              style={{ "--chip-color": BALL_COLORS[rank] } as React.CSSProperties}
-              aria-label={`Sort order ${rank}`}
-            />
+          {cancelled ? (
+            <span className="cue-ball-icon cue-ball-icon--chip" role="img" aria-label="Open table" />
+          ) : (
+            rank <= 10 && (
+              <span
+                className={`hud-chip ${chipClass}`}
+                data-number={rank}
+                style={{ "--chip-color": BALL_COLORS[rank] } as React.CSSProperties}
+                aria-label={`Sort order ${rank}`}
+              />
+            )
           )}
         </span>
       </div>
