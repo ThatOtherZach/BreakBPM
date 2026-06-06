@@ -1455,6 +1455,18 @@ html, #root {
   gap: 12px;
 }
 
+.stats-hero-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.stats-hero-header .stats-hero-main {
+  flex: 0 0 auto;
+  margin-left: auto;
+  align-items: flex-end;
+  text-align: right;
+}
+
 .stats-hero-main {
   flex: 1 1 0;
   display: flex;

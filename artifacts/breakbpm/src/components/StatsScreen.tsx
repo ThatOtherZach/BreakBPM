@@ -484,6 +484,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
               <>
                 {/* ── CRT hero readout ── */}
                 <div className="stats-hero">
+                  <div className="stats-hero-header">
                   {user?.screenName && (
                     <div className="stats-hero-player">
                       <div className="stats-hero-name-row">
@@ -513,7 +514,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         )}
                     </div>
                   )}
-                  <div className="stats-hero-row">
                   <div className="stats-hero-main">
                     <span className="stats-hero-label">▲ AVG BPM</span>
                     <span className={`stats-hero-value${stats.avgBpm == null ? " dim" : ""}`}>
@@ -524,6 +524,8 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       BEST {stats.bestBpm == null ? "--" : stats.bestBpm.toFixed(1)}
                     </span>
                   </div>
+                  </div>
+                  <div className="stats-hero-row">
                   {(stats.bpmTrend.length >= 2 || stats.accuracyTrend.length >= 2) && (
                     <div className="stats-hero-graph">
                       {stats.bpmTrend.length >= 2 && (
