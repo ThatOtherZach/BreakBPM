@@ -642,7 +642,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       const avgPerGameMin = totalGames > 0 ? totalMs / totalGames / 60_000 : 0;
                       return (
                         <p style={{ fontSize: 12, color: "#444", margin: 0 }}>
-                          🕐 You've played {totalHours.toFixed(1)} hours of pool, {avgPerGameMin.toFixed(1)} average per game.
+                          🕐 You've played {totalHours.toFixed(1)} hours, {avgPerGameMin.toFixed(1)} average per game.
                         </p>
                       );
                     })()}
