@@ -595,7 +595,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                 </div>
 
                 {/* ── Results ── */}
-                <div className="panel">
+                <div className="panel panel--wood">
                   <SectionHeader emoji="🏆" title="Results" />
                   <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     <PixelMeter
@@ -626,7 +626,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                 </div>
 
                 {/* ── Shooting ── */}
-                <div className="panel">
+                <div className="panel panel--wood">
                   <SectionHeader emoji="🎯" title="Shooting" />
                   <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     <PixelMeter
@@ -668,7 +668,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                 </div>
 
                 {/* ── Pace ── */}
-                <div className="panel">
+                <div className="panel panel--wood">
                   <SectionHeader emoji="⚡" title="Pace" />
                   <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     <div style={{ display: "flex", gap: 8 }}>
@@ -693,7 +693,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       const totalHours = totalMs / 3_600_000;
                       const avgPerGameMin = totalGames > 0 ? totalMs / totalGames / 60_000 : 0;
                       return (
-                        <p style={{ fontSize: 12, color: "#444", margin: 0 }}>
+                        <p style={{ fontSize: 12, color: "#f4e7c8", textShadow: "0 1px 1px rgba(0,0,0,0.7)", margin: 0 }}>
                           🕐 You've played {totalHours.toFixed(1)} hours, {avgPerGameMin.toFixed(1)} average per game.
                         </p>
                       );
@@ -703,12 +703,12 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
 
                 {/* ── Patterns — personal scope only ── */}
                 {isPersonal && (
-                  <div className="panel">
+                  <div className="panel panel--wood">
                     <SectionHeader emoji="🎱" title="Ball Patterns" />
                     <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       {stats.topBalls.length > 0 && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          <span style={{ fontSize: 10, color: "#555", letterSpacing: 0.5 }}>⭐ MOST-SUNK BALLS</span>
+                          <span style={{ fontSize: 10, color: "#f4e7c8", textShadow: "0 1px 1px rgba(0,0,0,0.7)", letterSpacing: 0.5 }}>⭐ MOST-SUNK BALLS</span>
                           {stats.topBalls.map((b) => {
                             const chipClass =
                               b.ball === 8
@@ -737,7 +737,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         </div>
                       )}
 
-                      <p style={{ fontSize: 12, color: "#444", margin: 0 }}>
+                      <p style={{ fontSize: 12, color: "#f4e7c8", textShadow: "0 1px 1px rgba(0,0,0,0.7)", margin: 0 }}>
                         🎱 You take {fmtNum(stats.avgShotsPerGame)} shots per game on average
                       </p>
 
@@ -759,8 +759,8 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                               <span className="stats-split-seg stripes" style={{ width: `${stripesPct}%` }} />
                             </div>
                             <div className="stats-bar-top">
-                              <span style={{ color: "#888" }}>{solids} games</span>
-                              <span style={{ color: "#888" }}>{stripes} games</span>
+                              <span style={{ color: "#d9c8a0" }}>{solids} games</span>
+                              <span style={{ color: "#d9c8a0" }}>{stripes} games</span>
                             </div>
                           </div>
                         );

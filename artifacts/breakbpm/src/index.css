@@ -456,6 +456,37 @@ html, #root {
   padding: 8px;
 }
 
+/* Wood-themed sections (Results, Shooting, Pace, Ball Patterns): the panel
+   background becomes a tiled wood texture while the silver header bar stays. */
+.panel--wood {
+  background-image: url("./assets/wood-panel.png");
+  background-repeat: repeat;
+  background-size: 220px auto;
+}
+
+.panel--wood .panel-body {
+  background: transparent;
+}
+
+/* Text that sits directly on the wood (meter labels/values and inline section
+   sub-labels) needs a warm light color + shadow to stay legible on dark wood. */
+.panel--wood .stats-meter-name {
+  color: #f4e7c8;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
+}
+
+.panel--wood .stats-meter-val {
+  color: #ffe6a8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.panel--wood .digit-label,
+.panel--wood .stats-bar-top,
+.panel--wood .stats-ball-count {
+  color: #f4e7c8;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
+}
+
 /* ── Win98 Buttons ── */
 .btn {
   background: var(--silver);
