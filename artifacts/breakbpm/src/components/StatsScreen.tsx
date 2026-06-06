@@ -694,7 +694,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       const avgPerGameMin = totalGames > 0 ? totalMs / totalGames / 60_000 : 0;
                       return (
                         <p
-                          style={{ fontSize: 12, color: "#f4e7c8", textShadow: "0 1px 1px rgba(0,0,0,0.7)", margin: 0 }}
+                          style={{ fontSize: 12, color: "#fff", textShadow: "0 1px 1px rgba(0,0,0,0.7)", margin: 0 }}
                           className="text-center">🕐 You've played {totalHours.toFixed(1)}hours, {avgPerGameMin.toFixed(1)}average per game.
                                                   </p>
                       );
@@ -709,7 +709,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       {(() => {
                         const ballCounts = new Map(stats.topBalls.map((b) => [b.ball, b.count]));
-                        const labelStyle = { fontSize: 10, color: "#f4e7c8", textShadow: "0 1px 1px rgba(0,0,0,0.7)", letterSpacing: 0.5 } as React.CSSProperties;
+                        const labelStyle = { fontSize: 10, color: "#fff", textShadow: "0 1px 1px rgba(0,0,0,0.7)", letterSpacing: 0.5 } as React.CSSProperties;
                         const renderBall = (ball: number) => {
                           const chipClass =
                             ball === 8
@@ -754,7 +754,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       })()}
 
                       <p
-                        style={{ fontSize: 12, color: "#f4e7c8", textShadow: "0 1px 1px rgba(0,0,0,0.7)", margin: 0 }}
+                        style={{ fontSize: 12, color: "#fff", textShadow: "0 1px 1px rgba(0,0,0,0.7)", margin: 0 }}
                         className="text-center">
                         🎱 {fmtNum(stats.avgShotsPerGame)} shots per game on average
                       </p>
@@ -777,8 +777,8 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                               <span className="stats-split-seg stripes" style={{ width: `${stripesPct}%` }} />
                             </div>
                             <div className="stats-bar-top">
-                              <span style={{ color: "#d9c8a0" }}>{solids} games</span>
-                              <span style={{ color: "#d9c8a0" }}>{stripes} games</span>
+                              <span style={{ color: "#fff" }}>{solids} games</span>
+                              <span style={{ color: "#fff" }}>{stripes} games</span>
                             </div>
                           </div>
                         );
