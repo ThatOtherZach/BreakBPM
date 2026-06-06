@@ -427,7 +427,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                     style={{ width: "100%", border: "none", cursor: "pointer", font: "inherit", textAlign: "left" }}
                   >
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
-                      className="text-[13px] text-[#000000] font-semibold">
+                      className="text-[13px] font-semibold text-[#ffffff]">
                       POST A MEETUP
                     </span>
                     <span aria-hidden="true" className="text-[#000000]">{formOpen ? "▼" : "▶"}</span>
