@@ -572,7 +572,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           </span>
                         </div>
                         <span className="stats-hero-graph-label">
-                          BPM vs ACCURACY · LAST {stats.trend.length} GAMES
+                          LAST {stats.trend.length} GAMES
                         </span>
                       </div>
                     </div>
