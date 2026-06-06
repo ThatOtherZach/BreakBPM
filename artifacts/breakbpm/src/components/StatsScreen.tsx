@@ -506,7 +506,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     <div className="stats-hero-graph">
                       <BpmSparkline data={stats.bpmTrend} />
                       <span className="stats-hero-graph-label">
-                        BPM · LAST {stats.bpmTrend.length}
+                        BPM · LAST {stats.bpmTrend.length} GAMES
                       </span>
                     </div>
                   )}
@@ -588,7 +588,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           edgeToEdge
                         />
                         <span className="stats-trend-box-label">
-                          ACCURACY · LAST {stats.accuracyTrend.length}
+                          ACCURACY · LAST {stats.accuracyTrend.length} GAMES
                         </span>
                       </div>
                     )}
