@@ -1494,14 +1494,13 @@ html, #root {
 }
 
 .stats-hero-graph {
-  flex: 1 1 0;
-  min-width: 80px;
+  flex: 2 1 0;
+  min-width: 120px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 3px;
   padding-left: 12px;
-  border-left: 1px solid #1a5a1a;
 }
 
 .stats-hero-spark {
