@@ -621,11 +621,11 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       tone="green"
                     />
                     <PixelMeter
-                      label="BEST GAME ACCURACY"
-                      emoji="⭐"
-                      pct={stats.bestAccuracy}
-                      display={stats.bestAccuracy == null ? "—" : `${stats.bestAccuracy}%`}
-                      tone="cyan"
+                      label="FOUL RATE"
+                      emoji="🚫"
+                      pct={stats.totalShots > 0 ? (stats.totalFouls / stats.totalShots) * 100 : null}
+                      display={stats.totalShots > 0 ? `${Math.round((stats.totalFouls / stats.totalShots) * 100)}%` : "—"}
+                      tone="amber"
                     />
                     <div className="stats-card-grid">
                       <StatCard emoji="❌" value={fmtInt(stats.totalMisses)} label="MISSES" sub={`${fmtNum(stats.avgMissesPerGame)}/game`} />
