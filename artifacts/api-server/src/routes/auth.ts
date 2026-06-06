@@ -74,20 +74,12 @@ router.patch("/auth/screen-name", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Screen name required" });
     return;
   }
-  // Screen names double as the public /watch/{name} handle. They must stay
-  // URL-safe (the frontend percent-encodes the handle), so we allow letters,
-  // digits, underscore, hyphen — plus emoji (a Lifetime perk). Emoji are
-  // pictographs, skin-tone modifiers, regional-indicator flag pairs, and the
-  // zero-width-joiner / variation-selector glue that binds compound sequences.
-  const ALLOWED_NAME_CHARS =
-    /^(?:[A-Za-z0-9_-]|\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator}|[\u200D\uFE0F])+$/u;
-  // Count graphemes (not UTF-16 units) so a single emoji counts as one char.
-  const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
-  const graphemeCount = [...segmenter.segment(trimmed)].length;
-  if (graphemeCount < 2 || graphemeCount > 30 || !ALLOWED_NAME_CHARS.test(trimmed)) {
+  // Screen names double as the public /watch/{name} handle, so they must be
+  // URL-safe: letters, digits, underscore and hyphen only.
+  if (!/^[A-Za-z0-9_-]{2,30}$/.test(trimmed)) {
     res.status(400).json({
       error:
-        "Use 2–30 characters: letters, numbers, hyphens, underscores or emoji (no spaces or other symbols).",
+        "Use 2–30 characters: letters, numbers, hyphens or underscores only (no spaces or symbols).",
     });
     return;
   }

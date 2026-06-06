@@ -243,7 +243,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 <input
                   className="input"
                   value={name}
-                  maxLength={120}
+                  maxLength={32}
                   onChange={(e) => setName(e.target.value)}
                 />
                 <button className="btn btn-primary" disabled={updateName.isPending} onClick={handleSaveName}>Save</button>
