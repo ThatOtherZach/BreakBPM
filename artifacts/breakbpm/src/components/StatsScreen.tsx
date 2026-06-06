@@ -439,6 +439,10 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       <span className="stats-hero-side-val green">{fmtPct(rateValue)}</span>
                       <span className="stats-hero-side-label">{rateLabel}</span>
                     </div>
+                    <div className="stats-hero-side-item">
+                      <span className="stats-hero-side-val">{stats.accuracy == null ? "--" : `${stats.accuracy}%`}</span>
+                      <span className="stats-hero-side-label">AVG ACCURACY</span>
+                    </div>
                   </div>
                 </div>
 
