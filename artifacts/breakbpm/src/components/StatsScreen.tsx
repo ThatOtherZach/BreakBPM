@@ -466,7 +466,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         label="8-BALL SINK RATE"
                         emoji="🎱"
                         pct={stats.eightBallSinkRate == null ? null : stats.eightBallSinkRate * 100}
-                        display={`${fmtPct(stats.eightBallSinkRate)} · ${fmtInt(stats.eightBallDecidedGames)} on the 8`}
+                        display={`${fmtPct(stats.eightBallSinkRate)} · ${fmtInt(stats.eightBallDecidedGames)} ${(stats.eightBallDecidedGames ?? 0) === 1 ? "game came" : "games came"} down to the 8-ball`}
                         tone="amber"
                       />
                     )}
