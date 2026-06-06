@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, count, eq, gt, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, count, eq, gte, isNull, lt, sql } from "drizzle-orm";
 import { db, findPlayerPostsTable, usersTable } from "@workspace/db";
 import {
   ListFindPlayerPostsQueryParams,
@@ -88,18 +88,26 @@ function toPostResponse(
   };
 }
 
-/**
- * Durable housekeeping: drop posts whose scheduled time has already passed.
- * Read-time filtering (every list query uses `scheduledAt > now`) is the
- * correctness guarantee; this sweep-on-write/read keeps the table from
- * growing unbounded without relying on an in-process timer that would not
- * survive a restart or redeploy.
- */
-async function purgeExpiredPosts(now: Date): Promise<void> {
-  await db.delete(findPlayerPostsTable).where(lte(findPlayerPostsTable.scheduledAt, now));
+/** Start of the UTC calendar day containing `d` (00:00:00.000Z). */
+function startOfUtcDay(d: Date): Date {
+  const s = new Date(d);
+  s.setUTCHours(0, 0, 0, 0);
+  return s;
 }
 
-/** Count a user's active (non-cancelled, still-future) posts. */
+/**
+ * Durable housekeeping: drop posts whose scheduled date is before today.
+ * A post stays listable for the whole of its scheduled UTC date (any time of
+ * day), so we only purge once that date has fully passed. Read-time filtering
+ * (every list query uses `scheduledAt >= start-of-today`) is the correctness
+ * guarantee; this sweep-on-write/read keeps the table from growing unbounded
+ * without relying on an in-process timer that would not survive a restart.
+ */
+async function purgeExpiredPosts(now: Date): Promise<void> {
+  await db.delete(findPlayerPostsTable).where(lt(findPlayerPostsTable.scheduledAt, startOfUtcDay(now)));
+}
+
+/** Count a user's active (non-cancelled, today-or-later) posts. */
 async function countActivePosts(userId: string, now: Date): Promise<number> {
   const [row] = await db
     .select({ n: count() })
@@ -108,7 +116,7 @@ async function countActivePosts(userId: string, now: Date): Promise<number> {
       and(
         eq(findPlayerPostsTable.userId, userId),
         isNull(findPlayerPostsTable.cancelledAt),
-        gt(findPlayerPostsTable.scheduledAt, now),
+        gte(findPlayerPostsTable.scheduledAt, startOfUtcDay(now)),
       ),
     );
   return row?.n ?? 0;
@@ -150,9 +158,10 @@ router.get("/find-players/posts", async (req, res): Promise<void> => {
   const entitlement = await computeEntitlement(user);
   const canCreate = entitlement.tier === "pass";
 
-  // A post is listable while its time is still in the future — including
-  // cancelled-but-not-yet-expired posts (which render a "Cancelled" badge).
-  const activeFilter = gt(findPlayerPostsTable.scheduledAt, now);
+  // A post is listable for the whole of its scheduled UTC date (any time of
+  // day) and any future date — including cancelled-but-not-yet-expired posts
+  // (which render a "Cancelled" badge).
+  const activeFilter = gte(findPlayerPostsTable.scheduledAt, startOfUtcDay(now));
 
   const [{ n: total } = { n: 0 }] = await db
     .select({ n: count() })
@@ -215,7 +224,9 @@ router.post("/find-players/posts", async (req, res): Promise<void> => {
     return;
   }
 
-  if (!(scheduledAt.getTime() > now.getTime())) {
+  // Allow any time on the current UTC date (or later); only reject dates that
+  // are already fully in the past.
+  if (scheduledAt.getTime() < startOfUtcDay(now).getTime()) {
     res.json(CreateFindPlayerPostResponse.parse({ success: false, reason: "in_past" }));
     return;
   }
@@ -250,7 +261,7 @@ router.post("/find-players/posts", async (req, res): Promise<void> => {
           and(
             eq(findPlayerPostsTable.userId, user.id),
             isNull(findPlayerPostsTable.cancelledAt),
-            gt(findPlayerPostsTable.scheduledAt, now),
+            gte(findPlayerPostsTable.scheduledAt, startOfUtcDay(now)),
           ),
         );
       if (activeCount >= MAX_ACTIVE_POSTS) throw new CreateRuleError("limit_reached");

@@ -88,7 +88,7 @@ function FitBounds({ positions }: { positions: [number, number][] }) {
 const CREATE_REASONS: Record<string, string> = {
   not_signed_in: "You must be signed in to post.",
   not_paid: "A pass is required to create a post.",
-  in_past: "Pick a date and time in the future.",
+  in_past: "Pick today or a later date.",
   too_far: "Posts can be at most one year out.",
   duplicate_date: "You already have an active post for that date.",
   limit_reached: "You've reached the limit of 5 active posts.",
@@ -324,7 +324,11 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
       setFormError("Invalid date or time.");
       return;
     }
-    if (scheduledAt.getTime() <= Date.now()) {
+    // Allow any time on the current UTC date (or later) — only reject dates
+    // before today. Mirrors the server's start-of-UTC-day boundary.
+    const startOfTodayUtc = new Date();
+    startOfTodayUtc.setUTCHours(0, 0, 0, 0);
+    if (scheduledAt.getTime() < startOfTodayUtc.getTime()) {
       setFormError(CREATE_REASONS.in_past);
       return;
     }

@@ -14,3 +14,4 @@
 - [Stripe MCP vs connector](stripe-mcp-vs-connector.md) — Stripe MCP server and the app's Replit Stripe connector can be different accounts/modes; app only uses the connector. Seed/verify prices via connector, not MCP.
 - [Lucky Break disclosure lockstep](lucky-break-disclosure-lockstep.md) — roll entropy is GLOBAL+30d; any change to source/window/odds must update the 4 fairness-copy locations (PassesScreen, LuckyBreakReveal, README, replit.md) or the "provably fair" claim breaks.
 - [Wiring stripe-replit-sync on Replit](stripe-replit-sync-setup.md) — connector secret is `settings.secret` (not secret_key), no webhook_secret; and stripe-replit-sync MUST be esbuild-external or runMigrations silently applies 0 migrations.
+- [Find Players active boundary](find-players-active-boundary.md) — meetup posts are active for their whole UTC date; start-of-UTC-day boundary must match across create/list/count/in-tx-count/purge + frontend, or same-day posts break asymmetrically.

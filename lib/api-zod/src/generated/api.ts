@@ -743,7 +743,7 @@ export const GetStatsResponse = zod.object({
 
 
 /**
- * Returns active (future, non-expired) posts soonest-first, 10 per page. Signed-out callers receive `signedIn: false` and an empty list — they see the page shell but no posts. Includes capability flags (`canCreate`) and the caller's current active-post count so the UI can react without hardcoding tier logic.
+ * Returns active (today-or-later, non-expired) posts soonest-first, 10 per page. Signed-out callers receive `signedIn: false` and an empty list — they see the page shell but no posts. Includes capability flags (`canCreate`) and the caller's current active-post count so the UI can react without hardcoding tier logic.
 
  * @summary List active meetup posts (signed-in callers only)
  */
@@ -780,7 +780,7 @@ export const ListFindPlayerPostsResponse = zod.object({
 
 
 /**
- * Only callers with `tier === 'pass'` may create posts. Enforces one active post per UTC calendar date, a maximum of 5 active posts, a numeric table number, and a scheduled time that is in the future and at most one year out.
+ * Only callers with `tier === 'pass'` may create posts. Enforces one active post per UTC calendar date, a maximum of 5 active posts, a numeric table number, and a scheduled time that is today or later (any time of day) and at most one year out.
 
  * @summary Create a meetup post (paid tier only)
  */

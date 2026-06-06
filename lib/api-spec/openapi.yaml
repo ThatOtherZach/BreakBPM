@@ -595,7 +595,7 @@ paths:
       tags: [findPlayers]
       summary: List active meetup posts (signed-in callers only)
       description: >
-        Returns active (future, non-expired) posts soonest-first, 10 per page.
+        Returns active (today-or-later, non-expired) posts soonest-first, 10 per page.
         Signed-out callers receive `signedIn: false` and an empty list — they
         see the page shell but no posts. Includes capability flags
         (`canCreate`) and the caller's current active-post count so the UI can
@@ -626,8 +626,8 @@ paths:
       description: >
         Only callers with `tier === 'pass'` may create posts. Enforces one
         active post per UTC calendar date, a maximum of 5 active posts, a
-        numeric table number, and a scheduled time that is in the future and at
-        most one year out.
+        numeric table number, and a scheduled time that is today or later (any
+        time of day) and at most one year out.
       requestBody:
         required: true
         content:
@@ -1541,8 +1541,8 @@ components:
         latitude: { type: number, minimum: -90, maximum: 90 }
         longitude: { type: number, minimum: -180, maximum: 180 }
         tableNumber: { type: integer, minimum: 0, maximum: 99999 }
-        # Desired meetup time as an ISO timestamp. Treated as UTC; must be in
-        # the future and at most one year out.
+        # Desired meetup time as an ISO timestamp. Treated as UTC; must be on
+        # the current UTC date or later (any time of day) and at most one year out.
         scheduledAt: { type: string, format: date-time }
 
     CreateFindPlayerPostResult:
