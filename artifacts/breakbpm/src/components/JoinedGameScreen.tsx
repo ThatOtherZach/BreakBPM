@@ -361,6 +361,12 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
               <span className="hud-meta-label">TIME</span>
               <span className="hud-timer">{formatTime(elapsed)}</span>
             </div>
+            <div className="hud-right-row">
+              <span className="hud-meta-label">VIEW</span>
+              <span className="hud-mode" title={viewNotice} aria-label={viewNotice}>
+                👁 {joinResult.role === 'spectator' ? 'SPECTATOR' : 'VIEW ONLY'}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -466,9 +472,6 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
         <div>
           <div className="menu-section-label" style={{ marginBottom: 6 }}>SHOT LOG</div>
           <div className="shot-log" style={{ maxHeight: 220, overflowY: 'auto' }}>
-            <div className="log-entry" style={{ color: '#c39d00', fontWeight: 'bold' }}>
-              👁 {viewNotice}
-            </div>
             {shotLog.length === 0
               ? <div style={{ color: '#006600' }}>_ no shots yet...</div>
               : shotLog.map((e, i) => ({ e, i })).reverse().map(({ e, i }) => {
