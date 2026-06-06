@@ -441,11 +441,11 @@ html, #root {
 }
 
 .panel-header {
-  background: var(--silver);
+  background: linear-gradient(to right, var(--navy) 0%, var(--blue) 100%);
   border-bottom: 1px solid var(--dark);
-  padding: 3px 8px;
-  font-size: 11px;
-  color: #444;
+  padding: 4px 9px;
+  font-size: 12px;
+  color: #fff;
   font-weight: bold;
   display: flex;
   align-items: center;

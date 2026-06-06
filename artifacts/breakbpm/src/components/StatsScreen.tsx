@@ -366,7 +366,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
               Statistics
             </span>
             {stats && (
-              <span style={{ fontSize: 10, color: "#666", fontWeight: "normal" }}>
+              <span style={{ fontSize: 10, color: "#cdd9f0", fontWeight: "normal" }}>
                 {stats.cached ? "cached" : "fresh"} · {fmtWhen(stats.computedAt)}
               </span>
             )}
