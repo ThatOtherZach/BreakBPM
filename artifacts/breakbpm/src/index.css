@@ -1679,28 +1679,28 @@ html, #root {
 }
 
 /* Retro stat card — raised silver chip with emoji + VT323 value. */
-.stats-card-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.stats-card-grid { display: flex; flex-direction: column; gap: 6px; }
 
 .stats-card {
-  flex: 1 1 calc(33.333% - 4px);
-  min-width: 80px;
   background: var(--silver);
   border: 2px solid;
   border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
-  padding: 6px 8px;
+  padding: 5px 10px;
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
 }
-.stats-card-emoji { font-size: 14px; line-height: 1; }
+.stats-card-emoji { font-size: 14px; line-height: 1; flex: 0 0 auto; }
 .stats-card-val {
   font-family: 'VT323', 'Courier New', monospace;
-  font-size: 28px;
+  font-size: 24px;
   line-height: 1;
   color: var(--navy);
+  flex: 0 0 auto;
 }
 .stats-card-label { font-size: 9px; color: #555; letter-spacing: 0.5px; }
-.stats-card-sub { font-size: 9px; color: #777; }
+.stats-card-sub { font-size: 9px; color: #777; margin-left: auto; }
 
 /* Section header with emoji glyph. */
 .stats-sec-emoji { font-size: 12px; line-height: 1; margin-right: 2px; }
