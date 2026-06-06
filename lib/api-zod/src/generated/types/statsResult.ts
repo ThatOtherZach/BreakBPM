@@ -12,6 +12,7 @@ import type { StatsResultAppliedWindow } from './statsResultAppliedWindow';
 import type { StatsResultScope } from './statsResultScope';
 import type { StatsResultTier } from './statsResultTier';
 import type { StatsResultWindow } from './statsResultWindow';
+import type { StatTrendPoint } from './statTrendPoint';
 
 export interface StatsResult {
   tier: StatsResultTier;
@@ -49,8 +50,7 @@ export interface StatsResult {
   avgBpm?: number | null;
   /** @nullable */
   bestBpm?: number | null;
-  bpmTrend: number[];
-  accuracyTrend: number[];
+  trend: StatTrendPoint[];
   playTimeByType: StatPlayTime[];
   topBalls: StatBall[];
   solidsCount?: number;

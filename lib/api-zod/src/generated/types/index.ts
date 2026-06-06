@@ -110,6 +110,7 @@ export * from './statsResultAppliedWindow';
 export * from './statsResultScope';
 export * from './statsResultTier';
 export * from './statsResultWindow';
+export * from './statTrendPoint';
 export * from './subscriptionCheckoutInput';
 export * from './subscriptionCheckoutInputInterval';
 export * from './subscriptionSummary';

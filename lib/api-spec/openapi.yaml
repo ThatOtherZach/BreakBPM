@@ -1398,6 +1398,15 @@ components:
         avgDurationMs: { type: integer }
         gameCount: { type: integer }
 
+    StatTrendPoint:
+      type: object
+      required: [bpm, accuracy]
+      properties:
+        # This game's per-player BPM, or null when the game produced no BPM.
+        bpm: { type: ["number", "null"] }
+        # This game's accuracy percentage (0–100), or null when no qualifying shots.
+        accuracy: { type: ["number", "null"] }
+
     StatsResult:
       type: object
       required:
@@ -1423,8 +1432,7 @@ components:
           avgSafetiesPerGame,
           playTimeByType,
           topBalls,
-          bpmTrend,
-          accuracyTrend,
+          trend,
           sharkLevel,
         ]
       properties:
@@ -1480,18 +1488,16 @@ components:
         # Mean / peak per-game BPM. Null when no game has a BPM yet.
         avgBpm: { type: ["number", "null"] }
         bestBpm: { type: ["number", "null"] }
-        # Per-game BPM for up to the last 24 games in the scope/window, ordered
-        # oldest→newest so a sparkline reads left-to-right as time progresses.
-        # Only games that produced a BPM are included; empty when none.
-        bpmTrend:
+        # Aligned per-game trend for up to the last 24 games in the scope/window,
+        # ordered oldest→newest so a chart reads left-to-right as time progresses.
+        # One entry per game (in lockstep): each carries that game's BPM and
+        # accuracy percentage, either of which may be null when the game produced
+        # no value for that series. A game is included when it has at least one
+        # non-null value; empty when none. Indexes correspond across both series
+        # so the two lines can be overlaid game-for-game.
+        trend:
           type: array
-          items: { type: number }
-        # Per-game accuracy percentage (0–100) for up to the last 24 games in
-        # the scope/window, ordered oldest→newest so a sparkline reads left-to-
-        # right. Only games with qualifying shots are included; empty when none.
-        accuracyTrend:
-          type: array
-          items: { type: number }
+          items: { $ref: "#/components/schemas/StatTrendPoint" }
         playTimeByType:
           type: array
           items: { $ref: "#/components/schemas/StatPlayTime" }

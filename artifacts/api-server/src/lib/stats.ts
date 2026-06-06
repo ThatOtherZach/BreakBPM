@@ -76,8 +76,7 @@ export interface StatsCore {
   avgSafetiesPerGame: number;
   avgBpm: number | null;
   bestBpm: number | null;
-  bpmTrend: number[];
-  accuracyTrend: number[];
+  trend: Array<{ bpm: number | null; accuracy: number | null }>;
   playTimeByType: Array<{ gameType: "8ball" | "9ball" | "practice"; avgDurationMs: number; gameCount: number }>;
   topBalls: Array<{ ball: number; count: number }>;
   solidsCount: number;
@@ -199,8 +198,7 @@ function emptyCore(): StatsCore {
     avgSafetiesPerGame: 0,
     avgBpm: null,
     bestBpm: null,
-    bpmTrend: [],
-    accuracyTrend: [],
+    trend: [],
     playTimeByType: [],
     topBalls: [],
     solidsCount: 0,
@@ -251,6 +249,8 @@ async function computeGlobalStats(window: StatWindow): Promise<StatsCore> {
   const byType = new Map<string, { total: number; count: number }>();
   const bpms: number[] = [];
   const accuracies: number[] = [];
+  // Aligned per-game trend pairs (newest-first; sliced + reversed at the end).
+  const trend: Array<{ bpm: number | null; accuracy: number | null }> = [];
   let finished = 0;
   let eightDecided = 0;
   let eightClean = 0;
@@ -260,8 +260,12 @@ async function computeGlobalStats(window: StatWindow): Promise<StatsCore> {
     // Completion vs abandonment (forfeit / inactivity-expiry).
     if (r.outcome === "won" || r.outcome === "lost" || r.outcome === "completed") finished += 1;
     // Pace + accuracy from denormalized columns.
-    if (r.bpm != null) bpms.push(r.bpm / 10);
-    if (r.accuracy != null) accuracies.push(r.accuracy);
+    const gameBpm = r.bpm != null ? r.bpm / 10 : null;
+    const gameAccuracy = r.accuracy != null ? r.accuracy : null;
+    if (gameBpm != null) bpms.push(gameBpm);
+    if (gameAccuracy != null) accuracies.push(gameAccuracy);
+    // One aligned trend point per game with any data (lockstep across series).
+    if (gameBpm != null || gameAccuracy != null) trend.push({ bpm: gameBpm, accuracy: gameAccuracy });
     // Play time grouped by type.
     const agg = byType.get(r.gameType) ?? { total: 0, count: 0 };
     agg.total += r.durationMs;
@@ -293,10 +297,9 @@ async function computeGlobalStats(window: StatWindow): Promise<StatsCore> {
   core.bestAccuracy = accuracies.length > 0 ? Math.max(...accuracies) : null;
   core.avgBpm = bpms.length > 0 ? round1(bpms.reduce((a, b) => a + b, 0) / bpms.length) : null;
   core.bestBpm = bpms.length > 0 ? round1(Math.max(...bpms)) : null;
-  // bpms are collected newest-first (desc endedAt); take the most recent N and
-  // reverse so the sparkline reads oldest→newest left-to-right.
-  core.bpmTrend = bpms.slice(0, TREND_MAX).reverse();
-  core.accuracyTrend = accuracies.slice(0, TREND_MAX).reverse();
+  // trend is collected newest-first (desc endedAt); take the most recent N and
+  // reverse so the chart reads oldest→newest left-to-right.
+  core.trend = trend.slice(0, TREND_MAX).reverse();
   core.avgShotsPerGame = round1(core.totalShots / core.gamesPlayed);
   core.avgMissesPerGame = round1(core.totalMisses / core.gamesPlayed);
   core.avgFoulsPerGame = round1(core.totalFouls / core.gamesPlayed);
@@ -348,6 +351,8 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
   const byType = new Map<string, { total: number; count: number }>();
   const bpms: number[] = [];
   const accs: number[] = [];
+  // Aligned per-game trend pairs (newest-first; sliced + reversed at the end).
+  const trend: Array<{ bpm: number | null; accuracy: number | null }> = [];
   const ballCounts = new Map<number, number>();
   let totalMade = 0;
   let totalAttempts = 0;
@@ -382,11 +387,14 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
     const { made, attempts } = accuracyCounts(mine);
     totalMade += made;
     totalAttempts += attempts;
-    if (attempts > 0) {
-      const acc = Math.round((made / attempts) * 100);
-      accs.push(acc);
-      bestAccuracy = bestAccuracy == null ? acc : Math.max(bestAccuracy, acc);
+    const gameAccuracy = attempts > 0 ? Math.round((made / attempts) * 100) : null;
+    if (gameAccuracy != null) {
+      accs.push(gameAccuracy);
+      bestAccuracy = bestAccuracy == null ? gameAccuracy : Math.max(bestAccuracy, gameAccuracy);
     }
+
+    // One aligned trend point per game with any data (lockstep across series).
+    if (bpm != null || gameAccuracy != null) trend.push({ bpm, accuracy: gameAccuracy });
 
     // Event counts (own shots only).
     for (const e of mine) {
@@ -437,10 +445,9 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
   core.bestAccuracy = bestAccuracy;
   core.avgBpm = bpms.length > 0 ? round1(bpms.reduce((a, b) => a + b, 0) / bpms.length) : null;
   core.bestBpm = bpms.length > 0 ? round1(Math.max(...bpms)) : null;
-  // bpms are collected newest-first (desc endedAt); take the most recent N and
-  // reverse so the sparkline reads oldest→newest left-to-right.
-  core.bpmTrend = bpms.slice(0, TREND_MAX).reverse();
-  core.accuracyTrend = accs.slice(0, TREND_MAX).reverse();
+  // trend is collected newest-first (desc endedAt); take the most recent N and
+  // reverse so the chart reads oldest→newest left-to-right.
+  core.trend = trend.slice(0, TREND_MAX).reverse();
   core.avgShotsPerGame = round1(core.totalShots / core.gamesPlayed);
   core.avgMissesPerGame = round1(core.totalMisses / core.gamesPlayed);
   core.avgFoulsPerGame = round1(core.totalFouls / core.gamesPlayed);

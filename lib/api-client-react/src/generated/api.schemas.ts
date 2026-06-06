@@ -805,6 +805,13 @@ export interface StatPlayTime {
   gameCount: number;
 }
 
+export interface StatTrendPoint {
+  /** @nullable */
+  bpm: number | null;
+  /** @nullable */
+  accuracy: number | null;
+}
+
 export type StatsResultTier = typeof StatsResultTier[keyof typeof StatsResultTier];
 
 
@@ -886,8 +893,7 @@ export interface StatsResult {
   avgBpm?: number | null;
   /** @nullable */
   bestBpm?: number | null;
-  bpmTrend: number[];
-  accuracyTrend: number[];
+  trend: StatTrendPoint[];
   playTimeByType: StatPlayTime[];
   topBalls: StatBall[];
   solidsCount?: number;

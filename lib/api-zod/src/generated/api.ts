@@ -726,8 +726,10 @@ export const GetStatsResponse = zod.object({
   "avgSafetiesPerGame": zod.number(),
   "avgBpm": zod.number().nullish(),
   "bestBpm": zod.number().nullish(),
-  "bpmTrend": zod.array(zod.number()),
-  "accuracyTrend": zod.array(zod.number()),
+  "trend": zod.array(zod.object({
+  "bpm": zod.number().nullable(),
+  "accuracy": zod.number().nullable()
+})),
   "playTimeByType": zod.array(zod.object({
   "gameType": zod.enum(['8ball', '9ball', 'practice']),
   "avgDurationMs": zod.number(),

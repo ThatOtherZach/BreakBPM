@@ -36,6 +36,13 @@ const WINDOW_LABEL: Record<string, string> = {
   "365d": "1Y",
   all: "ALL",
 };
+// Spelled-out form of the applied window, shown under the Shark badge in the hero.
+const WINDOW_SPELLED: Record<string, string> = {
+  "24h": "24 Hours",
+  "30d": "Last 30 Days",
+  "365d": "Last 365 Days",
+  all: "All Time",
+};
 const WINDOWS: Array<"24h" | "30d" | "365d" | "all"> = ["24h", "30d", "365d", "all"];
 
 function fmtPct(v: number | null | undefined): string {
@@ -92,67 +99,113 @@ function PixelMeter({
   );
 }
 
+// One drawn series of the overlay: the line path plus a filled area below it.
+interface TrendSeriesPaths {
+  line: string;
+  area: string;
+}
+
 /**
- * Phosphor-green BPM trend sparkline. Plots a series of per-game BPM values
- * (oldest→newest) as a filled line in an SVG that scales to its container, so
- * it sits beside the big AVG BPM readout like a CRT oscilloscope trace.
+ * Build the SVG path strings for a single trend series. Plots only the non-null
+ * points (connecting straight across any gaps so a missing game doesn't break
+ * the trace) and scales them to this series' own min/max so two series with very
+ * different ranges (BPM vs accuracy%) both fill the chart vertically. Returns
+ * null when fewer than 2 points exist (can't draw a line). `x` maps a game index
+ * onto the shared X axis so both series stay aligned game-for-game.
  */
-function BpmSparkline({
-  data,
-  stroke = "#00ff41",
-  fill = "rgba(0, 255, 65, 0.12)",
-  ariaLabel = "BPM trend over recent games",
+function buildTrendSeries(
+  values: Array<number | null>,
+  x: (i: number) => number,
+  H: number,
+  pad: number,
   step = false,
-  strokeWidth = 1.5,
-  endDot = true,
-  edgeToEdge = false,
-  className = "",
+): TrendSeriesPaths | null {
+  const pts: Array<{ i: number; v: number }> = [];
+  values.forEach((v, i) => {
+    if (v != null) pts.push({ i, v });
+  });
+  if (pts.length < 2) return null;
+  const vs = pts.map((p) => p.v);
+  const max = Math.max(...vs);
+  const min = Math.min(...vs);
+  const span = max - min || 1;
+  const y = (v: number) => H - pad - ((v - min) / span) * (H - pad * 2);
+  // `step` draws right-angle segments (horizontal hold, then vertical jump) so
+  // the trace reads as a boxy square-wave; otherwise it's a straight diagonal.
+  const line = step
+    ? pts
+        .map((p, k) =>
+          k === 0
+            ? `M${x(p.i).toFixed(1)},${y(p.v).toFixed(1)}`
+            : `H${x(p.i).toFixed(1)} V${y(p.v).toFixed(1)}`,
+        )
+        .join(" ")
+    : pts
+        .map((p, k) => `${k === 0 ? "M" : "L"}${x(p.i).toFixed(1)},${y(p.v).toFixed(1)}`)
+        .join(" ");
+  const first = pts[0];
+  const last = pts[pts.length - 1];
+  const area = `${line} L${x(last.i).toFixed(1)},${H} L${x(first.i).toFixed(1)},${H} Z`;
+  return { line, area };
+}
+
+/**
+ * Combined BPM + accuracy trend chart. Overlays two edge-to-edge traces over the
+ * same per-game X axis — a phosphor-green BPM line and a cyan accuracy line — so
+ * a viewer can read "around this game accuracy spiked and so did BPM." Each line
+ * keeps its own vertical scaling (BPM and accuracy% have very different ranges)
+ * so both stay readable. Thin, smooth, no end dots, matching the CRT look.
+ */
+function TrendOverlay({
+  data,
 }: {
-  data: number[];
-  stroke?: string;
-  fill?: string;
-  ariaLabel?: string;
-  step?: boolean;
-  strokeWidth?: number;
-  endDot?: boolean;
-  edgeToEdge?: boolean;
-  className?: string;
+  data: Array<{ bpm: number | null; accuracy: number | null }>;
 }) {
   const W = 100;
   const H = 36;
   const pad = 2;
-  // `edgeToEdge` drops the horizontal inset so the trace touches the left/right
-  // borders; vertical inset stays so peaks/troughs don't clip.
-  const padX = edgeToEdge ? 0 : pad;
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const span = max - min || 1;
   const n = data.length;
-  const x = (i: number) => (n === 1 ? W / 2 : padX + (i * (W - padX * 2)) / (n - 1));
-  const y = (v: number) => H - pad - ((v - min) / span) * (H - pad * 2);
-  // `step` draws right-angle segments (horizontal hold, then vertical jump) so
-  // the trace reads as a square-wave; otherwise it's a straight diagonal line.
-  const line = step
-    ? data
-        .map((v, i) =>
-          i === 0
-            ? `M${x(i).toFixed(1)},${y(v).toFixed(1)}`
-            : `H${x(i).toFixed(1)} V${y(v).toFixed(1)}`,
-        )
-        .join(" ")
-    : data.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
-  const area = `${line} L${x(n - 1).toFixed(1)},${H} L${x(0).toFixed(1)},${H} Z`;
+  // Shared X axis: edge-to-edge (no horizontal inset) so both traces touch the
+  // left/right borders and line up game-for-game.
+  const x = (i: number) => (n === 1 ? W / 2 : (i * W) / (n - 1));
+  const bpm = buildTrendSeries(data.map((d) => d.bpm), x, H, pad);
+  // Accuracy stays a boxy step trace (matching the original look) so it reads
+  // distinctly from the smooth diagonal BPM line.
+  const accuracy = buildTrendSeries(data.map((d) => d.accuracy), x, H, pad, true);
   return (
     <svg
-      className={`stats-hero-spark${className ? ` ${className}` : ""}`}
+      className="stats-hero-spark stats-hero-spark-overlay"
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
       role="img"
-      aria-label={ariaLabel}
+      aria-label="BPM and accuracy trend over recent games"
     >
-      <path d={area} fill={fill} stroke="none" />
-      <path d={line} fill="none" stroke={stroke} strokeWidth={strokeWidth} strokeLinejoin="round" strokeLinecap="round" />
-      {endDot && <circle cx={x(n - 1)} cy={y(data[n - 1])} r="1.8" fill={stroke} />}
+      {/* Blue (accuracy) series first, then green (BPM) on top so the green
+          line always overlays the blue trace where they cross. */}
+      {accuracy && <path d={accuracy.area} fill="rgba(54, 197, 240, 0.12)" stroke="none" />}
+      {accuracy && (
+        <path
+          className="spark-line-cyan"
+          d={accuracy.line}
+          fill="none"
+          stroke="#36c5f0"
+          strokeWidth={0.75}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      )}
+      {bpm && <path d={bpm.area} fill="rgba(0, 255, 65, 0.12)" stroke="none" />}
+      {bpm && (
+        <path
+          className="spark-line-green"
+          d={bpm.line}
+          fill="none"
+          stroke="#00ff41"
+          strokeWidth={1.1}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      )}
     </svg>
   );
 }
@@ -491,6 +544,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                             <span className="stats-hero-shark-emoji" aria-hidden="true">🦈</span> Level {fmtInt(stats.sharkLevel)} Shark
                           </span>
                         )}
+                        <span className="stats-hero-window">{WINDOW_SPELLED[appliedWindow]}</span>
                     </div>
                   )}
                   <div className="stats-hero-main">
@@ -505,39 +559,22 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   </div>
                   </div>
                   <div className="stats-hero-row">
-                  {(stats.bpmTrend.length >= 2 || stats.accuracyTrend.length >= 2) && (
+                  {stats.trend.length >= 2 && (
                     <div className="stats-hero-graph">
-                      {stats.bpmTrend.length >= 2 && (
-                        <div className="stats-hero-graph-item">
-                          <BpmSparkline
-                            data={stats.bpmTrend}
-                            strokeWidth={0.75}
-                            endDot={false}
-                            edgeToEdge
-                          />
-                          <span className="stats-hero-graph-label">
-                            BPM · LAST {stats.bpmTrend.length} GAMES
+                      <div className="stats-hero-graph-item">
+                        <TrendOverlay data={stats.trend} />
+                        <div className="stats-hero-graph-legend">
+                          <span className="stats-hero-legend-item">
+                            <span className="stats-hero-legend-swatch green" aria-hidden="true" />BPM
+                          </span>
+                          <span className="stats-hero-legend-item">
+                            <span className="stats-hero-legend-swatch cyan" aria-hidden="true" />ACCURACY
                           </span>
                         </div>
-                      )}
-                      {stats.accuracyTrend.length >= 2 && (
-                        <div className="stats-hero-graph-item">
-                          <BpmSparkline
-                            data={stats.accuracyTrend}
-                            stroke="#36c5f0"
-                            fill="rgba(54, 197, 240, 0.12)"
-                            ariaLabel="Accuracy trend over recent games"
-                            step
-                            strokeWidth={0.75}
-                            endDot={false}
-                            edgeToEdge
-                            className="spark-cyan"
-                          />
-                          <span className="stats-hero-graph-label cyan">
-                            ACCURACY · LAST {stats.accuracyTrend.length} GAMES
-                          </span>
-                        </div>
-                      )}
+                        <span className="stats-hero-graph-label">
+                          BPM vs ACCURACY · LAST {stats.trend.length} GAMES
+                        </span>
+                      </div>
                     </div>
                   )}
                   </div>

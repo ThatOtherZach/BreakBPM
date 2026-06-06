@@ -1534,8 +1534,44 @@ html, #root {
   display: block;
   filter: drop-shadow(0 0 4px rgba(0, 255, 65, 0.35));
 }
-.stats-hero-spark.spark-cyan {
-  filter: drop-shadow(0 0 4px rgba(54, 197, 240, 0.35));
+/* The combined overlay carries two colors, so the per-color glow lives on each
+   line path rather than as a single filter on the whole svg. */
+.stats-hero-spark-overlay {
+  filter: none;
+}
+.stats-hero-spark-overlay .spark-line-green {
+  filter: drop-shadow(0 0 3px rgba(0, 255, 65, 0.45));
+}
+.stats-hero-spark-overlay .spark-line-cyan {
+  filter: drop-shadow(0 0 3px rgba(54, 197, 240, 0.45));
+}
+
+.stats-hero-graph-legend {
+  display: flex;
+  gap: 10px;
+  align-self: flex-end;
+}
+.stats-hero-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #3a7a3a;
+}
+.stats-hero-legend-swatch {
+  width: 8px;
+  height: 2px;
+  display: inline-block;
+}
+.stats-hero-legend-swatch.green {
+  background: #00ff41;
+  box-shadow: 0 0 3px rgba(0, 255, 65, 0.6);
+}
+.stats-hero-legend-swatch.cyan {
+  background: #36c5f0;
+  box-shadow: 0 0 3px rgba(54, 197, 240, 0.6);
 }
 
 .stats-hero-graph-label {
@@ -1547,6 +1583,14 @@ html, #root {
 }
 .stats-hero-graph-label.cyan {
   color: #2c7a96;
+}
+
+.stats-hero-window {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  color: #8a8a8a;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .stats-hero-player {
