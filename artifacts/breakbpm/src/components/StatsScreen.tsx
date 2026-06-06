@@ -714,6 +714,21 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         const total = solids + stripes;
                         const solidsPct = total > 0 ? (solids / total) * 100 : 0;
                         const stripesPct = total > 0 ? (stripes / total) * 100 : 0;
+                        // Tint each segment with the color of the most-shot ball in
+                        // that group (ties resolve to the lower ball number, since we
+                        // scan ascending and only replace on a strictly greater count).
+                        const counts = new Map(stats.topBalls.map((b) => [b.ball, b.count]));
+                        const topColor = (balls: number[]): string | null => {
+                          let best: number | null = null;
+                          let bestCount = 0;
+                          for (const b of balls) {
+                            const c = counts.get(b) ?? 0;
+                            if (c > bestCount) { bestCount = c; best = b; }
+                          }
+                          return best == null ? null : BALL_COLORS[best];
+                        };
+                        const solidColor = topColor([1, 2, 3, 4, 5, 6, 7]);
+                        const stripeColor = topColor([9, 10, 11, 12, 13, 14, 15]);
                         return (
                           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                             <div className="stats-bar-top">
@@ -721,8 +736,8 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                               <span className="font-semibold">{Math.round(stripesPct)}% Stripes 🔴</span>
                             </div>
                             <div className="stats-split-track">
-                              <span className="stats-split-seg solids" style={{ width: `${solidsPct}%` }} />
-                              <span className="stats-split-seg stripes" style={{ width: `${stripesPct}%` }} />
+                              <span className="stats-split-seg solids" style={{ width: `${solidsPct}%`, ...(solidColor ? { background: solidColor } : null) }} />
+                              <span className="stats-split-seg stripes" style={{ width: `${stripesPct}%`, ...(stripeColor ? { background: stripeColor } : null) }} />
                             </div>
                             <div className="stats-bar-top">
                               <span style={{ color: "#fff" }} className="font-semibold">{solids} games</span>
