@@ -709,33 +709,45 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       {(() => {
                         const ballCounts = new Map(stats.topBalls.map((b) => [b.ball, b.count]));
+                        const labelStyle = { fontSize: 10, color: "#f4e7c8", textShadow: "0 1px 1px rgba(0,0,0,0.7)", letterSpacing: 0.5 } as React.CSSProperties;
+                        const renderBall = (ball: number) => {
+                          const chipClass =
+                            ball === 8
+                              ? "hud-chip-eight"
+                              : SOLIDS.includes(ball)
+                                ? "hud-chip-solid"
+                                : "hud-chip-stripe";
+                          return (
+                            <div key={ball} className="stats-ball-item">
+                              <span
+                                className={`hud-chip ${chipClass}`}
+                                data-number={ball}
+                                style={{ "--chip-color": BALL_COLORS[ball] } as React.CSSProperties}
+                                aria-label={`Ball ${ball}`}
+                              />
+                              <span className="stats-ball-count">×{ballCounts.get(ball) ?? 0}</span>
+                            </div>
+                          );
+                        };
                         return (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                            <span style={{ fontSize: 10, color: "#f4e7c8", textShadow: "0 1px 1px rgba(0,0,0,0.7)", letterSpacing: 0.5 }}>⭐ BALLS SUNK</span>
-                            <div className="stats-ball-grid">
-                              <div className="stats-ball-item">
-                                <span className="cue-ball-icon cue-ball-icon--chip" aria-label="Cue ball" />
-                                <span className="stats-ball-count">×{fmtInt(stats.totalFouls)}</span>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                              <span style={labelStyle}>🟡 SOLIDS</span>
+                              <div className="stats-ball-grid">{[1, 2, 3, 4, 5, 6, 7].map(renderBall)}</div>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                              <span style={labelStyle}>🔴 STRIPES</span>
+                              <div className="stats-ball-grid">{[9, 10, 11, 12, 13, 14, 15].map(renderBall)}</div>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                              <span style={labelStyle}>🎱 8-BALL &amp; CUE (FOULS)</span>
+                              <div className="stats-ball-grid">
+                                {renderBall(8)}
+                                <div className="stats-ball-item">
+                                  <span className="cue-ball-icon cue-ball-icon--chip" aria-label="Cue ball" />
+                                  <span className="stats-ball-count">×{fmtInt(stats.totalFouls)}</span>
+                                </div>
                               </div>
-                              {Array.from({ length: 15 }, (_, i) => i + 1).map((ball) => {
-                                const chipClass =
-                                  ball === 8
-                                    ? "hud-chip-eight"
-                                    : SOLIDS.includes(ball)
-                                      ? "hud-chip-solid"
-                                      : "hud-chip-stripe";
-                                return (
-                                  <div key={ball} className="stats-ball-item">
-                                    <span
-                                      className={`hud-chip ${chipClass}`}
-                                      data-number={ball}
-                                      style={{ "--chip-color": BALL_COLORS[ball] } as React.CSSProperties}
-                                      aria-label={`Ball ${ball}`}
-                                    />
-                                    <span className="stats-ball-count">×{ballCounts.get(ball) ?? 0}</span>
-                                  </div>
-                                );
-                              })}
                             </div>
                           </div>
                         );
