@@ -770,7 +770,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                             <div className="stats-bar-top">
                               <span>🟡 Solids {Math.round(solidsPct)}%</span>
-                              <span>{Math.round(stripesPct)}% Stripes 🔴</span>
+                              <span className="font-semibold">{Math.round(stripesPct)}% Stripes 🔴</span>
                             </div>
                             <div className="stats-split-track">
                               <span className="stats-split-seg solids" style={{ width: `${solidsPct}%` }} />
