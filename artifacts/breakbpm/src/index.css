@@ -1779,9 +1779,12 @@ html, #root {
 
 .stats-card {
   position: relative;
-  background: linear-gradient(160deg, #f4f4f0 0%, var(--silver) 55%, #c8c8c4 100%);
-  border: 2px solid;
-  border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
+  border: 3px outset #7a4a22;
+  background-color: #0f5a2e;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.10) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 4px);
+  box-shadow: inset 0 0 0 2px #0a4322, inset 0 2px 6px rgba(0, 0, 0, 0.35);
   padding: 9px 10px 10px;
   display: flex;
   flex-direction: column;
@@ -1796,24 +1799,25 @@ html, #root {
   right: 8px;
   font-size: 27px;
   line-height: 1;
-  opacity: 0.6;
+  opacity: 0.75;
 }
 .stats-card-val {
   font-family: 'VT323', 'Courier New', monospace;
   font-size: 33px;
   line-height: 0.95;
-  color: var(--navy);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  color: #ffe6a8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 .stats-card-label {
   font-size: 10px;
   font-weight: bold;
-  color: #4a4a4a;
+  color: #f4e7c8;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   line-height: 1.25;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
 }
-.stats-card-sub { font-size: 10px; color: #777; }
+.stats-card-sub { font-size: 10px; color: #cde8d2; }
 
 /* Section header with emoji glyph. */
 .stats-sec-emoji { font-size: 12px; line-height: 1; margin-right: 2px; }
