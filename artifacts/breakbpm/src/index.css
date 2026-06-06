@@ -1696,28 +1696,48 @@ html, #root {
 }
 
 /* Retro stat card — raised silver chip with emoji + VT323 value. */
-.stats-card-grid { display: flex; flex-direction: column; gap: 6px; }
-
-.stats-card {
-  background: var(--silver);
-  border: 2px solid;
-  border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
-  padding: 5px 10px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
+.stats-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
-.stats-card-emoji { font-size: 14px; line-height: 1; flex: 0 0 auto; }
+
+.stats-card {
+  position: relative;
+  background: linear-gradient(160deg, #f4f4f0 0%, var(--silver) 55%, #c8c8c4 100%);
+  border: 2px solid;
+  border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
+  padding: 8px 10px 9px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  overflow: hidden;
+}
+.stats-card-emoji {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0.6;
+}
 .stats-card-val {
   font-family: 'VT323', 'Courier New', monospace;
-  font-size: 24px;
-  line-height: 1;
+  font-size: 30px;
+  line-height: 0.95;
   color: var(--navy);
-  flex: 0 0 auto;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
-.stats-card-label { font-size: 9px; color: #555; letter-spacing: 0.5px; }
-.stats-card-sub { font-size: 9px; color: #777; margin-left: auto; }
+.stats-card-label {
+  font-size: 9px;
+  font-weight: bold;
+  color: #4a4a4a;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  line-height: 1.25;
+}
+.stats-card-sub { font-size: 9px; color: #777; }
 
 /* Section header with emoji glyph. */
 .stats-sec-emoji { font-size: 12px; line-height: 1; margin-right: 2px; }
