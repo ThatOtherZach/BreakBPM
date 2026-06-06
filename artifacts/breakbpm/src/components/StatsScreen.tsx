@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toPng } from "html-to-image";
 import {
   useGetStats,
   getStats,
@@ -265,6 +266,31 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [savingImage, setSavingImage] = useState(false);
+  const captureRef = useRef<HTMLDivElement>(null);
+
+  async function handleSaveImage() {
+    if (savingImage || !captureRef.current) return;
+    setSavingImage(true);
+    try {
+      const dataUrl = await toPng(captureRef.current, {
+        pixelRatio: 2,
+        backgroundColor: "#008080",
+        filter: (node) =>
+          !(node instanceof HTMLElement && node.classList.contains("stats-capture-hide")),
+      });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `breakbpm-stats-${new Date().toISOString().slice(0, 10)}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch {
+      // Surface nothing — the page state is unchanged on failure.
+    } finally {
+      setSavingImage(false);
+    }
+  }
 
   // The delete button is a two-click confirm: the first click arms it and the
   // second click within the window actually deletes. Auto-disarm after a few
@@ -513,7 +539,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                 </div>
               </div>
             ) : (
-              <>
+              <div ref={captureRef} className="stats-capture">
                 {/* ── CRT hero readout ── */}
                 <div className="stats-hero">
                   <div className="stats-hero-header">
@@ -593,6 +619,16 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     </div>
                   </div>
                 </div>
+
+                {stats.tier === "pass" && (
+                  <button
+                    className="btn w-full stats-capture-hide"
+                    disabled={savingImage}
+                    onClick={handleSaveImage}
+                  >
+                    {savingImage ? "📸 Saving…" : "📸 Save as Image"}
+                  </button>
+                )}
 
                 {/* ── Results ── */}
                 <div className="panel panel--wood">
@@ -786,7 +822,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     </div>
                   </div>
                 )}
-              </>
+              </div>
             )}
 
             {/* ── Upsell for non-pass tiers ── */}
