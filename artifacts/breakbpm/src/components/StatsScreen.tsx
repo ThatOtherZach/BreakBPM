@@ -120,12 +120,14 @@ function BpmSparkline({
   fill = "rgba(0, 255, 65, 0.12)",
   ariaLabel = "BPM trend over recent games",
   step = false,
+  strokeWidth = 1.5,
 }: {
   data: number[];
   stroke?: string;
   fill?: string;
   ariaLabel?: string;
   step?: boolean;
+  strokeWidth?: number;
 }) {
   const W = 100;
   const H = 36;
@@ -157,7 +159,7 @@ function BpmSparkline({
       aria-label={ariaLabel}
     >
       <path d={area} fill={fill} stroke="none" />
-      <path d={line} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+      <path d={line} fill="none" stroke={stroke} strokeWidth={strokeWidth} strokeLinejoin="round" strokeLinecap="round" />
       <circle cx={x(n - 1)} cy={y(data[n - 1])} r="1.8" fill={stroke} />
     </svg>
   );
@@ -574,6 +576,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           fill="rgba(54, 197, 240, 0.12)"
                           ariaLabel="Accuracy trend over recent games"
                           step
+                          strokeWidth={0.75}
                         />
                         <span className="stats-trend-box-label">
                           ACCURACY · LAST {stats.accuracyTrend.length}
