@@ -778,7 +778,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                             </div>
                             <div className="stats-bar-top">
                               <span style={{ color: "#fff" }}>{solids} games</span>
-                              <span style={{ color: "#fff" }}>{stripes} games</span>
+                              <span style={{ color: "#fff" }} className="font-semibold">{stripes} games</span>
                             </div>
                           </div>
                         );
