@@ -21,10 +21,20 @@ vi.mock("../lib/auth", () => ({
   getOrCreateUser: vi.fn(async () => mocks.currentUser),
 }));
 
-// Stub the payment provider seam.
+// Stub the payment provider seam. Both Lifetime grant paths (verify + redeem)
+// mirror the local subscription stop to Stripe via stopRenewingStripeSubscriptions
+// after the tx, so the mock must export it or those handlers throw a 500.
 vi.mock("../lib/paymentProvider", () => ({
   paymentProvider: mocks.provider,
+  stopRenewingStripeSubscriptions: vi.fn(async () => {}),
 }));
+
+// These suites exercise the card-payment-gated flows (passes/verify,
+// subscriptions/checkout) plus the Lifetime-stops-subscription rule, all of
+// which assume in-app card payments are ON. cardPaymentsEnabled() reads the
+// env at call time, so force the flag here to keep the suite deterministic
+// regardless of the ambient default (which is OFF in code).
+process.env.BREAKBPM_CARD_PAYMENTS_ENABLED = "true";
 
 import passesRouter from "./passes";
 import subscriptionsRouter from "./subscriptions";

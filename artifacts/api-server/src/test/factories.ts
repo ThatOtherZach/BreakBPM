@@ -12,6 +12,8 @@ import {
   PASS_DURATIONS_SECONDS,
   type User,
   type Pass,
+  type DiscountCode,
+  type DiscountRedemption,
   type Subscription,
   type Game,
   type GameParticipant,
@@ -243,6 +245,43 @@ export async function getPasses(userId: string): Promise<Pass[]> {
   return db.select().from(passesTable).where(eq(passesTable.userId, userId));
 }
 
+export async function getDiscountCode(
+  code: string,
+): Promise<DiscountCode | undefined> {
+  const rows = await db
+    .select()
+    .from(discountCodesTable)
+    .where(eq(discountCodesTable.code, code))
+    .limit(1);
+  return rows[0];
+}
+
+export async function getRedemptions(userId: string): Promise<DiscountRedemption[]> {
+  return db
+    .select()
+    .from(discountRedemptionsTable)
+    .where(eq(discountRedemptionsTable.userId, userId));
+}
+
+/**
+ * Force a pass to be expired by back-dating its start so it falls outside its
+ * own duration window. Lifetime passes (null duration) never expire and are
+ * left untouched.
+ */
+export async function expirePass(passId: string): Promise<void> {
+  const [row] = await db
+    .select()
+    .from(passesTable)
+    .where(eq(passesTable.id, passId))
+    .limit(1);
+  if (!row || row.durationSeconds === null) return;
+  const startedAt = new Date(Date.now() - (row.durationSeconds + 60) * 1000);
+  await db
+    .update(passesTable)
+    .set({ startedAt })
+    .where(eq(passesTable.id, passId));
+}
+
 /** Delete everything created by the factories during a test. */
 export async function cleanup(): Promise<void> {
   if (createdGameIds.length > 0) {
@@ -257,6 +296,11 @@ export async function cleanup(): Promise<void> {
     await db
       .delete(discountRedemptionsTable)
       .where(inArray(discountRedemptionsTable.userId, createdUserIds));
+    // Gift codes minted by a created user carry issuedByUserId but are not in
+    // createdCodes, so remove them here (cascades to their redemptions).
+    await db
+      .delete(discountCodesTable)
+      .where(inArray(discountCodesTable.issuedByUserId, createdUserIds));
     await db.delete(usersTable).where(inArray(usersTable.id, createdUserIds));
     createdUserIds.length = 0;
   }

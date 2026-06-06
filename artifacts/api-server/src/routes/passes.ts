@@ -198,7 +198,14 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
           passId: issued.id,
         });
       } catch (e) {
-        if ((e as { code?: string }).code === "23505") {
+        // drizzle wraps the pg error, so the SQLSTATE can sit on the cause
+        // rather than the top-level error. Check both so the unique
+        // (code, user_id) violation maps to a friendly refusal instead of a
+        // 500.
+        const sqlState =
+          (e as { code?: string }).code ??
+          (e as { cause?: { code?: string } }).cause?.code;
+        if (sqlState === "23505") {
           throw new RedeemFailure("You've already redeemed this code");
         }
         throw e;
