@@ -1,8 +1,8 @@
 import { useLocation } from "wouter";
 import Navbar from "./Navbar";
 import GameHistoryCard from "./GameHistoryCard";
+import StatsHero from "./StatsHero";
 import { useGetPublicProfile, getGetPublicProfileQueryKey } from "@workspace/api-client-react";
-import ballImg from '/eightball_nobg.png';
 
 interface Props {
   name: string;
@@ -22,10 +22,11 @@ function fmtMemberSince(d: string): string {
 
 /**
  * Public profile shown on /watch/{name} when the player has no live game.
- * Renders a header (player name + member-since) plus their five most recent
- * games using the same cards as the owner's account page. Purely view-only —
- * no scores, no actions, just a showcase. WatchByNameScreen keeps polling in
- * the background and swaps to the live spectator view the moment they break.
+ * Renders the same CRT hero readout as the owner's Stats page (scoped to the
+ * player's last 24 hours) plus their five most recent games using the same
+ * cards as the owner's account page. Purely view-only — no scores, no actions,
+ * just a showcase. WatchByNameScreen keeps polling in the background and swaps
+ * to the live spectator view the moment they break.
  */
 export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, onSignIn }: Props) {
   const [, setLocation] = useLocation();
@@ -37,6 +38,7 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
   const notFound = profile.data && !profile.data.found;
   const screenName = profile.data?.screenName ?? name;
   const games = profile.data?.games ?? [];
+  const stats = profile.data?.stats ?? null;
 
   return (
     <div className="app-window app-window--page">
@@ -69,83 +71,42 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
 
         {profile.data?.found && (
           <>
-            {/* Header — player identity card */}
-            <div
-              className="panel"
-              style={{
-                background: "linear-gradient(135deg, #0b1f3a 0%, #102b1c 100%)",
-                border: "1px solid #2a5a3a",
-              }}
-            >
+            {/* Header — the same CRT hero readout as the Stats page, scoped to
+                this player's last 24 hours. */}
+            {stats ? (
+              <StatsHero stats={stats} screenName={screenName} />
+            ) : (
               <div
-                className="panel-body"
-                style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 12px" }}
+                className="panel"
+                style={{
+                  background: "linear-gradient(135deg, #0b1f3a 0%, #102b1c 100%)",
+                  border: "1px solid #2a5a3a",
+                  padding: "12px 14px",
+                }}
               >
-                {/* 8-ball avatar */}
-                <img
-                  src={ballImg}
-                  alt="8-ball"
-                  aria-hidden="true"
+                <div style={{ fontSize: 11, letterSpacing: 2, color: "#00ff41", opacity: 0.8 }}>
+                  PLAYER PROFILE
+                </div>
+                <div
                   style={{
-                    flexShrink: 0,
-                    width: 81,
-                    height: 81,
-                    objectFit: "contain",
-                    imageRendering: "pixelated",
-                    filter: "drop-shadow(0 0 12px rgba(0,255,65,0.25))",
+                    fontFamily: "VT323, monospace",
+                    fontSize: 32,
+                    lineHeight: 1.05,
+                    color: "#fff",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
                   }}
-                />
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 11, letterSpacing: 2, color: "#00ff41", opacity: 0.8 }}>
-                    PLAYER PROFILE
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "VT323, monospace",
-                      fontSize: 32,
-                      lineHeight: 1.05,
-                      color: "#fff",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {screenName}
-                  </div>
-                  <div style={{ fontSize: 12, color: "#d8b4ff", marginTop: 2 }}>
-                    {profile.data.memberSince
-                      ? `Member since ${fmtMemberSince(profile.data.memberSince)}`
-                      : "Member"}
-                  </div>
-                  {(profile.data.gamesPlayed != null) && (
-                    <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
-                      <div>
-                        <div style={{ fontSize: 11, color: "#aaa", letterSpacing: 1 }}>GAMES</div>
-                        <div style={{ fontFamily: "VT323, monospace", fontSize: 22, color: "#00ff41", lineHeight: 1 }}>
-                          {profile.data.gamesPlayed}
-                        </div>
-                      </div>
-                      {profile.data.winRate != null && (
-                        <div>
-                          <div style={{ fontSize: 11, color: "#aaa", letterSpacing: 1 }}>WIN RATE</div>
-                          <div style={{ fontFamily: "VT323, monospace", fontSize: 22, color: "#00ff41", lineHeight: 1 }}>
-                            {Math.round(profile.data.winRate * 100)}%
-                          </div>
-                        </div>
-                      )}
-                      {profile.data.avgBpm != null && (
-                        <div>
-                          <div style={{ fontSize: 11, color: "#aaa", letterSpacing: 1 }}>AVG BPM</div>
-                          <div style={{ fontFamily: "VT323, monospace", fontSize: 22, color: "#00ff41", lineHeight: 1 }}>
-                            {profile.data.avgBpm.toFixed(1)}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                >
+                  {screenName}
+                </div>
+                <div style={{ fontSize: 12, color: "#d8b4ff", marginTop: 2 }}>
+                  {profile.data.memberSince
+                    ? `Member since ${fmtMemberSince(profile.data.memberSince)}`
+                    : "Member"}
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Recent games — same cards as the account page */}
             <div className="panel">

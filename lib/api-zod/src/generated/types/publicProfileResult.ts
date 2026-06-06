@@ -7,6 +7,7 @@
  */
 import type { GameHistoryEntry } from './gameHistoryEntry';
 import type { PublicProfileResultReason } from './publicProfileResultReason';
+import type { StatsResult } from './statsResult';
 
 export interface PublicProfileResult {
   found: boolean;
@@ -22,4 +23,5 @@ export interface PublicProfileResult {
   /** @nullable */
   avgBpm?: number | null;
   games: GameHistoryEntry[];
+  stats?: StatsResult | null;
 }

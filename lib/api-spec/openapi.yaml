@@ -1382,6 +1382,13 @@ components:
         games:
           type: array
           items: { $ref: "#/components/schemas/GameHistoryEntry" }
+        # The player's full last-24h stats, shaped exactly like the /stats
+        # response so the profile can render the same CRT hero readout. Always
+        # personal scope, 24h window. Null when the player wasn't found.
+        stats:
+          oneOf:
+            - { $ref: "#/components/schemas/StatsResult" }
+            - { type: "null" }
 
     StatBall:
       type: object

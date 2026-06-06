@@ -1668,6 +1668,30 @@ router.get("/games/profile", async (req, res): Promise<void> => {
     ? bpmValues.reduce((sum, b) => sum + b, 0) / bpmValues.length
     : null;
 
+  // Full last-24h stats, shaped exactly like /stats so the profile header can
+  // render the same CRT hero readout. Always personal scope + 24h window; the
+  // tier/capability flags are fixed (this is a public, view-only readout).
+  const { core: statsCore, cached: statsCached } = await resolveStats(
+    "personal",
+    "24h",
+    host.id,
+    false,
+  );
+  const { computedAt: statsComputedAt, ...statsRest } = statsCore;
+  const stats = {
+    tier: "public" as const,
+    scope: "personal" as const,
+    window: "24h" as const,
+    appliedScope: "personal" as const,
+    appliedWindow: "24h" as const,
+    canChooseWindow: false,
+    canToggleGlobal: false,
+    canRefresh: false,
+    cached: statsCached,
+    computedAt: new Date(statsComputedAt).toISOString(),
+    ...statsRest,
+  };
+
   res.json(
     GetPublicProfileResponse.parse({
       found: true,
@@ -1677,6 +1701,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
       winRate,
       avgBpm,
       games,
+      stats,
     }),
   );
 });

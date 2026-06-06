@@ -567,7 +567,55 @@ export const GetPublicProfileResponse = zod.object({
   "ball": zod.number(),
   "player": zod.string()
 })).optional()
-}))
+})),
+  "stats": zod.union([zod.object({
+  "tier": zod.enum(['public', 'account', 'pass']),
+  "scope": zod.enum(['personal', 'global']),
+  "window": zod.enum(['24h', '30d', '365d', 'all']),
+  "appliedScope": zod.enum(['personal', 'global']),
+  "appliedWindow": zod.enum(['24h', '30d', '365d', 'all']),
+  "canChooseWindow": zod.boolean(),
+  "canToggleGlobal": zod.boolean(),
+  "canRefresh": zod.boolean(),
+  "cached": zod.boolean(),
+  "computedAt": zod.coerce.date().optional(),
+  "gamesPlayed": zod.number(),
+  "winRate": zod.number().nullish(),
+  "finishRate": zod.number().nullish(),
+  "eightBallSinkRate": zod.number().nullish(),
+  "eightBallDecidedGames": zod.number().optional(),
+  "accuracy": zod.number().nullish(),
+  "bestAccuracy": zod.number().nullish(),
+  "totalShots": zod.number(),
+  "totalMisses": zod.number(),
+  "totalFouls": zod.number(),
+  "totalSafeties": zod.number(),
+  "totalUndos": zod.number(),
+  "avgShotsPerGame": zod.number(),
+  "avgMissesPerGame": zod.number(),
+  "avgFoulsPerGame": zod.number(),
+  "avgSafetiesPerGame": zod.number(),
+  "avgBpm": zod.number().nullish(),
+  "bestBpm": zod.number().nullish(),
+  "trend": zod.array(zod.object({
+  "bpm": zod.number().nullable(),
+  "accuracy": zod.number().nullable()
+})),
+  "playTimeByType": zod.array(zod.object({
+  "gameType": zod.enum(['8ball', '9ball', 'practice']),
+  "avgDurationMs": zod.number(),
+  "gameCount": zod.number()
+})),
+  "topBalls": zod.array(zod.object({
+  "ball": zod.number(),
+  "count": zod.number()
+})),
+  "solidsCount": zod.number().optional(),
+  "stripesCount": zod.number().optional(),
+  "sharkWinRate": zod.number().nullish(),
+  "sharkGames": zod.number().optional(),
+  "sharkLevel": zod.number().nullable()
+}),zod.null()]).optional()
 })
 
 

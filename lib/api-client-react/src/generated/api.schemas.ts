@@ -769,49 +769,6 @@ export const PublicProfileResultReason = {
   rate_limited: 'rate_limited',
 } as const;
 
-export interface PublicProfileResult {
-  found: boolean;
-  reason?: PublicProfileResultReason;
-  /** @nullable */
-  screenName?: string | null;
-  /** @nullable */
-  memberSince?: string | null;
-  /** @nullable */
-  gamesPlayed?: number | null;
-  /** @nullable */
-  winRate?: number | null;
-  /** @nullable */
-  avgBpm?: number | null;
-  games: GameHistoryEntry[];
-}
-
-export interface StatBall {
-  ball: number;
-  count: number;
-}
-
-export type StatPlayTimeGameType = typeof StatPlayTimeGameType[keyof typeof StatPlayTimeGameType];
-
-
-export const StatPlayTimeGameType = {
-  '8ball': '8ball',
-  '9ball': '9ball',
-  practice: 'practice',
-} as const;
-
-export interface StatPlayTime {
-  gameType: StatPlayTimeGameType;
-  avgDurationMs: number;
-  gameCount: number;
-}
-
-export interface StatTrendPoint {
-  /** @nullable */
-  bpm: number | null;
-  /** @nullable */
-  accuracy: number | null;
-}
-
 export type StatsResultTier = typeof StatsResultTier[keyof typeof StatsResultTier];
 
 
@@ -856,6 +813,33 @@ export const StatsResultAppliedWindow = {
   '365d': '365d',
   all: 'all',
 } as const;
+
+export interface StatTrendPoint {
+  /** @nullable */
+  bpm: number | null;
+  /** @nullable */
+  accuracy: number | null;
+}
+
+export type StatPlayTimeGameType = typeof StatPlayTimeGameType[keyof typeof StatPlayTimeGameType];
+
+
+export const StatPlayTimeGameType = {
+  '8ball': '8ball',
+  '9ball': '9ball',
+  practice: 'practice',
+} as const;
+
+export interface StatPlayTime {
+  gameType: StatPlayTimeGameType;
+  avgDurationMs: number;
+  gameCount: number;
+}
+
+export interface StatBall {
+  ball: number;
+  count: number;
+}
 
 export interface StatsResult {
   tier: StatsResultTier;
@@ -903,6 +887,23 @@ export interface StatsResult {
   sharkGames?: number;
   /** @nullable */
   sharkLevel: number | null;
+}
+
+export interface PublicProfileResult {
+  found: boolean;
+  reason?: PublicProfileResultReason;
+  /** @nullable */
+  screenName?: string | null;
+  /** @nullable */
+  memberSince?: string | null;
+  /** @nullable */
+  gamesPlayed?: number | null;
+  /** @nullable */
+  winRate?: number | null;
+  /** @nullable */
+  avgBpm?: number | null;
+  games: GameHistoryEntry[];
+  stats?: StatsResult | null;
 }
 
 export interface FindPlayerPost {
