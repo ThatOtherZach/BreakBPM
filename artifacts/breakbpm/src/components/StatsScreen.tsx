@@ -38,17 +38,6 @@ const WINDOW_LABEL: Record<string, string> = {
 };
 const WINDOWS: Array<"24h" | "30d" | "365d" | "all"> = ["24h", "30d", "365d", "all"];
 
-const GAME_TYPE_EMOJI: Record<string, string> = {
-  "8ball": "🎱",
-  "9ball": "9️⃣",
-  practice: "🎯",
-};
-const GAME_TYPE_LABEL: Record<string, string> = {
-  "8ball": "8-Ball",
-  "9ball": "9-Ball",
-  practice: "Practice",
-};
-
 function fmtPct(v: number | null | undefined): string {
   if (v == null) return "—";
   return `${Math.round(v * 100)}%`;
@@ -60,12 +49,6 @@ function fmtInt(v: number | null | undefined): string {
 function fmtNum(v: number | null | undefined): string {
   if (v == null) return "—";
   return String(v);
-}
-function fmtMs(ms: number): string {
-  const total = Math.round(ms / 1000);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 function fmtWhen(iso: string | undefined): string {
   if (!iso) return "";
@@ -310,10 +293,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
   const appliedWindow = stats?.appliedWindow ?? "24h";
   const isPersonal = appliedScope === "personal";
 
-  // Longest avg game length, used to scale the play-time bars.
-  const maxPlayMs = stats
-    ? Math.max(1, ...stats.playTimeByType.map((p) => p.avgDurationMs))
-    : 1;
   // Largest most-sunk count, used to scale the ball-frequency bars.
   const maxBallCount = stats
     ? Math.max(1, ...stats.topBalls.map((b) => b.count))
@@ -656,31 +635,17 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         <div className="digit-label">BEST BPM</div>
                       </div>
                     </div>
-                    {stats.playTimeByType.length > 0 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        <span style={{ fontSize: 10, color: "#555", letterSpacing: 0.5 }}>🕐 AVG GAME LENGTH</span>
-                        {stats.playTimeByType.map((p) => (
-                          <div key={p.gameType} className="stats-bar-line">
-                            <div className="stats-bar-top">
-                              <span>
-                                <span aria-hidden="true" style={{ marginRight: 4 }}>
-                                  {GAME_TYPE_EMOJI[p.gameType] ?? "🎱"}
-                                </span>
-                                {GAME_TYPE_LABEL[p.gameType] ?? p.gameType}
-                                <span style={{ color: "#888" }}> · {p.gameCount} {p.gameCount === 1 ? "game" : "games"}</span>
-                              </span>
-                              <span className="stats-bar-time">{fmtMs(p.avgDurationMs)}</span>
-                            </div>
-                            <div className="stats-meter-track" style={{ height: 12 }}>
-                              <div
-                                className="stats-meter-fill amber"
-                                style={{ width: `${(p.avgDurationMs / maxPlayMs) * 100}%` }}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {stats.playTimeByType.length > 0 && (() => {
+                      const totalMs = stats.playTimeByType.reduce((sum, p) => sum + p.avgDurationMs * p.gameCount, 0);
+                      const totalGames = stats.playTimeByType.reduce((sum, p) => sum + p.gameCount, 0);
+                      const totalHours = totalMs / 3_600_000;
+                      const avgPerGameMin = totalGames > 0 ? totalMs / totalGames / 60_000 : 0;
+                      return (
+                        <p style={{ fontSize: 12, color: "#444", margin: 0 }}>
+                          🕐 You've played {totalHours.toFixed(1)} hours of pool, {avgPerGameMin.toFixed(1)} average per game.
+                        </p>
+                      );
+                    })()}
                   </div>
                 </div>
 
