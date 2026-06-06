@@ -1842,6 +1842,7 @@ html, #root {
   flex-wrap: wrap;
   gap: 10px 12px;
 }
+.stats-ball-grid--center { justify-content: center; }
 .stats-ball-item {
   display: flex;
   flex-direction: column;
