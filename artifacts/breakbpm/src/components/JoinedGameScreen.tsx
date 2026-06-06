@@ -452,7 +452,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
             </div>
             {shotLog.length === 0
               ? <div style={{ color: '#006600' }}>_ no shots yet...</div>
-              : shotLog.map((e, i) => {
+              : shotLog.map((e, i) => ({ e, i })).reverse().map(({ e, i }) => {
                 const t = formatTime(e.gameTime);
                 let line = '';
                 if (e.type === 'sink') line = `[${t}] ${e.playerName} » SINK ${ballLabel(e.ball!)}`;
