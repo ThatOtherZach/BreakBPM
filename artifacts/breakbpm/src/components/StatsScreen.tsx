@@ -290,46 +290,50 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
               </div>
             )}
 
-            {canRefresh && (
-              <button
-                className="btn w-full"
-                disabled={refreshing || statsQuery.isFetching}
-                onClick={handleRefresh}
-              >
-                {refreshing ? "↻ Refreshing…" : "↻ Refresh"}
-              </button>
-            )}
-
-            {isAuthenticated && (
+            {(canRefresh || isAuthenticated) && (
               <div style={{ display: "flex", gap: 6 }}>
-                <button
-                  className="btn"
-                  style={{ flex: 1 }}
-                  disabled={exporting || deleting || hasNoData}
-                  onClick={handleExport}
-                  title={
-                    hasNoData
-                      ? "No games to export"
-                      : isFreeTier
-                        ? "Download your last 24 hours of games as a CSV spreadsheet — get a pass to export your full history"
-                        : "Download all your games and shots as a CSV spreadsheet"
-                  }
-                >
-                  {exporting ? "🧳 Exporting…" : isFreeTier ? "🧳 Export (24h)" : "🧳 Export"}
-                </button>
-                <button
-                  className={`btn${confirmDelete ? " btn-primary" : ""}`}
-                  style={{ flex: 1 }}
-                  disabled={deleting || exporting || hasNoData}
-                  onClick={handleDelete}
-                  title={hasNoData ? "No games to delete" : "Permanently delete all your games and shots"}
-                >
-                  {deleting
-                    ? "☢️ Deleting…"
-                    : confirmDelete
-                      ? "☢️ Are you sure?"
-                      : "☢️ Delete"}
-                </button>
+                {canRefresh && (
+                  <button
+                    className="btn"
+                    style={{ flex: 1 }}
+                    disabled={refreshing || statsQuery.isFetching}
+                    onClick={handleRefresh}
+                  >
+                    {refreshing ? "↻ Refreshing…" : "↻ Refresh"}
+                  </button>
+                )}
+                {isAuthenticated && (
+                  <>
+                    <button
+                      className="btn"
+                      style={{ flex: 1 }}
+                      disabled={exporting || deleting || hasNoData}
+                      onClick={handleExport}
+                      title={
+                        hasNoData
+                          ? "No games to export"
+                          : isFreeTier
+                            ? "Download your last 24 hours of games as a CSV spreadsheet — get a pass to export your full history"
+                            : "Download all your games and shots as a CSV spreadsheet"
+                      }
+                    >
+                      {exporting ? "🧳 Exporting…" : isFreeTier ? "🧳 Export (24h)" : "🧳 Export"}
+                    </button>
+                    <button
+                      className={`btn${confirmDelete ? " btn-primary" : ""}`}
+                      style={{ flex: 1 }}
+                      disabled={deleting || exporting || hasNoData}
+                      onClick={handleDelete}
+                      title={hasNoData ? "No games to delete" : "Permanently delete all your games and shots"}
+                    >
+                      {deleting
+                        ? "☢️ Deleting…"
+                        : confirmDelete
+                          ? "☢️ Are you sure?"
+                          : "☢️ Delete"}
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
