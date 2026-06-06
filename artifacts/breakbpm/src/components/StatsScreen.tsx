@@ -426,8 +426,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       <span className="stats-hero-unit">BPM</span>
                     </span>
                     <span className="stats-hero-sub">
-                      {isPersonal ? "YOUR PACE" : "ALL PLAYERS"} · BEST{" "}
-                      {stats.bestBpm == null ? "--" : stats.bestBpm.toFixed(1)}
+                      BEST {stats.bestBpm == null ? "--" : stats.bestBpm.toFixed(1)}
                     </span>
                   </div>
                   <div className="stats-hero-side">
