@@ -556,6 +556,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       )}
                     </div>
                   )}
+                  </div>
                   <div className="stats-hero-side">
                     <div className="stats-hero-side-item">
                       <span className="stats-hero-side-val">{fmtInt(stats.gamesPlayed)}</span>
@@ -569,7 +570,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       <span className="stats-hero-side-val">{stats.accuracy == null ? "--" : `${stats.accuracy}%`}</span>
                       <span className="stats-hero-side-label">AVG ACCURACY</span>
                     </div>
-                  </div>
                   </div>
                 </div>
 
