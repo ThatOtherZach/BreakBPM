@@ -270,6 +270,15 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
   const hostName = rosterBySlot.get(0)?.displayName ?? players[0]?.name ?? 'Player 1';
   const shotLog = state?.shotLog ?? [];
 
+  // View-only notice, shown as the first entry in the shot log (the first
+  // message a joiner/spectator sees) instead of a pinned banner.
+  const viewNotice =
+    joinResult.reason === 'in_progress'
+      ? `Game already underway — viewing as spectator. ${hostName} is host.`
+      : joinResult.reason === 'full'
+        ? `Last slot was just taken — viewing as spectator. ${hostName} is host.`
+        : `View only — ${hostName}'s device is host.${joinResult.role === 'spectator' ? ' (spectator)' : ''}`;
+
   const dispPlayerName = state?.phase === 'ended'
     ? (state?.winner ?? cur?.name)
     : cur?.name;
@@ -306,31 +315,6 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
   return (
     <div className="app-window">
       <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
-
-      {/* View-only banner — pinned at top of body so it's obvious every render */}
-      <div
-        className="notice"
-        style={{
-          margin: 8,
-          background: '#fff4cc',
-          border: '2px solid #c39d00',
-          fontWeight: 'bold',
-        }}
-      >
-        <span>👁</span>
-        <span>
-          {joinResult.reason === 'in_progress' ? (
-            <>Game already underway — viewing as spectator. {hostName} is host.</>
-          ) : joinResult.reason === 'full' ? (
-            <>Last slot was just taken — viewing as spectator. {hostName} is host.</>
-          ) : (
-            <>
-              View only — {hostName}'s device is host.
-              {joinResult.role === 'spectator' ? ' (spectator)' : ''}
-            </>
-          )}
-        </span>
-      </div>
 
       <div className="hud-panel">
         <div className="hud-top">
@@ -467,6 +451,9 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
         <div>
           <div className="menu-section-label" style={{ marginBottom: 6 }}>SHOT LOG</div>
           <div className="shot-log" style={{ maxHeight: 220, overflowY: 'auto' }}>
+            <div className="log-entry" style={{ color: '#c39d00', fontWeight: 'bold' }}>
+              👁 {viewNotice}
+            </div>
             {shotLog.length === 0
               ? <div style={{ color: '#006600' }}>_ no shots yet...</div>
               : shotLog.map((e, i) => {
@@ -489,13 +476,13 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
           </div>
         </div>
 
-        <div className="grid-2">
-          <button className="btn btn-big" onClick={() => { onBack(); setLocation('/'); }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button className="btn btn-big btn-full" onClick={() => { onBack(); setLocation('/'); }}>
             ← Back
           </button>
           {!ended && joinResult.role !== 'spectator' && (
             <button
-              className="btn btn-big btn-danger"
+              className="btn btn-big btn-danger btn-full"
               onClick={handleLeave}
               disabled={leave.isPending}
             >
