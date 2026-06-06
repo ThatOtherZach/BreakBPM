@@ -485,7 +485,26 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   <div className="stats-hero-main">
                     {user?.screenName && (
                       <div className="stats-hero-player">
-                        <span className="stats-hero-name">{user.screenName}</span>
+                        <div className="stats-hero-name-row">
+                          {stats.topBalls.length > 0 && (() => {
+                            const top = stats.topBalls[0].ball;
+                            const chipClass =
+                              top === 8
+                                ? "hud-chip-eight"
+                                : SOLIDS.includes(top)
+                                  ? "hud-chip-solid"
+                                  : "hud-chip-stripe";
+                            return (
+                              <span
+                                className={`hud-chip ${chipClass}`}
+                                data-number={top}
+                                style={{ "--chip-color": BALL_COLORS[top] } as React.CSSProperties}
+                                aria-label={`Most-played ball ${top}`}
+                              />
+                            );
+                          })()}
+                          <span className="stats-hero-name">{user.screenName}</span>
+                        </div>
                         {(stats.sharkLevel ?? 0) > 0 && (
                           <span className="stats-hero-shark">
                             <span className="stats-hero-shark-emoji" aria-hidden="true">🦈</span> Level {fmtInt(stats.sharkLevel)} Shark

@@ -1546,6 +1546,11 @@ html, #root {
   gap: 2px;
   margin-bottom: 8px;
 }
+.stats-hero-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .stats-hero-name {
   font-family: 'VT323', 'Courier New', monospace;
   font-size: 22px;
