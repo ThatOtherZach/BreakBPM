@@ -544,7 +544,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                             <span className="stats-hero-shark-emoji" aria-hidden="true">🦈</span> Level {fmtInt(stats.sharkLevel)} Shark
                           </span>
                         )}
-                        <span className="stats-hero-window">Games in {WINDOW_SPELLED[appliedWindow]}</span>
+                        <span className="stats-hero-window">{fmtInt(stats.gamesPlayed)} Games in {WINDOW_SPELLED[appliedWindow]}</span>
                     </div>
                   )}
                   <div className="stats-hero-main">
