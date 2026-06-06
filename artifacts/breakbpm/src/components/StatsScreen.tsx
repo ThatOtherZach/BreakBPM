@@ -77,7 +77,7 @@ function PixelMeter({
   tone = "green",
 }: {
   label: string;
-  emoji?: string;
+  emoji?: React.ReactNode;
   pct: number | null | undefined;
   display: string;
   tone?: Tone;
@@ -638,7 +638,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     />
                     <PixelMeter
                       label="FOUL RATE"
-                      emoji="🚫"
+                      emoji={<span className="cue-ball-icon" style={{ fontSize: 14, verticalAlign: "baseline" }} />}
                       pct={stats.totalShots > 0 ? (stats.totalFouls / stats.totalShots) * 100 : null}
                       display={stats.totalShots > 0 ? `${Math.round((stats.totalFouls / stats.totalShots) * 100)}%` : "—"}
                       tone="amber"
