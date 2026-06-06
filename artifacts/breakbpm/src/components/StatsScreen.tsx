@@ -729,16 +729,16 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           );
                         };
                         return (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                            <div className="stats-ball-grid stats-ball-grid--center">{[1, 2, 3, 4, 5, 6, 7].map(renderBall)}</div>
-                            <div className="stats-ball-grid stats-ball-grid--center">{[9, 10, 11, 12, 13, 14, 15].map(renderBall)}</div>
-                            <div className="stats-ball-grid stats-ball-grid--center">
-                              {renderBall(8)}
-                              <div className="stats-ball-item">
-                                <span className="cue-ball-icon cue-ball-icon--chip" aria-label="Cue ball" />
-                                <span className="stats-ball-count">×{fmtInt(stats.totalFouls)}</span>
-                              </div>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
+                            <div className="stats-ball-item">
+                              <span className="cue-ball-icon cue-ball-icon--chip" aria-label="Cue ball" />
+                              <span className="stats-ball-count">×{fmtInt(stats.totalFouls)}</span>
                             </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                              <div className="stats-ball-grid stats-ball-grid--center">{[1, 2, 3, 4, 5, 6, 7].map(renderBall)}</div>
+                              <div className="stats-ball-grid stats-ball-grid--center">{[9, 10, 11, 12, 13, 14, 15].map(renderBall)}</div>
+                            </div>
+                            {renderBall(8)}
                           </div>
                         );
                       })()}
