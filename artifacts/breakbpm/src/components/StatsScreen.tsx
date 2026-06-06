@@ -119,11 +119,13 @@ function BpmSparkline({
   stroke = "#00ff41",
   fill = "rgba(0, 255, 65, 0.12)",
   ariaLabel = "BPM trend over recent games",
+  step = false,
 }: {
   data: number[];
   stroke?: string;
   fill?: string;
   ariaLabel?: string;
+  step?: boolean;
 }) {
   const W = 100;
   const H = 36;
@@ -134,7 +136,17 @@ function BpmSparkline({
   const n = data.length;
   const x = (i: number) => (n === 1 ? W / 2 : pad + (i * (W - pad * 2)) / (n - 1));
   const y = (v: number) => H - pad - ((v - min) / span) * (H - pad * 2);
-  const line = data.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  // `step` draws right-angle segments (horizontal hold, then vertical jump) so
+  // the trace reads as a square-wave; otherwise it's a straight diagonal line.
+  const line = step
+    ? data
+        .map((v, i) =>
+          i === 0
+            ? `M${x(i).toFixed(1)},${y(v).toFixed(1)}`
+            : `H${x(i).toFixed(1)} V${y(v).toFixed(1)}`,
+        )
+        .join(" ")
+    : data.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
   const area = `${line} L${x(n - 1).toFixed(1)},${H} L${x(0).toFixed(1)},${H} Z`;
   return (
     <svg
@@ -561,6 +573,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           stroke="#36c5f0"
                           fill="rgba(54, 197, 240, 0.12)"
                           ariaLabel="Accuracy trend over recent games"
+                          step
                         />
                         <span className="stats-trend-box-label">
                           ACCURACY · LAST {stats.accuracyTrend.length}
