@@ -313,9 +313,21 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
   // winner once the game has ended).
   const dispAcc = dispPlayerName ? calculatePlayerAccuracy(shotLog, dispPlayerName) : null;
   const dispAccCounts = dispPlayerName ? playerAccuracyCounts(shotLog, dispPlayerName) : null;
-  const elapsed = state?.timerStartTime != null
-    ? Math.max(0, Date.now() - state.timerStartTime)
-    : 0;
+  // Once the game has ended, freeze the elapsed clock on the game's true
+  // final duration — the largest relative game-time stamped on the shot log
+  // (the terminal entry) — instead of letting it drift forward against the
+  // wall clock on every poll. The host's own HUD freezes the same way, so
+  // this keeps the spectator's final time in lockstep with the host's.
+  const gameOver = ended || state?.phase === 'ended';
+  const finalGameTime = shotLog.reduce(
+    (max, e) => (typeof e.gameTime === 'number' && e.gameTime > max ? e.gameTime : max),
+    0,
+  );
+  const elapsed = gameOver
+    ? finalGameTime
+    : state?.timerStartTime != null
+      ? Math.max(0, Date.now() - state.timerStartTime)
+      : 0;
 
   const renderBalls = (balls: number[]) => [...balls].reverse().map((b, i) => (
     <span
