@@ -342,10 +342,6 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
               <span className="hud-meta-label">TIME</span>
               <span className="hud-timer">{formatTime(elapsed)}</span>
             </div>
-            <div className="hud-right-row" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span className="hud-meta-label">CODE</span>
-              <span className="hud-code">{code}</span>
-            </div>
           </div>
         </div>
 
