@@ -631,7 +631,22 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     <PixelMeter
                       label="ACCURACY"
-                      emoji="🎯"
+                      emoji={stats.topBalls.length > 0 ? (() => {
+                        const top = stats.topBalls[0].ball;
+                        const chipClass =
+                          top === 8
+                            ? "hud-chip-eight"
+                            : SOLIDS.includes(top)
+                              ? "hud-chip-solid"
+                              : "hud-chip-stripe";
+                        return (
+                          <span
+                            className={`hud-chip hud-chip-sm ${chipClass}`}
+                            data-number={top}
+                            style={{ "--chip-color": BALL_COLORS[top] } as React.CSSProperties}
+                          />
+                        );
+                      })() : "🎯"}
                       pct={stats.accuracy}
                       display={stats.accuracy == null ? "—" : `${stats.accuracy}%`}
                       tone="green"
