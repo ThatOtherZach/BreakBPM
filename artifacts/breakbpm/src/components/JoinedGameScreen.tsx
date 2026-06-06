@@ -362,7 +362,6 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
               <span className="hud-timer">{formatTime(elapsed)}</span>
             </div>
             <div className="hud-right-row">
-              <span className="hud-meta-label">VIEW</span>
               <span
                 style={{ display: 'inline-flex', alignItems: 'center', color: '#ff5fb4' }}
                 title={viewNotice}
