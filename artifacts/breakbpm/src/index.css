@@ -1833,30 +1833,23 @@ html, #root {
 }
 .stats-bar-time { font-family: 'VT323', monospace; font-size: 16px; color: var(--navy); }
 
-/* Most-sunk ball: chip + count bar. */
-.stats-ball-row { display: flex; align-items: center; gap: 8px; }
-.stats-ball-bar-track {
-  flex: 1;
-  height: 12px;
-  background: #06120a;
-  border: 2px solid;
-  border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
-  overflow: hidden;
+/* Most-sunk balls: chip grid with count below each ball. */
+.stats-ball-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
 }
-.stats-ball-bar-fill {
-  height: 100%;
-  background: #00ff41;
-  background-image: repeating-linear-gradient(90deg, rgba(0,0,0,0) 0, rgba(0,0,0,0) 4px, rgba(0,0,0,0.4) 4px, rgba(0,0,0,0.4) 6px);
-  box-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
-  transition: width 0.4s steps(12);
+.stats-ball-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
 }
 .stats-ball-count {
   font-family: 'VT323', monospace;
   font-size: 18px;
   color: var(--navy);
-  width: 34px;
-  text-align: right;
-  flex-shrink: 0;
+  text-align: center;
 }
 
 /* Upsell call-out — yellow PC-98 notice. */
