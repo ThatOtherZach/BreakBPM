@@ -737,7 +737,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                             </div>
                             <div className="stats-split-track">
                               <span className="stats-split-seg solids" style={{ width: `${solidsPct}%`, ...(solidColor ? { background: solidColor } : null) }} />
-                              <span className="stats-split-seg stripes" style={{ width: `${stripesPct}%`, ...(stripeColor ? { background: stripeColor } : null) }} />
+                              <span className="stats-split-seg stripes" style={{ width: `${stripesPct}%`, ...(stripeColor ? { backgroundImage: `repeating-linear-gradient(90deg, ${stripeColor} 0, ${stripeColor} 4px, #fffef2 4px, #fffef2 8px)` } : null) }} />
                             </div>
                             <div className="stats-bar-top">
                               <span style={{ color: "#fff" }} className="font-semibold">{solids} games</span>
