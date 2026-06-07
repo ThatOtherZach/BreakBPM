@@ -511,7 +511,9 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                 </p>
               )}
 
-              {/* ── List / Map toggle (single button) ── */}
+              {/* ── List / Map toggle (single button) ──
+                  Hidden while the Post-a-Meetup form is open to declutter. */}
+              {!formOpen && (
               <div className="fpp-toggle">
                 <button
                   className="btn btn-primary fpp-toggle-btn"
@@ -539,6 +541,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                   {geoBusy ? "📍 Locating…" : "📍 Near Me"}
                 </button>
               </div>
+              )}
 
               {list.isLoading ? (
                 <p className="fpp-hint">Loading…</p>
