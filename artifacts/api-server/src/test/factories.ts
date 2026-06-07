@@ -8,6 +8,7 @@ import {
   discountCodesTable,
   discountRedemptionsTable,
   luckyBreakRollsTable,
+  cryptoOrdersTable,
   gamesTable,
   gameParticipantsTable,
   PASS_DURATIONS_SECONDS,
@@ -16,6 +17,8 @@ import {
   type DiscountCode,
   type DiscountRedemption,
   type LuckyBreakRoll,
+  type CryptoOrder,
+  type CryptoAsset,
   type Subscription,
   type Game,
   type GameParticipant,
@@ -277,6 +280,64 @@ export async function seedParticipant(
     })
     .returning();
   return row;
+}
+
+/**
+ * Seed a crypto checkout order (as produced by POST /crypto/quote). Defaults to
+ * a manual (payer-less) Lucky Break USDC order in the `pending` state so the
+ * verify route can settle it. Addresses are throw-away valid hex so the route's
+ * `viem.getAddress` calls succeed. Cascades on user delete (no extra cleanup).
+ */
+export async function seedCryptoOrder(
+  userId: string,
+  opts: {
+    passKind?: string;
+    asset?: CryptoAsset;
+    status?: string;
+    payerAddress?: string | null;
+    expectedAmount?: string;
+    chainId?: number;
+    network?: string;
+    priceCents?: number;
+    txHash?: string | null;
+    passId?: string | null;
+    createdAt?: Date;
+    expiresAt?: Date;
+  } = {},
+): Promise<CryptoOrder> {
+  const asset = opts.asset ?? "usdc";
+  const values: typeof cryptoOrdersTable.$inferInsert = {
+    id: rid(),
+    userId,
+    passKind: opts.passKind ?? "lucky_break",
+    asset,
+    network: opts.network ?? "base",
+    chainId: opts.chainId ?? 8453,
+    receivingAddress: `0x${"a".repeat(40)}`,
+    payerAddress: opts.payerAddress ?? null,
+    tokenAddress: asset === "eth" ? null : `0x${"b".repeat(40)}`,
+    expectedAmount: opts.expectedAmount ?? "1000000",
+    priceCents: opts.priceCents ?? 499,
+    ethUsdRaw: null,
+    status: opts.status ?? "pending",
+    txHash: opts.txHash ?? null,
+    passId: opts.passId ?? null,
+    expiresAt: opts.expiresAt ?? new Date(Date.now() + 30 * 60 * 1000),
+  };
+  if (opts.createdAt) values.createdAt = opts.createdAt;
+  const [row] = await db.insert(cryptoOrdersTable).values(values).returning();
+  return row;
+}
+
+export async function getCryptoOrder(
+  id: string,
+): Promise<CryptoOrder | undefined> {
+  const rows = await db
+    .select()
+    .from(cryptoOrdersTable)
+    .where(eq(cryptoOrdersTable.id, id))
+    .limit(1);
+  return rows[0];
 }
 
 export async function getGame(gameId: string): Promise<Game | undefined> {
