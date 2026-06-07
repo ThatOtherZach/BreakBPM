@@ -300,12 +300,35 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 <button className="btn" onClick={() => { setEditing(false); setName(account.screenName); }}>Cancel</button>
               </div>
             ) : (
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <span style={{ fontFamily: "VT323", fontSize: 22, color: "#000080" }}>{account.screenName}</span>
-                {canEditName && (
-                  <button className="btn" style={{ marginLeft: "auto" }} onClick={() => setEditing(true)}>Edit</button>
+              <>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <span style={{ fontFamily: "VT323", fontSize: 22, color: "#000080" }}>{account.screenName}</span>
+                  {canEditName && (
+                    <button className="btn" style={{ marginLeft: "auto" }} onClick={() => setEditing(true)}>Edit</button>
+                  )}
+                </div>
+                {!canEditName && (
+                  <div style={{ fontSize: 11, color: "#444" }}>
+                    <button
+                      className="link-btn"
+                      onClick={onPasses}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        color: "#000080",
+                        textDecoration: "underline",
+                        cursor: "pointer",
+                        fontSize: 11,
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      Set a custom screen name
+                    </button>
+                    {" with a Lifetime Pass."}
+                  </div>
                 )}
-              </div>
+              </>
             )}
             {!editing && (
               <div style={{ fontSize: 11, color: "#444", marginTop: 1 }}>
@@ -318,27 +341,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 >
                   breakbpm.com/watch/{account.screenName}
                 </a>
-              </div>
-            )}
-            {!canEditName && !editing && (
-              <div style={{ fontSize: 11, color: "#444" }}>
-                <button
-                  className="link-btn"
-                  onClick={onPasses}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    padding: 0,
-                    color: "#000080",
-                    textDecoration: "underline",
-                    cursor: "pointer",
-                    fontSize: 11,
-                    fontFamily: "inherit",
-                  }}
-                >
-                  Get a pass
-                </button>
-                {" to unlock more — custom screen names come with Lifetime."}
               </div>
             )}
             {error && <div style={{ color: "#c00", fontSize: 12 }}>{error}</div>}
