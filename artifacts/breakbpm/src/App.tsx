@@ -13,7 +13,9 @@ import AccountScreen from "./components/AccountScreen";
 import StatsScreen from "./components/StatsScreen";
 import FindPlayersScreen from "./components/FindPlayersScreen";
 import PassesScreen from "./components/PassesScreen";
+import RedeemScreen from "./components/RedeemScreen";
 import { SignInPage, SignUpPage } from "./components/SignInPage";
+import { readPendingRedeem } from "./lib/pendingRedeem";
 import type { GameType, GameState, Player, SharkAggression } from "./lib/gameLogic";
 import {
   generateShareCode,
@@ -83,6 +85,30 @@ function CacheInvalidator() {
     if (prev.current !== null && prev.current !== isAuthenticated) qc.clear();
     prev.current = isAuthenticated;
   }, [isAuthenticated, isLoading, qc]);
+  return null;
+}
+
+/**
+ * Watches for a redeem code that was stashed (by RedeemScreen) before the
+ * sign-up/sign-in redirect. Once the user is authenticated, it bounces them
+ * back to `/redeem/:code` so the code can be auto-applied. RedeemScreen owns
+ * the actual redeem + clearing the stash, so this only navigates.
+ */
+function RedeemResumer() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [location, setLocation] = useLocation();
+  useEffect(() => {
+    if (isLoading || !isAuthenticated) return;
+    // Only act on the auth-return entrypoint ("/"), so we never pull a user
+    // off /join, /watch, /account, or an in-flight /redeem page.
+    if (location !== "/") return;
+    // A `?code=`/`?game=` join link is handled by MainApp — defer to it rather
+    // than hijacking the join into a redeem.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("code") || params.get("game")) return;
+    const pending = readPendingRedeem();
+    if (pending) setLocation(`/redeem/${encodeURIComponent(pending)}`);
+  }, [isAuthenticated, isLoading, location, setLocation]);
   return null;
 }
 
@@ -308,6 +334,19 @@ function PassesRoute() {
   return <PassesScreen onBack={() => setLocation("/account")} />;
 }
 
+function RedeemRoute({ params }: { params: { code: string } }) {
+  const [, setLocation] = useLocation();
+  return (
+    <RedeemScreen
+      code={params.code}
+      onHome={() => setLocation("/")}
+      onAccount={() => setLocation("/account")}
+      onAbout={() => setLocation("/about")}
+      onSignUp={() => setLocation("/sign-up")}
+    />
+  );
+}
+
 function JoinRoute({ params }: { params: { code: string } }) {
   const [, setLocation] = useLocation();
   return (
@@ -373,6 +412,7 @@ function Routes() {
       <Route path="/about" component={AboutRoute} />
       <Route path="/legal" component={LegalRoute} />
       <Route path="/passes" component={PassesRoute} />
+      <Route path="/redeem/:code" component={RedeemRoute} />
       <Route path="/join/:code" component={JoinRoute} />
       <Route path="/watch/:name" component={WatchRoute} />
       <Route component={MainApp} />
@@ -386,6 +426,7 @@ export default function App() {
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
           <CacheInvalidator />
+          <RedeemResumer />
           <Routes />
         </QueryClientProvider>
       </AuthProvider>

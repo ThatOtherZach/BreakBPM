@@ -37,6 +37,7 @@ artifacts/
         forfeit.ts      Client-side forfeit/timeout constants (mirror server)
         taglines.ts     Random splash taglines
         version.ts      APP_VERSION constant
+        pendingRedeem.ts  localStorage stash (30-min TTL) for a redeem code arriving via /redeem/:code, carried across the sign-up/sign-in redirect
       components/
         SetupScreen.tsx  Game setup — mode, player count, names, Shark aggression
         GameScreen.tsx   Active game HUD, shot logging, BPM display
@@ -48,6 +49,7 @@ artifacts/
         PassesScreen.tsx   Lucky Break roll + (env-gated) card purchase + redeem
         LuckyBreakReveal.tsx  "Rolling the rack" reveal overlay (reuses .hud-chip)
         AboutScreen.tsx    Renders ABOUT.md
+        RedeemScreen.tsx   Auto-applies a code from a /redeem/:code share link (stash → sign-up → redeem + reveal)
         Navbar.tsx
   api-server/         Express backend
     src/
@@ -106,6 +108,7 @@ lib/
 - **Resume**: Logged-in users can resume an in-progress game from a different device via the server-side snapshot.
 - **Lucky Break**: A $4.99 "roll the rack" unlock sold via redeem code (no card processor). Every roll is a guaranteed win — at minimum a 30-day Monthly Pass, with a fixed, disclosed 20% chance of a Lifetime Pass. Redeeming plays a retro "rolling the rack" reveal (reusing the in-game ball chips) that lands on the won tier and shows the odds + a fair-play note. The draw is SEEDED (not biased) by the last 30 days of GLOBAL shot activity (all players) hashed with the roll's redemption id; the odds never move based on how anyone plays. See "Lucky Break (provably-fair roll)" under Architecture decisions.
 - **History, passes & subscriptions**: Game history is stored per-user. Free users see limited history; Day/Month/Lifetime passes and Monthly/Yearly subscriptions unlock full access (redeemable via code; card checkout via Stripe is behind an env flag, currently off). Subscriptions renew until cancelled; access lasts through the paid period.
+- **Redeem share links**: Any redeem code can be shared as a QR-friendly link `/redeem/:code`. Following it stashes the code (30-min TTL, survives the sign-up/sign-in redirect), sends a signed-out visitor to sign-up (sign-in also works), then auto-applies the existing `/passes/redeem` endpoint once authenticated — showing the normal result, including the Lucky Break "rolling the rack" reveal. Already-signed-in visitors get the code applied immediately. Expected refusals (expired/used/already-have-a-pass/invalid) show a friendly message; the stash is cleared on success and failure so a code never re-applies. No backend changes — the redeem endpoint and reveal are reused as-is.
 - **Admin tools**: Allowlisted admins (via `BREAKBPM_ADMIN_EMAILS`) get an Account-page panel to mint pass-granting redeem codes — they pick the tier (Day/Month/Year/Lifetime) and how many times the code can be used (or unlimited), then share it. Admins are also treated as Lifetime-pass holders, so they get every Lifetime perk (Day-Pass gifting, custom screen names) without buying a pass.
 
 ## User preferences
