@@ -94,9 +94,7 @@ export function fmtDate(d: Date | string): string {
   const dd = date.getDate().toString().padStart(2, "0");
   const mm = (date.getMonth() + 1).toString().padStart(2, "0");
   const yyyy = date.getFullYear();
-  const hh = date.getHours().toString().padStart(2, "0");
-  const min = date.getMinutes().toString().padStart(2, "0");
-  return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+  return `${dd}/${mm}/${yyyy}`;
 }
 
 const GAME_TYPE_LABEL: Record<string, string> = {
