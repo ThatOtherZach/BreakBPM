@@ -16,7 +16,7 @@ import PassesScreen from "./components/PassesScreen";
 import RedeemScreen from "./components/RedeemScreen";
 import { SignInPage, SignUpPage } from "./components/SignInPage";
 import { readPendingRedeem } from "./lib/pendingRedeem";
-import type { GameType, GameState, Player, SharkAggression } from "./lib/gameLogic";
+import type { GameType, GameState, Player, SharkAggression, RuleSet } from "./lib/gameLogic";
 import {
   generateShareCode,
   decodeGameState,
@@ -46,6 +46,7 @@ function createInitialGameState(
   players: Player[],
   serverShareCode: string | null,
   sharkAggression?: SharkAggression,
+  ruleSet?: RuleSet,
 ): GameState {
   // Shark mode is solo 8-ball with an opponent steal mechanic. Only seed
   // the shark fields when the combo actually matches — keeps state shape
@@ -68,6 +69,7 @@ function createInitialGameState(
     teamAssigned: players.some((p) => p.team !== undefined),
     sharkAggression: isShark ? sharkAggression : undefined,
     sharkSunkBalls: isShark ? [] : undefined,
+    ruleSet,
     undoCount: 0,
   };
 }
@@ -182,6 +184,7 @@ function MainApp() {
         // Preserve shark identity across legacy ?state= share links.
         sharkAggression: restored.sharkAggression,
         sharkSunkBalls: restored.sharkSunkBalls,
+        ruleSet: restored.ruleSet,
         undoCount: restored.undoCount ?? 0,
       });
       setView("game");
@@ -195,11 +198,12 @@ function MainApp() {
     maxMs: number | null,
     serverShareCode: string | null,
     sharkAggression?: SharkAggression,
+    ruleSet?: RuleSet,
   ) {
     // Explicit fresh start — wipe any stale in-progress checkpoint so we
     // don't immediately resurrect the previous game on the next mount.
     clearInProgressGame();
-    setGameState(createInitialGameState(gameType, players, serverShareCode, sharkAggression));
+    setGameState(createInitialGameState(gameType, players, serverShareCode, sharkAggression, ruleSet));
     setServerGameId(gameId);
     setMaxGameDurationMs(maxMs);
     setInitialPausedDuration(0);

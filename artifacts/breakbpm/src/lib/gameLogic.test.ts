@@ -5,6 +5,9 @@ import {
   playerAccuracyCounts,
   checkSinkResult,
   assignTeams,
+  shouldAssignTeams,
+  encodeGameState,
+  decodeGameState,
   getLegalBalls,
   getLowestBall,
   getSharkPickCandidates,
@@ -282,6 +285,103 @@ describe("assignTeams", () => {
     assignTeams(players, 0, 9);
     expect(players[0].team).toBeUndefined();
     expect(players[1].team).toBeUndefined();
+  });
+});
+
+describe("shouldAssignTeams (rule sets)", () => {
+  it("never assigns outside 8-ball, once assigned, or on the 8-ball", () => {
+    expect(shouldAssignTeams("9ball", false, [], [], 3)).toBe(false);
+    expect(shouldAssignTeams("practice", false, [], [], 3)).toBe(false);
+    expect(shouldAssignTeams("8ball", true, [], [], 3)).toBe(false);
+    expect(shouldAssignTeams("8ball", false, [], [], EIGHT_BALL)).toBe(false);
+  });
+
+  describe("first-ball (default)", () => {
+    it("locks on the very first non-8 pocket", () => {
+      expect(shouldAssignTeams("8ball", false, [], [], 3)).toBe(true);
+      // Default param matches explicit 'first-ball'.
+      expect(shouldAssignTeams("8ball", false, [], [], 3, "first-ball")).toBe(true);
+    });
+  });
+
+  describe("second-ball", () => {
+    it("does not lock on the first non-8 pocket", () => {
+      expect(shouldAssignTeams("8ball", false, [], [], 3, "second-ball")).toBe(false);
+    });
+
+    it("locks on the second non-8 pocket", () => {
+      // One non-8 ball already sunk → this pocket is the second.
+      expect(shouldAssignTeams("8ball", false, [3], [], 11, "second-ball")).toBe(true);
+    });
+
+    it("ignores an already-sunk 8-ball when counting", () => {
+      // A sunk 8 shouldn't count toward the non-8 tally (defensive).
+      expect(shouldAssignTeams("8ball", false, [EIGHT_BALL], [], 3, "second-ball")).toBe(false);
+      expect(shouldAssignTeams("8ball", false, [3, EIGHT_BALL], [], 11, "second-ball")).toBe(true);
+    });
+  });
+
+  describe("open-through-break", () => {
+    it("does not lock while still on the break (no turn-ending event yet)", () => {
+      const breakLog: ShotLogEntry[] = [entry("sink", "Alice", { ball: 3 })];
+      expect(shouldAssignTeams("8ball", false, [3], breakLog, 5, "open-through-break")).toBe(false);
+    });
+
+    it("locks on the first non-8 pocket after the break shot ends", () => {
+      const afterMiss: ShotLogEntry[] = [
+        entry("sink", "Alice", { ball: 3 }),
+        entry("miss", "Alice"),
+      ];
+      expect(shouldAssignTeams("8ball", false, [3], afterMiss, 11, "open-through-break")).toBe(true);
+    });
+
+    it("treats a foul or safety as the end of the break shot", () => {
+      const afterFoul: ShotLogEntry[] = [entry("foul", "Alice")];
+      expect(shouldAssignTeams("8ball", false, [], afterFoul, 3, "open-through-break")).toBe(true);
+      const afterSafety: ShotLogEntry[] = [entry("safety", "Alice")];
+      expect(shouldAssignTeams("8ball", false, [], afterSafety, 3, "open-through-break")).toBe(true);
+    });
+  });
+});
+
+describe("encode/decode round-trip preserves ruleSet", () => {
+  it("carries ruleSet through the URL/localStorage snapshot", () => {
+    const state: GameState = {
+      phase: "playing",
+      gameType: "8ball",
+      players: twoPlayers(),
+      currentPlayerIndex: 0,
+      sunkBalls: [3],
+      shotLog: [],
+      gameStartTime: 0,
+      firstActionTime: null,
+      timerStartTime: null,
+      lastActionTime: null,
+      winner: null,
+      winMessage: "",
+      shareCode: "",
+      teamAssigned: false,
+      ruleSet: "open-through-break",
+      undoCount: 0,
+    };
+    const decoded = decodeGameState(encodeGameState(state));
+    expect(decoded?.ruleSet).toBe("open-through-break");
+  });
+
+  it("decodes legacy snapshots without ruleSet as undefined (→ first-ball default)", () => {
+    const legacy = btoa(
+      JSON.stringify({
+        p: "playing",
+        gt: "8ball",
+        pl: [{ id: 0, n: "A" }],
+        ci: 0,
+        sb: [],
+        sl: [],
+        ta: false,
+      }),
+    );
+    const decoded = decodeGameState(legacy);
+    expect(decoded?.ruleSet).toBeUndefined();
   });
 });
 

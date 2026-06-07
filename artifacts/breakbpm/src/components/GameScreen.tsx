@@ -476,7 +476,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     // The break and any pre-pocket misses/fouls/safeties leave it at null.
     if (next.timerStartTime == null) next.timerStartTime = now;
 
-    if (shouldAssignTeams(state.gameType, state.teamAssigned, state.players, state.currentPlayerIndex, ball)) {
+    if (shouldAssignTeams(state.gameType, state.teamAssigned, state.sunkBalls, state.shotLog, ball, state.ruleSet)) {
       next.players = assignTeams(state.players, state.currentPlayerIndex, ball);
       next.teamAssigned = true;
     }

@@ -32,6 +32,19 @@ export interface ShotLogEntry {
 
 export type SharkAggression = 'normal' | 'hard';
 
+/**
+ * 8-ball group-assignment timing (2P/4P, automatic assignment only).
+ * Controls WHEN solids/stripes lock in:
+ *   - 'first-ball'         → the first non-8 ball pocketed locks groups (default)
+ *   - 'second-ball'        → the second non-8 ball pocketed locks groups
+ *   - 'open-through-break' → balls pocketed during the opening (break) turn
+ *                            don't lock; the first non-8 ball pocketed after
+ *                            the break shot locks groups
+ *
+ * Open enum so future rule sets (and other game-type options) can slot in.
+ */
+export type RuleSet = 'first-ball' | 'second-ball' | 'open-through-break';
+
 export interface GameState {
   phase: 'setup' | 'playing' | 'ended';
   gameType: GameType;
@@ -69,6 +82,13 @@ export interface GameState {
    * until resolved via resolveSharkPick().
    */
   pendingSharkPick?: boolean;
+  /**
+   * 8-ball group-assignment timing (2P/4P, automatic assignment only).
+   * Absent ⇒ 'first-ball' — the legacy/default behavior, also used for
+   * Shark, Practice, manual-team games, and any game saved before this
+   * field existed.
+   */
+  ruleSet?: RuleSet;
   /**
    * Total number of undos performed in this game ("No one Saw That"). Bumped
    * each time the scorekeeper reverts a logged action. Persisted in the
@@ -196,17 +216,51 @@ export function checkSinkResult(
   return { win: false, lose: false, message: '', switchTurn: false };
 }
 
+/**
+ * Decides whether the current pocket should lock in solids/stripes, per the
+ * configured `ruleSet`. Called BEFORE `ballSunk` is appended to `sunkBalls`,
+ * so `sunkBalls`/`shotLog` reflect the state prior to this pocket.
+ *
+ *   - 'first-ball'  → the first non-8 pocket locks (legacy default).
+ *   - 'second-ball' → the second non-8 pocket locks (one already pocketed).
+ *   - 'open-through-break' → balls pocketed during the opening (break) turn
+ *     don't lock; once that turn has ended (a miss/foul/safety has been
+ *     logged), the next non-8 pocket locks.
+ *
+ * Always false for non-8-ball, once teams are assigned, or on the 8-ball.
+ */
 export function shouldAssignTeams(
   gameType: GameType,
   teamAssigned: boolean,
-  players: Player[],
-  currentPlayerIndex: number,
-  ballSunk: number
+  sunkBalls: number[],
+  shotLog: ShotLogEntry[],
+  ballSunk: number,
+  ruleSet: RuleSet = 'first-ball'
 ): boolean {
   if (gameType !== '8ball') return false;
   if (teamAssigned) return false;
   if (ballSunk === EIGHT_BALL) return false;
-  return true;
+
+  switch (ruleSet) {
+    case 'second-ball': {
+      // Lock on the 2nd non-8 pocket → exactly one non-8 already sunk.
+      const priorNon8 = sunkBalls.filter(b => b !== EIGHT_BALL).length;
+      return priorNon8 === 1;
+    }
+    case 'open-through-break': {
+      // The break shot is the opening turn; it's over once any turn-ending
+      // event (miss/foul/safety) has been logged. Until then, every pocket
+      // is "on the break" and locks nothing.
+      const breakOver = shotLog.some(
+        e => e.type === 'miss' || e.type === 'foul' || e.type === 'safety',
+      );
+      return breakOver;
+    }
+    case 'first-ball':
+    default:
+      // First non-8 pocket locks (unchanged legacy behavior).
+      return true;
+  }
 }
 
 /**
@@ -491,6 +545,7 @@ export function encodeGameState(state: GameState): string {
       ga: state.sharkAggression,
       gsb: state.sharkSunkBalls,
       psp: state.pendingSharkPick,
+      rs: state.ruleSet,
       uc: state.undoCount,
     };
     return btoa(JSON.stringify(compact));
@@ -520,6 +575,7 @@ export function decodeGameState(encoded: string): Partial<GameState> | null {
       sharkAggression: d.ga,
       sharkSunkBalls: Array.isArray(d.gsb) ? d.gsb : undefined,
       pendingSharkPick: d.psp ?? false,
+      ruleSet: d.rs,
       undoCount: typeof d.uc === 'number' ? d.uc : 0,
     };
   } catch {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
-import type { GameType, GameState, Player, SharkAggression } from '../lib/gameLogic';
+import type { GameType, GameState, Player, SharkAggression, RuleSet } from '../lib/gameLogic';
 import { normalizeShareCode } from '../lib/gameLogic';
 import ballImg from '/eightball_nobg.png';
 import Navbar from './Navbar';
@@ -27,8 +27,16 @@ const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
 const DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
 const PLAYER_BALL_COLORS = ['#FDD307', '#1F4E9E', '#C3342B', '#5B247A'];
 
+// Sublabel under "Automatic Team Assignment" — describes when groups lock,
+// tracking the selected rule set so the copy never drifts from the behavior.
+const RULE_SET_SUBLABEL: Record<RuleSet, string> = {
+  'first-ball': 'First ball locks player groups',
+  'second-ball': 'Second ball locks player groups',
+  'open-through-break': 'Open through the break — next ball after locks groups',
+};
+
 interface Props {
-  onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, serverShareCode: string | null, sharkAggression?: SharkAggression) => void;
+  onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, serverShareCode: string | null, sharkAggression?: SharkAggression, ruleSet?: RuleSet) => void;
   /** Resume an existing game from the server-side in-progress snapshot. */
   onResume: (state: GameState, serverGameId: string | null, maxGameDurationMs: number | null, pausedDuration: number) => void;
   onAbout: () => void;
@@ -68,6 +76,10 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
   // Shark mode (8-ball + 1P) aggression toggle. Default to 'normal' so new
   // players aren't overwhelmed. Only sent to onStart when the combo matches.
   const [sharkAggression, setSharkAggression] = useState<SharkAggression>('normal');
+  // 8-ball group-assignment timing (2P/4P automatic assignment only).
+  // Default to 'first-ball' (the legacy behavior). Only sent to onStart for
+  // automatic-assignment 8-ball; ignored for manual/Shark/Practice.
+  const [ruleSet, setRuleSet] = useState<RuleSet>('first-ball');
 
   // Hidden easter egg: press-and-hold the splash 8-ball for 3s to swap the
   // art for a QR code to breakbpm.com, shown inline for 8s before it reverts
@@ -178,6 +190,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
       // game silently degrades into a non-shark solo 8-ball (no steals).
       sharkAggression: gs.sharkAggression,
       sharkSunkBalls: gs.sharkSunkBalls,
+      ruleSet: gs.ruleSet,
       undoCount: gs.undoCount ?? 0,
     };
     // Seed localStorage so the next refresh resumes from local too.
@@ -276,6 +289,9 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
         res.maxGameDurationMs ?? null,
         res.shareCode ?? null,
         isShark ? sharkAggression : undefined,
+        // Rule set only matters for automatic-assignment 8-ball (2P/4P).
+        // Manual teams pre-assign groups; Shark/Practice have no groups.
+        gameType === '8ball' && !isShark && autoTeam ? ruleSet : undefined,
       );
     } catch (e: unknown) {
       const err = e as { data?: { error?: string } };
@@ -518,7 +534,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, flex: 1 }}>
                   <span style={{ fontWeight: 'bold', fontSize: 13 }}>Automatic Team Assignment</span>
-                  <span style={{ fontSize: 11, color: '#444' }}>First ball locks player groups</span>
+                  <span style={{ fontSize: 11, color: '#444' }}>{RULE_SET_SUBLABEL[autoTeam ? ruleSet : 'first-ball']}</span>
                 </span>
                 <div className="flex gap-1" style={{ flexShrink: 0 }}>
                   <button
@@ -541,6 +557,34 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                   </button>
                 </div>
               </div>
+              {/* Rule set only applies when auto-assignment is on — manual
+                  mode pre-picks groups, so the timing is moot. Nested here so
+                  it reads as a sub-option of Automatic Team Assignment. */}
+              {autoTeam && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    marginTop: 6,
+                    paddingTop: 6,
+                    borderTop: '1px solid rgba(0,0,0,0.18)',
+                  }}
+                >
+                  <span style={{ fontWeight: 'bold', fontSize: 13, flex: 1 }}>Rule Set</span>
+                  <select
+                    className="input"
+                    style={{ width: 170, flex: '0 0 auto' }}
+                    value={ruleSet}
+                    onChange={e => setRuleSet(e.target.value as RuleSet)}
+                    aria-label="Group assignment rule set"
+                  >
+                    <option value="first-ball">First Ball</option>
+                    <option value="second-ball">Second Ball</option>
+                    <option value="open-through-break">Open Through Break</option>
+                  </select>
+                </div>
+              )}
             </div>
           )}
         </div>)}
