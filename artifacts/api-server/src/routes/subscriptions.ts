@@ -15,7 +15,7 @@ import {
   cancelSubscriptionTx,
 } from "../lib/subscriptions";
 import { paymentProvider } from "../lib/paymentProvider";
-import { PLANS, LUCKY_BREAK_INFO, CRYPTO_PASS_PLANS } from "../lib/pricing";
+import { PLANS, luckyBreakInfo, CRYPTO_PASS_PLANS } from "../lib/pricing";
 import {
   cardPaymentsEnabled,
   CARD_PAYMENTS_OFF_MESSAGE,
@@ -38,7 +38,7 @@ router.get("/passes/plans", async (_req, res): Promise<void> => {
     ListPlansResponse.parse({
       plans: PLANS,
       cardPaymentsEnabled: cardPaymentsEnabled(),
-      luckyBreak: LUCKY_BREAK_INFO,
+      luckyBreak: luckyBreakInfo(),
       crypto: {
         enabled: cryptoConfigured(cryptoPaymentsEnabled()),
         network: cryptoCfg.network,

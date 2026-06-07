@@ -43,6 +43,7 @@ import {
   cardPaymentsEnabled,
   CARD_PAYMENTS_OFF_MESSAGE,
   isAdminEmail,
+  luckyBreakLifetimeProbability,
 } from "../lib/config";
 import {
   LUCKY_BREAK_CODE_KIND,
@@ -178,7 +179,11 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
       let rollResult: LuckyBreakRollResult | null = null;
       let kindToIssue: PassKind;
       if (discount.grantsPassKind === LUCKY_BREAK_CODE_KIND) {
-        rollResult = computeLuckyBreakRoll(entropy, redemptionId);
+        rollResult = computeLuckyBreakRoll(
+          entropy,
+          redemptionId,
+          luckyBreakLifetimeProbability(),
+        );
         kindToIssue = rollResult.outcome;
       } else {
         kindToIssue = discount.grantsPassKind as PassKind;

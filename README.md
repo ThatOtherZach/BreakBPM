@@ -51,7 +51,7 @@ A fully functional **React + Vite + TypeScript** web app styled like genuine 199
 - Full game history saved per account (limited for free users)
 
 **Plans**
-- **Lucky Break** — $5.99 "roll the rack" unlock, sold via redeem code. Every roll is a guaranteed win: at minimum a 30-day **Monthly Pass**, with a fixed **20% chance** of a **Lifetime Pass**.
+- **Lucky Break** — $5.99 "roll the rack" unlock, sold via redeem code. Every roll is a guaranteed win: at minimum a 30-day **Monthly Pass**, with a disclosed chance (**20% by default**, server-configurable) of a **Lifetime Pass**.
 - **Day Pass** — $1.99 one-time, 24 hours of full access
 - **Monthly** — $4.99 / month subscription, cancel anytime
 - **Yearly** — $24.99 / year subscription, cancel anytime
@@ -59,10 +59,10 @@ A fully functional **React + Vite + TypeScript** web app styled like genuine 199
 - Redeemable via a code or by card via Stripe checkout (card checkout is gated behind the `BREAKBPM_CARD_PAYMENTS_ENABLED` env flag, currently on)
 
 **Lucky Break — provably fair**
-- Redeeming a Lucky Break code triggers a server-side draw with **fixed 80/20 odds** (20% Lifetime, 80% Monthly). The odds never change based on how you play.
-- The draw is **seeded** — not biased — by data: BreakBPM hashes (SHA-256) the **global** shot activity across all players from the **last 30 days** together with the roll's server-assigned redemption id, maps the hash to a number in `[0, 1)`, and awards Lifetime when that number is `< 0.20`.
-- "Seeded" means that shot history only shuffles *which* deterministic outcome a given roll lands on; it cannot move the 20% line. The redemption id makes every code's draw unique and impossible to re-roll.
-- Each roll's seed hash, shot-window count, outcome, and odds are recorded server-side and shown on the reveal screen for transparency.
+- Redeeming a Lucky Break code triggers a server-side draw against a **disclosed Lifetime probability** (default **20%**, the rest land on the Monthly floor). The odds never change based on how you play — they are set server-side via the `BREAKBPM_LUCKY_BREAK_LIFETIME_PROBABILITY` env var (a decimal fraction in `[0,1]`) and always shown before you roll.
+- The draw is **seeded** — not biased — by data: BreakBPM hashes (SHA-256) the **global** shot activity across all players from the **last 30 days** together with the roll's server-assigned redemption id, maps the hash to a number in `[0, 1)`, and awards Lifetime when that number is below the disclosed probability.
+- "Seeded" means that shot history only shuffles *which* deterministic outcome a given roll lands on; it cannot move the disclosed line. The redemption id makes every code's draw unique and impossible to re-roll.
+- Each roll's seed hash, shot-window count, outcome, and the odds it was drawn against are recorded server-side and shown on the reveal screen for transparency — historical rolls keep their original odds even if the env var is later changed.
 
 ## How to Run
 

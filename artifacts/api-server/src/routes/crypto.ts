@@ -31,6 +31,7 @@ import { gatherShotEntropy } from "../lib/luckyBreakEntropy";
 import {
   cryptoPaymentsEnabled,
   CRYPTO_PAYMENTS_OFF_MESSAGE,
+  luckyBreakLifetimeProbability,
 } from "../lib/config";
 import {
   cryptoConfigured,
@@ -646,7 +647,11 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
           };
         }
 
-        const rollResult = computeLuckyBreakRoll(entropy, order.id);
+        const rollResult = computeLuckyBreakRoll(
+          entropy,
+          order.id,
+          luckyBreakLifetimeProbability(),
+        );
         const issued = await issuePassTx(tx, {
           userId: user.id,
           kind: rollResult.outcome,

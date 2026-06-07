@@ -4,10 +4,41 @@
  * place.
  */
 
+import { logger } from "./logger";
+import { LUCKY_BREAK_LIFETIME_PROBABILITY } from "./luckyBreak";
+
 function envFlag(name: string, defaultValue: boolean): boolean {
   const raw = process.env[name];
   if (raw === undefined || raw.trim() === "") return defaultValue;
   return /^(1|true|yes|on)$/i.test(raw.trim());
+}
+
+/**
+ * Lucky Break Lifetime-upgrade odds, read from the environment so they can be
+ * retuned without a redeploy. `BREAKBPM_LUCKY_BREAK_LIFETIME_PROBABILITY` is a
+ * decimal fraction in [0,1] (e.g. `0.2` = 20%). The value lives ONLY on the
+ * server, so clients can never see or tamper with it — the disclosed odds are
+ * always whatever this returns (the plans catalog + roll result echo it back).
+ *
+ * Falls back to the documented default (the pure engine's
+ * `LUCKY_BREAK_LIFETIME_PROBABILITY`) when unset, and logs a warning + uses the
+ * default when the value is malformed or out of range, so a typo can never
+ * break the draw. Restart the API server after changing the env var.
+ */
+export function luckyBreakLifetimeProbability(): number {
+  const raw = process.env.BREAKBPM_LUCKY_BREAK_LIFETIME_PROBABILITY;
+  if (raw === undefined || raw.trim() === "") {
+    return LUCKY_BREAK_LIFETIME_PROBABILITY;
+  }
+  const parsed = Number(raw.trim());
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
+    logger.warn(
+      { value: raw, default: LUCKY_BREAK_LIFETIME_PROBABILITY },
+      "Invalid BREAKBPM_LUCKY_BREAK_LIFETIME_PROBABILITY (expected a number in [0,1]); using default",
+    );
+    return LUCKY_BREAK_LIFETIME_PROBABILITY;
+  }
+  return parsed;
 }
 
 /**

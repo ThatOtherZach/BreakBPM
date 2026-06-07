@@ -36,9 +36,11 @@ export type LuckyBreakOutcome = "month" | "lifetime";
  */
 export const LUCKY_BREAK_CODE_KIND = "lucky_break";
 
-/** Fixed, disclosed odds: 20% of rolls upgrade to Lifetime. The other 80%
- * land on the guaranteed Monthly floor. Changing this single constant is the
- * only supported way to retune the odds. */
+/** Default disclosed odds: 20% of rolls upgrade to Lifetime; the other 80%
+ * land on the guaranteed Monthly floor. This is the fallback default only —
+ * operators retune the live odds via the `BREAKBPM_LUCKY_BREAK_LIFETIME_PROBABILITY`
+ * env var (see `luckyBreakLifetimeProbability()` in `config.ts`), which the roll
+ * call sites pass in so this pure engine stays env-free. */
 export const LUCKY_BREAK_LIFETIME_PROBABILITY = 0.2;
 
 /** Entropy window: the draw is seeded by the last 30 days of shot data. */

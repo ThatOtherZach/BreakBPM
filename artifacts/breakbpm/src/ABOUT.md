@@ -108,9 +108,9 @@ Plans can be purchased from your account page or redeemed with a code.
 
 ### 🎱 Lucky Break
 
-Lucky Break is a $4.99 roll that guarantees you a pass — you always win something. Every roll lands on at least a 30-day Monthly Pass, with a fixed **20% chance** of upgrading to a Lifetime Pass instead.
+Lucky Break is a $4.99 roll that guarantees you a pass — you always win something. Every roll lands on at least a 30-day Monthly Pass, with a disclosed chance (**20% today**) of upgrading to a Lifetime Pass instead. The exact odds are always shown before you roll.
 
-The outcome is determined by a seeded draw using the last 30 days of global shot activity across all players, hashed together with your unique roll ID. The odds never change based on how you or anyone else plays — the shot data only selects which outcome you land on, it doesn't shift the 20% threshold.
+The outcome is determined by a seeded draw using the last 30 days of global shot activity across all players, hashed together with your unique roll ID. The odds never change based on how you or anyone else plays — the shot data only selects which outcome you land on, it doesn't shift the disclosed threshold.
 
 Lucky Break is available to purchase on your passes page — your pass is granted automatically when payment is confirmed.
 

@@ -1,9 +1,9 @@
 import type { PassKind, SubscriptionInterval } from "@workspace/db";
 import {
   LUCKY_BREAK_CODE_KIND,
-  LUCKY_BREAK_LIFETIME_PROBABILITY,
   LUCKY_BREAK_WINDOW_DAYS,
 } from "./luckyBreak";
+import { luckyBreakLifetimeProbability } from "./config";
 
 /**
  * Single source of truth for all prices and plan metadata. The client reads
@@ -37,13 +37,17 @@ export const PASS_PRICES_CENTS: Record<PassKind, number> = {
 export const LUCKY_BREAK_PRICE_CENTS = 499;
 
 /** Public Lucky Break catalog entry surfaced via /passes/plans. Mirrors the
- * disclosed odds + entropy window from the pure engine so the client shows the
- * exact same numbers the server rolls against. */
-export const LUCKY_BREAK_INFO = {
-  priceCents: LUCKY_BREAK_PRICE_CENTS,
-  lifetimeProbability: LUCKY_BREAK_LIFETIME_PROBABILITY,
-  windowDays: LUCKY_BREAK_WINDOW_DAYS,
-} as const;
+ * disclosed odds + entropy window so the client shows the exact same numbers
+ * the server rolls against. Built per-request (not a module-load constant) so
+ * the env-tunable `lifetimeProbability` is always current — the disclosed odds
+ * can never drift from the odds the draw actually uses. */
+export function luckyBreakInfo() {
+  return {
+    priceCents: LUCKY_BREAK_PRICE_CENTS,
+    lifetimeProbability: luckyBreakLifetimeProbability(),
+    windowDays: LUCKY_BREAK_WINDOW_DAYS,
+  } as const;
+}
 
 /** Prices for recurring subscriptions, by billing interval. */
 export const SUBSCRIPTION_PRICES_CENTS: Record<SubscriptionInterval, number> = {
