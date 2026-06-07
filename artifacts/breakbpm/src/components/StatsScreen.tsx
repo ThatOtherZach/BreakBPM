@@ -558,7 +558,9 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           );
                         };
                         return (
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
+                          <div
+                            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}
+                            className="pt-[8px] pb-[8px]">
                             <div className="stats-ball-item">
                               <span className="cue-ball-icon cue-ball-icon--chip" aria-label="Cue ball" />
                               <span className="stats-ball-count">×{fmtInt(stats.totalFouls)}</span>
