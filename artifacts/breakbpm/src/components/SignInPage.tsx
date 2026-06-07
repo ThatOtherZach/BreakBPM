@@ -1,5 +1,6 @@
 import { SignInRoute, SignUpRoute } from "../lib/authClient";
 import Navbar from "./Navbar";
+import LegalDisclosure from "./LegalDisclosure";
 
 function PageShell({ onBack, children }: { onBack: () => void; children: React.ReactNode }) {
   return (
@@ -13,7 +14,12 @@ function PageShell({ onBack, children }: { onBack: () => void; children: React.R
 }
 
 export function SignInPage({ onBack }: { onBack: () => void }) {
-  return <PageShell onBack={onBack}><SignInRoute /></PageShell>;
+  return (
+    <PageShell onBack={onBack}>
+      <SignInRoute />
+      <LegalDisclosure />
+    </PageShell>
+  );
 }
 
 export function SignUpPage({ onBack }: { onBack: () => void }) {
