@@ -1966,6 +1966,12 @@ html, #root {
   gap: 10px 12px;
 }
 .stats-ball-grid--center { justify-content: center; }
+/* Solids/stripes clusters that mirror the in-game HUD rack: each side wraps
+   into a compact block so solids sit left and stripes sit right of the 8-ball. */
+.stats-ball-side {
+  justify-content: center;
+  width: 132px;
+}
 .stats-ball-item {
   display: flex;
   flex-direction: column;

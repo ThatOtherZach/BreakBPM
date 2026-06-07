@@ -563,11 +563,11 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                               <span className="cue-ball-icon cue-ball-icon--chip" aria-label="Cue ball" />
                               <span className="stats-ball-count">×{fmtInt(stats.totalFouls)}</span>
                             </div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                              <div className="stats-ball-grid stats-ball-grid--center">{[1, 2, 3, 4, 5, 6, 7].map(renderBall)}</div>
-                              <div className="stats-ball-grid stats-ball-grid--center">{[9, 10, 11, 12, 13, 14, 15].map(renderBall)}</div>
-                            </div>
+                            {/* Grouped like the in-game HUD rack: solids cluster
+                                left, 8-ball centered, stripes cluster right. */}
+                            <div className="stats-ball-grid stats-ball-side">{[1, 2, 3, 4, 5, 6, 7].map(renderBall)}</div>
                             {renderBall(8)}
+                            <div className="stats-ball-grid stats-ball-side">{[9, 10, 11, 12, 13, 14, 15].map(renderBall)}</div>
                           </div>
                         );
                       })()}
