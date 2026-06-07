@@ -376,13 +376,17 @@ html, #root {
    its signature ball chip(s) (1 / 6+9 / 8). Real radios drive it for keyboard +
    screen-reader support; the native input is visually hidden. */
 .rule-set-opt {
+  /* Wrapping row: the radio indicator + ball chip(s) ride the top line (ball to
+     the right of the radio), the label wraps to a full-width line below. Two
+     rows instead of three keeps the card compact on narrow/mobile widths. */
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  gap: 3px 5px;
   flex: 1 1 0;
   min-width: 0;
-  padding: 8px 4px;
+  padding: 5px 4px;
   /* Pool-table "felt" skin — matches the Recent Games history cards (.fpp-card):
      green baize with a crosshatch weave, a wooden outset rail, and inset depth. */
   position: relative;
@@ -458,6 +462,7 @@ html, #root {
   gap: 3px;
 }
 .rule-set-label {
+  flex-basis: 100%; /* full-width row below the indicator + ball chip line */
   font-family: 'Courier New', monospace;
   font-size: 10px;
   font-weight: bold;

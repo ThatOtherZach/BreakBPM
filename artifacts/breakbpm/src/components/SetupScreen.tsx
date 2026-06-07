@@ -46,6 +46,11 @@ const RULE_SET_OPTIONS: {
   chips: { number: string; chipClass: string; chipColor?: string }[];
 }[] = [
   {
+    value: 'open-through-break',
+    label: 'Open Through Break',
+    chips: [{ number: '8', chipClass: 'hud-chip-eight' }],
+  },
+  {
     value: 'first-ball',
     label: 'First Ball',
     chips: [{ number: '1', chipClass: 'hud-chip-solid', chipColor: '#FDD307' }],
@@ -57,11 +62,6 @@ const RULE_SET_OPTIONS: {
       { number: '6', chipClass: 'hud-chip-solid', chipColor: '#276B40' },
       { number: '9', chipClass: 'hud-chip-stripe', chipColor: '#FDD307' },
     ],
-  },
-  {
-    value: 'open-through-break',
-    label: 'Open Through Break',
-    chips: [{ number: '8', chipClass: 'hud-chip-eight' }],
   },
 ];
 
@@ -107,9 +107,9 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
   // players aren't overwhelmed. Only sent to onStart when the combo matches.
   const [sharkAggression, setSharkAggression] = useState<SharkAggression>('normal');
   // 8-ball group-assignment timing (2P/4P automatic assignment only).
-  // Default to 'first-ball' (the legacy behavior). Only sent to onStart for
-  // automatic-assignment 8-ball; ignored for manual/Shark/Practice.
-  const [ruleSet, setRuleSet] = useState<RuleSet>('first-ball');
+  // Default to 'open-through-break' (the most commonly played rule). Only sent
+  // to onStart for automatic-assignment 8-ball; ignored for manual/Shark/Practice.
+  const [ruleSet, setRuleSet] = useState<RuleSet>('open-through-break');
 
   // Hidden easter egg: press-and-hold the splash 8-ball for 3s to swap the
   // art for a QR code to breakbpm.com, shown inline for 8s before it reverts
