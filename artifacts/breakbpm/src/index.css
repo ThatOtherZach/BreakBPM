@@ -402,12 +402,13 @@ html, #root {
   transition: box-shadow 0.12s ease, background-color 0.12s ease;
 }
 .rule-set-opt.selected {
-  /* Selected = "lit" felt: brighter baize with a phosphor-green inner rail + glow. */
+  /* Selected = "lit" felt: brighter baize with a warm gold inner rail + glow
+     (mirrors the app's gold accents — WIN badge, BPM hero, the 1/9 balls). */
   background-color: #147a3e;
   box-shadow:
-    inset 0 0 0 2px #00ff41,
+    inset 0 0 0 2px #ffce3a,
     inset 0 2px 6px rgba(0, 0, 0, 0.35),
-    0 0 8px rgba(0, 255, 80, 0.4);
+    0 0 8px rgba(255, 200, 60, 0.45);
 }
 /* Visually-hidden real radio — keeps keyboard/AT behavior, hides the chrome. */
 .rule-set-radio {
