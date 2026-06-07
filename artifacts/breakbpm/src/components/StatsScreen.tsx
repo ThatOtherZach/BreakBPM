@@ -566,8 +566,8 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                             {/* Grouped like the in-game HUD rack: solids cluster
                                 left, 8-ball centered, stripes cluster right. */}
                             <div className="stats-ball-grid stats-ball-side">{[1, 2, 3, 4, 5, 6, 7].map(renderBall)}</div>
-                            {renderBall(8)}
                             <div className="stats-ball-grid stats-ball-side">{[9, 10, 11, 12, 13, 14, 15].map(renderBall)}</div>
+                            {renderBall(8)}
                           </div>
                         );
                       })()}
