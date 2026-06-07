@@ -120,6 +120,39 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const [logOpen, setLogOpen] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
+  // Long-press on the share-CODE 📋 button reveals a join QR in place of the
+  // Mode/Time/Code panel (mirrors the splash-screen QR easter egg). A short
+  // press still copies the code; a >1s hold reveals the QR for 8s and the
+  // trailing click is suppressed so it doesn't also copy.
+  const [showCodeQr, setShowCodeQr] = useState(false);
+  const codeQrPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const codeQrRevertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const codeQrLongPressFired = useRef(false);
+  const clearCodeQrPress = () => {
+    if (codeQrPressTimer.current !== null) {
+      clearTimeout(codeQrPressTimer.current);
+      codeQrPressTimer.current = null;
+    }
+  };
+  const startCodeQrPress = () => {
+    clearCodeQrPress();
+    codeQrLongPressFired.current = false;
+    codeQrPressTimer.current = setTimeout(() => {
+      codeQrPressTimer.current = null;
+      codeQrLongPressFired.current = true;
+      setShowCodeQr(true);
+      if (codeQrRevertTimer.current !== null) clearTimeout(codeQrRevertTimer.current);
+      codeQrRevertTimer.current = setTimeout(() => {
+        codeQrRevertTimer.current = null;
+        setShowCodeQr(false);
+      }, 8000);
+    }, 1000);
+  };
+  useEffect(() => () => {
+    clearCodeQrPress();
+    if (codeQrRevertTimer.current !== null) clearTimeout(codeQrRevertTimer.current);
+  }, []);
+
   // Practice-mode pause. Seed pausedDuration from a restored in-progress
   // game so the elapsed clock continues from where it left off.
   const [paused, setPaused] = useState(false);
@@ -773,33 +806,64 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           {/* Divider */}
           <div className="hud-divider" />
 
-          {/* Right: mode + timer + share */}
+          {/* Right: mode + timer + share. Long-pressing the 📋 swaps this
+              column for a join QR (see startCodeQrPress) for 8 seconds. */}
           <div className="hud-right">
-            <div className="hud-right-row">
-              <span className="hud-meta-label">MODE</span>
-              <span className="hud-mode">
-                {isSharkGame(state) ? 'Shark'
-                  : state.gameType === 'practice' ? 'Practice'
-                  : state.gameType === '8ball' ? '8-Ball'
-                  : '9-Ball'}
-              </span>
-            </div>
-            <div className="hud-right-row">
-              <span className="hud-meta-label">TIME</span>
-              <span className={`hud-timer${paused ? ' hud-timer-paused' : ''}`}>{formatTime(dispTime)}</span>
-            </div>
-            <div className="hud-right-row" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span className="hud-meta-label">CODE</span>
-              <span className="hud-code">{state.shareCode}</span>
-              <button
-                className="hud-copy-code-btn"
-                onClick={() => { navigator.clipboard.writeText(state.shareCode); }}
-                title="Copy code"
-                aria-label="Copy code"
+            {showCodeQr ? (
+              <div
+                style={{ background: '#fff', padding: 6, lineHeight: 0, borderRadius: 2, alignSelf: 'center' }}
+                aria-label={`QR code to join game ${state.shareCode}`}
               >
-                <span aria-hidden="true" style={{ fontSize: 18, lineHeight: 1, display: 'block' }}>📋</span>
-              </button>
-            </div>
+                <QRCodeSVG value={`${baseOrigin}/join/${state.shareCode}`} size={92} level="M" />
+              </div>
+            ) : (
+              <>
+                <div className="hud-right-row">
+                  <span className="hud-meta-label">MODE</span>
+                  <span className="hud-mode">
+                    {isSharkGame(state) ? 'Shark'
+                      : state.gameType === 'practice' ? 'Practice'
+                      : state.gameType === '8ball' ? '8-Ball'
+                      : '9-Ball'}
+                  </span>
+                </div>
+                <div className="hud-right-row">
+                  <span className="hud-meta-label">TIME</span>
+                  <span className={`hud-timer${paused ? ' hud-timer-paused' : ''}`}>{formatTime(dispTime)}</span>
+                </div>
+                <div className="hud-right-row" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span className="hud-meta-label">CODE</span>
+                  <span className="hud-code">{state.shareCode}</span>
+                  <button
+                    className="hud-copy-code-btn"
+                    onClick={() => {
+                      // Suppress the click that trails a long press so a QR
+                      // reveal never also copies the code.
+                      if (codeQrLongPressFired.current) {
+                        codeQrLongPressFired.current = false;
+                        return;
+                      }
+                      navigator.clipboard.writeText(state.shareCode);
+                    }}
+                    onPointerDown={startCodeQrPress}
+                    onPointerUp={clearCodeQrPress}
+                    onPointerLeave={clearCodeQrPress}
+                    onPointerCancel={clearCodeQrPress}
+                    onContextMenu={e => e.preventDefault()}
+                    title="Copy code (hold for QR)"
+                    aria-label="Copy code, or hold to reveal join QR"
+                    style={{
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      WebkitTouchCallout: 'none',
+                      touchAction: 'manipulation',
+                    } as React.CSSProperties}
+                  >
+                    <span aria-hidden="true" style={{ fontSize: 18, lineHeight: 1, display: 'block' }}>📋</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
