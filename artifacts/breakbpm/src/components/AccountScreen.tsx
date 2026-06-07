@@ -34,6 +34,7 @@ interface Props {
   onPasses: () => void;
   onAbout: () => void;
   onFindPlayers: () => void;
+  onStats: () => void;
   onSignIn: () => void;
 }
 
@@ -51,7 +52,7 @@ function fmtHoursUntil(target: Date | string | null): string | null {
   return `~${hours}h`;
 }
 
-export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers, onSignIn }: Props) {
+export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers, onStats, onSignIn }: Props) {
   const { logout: signOut } = useAuth();
   const qc = useQueryClient();
 
@@ -281,7 +282,13 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
 
   return (
     <div className="app-window app-window--page">
-      <Navbar onBack={onBack} onAbout={onAbout} onSignIn={onSignIn} />
+      <Navbar
+        onBack={onBack}
+        onAbout={onAbout}
+        onStats={ent.tier === "pass" ? onStats : undefined}
+        onFindPlayers={ent.tier === "pass" ? onFindPlayers : undefined}
+        onSignIn={onSignIn}
+      />
       <div className="app-body">
 
         {/* Identity panel */}

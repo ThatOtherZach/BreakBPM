@@ -288,6 +288,7 @@ function AccountRoute() {
       onPasses={() => setLocation("/passes")}
       onAbout={() => setLocation("/about")}
       onFindPlayers={() => setLocation("/find-players")}
+      onStats={() => setLocation("/stats")}
       onSignIn={() => setLocation("/sign-in")}
     />
   );
