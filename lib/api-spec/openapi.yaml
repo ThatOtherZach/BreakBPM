@@ -108,6 +108,40 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/GiftCodeIssueResult" }
 
+  /passes/admin/codes:
+    get:
+      operationId: listAdminDiscountCodes
+      tags: [passes]
+      summary: List the calling admin's minted comp codes
+      description: >
+        Admin-only. Returns the most recent comp codes the calling admin has
+        minted (newest first). 403s for non-admin accounts.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminCodeList" }
+    post:
+      operationId: createAdminDiscountCode
+      tags: [passes]
+      summary: Mint a pass-granting comp code (admin only)
+      description: >
+        Admin-only. Mints a discount code that grants the chosen pass tier on
+        redemption, with an optional redemption cap (omit for unlimited). 403s
+        for non-admin accounts.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminCodeInput" }
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminCodeResult" }
+
   /passes/checkout:
     post:
       operationId: createPassCheckout
@@ -700,7 +734,7 @@ components:
 
     Entitlement:
       type: object
-      required: [tier, hasActivePass, historyVisibleLimit]
+      required: [tier, hasActivePass, historyVisibleLimit, isAdmin]
       properties:
         tier: { type: string, enum: [public, account, pass] }
         hasActivePass: { type: boolean }
@@ -709,6 +743,43 @@ components:
         activePass: { $ref: "#/components/schemas/PassSummary" }
         # Present when an active recurring subscription grants entitlement.
         activeSubscription: { $ref: "#/components/schemas/SubscriptionSummary" }
+        # True for accounts on the BREAKBPM_ADMIN_EMAILS allowlist. Admins are
+        # treated as effective Lifetime holders and unlock the admin code
+        # generator. Only this boolean is exposed — never the allowlist itself.
+        isAdmin: { type: boolean }
+
+    AdminCode:
+      type: object
+      required: [code, grantsPassKind, maxRedemptions, redemptionCount, createdAt]
+      properties:
+        code: { type: string }
+        grantsPassKind: { type: string, enum: [day, month, year, lifetime] }
+        # null means unlimited redemptions.
+        maxRedemptions: { type: ["integer", "null"] }
+        redemptionCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    AdminCodeInput:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [day, month, year, lifetime] }
+        # Optional cap on redemptions. Omit (or null) for unlimited.
+        maxRedemptions: { type: ["integer", "null"], minimum: 1 }
+
+    AdminCodeResult:
+      type: object
+      required: [code]
+      properties:
+        code: { $ref: "#/components/schemas/AdminCode" }
+
+    AdminCodeList:
+      type: object
+      required: [codes]
+      properties:
+        codes:
+          type: array
+          items: { $ref: "#/components/schemas/AdminCode" }
 
     Plan:
       type: object

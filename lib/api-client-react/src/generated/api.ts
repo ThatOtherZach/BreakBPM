@@ -23,6 +23,9 @@ import type {
   AbandonGameInput,
   AbandonGameResult,
   Account,
+  AdminCodeInput,
+  AdminCodeList,
+  AdminCodeResult,
   CancelFindPlayerPostInput,
   CancelFindPlayerPostResult,
   CancelSubscriptionResult,
@@ -531,6 +534,158 @@ export const useGenerateGiftCode = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getGenerateGiftCodeMutationOptions(options));
+    }
+
+export const getListAdminDiscountCodesUrl = () => {
+
+
+
+
+  return `/api/passes/admin/codes`
+}
+
+/**
+ * Admin-only. Returns the most recent comp codes the calling admin has minted (newest first). 403s for non-admin accounts.
+
+ * @summary List the calling admin's minted comp codes
+ */
+export const listAdminDiscountCodes = async ( options?: RequestInit): Promise<AdminCodeList> => {
+
+  return customFetch<AdminCodeList>(getListAdminDiscountCodesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminDiscountCodesQueryKey = () => {
+    return [
+    `/api/passes/admin/codes`
+    ] as const;
+    }
+
+
+export const getListAdminDiscountCodesQueryOptions = <TData = Awaited<ReturnType<typeof listAdminDiscountCodes>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminDiscountCodes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminDiscountCodesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminDiscountCodes>>> = ({ signal }) => listAdminDiscountCodes({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminDiscountCodes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminDiscountCodesQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminDiscountCodes>>>
+export type ListAdminDiscountCodesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the calling admin's minted comp codes
+ */
+
+export function useListAdminDiscountCodes<TData = Awaited<ReturnType<typeof listAdminDiscountCodes>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminDiscountCodes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminDiscountCodesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateAdminDiscountCodeUrl = () => {
+
+
+
+
+  return `/api/passes/admin/codes`
+}
+
+/**
+ * Admin-only. Mints a discount code that grants the chosen pass tier on redemption, with an optional redemption cap (omit for unlimited). 403s for non-admin accounts.
+
+ * @summary Mint a pass-granting comp code (admin only)
+ */
+export const createAdminDiscountCode = async (adminCodeInput: AdminCodeInput, options?: RequestInit): Promise<AdminCodeResult> => {
+
+  return customFetch<AdminCodeResult>(getCreateAdminDiscountCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      adminCodeInput,)
+  }
+);}
+
+
+
+
+export const getCreateAdminDiscountCodeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminDiscountCode>>, TError,{data: BodyType<AdminCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAdminDiscountCode>>, TError,{data: BodyType<AdminCodeInput>}, TContext> => {
+
+const mutationKey = ['createAdminDiscountCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAdminDiscountCode>>, {data: BodyType<AdminCodeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAdminDiscountCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdminDiscountCodeMutationResult = NonNullable<Awaited<ReturnType<typeof createAdminDiscountCode>>>
+    export type CreateAdminDiscountCodeMutationBody = BodyType<AdminCodeInput>
+    export type CreateAdminDiscountCodeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mint a pass-granting comp code (admin only)
+ */
+export const useCreateAdminDiscountCode = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminDiscountCode>>, TError,{data: BodyType<AdminCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAdminDiscountCode>>,
+        TError,
+        {data: BodyType<AdminCodeInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAdminDiscountCodeMutationOptions(options));
     }
 
 export const getCreatePassCheckoutUrl = () => {

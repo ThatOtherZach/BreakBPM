@@ -16,4 +16,5 @@ export interface Entitlement {
   historyVisibleLimit: number | null;
   activePass?: PassSummary;
   activeSubscription?: SubscriptionSummary;
+  isAdmin: boolean;
 }

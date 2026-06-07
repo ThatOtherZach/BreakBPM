@@ -1,7 +1,8 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, beforeEach } from "vitest";
 import {
   computeEntitlement,
   HISTORY_LIMIT_FREE_ACCOUNT,
+  LIFETIME_EXPIRES_AT,
 } from "./entitlement";
 import {
   createUser,
@@ -107,5 +108,52 @@ describe("computeEntitlement", () => {
     expect(ent.hasActivePass).toBe(true);
     expect(ent.activePass?.isLifetime).toBe(true);
     expect(ent.historyVisibleLimit).toBeNull();
+  });
+
+  it("sets isAdmin false for ordinary signed-in users", async () => {
+    const user = await createUser();
+    const ent = await computeEntitlement(user);
+    expect(ent.isAdmin).toBe(false);
+  });
+
+  describe("admin allowlist", () => {
+    const ADMIN_EMAIL = "boss@breakbpm.test";
+    let prevEnv: string | undefined;
+
+    beforeEach(() => {
+      prevEnv = process.env.BREAKBPM_ADMIN_EMAILS;
+      process.env.BREAKBPM_ADMIN_EMAILS = ADMIN_EMAIL;
+    });
+
+    afterEach(() => {
+      if (prevEnv === undefined) delete process.env.BREAKBPM_ADMIN_EMAILS;
+      else process.env.BREAKBPM_ADMIN_EMAILS = prevEnv;
+    });
+
+    it("treats an admin with no real pass as an effective Lifetime holder", async () => {
+      const user = await createUser({ email: ADMIN_EMAIL });
+      const ent = await computeEntitlement(user);
+      expect(ent.isAdmin).toBe(true);
+      expect(ent.tier).toBe("pass");
+      expect(ent.hasActivePass).toBe(true);
+      expect(ent.historyVisibleLimit).toBeNull();
+      expect(ent.activePass?.isLifetime).toBe(true);
+      expect(ent.activePass?.kind).toBe("lifetime");
+      expect(ent.activePass?.expiresAt).toEqual(LIFETIME_EXPIRES_AT);
+    });
+
+    it("matches the allowlist case-insensitively", async () => {
+      const user = await createUser({ email: ADMIN_EMAIL.toUpperCase() });
+      const ent = await computeEntitlement(user);
+      expect(ent.isAdmin).toBe(true);
+    });
+
+    it("prefers a real pass over the synthesized lifetime for admins", async () => {
+      const user = await createUser({ email: ADMIN_EMAIL });
+      await seedPass(user.id, "day");
+      const ent = await computeEntitlement(user);
+      expect(ent.isAdmin).toBe(true);
+      expect(ent.activePass?.kind).toBe("day");
+    });
   });
 });

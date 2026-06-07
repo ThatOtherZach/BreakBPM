@@ -9,6 +9,7 @@ import {
   type SubscriptionStatus,
   type User,
 } from "@workspace/db";
+import { isAdminEmail } from "./config";
 
 export type Tier = "public" | "account" | "pass";
 
@@ -36,6 +37,13 @@ export interface Entitlement {
   activePass?: PassSummary;
   /** Present when an active recurring subscription grants entitlement. */
   activeSubscription?: SubscriptionSummary;
+  /**
+   * True when the signed-in account is on the BREAKBPM_ADMIN_EMAILS allowlist.
+   * Admins are treated as effective Lifetime holders (full access + Lifetime
+   * perks) and gain the admin-only discount-code generator on the account
+   * page. Only this single boolean ever reaches the client — never the list.
+   */
+  isAdmin: boolean;
 }
 
 export const HISTORY_LIMIT_FREE_ACCOUNT = 3;
@@ -46,7 +54,7 @@ export const HISTORY_LIMIT_FREE_ACCOUNT = 3;
  * surface a far-future date. Clients should rely on `isLifetime: true`, not
  * this value, when rendering "Lifetime" vs a real expiry.
  */
-const LIFETIME_EXPIRES_AT = new Date("9999-12-31T23:59:59.999Z");
+export const LIFETIME_EXPIRES_AT = new Date("9999-12-31T23:59:59.999Z");
 
 function passSummary(p: Pass): PassSummary {
   const expiresAt =
@@ -111,12 +119,39 @@ export async function getActiveSubscription(
 
 export async function computeEntitlement(user: User | null): Promise<Entitlement> {
   if (!user) {
-    return { tier: "public", hasActivePass: false, historyVisibleLimit: 0 };
+    return { tier: "public", hasActivePass: false, historyVisibleLimit: 0, isAdmin: false };
   }
   const [active, subscription] = await Promise.all([
     getActivePasses(user.id),
     getActiveSubscription(user.id),
   ]);
+
+  const isAdmin = isAdminEmail(user.email);
+
+  // Admins are treated as effective Lifetime holders — full access, no history
+  // cap, and every Lifetime-gated perk (incl. the Day-Pass gift generator). We
+  // synthesize a Lifetime `activePass` (anchored at account creation so it's
+  // stable) when they hold no real pass, so the client renders "Lifetime"
+  // without us having to issue an actual pass row.
+  if (isAdmin) {
+    const headline =
+      active.length > 0
+        ? active.reduce((a, b) => (b.expiresAt > a.expiresAt ? b : a))
+        : {
+            kind: "lifetime" as const,
+            startedAt: user.createdAt,
+            expiresAt: LIFETIME_EXPIRES_AT,
+            isLifetime: true,
+          };
+    return {
+      tier: "pass",
+      hasActivePass: true,
+      historyVisibleLimit: null,
+      activePass: headline,
+      ...(subscription ? { activeSubscription: subscription } : {}),
+      isAdmin: true,
+    };
+  }
 
   // Either an active pass OR an active subscription grants the "pass" tier —
   // this is the single place that "either source grants access" lives.
@@ -126,6 +161,7 @@ export async function computeEntitlement(user: User | null): Promise<Entitlement
       tier: "account",
       hasActivePass: false,
       historyVisibleLimit: HISTORY_LIMIT_FREE_ACCOUNT,
+      isAdmin: false,
     };
   }
 
@@ -139,5 +175,6 @@ export async function computeEntitlement(user: User | null): Promise<Entitlement
     historyVisibleLimit: null,
     ...(headline ? { activePass: headline } : {}),
     ...(subscription ? { activeSubscription: subscription } : {}),
+    isAdmin: false,
   };
 }

@@ -19,3 +19,4 @@
 - [Public profile reuses /stats shaping](public-profile-stats-shaping.md) — /games/profile returns a full StatsResult (personal/24h) so the Watch profile renders the shared StatsHero; keep its capability-flag shaping in lockstep with the /stats route.
 - [Stats hero trend granularity](stats-hero-trend-granularity.md) — trend buckets by window (per-game 24h / daily 30d / monthly 365d+all), not last-N-games; label unit must track appliedWindow.
 - [Stats cache bust on completion](stats-cache-bust-on-completion.md) — every game-completion path (save/abandon/leave/stale-sweep) must clear all participants' stats cache or live /watch profile hero stays stale up to TTL.
+- [Admin effective-Lifetime gating](admin-effective-lifetime-gating.md) — gate Lifetime-only perks on entitlement (synthesizes Lifetime for admins), never raw getActivePasses, or admin perks leak per-feature.

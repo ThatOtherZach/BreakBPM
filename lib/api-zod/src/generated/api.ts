@@ -43,7 +43,8 @@ export const GetMeResponse = zod.object({
   "interval": zod.enum(['month', 'year']),
   "currentPeriodEnd": zod.coerce.date(),
   "cancelAtPeriodEnd": zod.boolean()
-}).optional()
+}).optional(),
+  "isAdmin": zod.boolean()
 }),
   "passes": zod.array(zod.object({
   "kind": zod.enum(['day', 'month', 'year', 'lifetime']),
@@ -140,6 +141,46 @@ export const GenerateGiftCodeResponse = zod.object({
   "expired": zod.boolean()
 }).optional(),
   "nextAvailableAt": zod.coerce.date().optional()
+})
+
+
+/**
+ * Admin-only. Returns the most recent comp codes the calling admin has minted (newest first). 403s for non-admin accounts.
+
+ * @summary List the calling admin's minted comp codes
+ */
+export const ListAdminDiscountCodesResponse = zod.object({
+  "codes": zod.array(zod.object({
+  "code": zod.string(),
+  "grantsPassKind": zod.enum(['day', 'month', 'year', 'lifetime']),
+  "maxRedemptions": zod.number().nullable(),
+  "redemptionCount": zod.number(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * Admin-only. Mints a discount code that grants the chosen pass tier on redemption, with an optional redemption cap (omit for unlimited). 403s for non-admin accounts.
+
+ * @summary Mint a pass-granting comp code (admin only)
+ */
+
+
+
+export const CreateAdminDiscountCodeBody = zod.object({
+  "kind": zod.enum(['day', 'month', 'year', 'lifetime']),
+  "maxRedemptions": zod.number().min(1).nullish()
+})
+
+export const CreateAdminDiscountCodeResponse = zod.object({
+  "code": zod.object({
+  "code": zod.string(),
+  "grantsPassKind": zod.enum(['day', 'month', 'year', 'lifetime']),
+  "maxRedemptions": zod.number().nullable(),
+  "redemptionCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})
 })
 
 

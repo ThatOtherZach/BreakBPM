@@ -16,6 +16,9 @@ import {
   VerifyPassCheckoutResponse,
   GenerateGiftCodeResponse,
   ListMyGiftCodesResponse,
+  CreateAdminDiscountCodeBody,
+  CreateAdminDiscountCodeResponse,
+  ListAdminDiscountCodesResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser } from "../lib/auth";
 import { issuePassTx, grantPurchasedPassTx } from "../lib/passes";
@@ -31,7 +34,16 @@ import {
   listMyGiftCodes,
   GiftCodeFailure,
 } from "../lib/giftCodes";
-import { cardPaymentsEnabled, CARD_PAYMENTS_OFF_MESSAGE } from "../lib/config";
+import {
+  createAdminDiscountCode,
+  listAdminDiscountCodes,
+  ADMIN_GRANTABLE_KINDS,
+} from "../lib/adminCodes";
+import {
+  cardPaymentsEnabled,
+  CARD_PAYMENTS_OFF_MESSAGE,
+  isAdminEmail,
+} from "../lib/config";
 import {
   LUCKY_BREAK_CODE_KIND,
   LUCKY_BREAK_WINDOW_DAYS,
@@ -377,7 +389,7 @@ router.get("/passes/discount-codes", async (req, res): Promise<void> => {
     res.status(401).json({ error: "Sign in to view your gift codes" });
     return;
   }
-  const result = await listMyGiftCodes(user.id);
+  const result = await listMyGiftCodes(user.id, isAdminEmail(user.email));
   res.json(
     ListMyGiftCodesResponse.parse({
       eligible: result.eligible,
@@ -401,7 +413,7 @@ router.post("/passes/discount-codes", async (req, res): Promise<void> => {
     return;
   }
   try {
-    const result = await generateGiftCode(user.id);
+    const result = await generateGiftCode(user.id, isAdminEmail(user.email));
     // Do not log the raw code — anyone with log access could redeem it.
     // Log issuer + expiry instead so we can still trace gifting activity.
     req.log.info(
@@ -436,6 +448,68 @@ router.post("/passes/discount-codes", async (req, res): Promise<void> => {
     req.log.error({ err, userId: user.id }, "Gift code generation failed");
     res.status(500).json({ error: "Gift code generation failed" });
   }
+});
+
+/**
+ * List the comp codes the calling admin has minted. 403s for non-admins so
+ * the admin generator never leaks to ordinary accounts. The admin allowlist
+ * itself is never returned — only the caller's own codes.
+ */
+router.get("/passes/admin/codes", async (req, res): Promise<void> => {
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Sign in to manage admin codes" });
+    return;
+  }
+  if (!isAdminEmail(user.email)) {
+    res.status(403).json({ error: "Admins only" });
+    return;
+  }
+  const codes = await listAdminDiscountCodes(user.id);
+  res.json(ListAdminDiscountCodesResponse.parse({ codes }));
+});
+
+/**
+ * Mint a new admin comp code granting the chosen tier with an optional
+ * redemption cap. 403s for non-admins.
+ */
+router.post("/passes/admin/codes", async (req, res): Promise<void> => {
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Sign in to mint admin codes" });
+    return;
+  }
+  if (!isAdminEmail(user.email)) {
+    res.status(403).json({ error: "Admins only" });
+    return;
+  }
+  const parsed = CreateAdminDiscountCodeBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const kind = parsed.data.kind;
+  if (!ADMIN_GRANTABLE_KINDS.includes(kind)) {
+    res.status(400).json({ error: "Unsupported pass tier" });
+    return;
+  }
+  const maxRedemptions = parsed.data.maxRedemptions ?? null;
+  if (maxRedemptions !== null && (!Number.isInteger(maxRedemptions) || maxRedemptions < 1)) {
+    res.status(400).json({ error: "maxRedemptions must be a positive integer or omitted" });
+    return;
+  }
+
+  const code = await createAdminDiscountCode({
+    issuedByUserId: user.id,
+    kind,
+    maxRedemptions,
+  });
+  // Do not log the raw code — anyone with log access could redeem it.
+  req.log.info(
+    { userId: user.id, kind, maxRedemptions },
+    "Admin comp code generated",
+  );
+  res.json(CreateAdminDiscountCodeResponse.parse({ code }));
 });
 
 export default router;

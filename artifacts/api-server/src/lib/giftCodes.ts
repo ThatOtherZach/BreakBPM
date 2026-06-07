@@ -19,8 +19,18 @@ import { getActivePasses } from "./entitlement";
 export const GIFT_COOLDOWN_MS = 12 * 60 * 60 * 1000;
 export const GIFT_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
-/** Issuer must hold one of these kinds of active passes. */
+/** Issuer must hold one of these kinds of active passes (admins always pass). */
 const ELIGIBLE_KINDS = new Set(["year", "lifetime"]);
+
+/**
+ * The gift flow only ever touches rows it minted: `issuer_kind = 'gift'` plus
+ * legacy/seed rows (NULL). Admin-minted comp codes (`issuer_kind = 'admin'`)
+ * share the same `issued_by_user_id` but must be invisible to the gift flow so
+ * generating a Day-Pass gift can never supersede an admin code, and an admin's
+ * comp codes never throttle their gift cooldown.
+ */
+const giftScope = () =>
+  or(isNull(discountCodesTable.issuerKind), eq(discountCodesTable.issuerKind, "gift"));
 
 /** Confusable-free alphabet (no 0/O/1/I) for friendly hand-typed codes. */
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -64,15 +74,19 @@ interface GenerateResult {
  * the user-visible rejection paths (no qualifying pass / on cooldown) so the
  * route handler can map them to a structured response without leaking 500s.
  */
-export async function generateGiftCode(userId: string): Promise<GenerateResult> {
+export async function generateGiftCode(
+  userId: string,
+  isAdmin = false,
+): Promise<GenerateResult> {
   // Eligibility check runs outside the transaction — pass state is read-mostly
   // and we want a clear, fast 4xx-style rejection before opening a write tx.
   // Uses a wall-clock `now` only for this read; the canonical timestamp used
   // for cooldown math is captured AFTER the advisory lock below so contended
   // callers don't get a false cooldown rejection for time spent waiting.
+  // Admins are effective Lifetime holders, so they always clear eligibility.
   const eligibilityNow = new Date();
   const active = await getActivePasses(userId, eligibilityNow);
-  if (!active.some((p) => ELIGIBLE_KINDS.has(p.kind))) {
+  if (!isAdmin && !active.some((p) => ELIGIBLE_KINDS.has(p.kind))) {
     throw new GiftCodeFailure(
       "not_eligible",
       "Only Year and Lifetime pass holders can gift a Day Pass.",
@@ -91,7 +105,7 @@ export async function generateGiftCode(userId: string): Promise<GenerateResult> 
     const [lastRow] = await tx
       .select({ issuedAt: discountCodesTable.issuedAt })
       .from(discountCodesTable)
-      .where(eq(discountCodesTable.issuedByUserId, userId))
+      .where(and(eq(discountCodesTable.issuedByUserId, userId), giftScope()))
       .orderBy(desc(discountCodesTable.issuedAt))
       .limit(1);
 
@@ -107,7 +121,8 @@ export async function generateGiftCode(userId: string): Promise<GenerateResult> 
       }
     }
 
-    // Supersede any prior unused, still-live gift code from this issuer.
+    // Supersede any prior unused, still-live gift code from this issuer. Scoped
+    // to gift rows so an admin's comp codes are never collaterally expired.
     await tx
       .update(discountCodesTable)
       .set({ expiresAt: now })
@@ -116,6 +131,7 @@ export async function generateGiftCode(userId: string): Promise<GenerateResult> 
           eq(discountCodesTable.issuedByUserId, userId),
           eq(discountCodesTable.redemptionCount, 0),
           or(isNull(discountCodesTable.expiresAt), gt(discountCodesTable.expiresAt, now)),
+          giftScope(),
         ),
       );
 
@@ -133,6 +149,7 @@ export async function generateGiftCode(userId: string): Promise<GenerateResult> 
           expiresAt,
           issuedByUserId: userId,
           issuedAt: now,
+          issuerKind: "gift",
         });
         return {
           code: {
@@ -169,11 +186,16 @@ export interface ListResult {
  * cooldown is independent of whether the listed codes are redeemed or
  * expired — it's purely based on the most recent issuance time.
  */
-export async function listMyGiftCodes(userId: string, limit = 5): Promise<ListResult> {
+export async function listMyGiftCodes(
+  userId: string,
+  isAdmin = false,
+  limit = 5,
+): Promise<ListResult> {
   const now = new Date();
 
   const active = await getActivePasses(userId, now);
-  const eligible = active.some((p) => ELIGIBLE_KINDS.has(p.kind));
+  // Admins are effective Lifetime holders, so they're always gift-eligible.
+  const eligible = isAdmin || active.some((p) => ELIGIBLE_KINDS.has(p.kind));
 
   const rows = await db
     .select({
@@ -184,7 +206,7 @@ export async function listMyGiftCodes(userId: string, limit = 5): Promise<ListRe
       redemptionCount: discountCodesTable.redemptionCount,
     })
     .from(discountCodesTable)
-    .where(eq(discountCodesTable.issuedByUserId, userId))
+    .where(and(eq(discountCodesTable.issuedByUserId, userId), giftScope()))
     .orderBy(desc(discountCodesTable.issuedAt))
     .limit(limit);
 

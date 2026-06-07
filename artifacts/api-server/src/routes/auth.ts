@@ -8,10 +8,14 @@ import {
 } from "@workspace/api-zod";
 import { getVerifiedSubject, getOrCreateUser, needsOnboarding } from "../lib/auth";
 import { computeEntitlement, getActivePasses } from "../lib/entitlement";
+import type { User } from "@workspace/db";
 
-async function hasLifetimePass(userId: string): Promise<boolean> {
-  const passes = await getActivePasses(userId);
-  return passes.some((p) => p.isLifetime);
+// Custom screen names are a Lifetime-pass perk. Admins are treated as effective
+// Lifetime holders, so resolve through the entitlement (which synthesizes a
+// Lifetime pass for admins) rather than querying real passes directly.
+async function hasLifetimePerk(user: User): Promise<boolean> {
+  const entitlement = await computeEntitlement(user);
+  return entitlement.isAdmin || entitlement.activePass?.isLifetime === true;
 }
 
 const router: IRouter = Router();
@@ -23,7 +27,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
       GetMeResponse.parse({
         signedIn: false,
         needsOnboarding: false,
-        entitlement: { tier: "public", hasActivePass: false, historyVisibleLimit: 0 },
+        entitlement: { tier: "public", hasActivePass: false, historyVisibleLimit: 0, isAdmin: false },
         passes: [],
       }),
     );
@@ -63,7 +67,7 @@ router.patch("/auth/screen-name", async (req, res): Promise<void> => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  if (!(await hasLifetimePass(user.id))) {
+  if (!(await hasLifetimePerk(user))) {
     res.status(403).json({
       error: "Custom screen names are a Lifetime pass perk. Upgrade to customise.",
     });

@@ -53,7 +53,9 @@ export function uniqueCode(prefix = "TEST"): string {
   return `${prefix}${rid().slice(0, 12).toUpperCase()}`;
 }
 
-export async function createUser(): Promise<User> {
+export async function createUser(
+  opts: { email?: string | null } = {},
+): Promise<User> {
   const [user] = await db
     .insert(usersTable)
     .values({
@@ -61,7 +63,7 @@ export async function createUser(): Promise<User> {
       authProvider: "test",
       authSubject: `test_${rid()}`,
       screenName: `Tester_${rid().slice(0, 6)}`,
-      email: null,
+      email: opts.email ?? null,
       onboardingCompletedAt: new Date(),
     })
     .returning();

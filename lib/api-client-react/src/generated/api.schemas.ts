@@ -74,6 +74,53 @@ export interface Entitlement {
   historyVisibleLimit: number | null;
   activePass?: PassSummary;
   activeSubscription?: SubscriptionSummary;
+  isAdmin: boolean;
+}
+
+export type AdminCodeGrantsPassKind = typeof AdminCodeGrantsPassKind[keyof typeof AdminCodeGrantsPassKind];
+
+
+export const AdminCodeGrantsPassKind = {
+  day: 'day',
+  month: 'month',
+  year: 'year',
+  lifetime: 'lifetime',
+} as const;
+
+export interface AdminCode {
+  code: string;
+  grantsPassKind: AdminCodeGrantsPassKind;
+  /** @nullable */
+  maxRedemptions: number | null;
+  redemptionCount: number;
+  createdAt: string;
+}
+
+export type AdminCodeInputKind = typeof AdminCodeInputKind[keyof typeof AdminCodeInputKind];
+
+
+export const AdminCodeInputKind = {
+  day: 'day',
+  month: 'month',
+  year: 'year',
+  lifetime: 'lifetime',
+} as const;
+
+export interface AdminCodeInput {
+  kind: AdminCodeInputKind;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  maxRedemptions?: number | null;
+}
+
+export interface AdminCodeResult {
+  code: AdminCode;
+}
+
+export interface AdminCodeList {
+  codes: AdminCode[];
 }
 
 export type PlanId = typeof PlanId[keyof typeof PlanId];

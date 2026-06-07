@@ -8,10 +8,14 @@ import {
   useListMyGiftCodes,
   useGenerateGiftCode,
   useRedeemDiscountCode,
+  useListAdminDiscountCodes,
+  useCreateAdminDiscountCode,
   getGetMeQueryKey,
   getGetGameHistoryQueryKey,
   getListMyGiftCodesQueryKey,
+  getListAdminDiscountCodesQueryKey,
   type LuckyBreakResult,
+  type AdminCodeInputKind,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "./Navbar";
@@ -62,6 +66,11 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   const [redeemMsg, setRedeemMsg] = useState("");
   const [revealState, setRevealState] = useState<RevealState>("idle");
   const [revealResult, setRevealResult] = useState<LuckyBreakResult | null>(null);
+  const [adminKind, setAdminKind] = useState<AdminCodeInputKind>("day");
+  const [adminUses, setAdminUses] = useState("1");
+  const [adminUnlimited, setAdminUnlimited] = useState(false);
+  const [adminMsg, setAdminMsg] = useState("");
+  const [adminCopied, setAdminCopied] = useState("");
   // Force a re-render every 5 minutes so the cooldown / "expires in ~Xh"
   // labels in the gift panel drift naturally without spamming setInterval.
   const [, setClockTick] = useState(0);
@@ -73,6 +82,14 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   const myGiftCodes = useListMyGiftCodes();
   const generateGift = useGenerateGiftCode();
   const redeem = useRedeemDiscountCode();
+  // Admin-only: the generator + recent-codes list. The list query is gated on
+  // `me.data.entitlement.isAdmin` so non-admins never even fire the request
+  // (the server 403s regardless).
+  const isAdmin = me.data?.signedIn ? me.data.entitlement.isAdmin : false;
+  const adminCodes = useListAdminDiscountCodes({
+    query: { queryKey: getListAdminDiscountCodesQueryKey(), enabled: isAdmin },
+  });
+  const createAdminCode = useCreateAdminDiscountCode();
 
   useEffect(() => {
     const id = setInterval(() => setClockTick((n) => n + 1), 5 * 60 * 1000);
@@ -119,7 +136,9 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   const account = me.data.account!;
   const ent = me.data.entitlement;
   const passes = me.data.passes ?? [];
-  const canEditName = passes.some((p) => p.isLifetime);
+  // Custom screen names are a Lifetime perk; admins are effective Lifetime
+  // holders, so honor the synthesized entitlement (mirrors the server gate).
+  const canEditName = ent.isAdmin || ent.activePass?.isLifetime === true;
 
   async function handleSaveName() {
     setError("");
@@ -158,6 +177,37 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
     } catch {
       // Some sandboxed iframes block clipboard writes — surface that gently.
       setGiftMsg("Couldn't copy automatically — long-press to copy manually.");
+    }
+  }
+
+  async function handleCreateAdminCode() {
+    setAdminMsg("");
+    let maxRedemptions: number | null = null;
+    if (!adminUnlimited) {
+      const n = Number.parseInt(adminUses, 10);
+      if (!Number.isInteger(n) || n < 1) {
+        setAdminMsg("Uses must be a whole number ≥ 1 (or pick Unlimited).");
+        return;
+      }
+      maxRedemptions = n;
+    }
+    try {
+      await createAdminCode.mutateAsync({
+        data: { kind: adminKind, maxRedemptions },
+      });
+      qc.invalidateQueries({ queryKey: getListAdminDiscountCodesQueryKey() });
+    } catch (e) {
+      setAdminMsg(e instanceof Error ? e.message : "Could not create code.");
+    }
+  }
+
+  async function handleCopyAdmin(code: string) {
+    try {
+      await navigator.clipboard.writeText(code);
+      setAdminCopied(code);
+      setTimeout(() => setAdminCopied(""), 2000);
+    } catch {
+      setAdminMsg("Couldn't copy automatically — long-press to copy manually.");
     }
   }
 
@@ -455,6 +505,121 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
               )}
           </div>
         </div>
+
+        {/* Admin code generator — only rendered for accounts on the
+            BREAKBPM_ADMIN_EMAILS allowlist (server enforces 403 regardless).
+            Mints a pass-granting comp code of the chosen tier with an optional
+            redemption cap. */}
+        {isAdmin && (
+          <div className="panel">
+            <div className="panel-header">
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🛠️</span>Admin — Generate Codes
+              </span>
+            </div>
+            <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <p style={{ fontSize: 11, color: "#444", margin: 0 }}>
+                Mint a redeemable code that grants the selected pass tier. Codes
+                never expire and can be redeemed up to the chosen number of times.
+              </p>
+              <label style={{ fontSize: 12 }}>
+                Tier
+                <select
+                  className="input"
+                  style={{ marginTop: 4 }}
+                  value={adminKind}
+                  onChange={(e) => setAdminKind(e.target.value as AdminCodeInputKind)}
+                  disabled={createAdminCode.isPending}
+                >
+                  <option value="day">Day Pass</option>
+                  <option value="month">Month Pass</option>
+                  <option value="year">Year Pass</option>
+                  <option value="lifetime">Lifetime Pass</option>
+                </select>
+              </label>
+              <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="checkbox"
+                  checked={adminUnlimited}
+                  onChange={(e) => setAdminUnlimited(e.target.checked)}
+                  disabled={createAdminCode.isPending}
+                />
+                Unlimited uses
+              </label>
+              {!adminUnlimited && (
+                <label style={{ fontSize: 12 }}>
+                  Max uses
+                  <input
+                    className="input"
+                    style={{ marginTop: 4 }}
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={adminUses}
+                    onChange={(e) => setAdminUses(e.target.value)}
+                    disabled={createAdminCode.isPending}
+                  />
+                </label>
+              )}
+              <button
+                className="btn btn-primary w-full"
+                disabled={createAdminCode.isPending}
+                onClick={handleCreateAdminCode}
+              >
+                {createAdminCode.isPending ? "Generating…" : "Generate Code"}
+              </button>
+              {adminMsg && (
+                <div className="notice">
+                  <span>ℹ</span>
+                  <span>{adminMsg}</span>
+                </div>
+              )}
+              {adminCodes.data && adminCodes.data.codes.length > 0 && (
+                <div style={{ marginTop: 4 }}>
+                  <div style={{ fontFamily: "VT323", fontSize: 16, marginBottom: 4 }}>
+                    Recent Codes
+                  </div>
+                  {adminCodes.data.codes.map((c) => (
+                    <div
+                      key={c.code}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "6px 8px",
+                        marginBottom: 4,
+                        background: "#f5f5dc",
+                        border: "1px solid #999",
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontFamily: "monospace",
+                            fontSize: 14,
+                            wordBreak: "break-all",
+                          }}
+                        >
+                          {c.code}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#444" }}>
+                          {c.grantsPassKind.toUpperCase()} ·{" "}
+                          {c.maxRedemptions === null
+                            ? `${c.redemptionCount} used (unlimited)`
+                            : `${c.redemptionCount}/${c.maxRedemptions} used`}
+                        </div>
+                      </div>
+                      <button className="btn" onClick={() => handleCopyAdmin(c.code)}>
+                        {adminCopied === c.code ? "Copied" : "Copy"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Redeem a Code panel — handles both Lucky Break roll codes (animated
             reveal) and plain gifted Day/Year/Lifetime codes (plain message). */}
