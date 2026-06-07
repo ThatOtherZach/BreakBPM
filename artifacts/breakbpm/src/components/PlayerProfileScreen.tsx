@@ -128,7 +128,7 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
               </div>
               <div className="panel-body">
                 {games.length === 0 ? (
-                  <p style={{ fontSize: 12, color: "#444" }}>No games played yet.</p>
+                  <p style={{ fontSize: 12, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}>No games played yet.</p>
                 ) : (
                   games.map((g) => <GameHistoryCard key={g.id} game={g} />)
                 )}

@@ -679,7 +679,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
           <div className="panel-body">
             {history.isLoading && <p style={{ fontSize: 12 }}>Loading…</p>}
             {history.data && history.data.games.length === 0 && (
-              <p style={{ fontSize: 12, color: "#444" }}>No games saved yet. Play one!</p>
+              <p style={{ fontSize: 12, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}>No games saved yet. Play one!</p>
             )}
             {history.data?.games.map((g) => (
               <GameHistoryCard key={g.id} game={g} />
@@ -696,7 +696,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 >
                   ← Prev
                 </button>
-                <span style={{ flex: 1, textAlign: "center", fontSize: 12, color: "#444" }}>
+                <span style={{ flex: 1, textAlign: "center", fontSize: 12, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}>
                   {history.data.page} / {history.data.totalPages}
                 </span>
                 <button
