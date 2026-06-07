@@ -145,7 +145,7 @@ function LocationPicker({
 /** Imperatively recenters the map when "Locate me" bumps `flyKey`. */
 function FlyTo({ position, flyKey }: { position: [number, number] | null; flyKey: number }) {
   const map = useMap();
-  useMemo(() => {
+  useEffect(() => {
     if (flyKey > 0 && position) map.flyTo(position, 15);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flyKey]);
