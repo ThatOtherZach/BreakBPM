@@ -47,7 +47,7 @@ const RULE_SET_OPTIONS: {
 }[] = [
   {
     value: 'open-through-break',
-    label: 'Open Through Break',
+    label: 'Open Break',
     chips: [{ number: '8', chipClass: 'hud-chip-eight' }],
   },
   {
