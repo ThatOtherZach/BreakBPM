@@ -31,13 +31,14 @@ interface Props {
   /** Resume an existing game from the server-side in-progress snapshot. */
   onResume: (state: GameState, serverGameId: string | null, maxGameDurationMs: number | null, pausedDuration: number) => void;
   onAbout: () => void;
+  onLegal: () => void;
   onAccount: () => void;
   onStats: () => void;
   onFindPlayers: () => void;
   onSignIn: () => void;
 }
 
-export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onStats, onFindPlayers, onSignIn }: Props) {
+export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAccount, onStats, onFindPlayers, onSignIn }: Props) {
   const [, setLocation] = useLocation();
   const startGame = useStartGame();
   const abandonGame = useAbandonGame();
@@ -596,6 +597,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onAccount, onS
       {/* Status bar */}
       <div className="statusbar">
         <div className="statusbar-item" style={{ flex: 1 }}>READY</div>
+        <button type="button" className="statusbar-item statusbar-link" onClick={onLegal}>LEGAL</button>
         <div className="statusbar-item"><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v{APP_VERSION}</a></div>
       </div>
     </div>

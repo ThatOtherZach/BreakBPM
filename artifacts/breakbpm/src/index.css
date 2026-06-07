@@ -83,7 +83,12 @@ html, #root {
   position: sticky;
   bottom: 0;
   z-index: 50;
+  /* box-sizing is globally border-box, so the safe-area padding would eat
+     into the 22px bar. Grow the bar by the inset so the content stays 22px
+     and the bar can never get "crushed" during dvh changes while scrolling. */
   padding-bottom: env(safe-area-inset-bottom);
+  height: calc(22px + env(safe-area-inset-bottom));
+  min-height: calc(22px + env(safe-area-inset-bottom));
 }
 
 /* ── Navbar ── */
@@ -1519,6 +1524,7 @@ html, #root {
   background: var(--silver);
   flex-shrink: 0;
   height: 22px;
+  min-height: 22px;
 }
 
 .statusbar-item {
@@ -1531,6 +1537,21 @@ html, #root {
   text-overflow: ellipsis;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
+}
+
+/* Footer LEGAL link — styled as a status-bar cell, not a button */
+.statusbar-link {
+  background: var(--silver);
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  letter-spacing: 1px;
+}
+.statusbar-link:hover { color: var(--navy); }
+.statusbar-link:active {
+  border-color: var(--highlight) var(--dark) var(--dark) var(--highlight);
 }
 
 /* ── Stats screen ── */

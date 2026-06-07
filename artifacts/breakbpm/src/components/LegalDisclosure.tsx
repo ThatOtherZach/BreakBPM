@@ -6,10 +6,11 @@ import dataPolicyMd from "../legal/DATA_POLICY.md?raw";
 interface LegalItemProps {
   title: string;
   markdown: string;
+  defaultOpen?: boolean;
 }
 
-function LegalItem({ title, markdown }: LegalItemProps) {
-  const [open, setOpen] = useState(false);
+function LegalItem({ title, markdown, defaultOpen = false }: LegalItemProps) {
+  const [open, setOpen] = useState(defaultOpen);
   const html = useMemo(() => marked(markdown) as string, [markdown]);
   const contentId = useId();
 
@@ -39,12 +40,12 @@ function LegalItem({ title, markdown }: LegalItemProps) {
   );
 }
 
-export default function LegalDisclosure() {
+export default function LegalDisclosure({ defaultOpen = false }: { defaultOpen?: boolean }) {
   return (
     <div className="legal-disclosure panel">
       <div className="legal-disclosure-heading">LEGAL</div>
-      <LegalItem title="Terms of Service" markdown={termsMd} />
-      <LegalItem title="Data Policy" markdown={dataPolicyMd} />
+      <LegalItem title="Terms of Service" markdown={termsMd} defaultOpen={defaultOpen} />
+      <LegalItem title="Data Policy" markdown={dataPolicyMd} defaultOpen={defaultOpen} />
     </div>
   );
 }

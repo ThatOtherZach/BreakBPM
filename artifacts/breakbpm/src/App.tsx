@@ -8,6 +8,7 @@ import GameScreen from "./components/GameScreen";
 import JoinedGameScreen from "./components/JoinedGameScreen";
 import WatchByNameScreen from "./components/WatchByNameScreen";
 import AboutScreen from "./components/AboutScreen";
+import LegalScreen from "./components/LegalScreen";
 import AccountScreen from "./components/AccountScreen";
 import StatsScreen from "./components/StatsScreen";
 import FindPlayersScreen from "./components/FindPlayersScreen";
@@ -217,6 +218,7 @@ function MainApp() {
 
   const goSignIn = () => setLocation("/sign-in");
   const goAbout = () => setLocation("/about");
+  const goLegal = () => setLocation("/legal");
   const goAccount = () => setLocation("/account");
   const goStats = () => setLocation("/stats");
   const goFindPlayers = () => setLocation("/find-players");
@@ -243,6 +245,7 @@ function MainApp() {
       onStart={handleStart}
       onResume={handleResume}
       onAbout={goAbout}
+      onLegal={goLegal}
       onAccount={goAccount}
       onStats={goStats}
       onFindPlayers={goFindPlayers}
@@ -281,6 +284,11 @@ function StatsRoute() {
 function AboutRoute() {
   const [, setLocation] = useLocation();
   return <AboutScreen onBack={() => setLocation("/")} />;
+}
+
+function LegalRoute() {
+  const [, setLocation] = useLocation();
+  return <LegalScreen onBack={() => setLocation("/")} />;
 }
 
 function FindPlayersRoute() {
@@ -363,6 +371,7 @@ function Routes() {
       <Route path="/stats" component={StatsRoute} />
       <Route path="/find-players" component={FindPlayersRoute} />
       <Route path="/about" component={AboutRoute} />
+      <Route path="/legal" component={LegalRoute} />
       <Route path="/passes" component={PassesRoute} />
       <Route path="/join/:code" component={JoinRoute} />
       <Route path="/watch/:name" component={WatchRoute} />
