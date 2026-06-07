@@ -199,7 +199,7 @@ export default function GameHistoryCard({ game: g }: { game: GameHistoryEntry })
             </span>
           )}
           <span style={{ fontSize: 10, color: "#a9c9b3" }}>
-            🕐 {fmtMs(g.durationMs)}
+            🕐 {fmtMs(g.durationMs)} · {fmtDate(g.endedAt)}
           </span>
         </div>
 
