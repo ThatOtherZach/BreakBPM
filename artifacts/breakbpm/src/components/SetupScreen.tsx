@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import type { GameType, GameState, Player, SharkAggression } from '../lib/gameLogic';
 import { normalizeShareCode } from '../lib/gameLogic';
@@ -11,6 +11,7 @@ import {
 } from '@workspace/api-client-react';
 import { saveInProgressGame, clearInProgressGame, normalizeSharkIdentity } from '../lib/gameLogic';
 import SharkIcon from './SharkIcon';
+import SplashQrReveal from './SplashQrReveal';
 import { useAuth } from '../lib/authClient';
 import { APP_VERSION } from '../lib/version';
 import { pickTagline } from '../lib/taglines';
@@ -67,6 +68,27 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
   // Shark mode (8-ball + 1P) aggression toggle. Default to 'normal' so new
   // players aren't overwhelmed. Only sent to onStart when the combo matches.
   const [sharkAggression, setSharkAggression] = useState<SharkAggression>('normal');
+
+  // Hidden easter egg: press-and-hold the splash 8-ball for 3s to reveal a
+  // QR code for breakbpm.com. The timer fires only if the press is held in
+  // place; release / move-away / cancel aborts it, so a normal tap does
+  // nothing.
+  const [qrOpen, setQrOpen] = useState(false);
+  const qrPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearQrPress = () => {
+    if (qrPressTimer.current !== null) {
+      clearTimeout(qrPressTimer.current);
+      qrPressTimer.current = null;
+    }
+  };
+  const startQrPress = () => {
+    clearQrPress();
+    qrPressTimer.current = setTimeout(() => {
+      qrPressTimer.current = null;
+      setQrOpen(true);
+    }, 3000);
+  };
+  useEffect(() => clearQrPress, []);
 
   // Keep slot 1 in sync with the signed-in user's screen name. Runs when
   // auth resolves (login mid-session, page reload, etc.) so the field
@@ -289,9 +311,23 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
       <Navbar onAbout={onAbout} onAccount={onAccount} onStats={onStats} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
       {/* ── PC-98 Splash Panel ── */}
       <div className="splash-panel">
-        {/* Left: 8-ball art in a CRT-style frame */}
-        <div className="splash-art-frame">
-          <img src={ballImg} alt="8-ball" className="splash-ball-img" />
+        {/* Left: 8-ball art in a CRT-style frame.
+            Press-and-hold (3s) reveals the share QR easter egg. */}
+        <div
+          className="splash-art-frame"
+          onPointerDown={startQrPress}
+          onPointerUp={clearQrPress}
+          onPointerLeave={clearQrPress}
+          onPointerCancel={clearQrPress}
+          onContextMenu={e => e.preventDefault()}
+          style={{
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            WebkitTouchCallout: 'none',
+            touchAction: 'manipulation',
+          } as React.CSSProperties}
+        >
+          <img src={ballImg} alt="8-ball" className="splash-ball-img" draggable={false} />
         </div>
 
         {/* Right: title block */}
@@ -600,6 +636,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
         <button type="button" className="statusbar-item statusbar-link" onClick={onLegal}>LEGAL</button>
         <div className="statusbar-item"><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v{APP_VERSION}</a></div>
       </div>
+      {qrOpen && <SplashQrReveal onClose={() => setQrOpen(false)} />}
     </div>
   );
 }
