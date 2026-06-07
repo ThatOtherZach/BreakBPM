@@ -129,13 +129,46 @@ export async function seedSubscription(
 export async function seedDiscountCode(
   code: string,
   grantsPassKind: PassKind,
-  opts: { maxRedemptions?: number | null; expiresAt?: Date | null } = {},
+  opts: {
+    maxRedemptions?: number | null;
+    expiresAt?: Date | null;
+    issuedByUserId?: string | null;
+    issuerKind?: string | null;
+    issuedAt?: Date | null;
+  } = {},
 ): Promise<void> {
   await db.insert(discountCodesTable).values({
     code,
     grantsPassKind,
     maxRedemptions: opts.maxRedemptions ?? null,
     expiresAt: opts.expiresAt ?? null,
+    issuedByUserId: opts.issuedByUserId ?? null,
+    issuerKind: opts.issuerKind ?? null,
+    issuedAt: opts.issuedAt ?? null,
+  });
+  createdCodes.push(code);
+}
+
+/**
+ * Seed a discount code tagged `issuerKind = 'admin'` (as created by the
+ * admin code-minting route). Admin codes never expire and carry a chosen
+ * redemption cap. They share `issuedByUserId` with the issuing admin's
+ * gift codes but are kept isolated by `giftScope()` in the gift flow.
+ */
+export async function seedAdminDiscountCode(
+  code: string,
+  grantsPassKind: PassKind,
+  issuedByUserId: string,
+  opts: { maxRedemptions?: number | null; issuedAt?: Date } = {},
+): Promise<void> {
+  await db.insert(discountCodesTable).values({
+    code,
+    grantsPassKind,
+    maxRedemptions: opts.maxRedemptions ?? null,
+    expiresAt: null,
+    issuedByUserId,
+    issuedAt: opts.issuedAt ?? new Date(),
+    issuerKind: "admin",
   });
   createdCodes.push(code);
 }

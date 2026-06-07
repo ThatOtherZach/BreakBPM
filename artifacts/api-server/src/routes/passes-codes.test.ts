@@ -26,6 +26,7 @@ import {
   createUser,
   seedPass,
   seedDiscountCode,
+  seedAdminDiscountCode,
   getPasses,
   getDiscountCode,
   getRedemptions,
@@ -307,5 +308,165 @@ describe("POST /passes/discount-codes — Day-Pass gift-code abuse & edge cases"
     // The earlier unused code is superseded (its expiry stamped to now-ish).
     const superseded = (await getDiscountCode(firstCode))!;
     expect(superseded.expiresAt!.getTime()).toBeLessThanOrEqual(Date.now() + 1000);
+  });
+});
+
+describe("POST /passes/redeem — admin-issued code redemption", () => {
+  it("grants a Day pass when redeeming an admin day code", async () => {
+    const admin = await createUser();
+    const user = await createUser();
+    mocks.currentUser = user;
+    const code = uniqueCode("ADMDAY");
+    await seedAdminDiscountCode(code, "day", admin.id, { maxRedemptions: 1 });
+
+    const res = await request(app).post("/api/passes/redeem").send({ code });
+
+    expect(res.body.success).toBe(true);
+    const passes = await getPasses(user.id);
+    expect(passes).toHaveLength(1);
+    expect(passes[0]!.kind).toBe("day");
+    expect((await getDiscountCode(code))!.redemptionCount).toBe(1);
+  });
+
+  it("grants a Month pass when redeeming an admin month code", async () => {
+    const admin = await createUser();
+    const user = await createUser();
+    mocks.currentUser = user;
+    const code = uniqueCode("ADMMON");
+    await seedAdminDiscountCode(code, "month", admin.id, { maxRedemptions: 1 });
+
+    const res = await request(app).post("/api/passes/redeem").send({ code });
+
+    expect(res.body.success).toBe(true);
+    const passes = await getPasses(user.id);
+    expect(passes).toHaveLength(1);
+    expect(passes[0]!.kind).toBe("month");
+  });
+
+  it("grants a Year pass when redeeming an admin year code", async () => {
+    const admin = await createUser();
+    const user = await createUser();
+    mocks.currentUser = user;
+    const code = uniqueCode("ADMYR");
+    await seedAdminDiscountCode(code, "year", admin.id, { maxRedemptions: 1 });
+
+    const res = await request(app).post("/api/passes/redeem").send({ code });
+
+    expect(res.body.success).toBe(true);
+    const passes = await getPasses(user.id);
+    expect(passes).toHaveLength(1);
+    expect(passes[0]!.kind).toBe("year");
+  });
+
+  it("grants a Lifetime pass when redeeming an admin lifetime code", async () => {
+    const admin = await createUser();
+    const user = await createUser();
+    mocks.currentUser = user;
+    const code = uniqueCode("ADMLIFE");
+    await seedAdminDiscountCode(code, "lifetime", admin.id, { maxRedemptions: 1 });
+
+    const res = await request(app).post("/api/passes/redeem").send({ code });
+
+    expect(res.body.success).toBe(true);
+    const passes = await getPasses(user.id);
+    expect(passes).toHaveLength(1);
+    expect(passes[0]!.kind).toBe("lifetime");
+    // durationSeconds is null for a Lifetime pass.
+    expect(passes[0]!.durationSeconds).toBeNull();
+  });
+
+  it("allows distinct users to redeem a multi-use admin code up to its cap, then refuses", async () => {
+    const admin = await createUser();
+    const code = uniqueCode("ADMCAP");
+    await seedAdminDiscountCode(code, "month", admin.id, { maxRedemptions: 2 });
+
+    const u1 = await createUser();
+    mocks.currentUser = u1;
+    const r1 = await request(app).post("/api/passes/redeem").send({ code });
+    expect(r1.body.success).toBe(true);
+    expect((await getDiscountCode(code))!.redemptionCount).toBe(1);
+
+    const u2 = await createUser();
+    mocks.currentUser = u2;
+    const r2 = await request(app).post("/api/passes/redeem").send({ code });
+    expect(r2.body.success).toBe(true);
+    expect((await getDiscountCode(code))!.redemptionCount).toBe(2);
+
+    // Third user is refused — cap is already at maxRedemptions.
+    const u3 = await createUser();
+    mocks.currentUser = u3;
+    const r3 = await request(app).post("/api/passes/redeem").send({ code });
+    expect(r3.body.success).toBe(false);
+    expect(r3.body.message).toMatch(/fully redeemed/i);
+    expect(await getPasses(u3.id)).toHaveLength(0);
+    // The rolled-back claim must not increment the count past the cap.
+    expect((await getDiscountCode(code))!.redemptionCount).toBe(2);
+  });
+
+  it("admin code's issuedAt does not count toward the gift-code cooldown (giftScope isolation)", async () => {
+    // A user holds a Year pass (gift-eligible). An admin code was minted under
+    // their userId very recently (as if they are also an admin). That admin
+    // code's issuedAt must be invisible to giftScope(), so the gift cooldown
+    // check must NOT block them from minting their first gift code.
+    const user = await createUser();
+    mocks.currentUser = user;
+    await seedPass(user.id, "year");
+
+    // Admin code seeded under the same issuedByUserId, fresh issuedAt (within
+    // what would be a cooldown window if the gift flow could see it).
+    const adminCode = uniqueCode("ADMISO");
+    await seedAdminDiscountCode(adminCode, "month", user.id, {
+      maxRedemptions: null,
+      issuedAt: new Date(Date.now() - 60_000), // 1 minute ago
+    });
+
+    // Minting a gift code must succeed — the admin code's issuedAt is scoped out.
+    const res = await request(app).post("/api/passes/discount-codes").send({});
+    expect(res.body.success).toBe(true);
+    expect(res.body.code.grantsPassKind).toBe("day");
+
+    // The admin code itself is untouched by the gift flow.
+    const adminRow = (await getDiscountCode(adminCode))!;
+    expect(adminRow.redemptionCount).toBe(0);
+    expect(adminRow.expiresAt).toBeNull();
+  });
+
+  it("gift-code supersede does not expire admin codes sharing issuedByUserId", async () => {
+    // A user (Lifetime holder) generates two successive gift codes. Between
+    // the first and second mints, they also have an admin code filed under
+    // the same issuedByUserId. The supersede step inside the gift flow must
+    // only retire the old gift code, never the admin code.
+    const user = await createUser();
+    mocks.currentUser = user;
+    await seedPass(user.id, "lifetime");
+
+    // First gift-code mint.
+    const first = await request(app).post("/api/passes/discount-codes").send({});
+    expect(first.body.success).toBe(true);
+    const firstGiftCode = first.body.code.code as string;
+
+    // Seed an admin code under the same user (shared issuedByUserId).
+    const adminCode = uniqueCode("ADMSUPER");
+    await seedAdminDiscountCode(adminCode, "year", user.id, { maxRedemptions: null });
+
+    // Back-date the first gift code so the cooldown has elapsed.
+    await db
+      .update(discountCodesTable)
+      .set({ issuedAt: new Date(Date.now() - GIFT_COOLDOWN_MS - 60_000) })
+      .where(eq(discountCodesTable.code, firstGiftCode));
+
+    // Second gift-code mint — triggers the supersede step for the old gift code.
+    const second = await request(app).post("/api/passes/discount-codes").send({});
+    expect(second.body.success).toBe(true);
+    expect(second.body.code.code).not.toBe(firstGiftCode);
+
+    // The old gift code is superseded (expiresAt stamped to now-ish).
+    const supersededGift = (await getDiscountCode(firstGiftCode))!;
+    expect(supersededGift.expiresAt!.getTime()).toBeLessThanOrEqual(Date.now() + 1000);
+
+    // The admin code must NOT be touched — expiresAt stays null, count stays 0.
+    const adminRow = (await getDiscountCode(adminCode))!;
+    expect(adminRow.expiresAt).toBeNull();
+    expect(adminRow.redemptionCount).toBe(0);
   });
 });
