@@ -383,29 +383,27 @@ html, #root {
   flex: 1 1 0;
   min-width: 0;
   padding: 8px 4px;
-  /* Green felt "pool table" skin — mirrors the splash/HUD panels: dark green
-     baize with a CRT scanline overlay. */
-  background-color: #0a1a0a;
+  /* Pool-table "felt" skin — matches the Recent Games history cards (.fpp-card):
+     green baize with a crosshatch weave, a wooden outset rail, and inset depth. */
+  position: relative;
+  overflow: hidden;
+  background-color: #0f5a2e;
   background-image:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.18) 2px,
-      rgba(0, 0, 0, 0.18) 4px
-    );
-  border: 2px solid #1a4a1a;
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.10) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 4px);
+  border: 3px outset #7a4a22;
+  box-shadow: inset 0 0 0 2px #0a4322, inset 0 2px 6px rgba(0, 0, 0, 0.35);
   cursor: pointer;
   text-align: center;
-  transition: border-color 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+  transition: box-shadow 0.12s ease, background-color 0.12s ease;
 }
 .rule-set-opt.selected {
-  /* Selected = "lit" felt: brighter baize, a phosphor-green rim and glow. */
-  background-color: #0d240d;
-  border-color: #00ff41;
+  /* Selected = "lit" felt: brighter baize with a phosphor-green inner rail + glow. */
+  background-color: #147a3e;
   box-shadow:
-    0 0 8px rgba(0, 255, 80, 0.35),
-    inset 0 0 10px rgba(0, 255, 80, 0.12);
+    inset 0 0 0 2px #00ff41,
+    inset 0 2px 6px rgba(0, 0, 0, 0.35),
+    0 0 8px rgba(0, 255, 80, 0.4);
 }
 /* Visually-hidden real radio — keeps keyboard/AT behavior, hides the chrome. */
 .rule-set-radio {
@@ -422,7 +420,7 @@ html, #root {
 /* Unselected indicator: a small black dot, half the diameter of the slot, drawn
    inside a fixed 16px box so the option columns stay aligned whether or not the
    full-size cue ball is showing. A faint light rim keeps the dot visible against
-   the dark felt. When selected, the `.cue-ball-icon` class is layered on to
+   the green felt. When selected, the `.cue-ball-icon` class is layered on to
    render the white cue ball at the full 16px instead. */
 .rule-set-indicator {
   width: 16px;
@@ -465,10 +463,11 @@ html, #root {
   font-weight: bold;
   letter-spacing: 0.5px;
   line-height: 1.15;
-  color: #7aba7a; /* phosphor green, legible on the dark felt */
+  color: #eaf6ea; /* cream-green, legible on the baize (matches history cards) */
+  text-shadow: 1px 1px 0 #042414;
 }
 .rule-set-opt.selected .rule-set-label {
-  color: #00ff41;
+  color: #ffffff;
 }
 /* Keyboard focus ring on the focused option (via the hidden radio). */
 .rule-set-radio:focus-visible + .rule-set-indicator {
