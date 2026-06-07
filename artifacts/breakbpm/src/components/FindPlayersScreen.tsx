@@ -403,7 +403,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
     <div className="app-window app-window--page">
       <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
       <div className="app-body">
-        <div className="panel">
+        <div className="panel panel--wood">
           <div className="panel-header">FIND PLAYERS</div>
           <div className="panel-body">
             <SignedOut>
