@@ -198,9 +198,12 @@ export default function GameHistoryCard({ game: g }: { game: GameHistoryEntry })
                 : "Ended — inactive for 60 min"}
             </span>
           )}
+          <span style={{ fontSize: 10, color: "#a9c9b3" }}>
+            🕐 {fmtMs(g.durationMs)} · {fmtDate(g.endedAt)}
+          </span>
         </div>
 
-        {/* Right: BPM hero + time · date */}
+        {/* Right: BPM hero + acc */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
           <span
             style={{
@@ -223,9 +226,6 @@ export default function GameHistoryCard({ game: g }: { game: GameHistoryEntry })
             }}
           >
             {hasAcc ? `${g.accuracy}% ACC` : "—% ACC"}
-          </span>
-          <span style={{ fontSize: 10, color: "#a9c9b3" }}>
-            🕐 {fmtMs(g.durationMs)} · {fmtDate(g.endedAt)}
           </span>
         </div>
       </div>
