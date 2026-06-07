@@ -369,6 +369,79 @@ html, #root {
   vertical-align: baseline;
 }
 
+/* ── Rule Set radio-ball selector (8-ball auto-assignment setup) ── */
+/* Three side-by-side options. The radio indicator reads as a small black ball
+   when unselected and swaps to the white cue-ball glyph when selected (the
+   `.cue-ball-icon` class is added inline on selection). Each option also shows
+   its signature numbered chip (1 / 2 / 8). Real radios drive it for keyboard +
+   screen-reader support; the native input is visually hidden. */
+.rule-set-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 4px;
+  background: var(--silver);
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff; /* raised bevel, matches .btn */
+  cursor: pointer;
+  text-align: center;
+}
+.rule-set-opt.selected {
+  border-color: #808080 #fff #fff #808080; /* sunken bevel = pressed/selected */
+  background: #cdd3da;
+}
+/* Visually-hidden real radio — keeps keyboard/AT behavior, hides the chrome. */
+.rule-set-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+/* Unselected indicator: a small solid black ball. When selected, the
+   `.cue-ball-icon` class is layered on to render the white cue ball instead. */
+.rule-set-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #1f1f1f;
+  box-shadow: inset -1px -1px 0 rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
+/* Selected: render the white cue ball. The background MUST be re-declared here
+   (not left to `.cue-ball-icon`) — `.rule-set-indicator` is defined later in the
+   file, so at equal single-class specificity its black background would win on
+   source order. The combined selector outranks it. */
+.rule-set-indicator.cue-ball-icon {
+  font-size: 16px; /* anchor the cue-ball gradients to a 16px ball */
+  vertical-align: baseline;
+  background:
+    radial-gradient(circle at 50% 50%, #c8161d 0 0.125em, transparent 0.156em),
+    radial-gradient(circle at 32% 30%, #ffffff 0 0.1875em, rgba(255,255,255,0) 0.375em),
+    radial-gradient(circle at 65% 70%, #c8c8c8 0%, #ffffff 60%);
+  box-shadow:
+    inset 0 0 0 0.0625em #000,
+    inset -0.0625em -0.0625em 0 rgba(0, 0, 0, 0.25);
+}
+.rule-set-label {
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 1.15;
+  color: #1f1f1f;
+}
+/* Keyboard focus ring on the focused option (via the hidden radio). */
+.rule-set-radio:focus-visible + .rule-set-indicator {
+  outline: 2px solid #1f4e9e;
+  outline-offset: 2px;
+}
+
 /* ── Rainbow admin name ── */
 /* Cosmetic perk: an admin's player name renders as an animated rainbow
    gradient during live play (HUD, player list, win banner, shot log,

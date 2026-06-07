@@ -35,6 +35,22 @@ const RULE_SET_SUBLABEL: Record<RuleSet, string> = {
   'open-through-break': 'Open through the break — next ball after locks groups',
 };
 
+// Rule-set radio options. Each carries the CSS ball-chip art that signals the
+// option: the 1 ball (yellow solid) for first-ball, the 2 ball (blue solid)
+// for second-ball, and the 8 ball (black) for open-through-break. Colors mirror
+// BALL_COLORS in GameScreen.tsx (8 uses the eight-ball chip, no color needed).
+const RULE_SET_OPTIONS: {
+  value: RuleSet;
+  label: string;
+  number: string;
+  chipClass: string;
+  chipColor?: string;
+}[] = [
+  { value: 'first-ball', label: 'First Ball', number: '1', chipClass: 'hud-chip-solid', chipColor: '#FDD307' },
+  { value: 'second-ball', label: 'Second Ball', number: '2', chipClass: 'hud-chip-solid', chipColor: '#1F4E9E' },
+  { value: 'open-through-break', label: 'Open Through Break', number: '8', chipClass: 'hud-chip-eight' },
+];
+
 interface Props {
   onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, serverShareCode: string | null, sharkAggression?: SharkAggression, ruleSet?: RuleSet) => void;
   /** Resume an existing game from the server-side in-progress snapshot. */
@@ -563,26 +579,50 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
               {autoTeam && (
                 <div
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
                     marginTop: 6,
                     paddingTop: 6,
                     borderTop: '1px solid rgba(0,0,0,0.18)',
                   }}
                 >
-                  <span style={{ fontWeight: 'bold', fontSize: 13, flex: 1 }}>Rule Set</span>
-                  <select
-                    className="input"
-                    style={{ width: 170, flex: '0 0 auto' }}
-                    value={ruleSet}
-                    onChange={e => setRuleSet(e.target.value as RuleSet)}
+                  <span style={{ fontWeight: 'bold', fontSize: 13, display: 'block', marginBottom: 6 }}>
+                    Rule Set
+                  </span>
+                  <div
+                    role="radiogroup"
                     aria-label="Group assignment rule set"
+                    style={{ display: 'flex', gap: 6 }}
                   >
-                    <option value="first-ball">First Ball</option>
-                    <option value="second-ball">Second Ball</option>
-                    <option value="open-through-break">Open Through Break</option>
-                  </select>
+                    {RULE_SET_OPTIONS.map(opt => {
+                      const checked = ruleSet === opt.value;
+                      return (
+                        <label
+                          key={opt.value}
+                          className={`rule-set-opt ${checked ? 'selected' : ''}`}
+                          title={opt.label}
+                        >
+                          <input
+                            type="radio"
+                            name="ruleSet"
+                            value={opt.value}
+                            checked={checked}
+                            onChange={() => setRuleSet(opt.value)}
+                            className="rule-set-radio"
+                          />
+                          <span
+                            className={`rule-set-indicator ${checked ? 'cue-ball-icon' : ''}`}
+                            aria-hidden="true"
+                          />
+                          <span
+                            className={`hud-chip hud-chip-sm ${opt.chipClass}`}
+                            data-number={opt.number}
+                            style={{ '--chip-color': opt.chipColor } as React.CSSProperties}
+                            aria-hidden="true"
+                          />
+                          <span className="rule-set-label">{opt.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
