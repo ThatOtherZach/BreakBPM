@@ -22,6 +22,7 @@ export interface PublicProfileResult {
   winRate?: number | null;
   /** @nullable */
   avgBpm?: number | null;
+  isAdmin?: boolean;
   games: GameHistoryEntry[];
   stats?: StatsResult | null;
 }

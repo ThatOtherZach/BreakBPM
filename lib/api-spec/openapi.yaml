@@ -1451,6 +1451,8 @@ components:
         # Average BPM across the last 5 completed games (same set shown in the
         # profile). Null when none of those games have a recorded BPM.
         avgBpm: { type: ["number", "null"] }
+        # True when this player is an admin (rainbow name effect).
+        isAdmin: { type: boolean }
         # Up to the five most recent completed games, newest-first. Same
         # shape (and rendered with the same cards) as the owner's own
         # account history. Empty when found is false.

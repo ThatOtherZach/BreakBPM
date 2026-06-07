@@ -1583,6 +1583,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
       id: usersTable.id,
       screenName: usersTable.screenName,
       createdAt: usersTable.createdAt,
+      email: usersTable.email,
     })
     .from(usersTable)
     .where(sql`lower(${usersTable.screenName}) = ${handle}`)
@@ -1732,6 +1733,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
       gamesPlayed,
       winRate,
       avgBpm,
+      isAdmin: isAdminEmail(host.email ?? ""),
       games,
       stats,
     }),

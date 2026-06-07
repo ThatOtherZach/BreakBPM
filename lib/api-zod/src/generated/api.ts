@@ -590,6 +590,7 @@ export const GetPublicProfileResponse = zod.object({
   "gamesPlayed": zod.number().nullish(),
   "winRate": zod.number().nullish(),
   "avgBpm": zod.number().nullish(),
+  "isAdmin": zod.boolean().optional(),
   "games": zod.array(zod.object({
   "id": zod.string(),
   "gameType": zod.string(),

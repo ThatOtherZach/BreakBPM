@@ -2,6 +2,7 @@ import { useLocation } from "wouter";
 import Navbar from "./Navbar";
 import GameHistoryCard from "./GameHistoryCard";
 import StatsHero from "./StatsHero";
+import { PlayerName } from "./PlayerName";
 import { useGetPublicProfile, getGetPublicProfileQueryKey } from "@workspace/api-client-react";
 
 interface Props {
@@ -83,7 +84,7 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
             {/* Header — the same CRT hero readout as the Stats page, scoped to
                 this player's last 24 hours. */}
             {stats ? (
-              <StatsHero stats={stats} screenName={screenName} joinedAt={profile.data.memberSince} />
+              <StatsHero stats={stats} screenName={screenName} adminName={profile.data.isAdmin ?? false} joinedAt={profile.data.memberSince} />
             ) : (
               <div
                 className="panel"
@@ -107,7 +108,7 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {screenName}
+                  <PlayerName name={screenName} admin={profile.data.isAdmin ?? false} />
                 </div>
                 <div style={{ fontSize: 12, color: "#d8b4ff", marginTop: 2 }}>
                   {profile.data.memberSince

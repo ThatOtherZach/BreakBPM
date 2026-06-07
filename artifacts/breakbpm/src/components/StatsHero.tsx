@@ -1,5 +1,6 @@
 import type { StatsResult } from "@workspace/api-client-react";
 import { SOLIDS } from "../lib/gameLogic";
+import { PlayerName } from "./PlayerName";
 
 export const BALL_COLORS: Record<number, string> = {
   1: "#FDD307", 2: "#1F4E9E", 3: "#C3342B", 4: "#5B247A",
@@ -146,10 +147,12 @@ export function TrendOverlay({
 export default function StatsHero({
   stats,
   screenName,
+  adminName,
   joinedAt,
 }: {
   stats: StatsResult;
   screenName?: string;
+  adminName?: boolean;
   joinedAt?: string | null;
 }) {
   const isPersonal = stats.appliedScope === "personal";
@@ -179,7 +182,11 @@ export default function StatsHero({
                   />
                 );
               })()}
-              <span className="stats-hero-name text-[28px]">{isPersonal ? screenName : "Everyone"}</span>
+              <span className="stats-hero-name text-[28px]">
+                {isPersonal
+                  ? <PlayerName name={screenName} admin={adminName ?? false} />
+                  : "Everyone"}
+              </span>
             </div>
             {(stats.sharkLevel ?? 0) > 0 && (
               <span className="stats-hero-shark">
