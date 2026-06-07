@@ -36,19 +36,33 @@ const RULE_SET_SUBLABEL: Record<RuleSet, string> = {
 };
 
 // Rule-set radio options. Each carries the CSS ball-chip art that signals the
-// option: the 1 ball (yellow solid) for first-ball, the 2 ball (blue solid)
-// for second-ball, and the 8 ball (black) for open-through-break. Colors mirror
-// BALL_COLORS in GameScreen.tsx (8 uses the eight-ball chip, no color needed).
+// option: the 1 ball (yellow solid) for first-ball; the 6 (green solid) + 9
+// (yellow stripe) pair for second-ball (two balls = "second"); and the 8 ball
+// for open-through-break. Colors mirror BALL_COLORS in GameScreen.tsx (the
+// eight-ball chip needs no color).
 const RULE_SET_OPTIONS: {
   value: RuleSet;
   label: string;
-  number: string;
-  chipClass: string;
-  chipColor?: string;
+  chips: { number: string; chipClass: string; chipColor?: string }[];
 }[] = [
-  { value: 'first-ball', label: 'First Ball', number: '1', chipClass: 'hud-chip-solid', chipColor: '#FDD307' },
-  { value: 'second-ball', label: 'Second Ball', number: '2', chipClass: 'hud-chip-solid', chipColor: '#1F4E9E' },
-  { value: 'open-through-break', label: 'Open Through Break', number: '8', chipClass: 'hud-chip-eight' },
+  {
+    value: 'first-ball',
+    label: 'First Ball',
+    chips: [{ number: '1', chipClass: 'hud-chip-solid', chipColor: '#FDD307' }],
+  },
+  {
+    value: 'second-ball',
+    label: 'Second Ball',
+    chips: [
+      { number: '6', chipClass: 'hud-chip-solid', chipColor: '#276B40' },
+      { number: '9', chipClass: 'hud-chip-stripe', chipColor: '#FDD307' },
+    ],
+  },
+  {
+    value: 'open-through-break',
+    label: 'Open Through Break',
+    chips: [{ number: '8', chipClass: 'hud-chip-eight' }],
+  },
 ];
 
 interface Props {
@@ -612,12 +626,16 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                             className={`rule-set-indicator ${checked ? 'cue-ball-icon' : ''}`}
                             aria-hidden="true"
                           />
-                          <span
-                            className={`hud-chip hud-chip-sm ${opt.chipClass}`}
-                            data-number={opt.number}
-                            style={{ '--chip-color': opt.chipColor } as React.CSSProperties}
-                            aria-hidden="true"
-                          />
+                          <span className="rule-set-chips" aria-hidden="true">
+                            {opt.chips.map((chip, i) => (
+                              <span
+                                key={i}
+                                className={`hud-chip hud-chip-sm ${chip.chipClass}`}
+                                data-number={chip.number}
+                                style={{ '--chip-color': chip.chipColor } as React.CSSProperties}
+                              />
+                            ))}
+                          </span>
                           <span className="rule-set-label">{opt.label}</span>
                         </label>
                       );

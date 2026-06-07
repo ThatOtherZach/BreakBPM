@@ -373,25 +373,39 @@ html, #root {
 /* Three side-by-side options. The radio indicator reads as a small black ball
    when unselected and swaps to the white cue-ball glyph when selected (the
    `.cue-ball-icon` class is added inline on selection). Each option also shows
-   its signature numbered chip (1 / 2 / 8). Real radios drive it for keyboard +
+   its signature ball chip(s) (1 / 6+9 / 8). Real radios drive it for keyboard +
    screen-reader support; the native input is visually hidden. */
 .rule-set-opt {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   flex: 1 1 0;
   min-width: 0;
-  padding: 6px 4px;
-  background: var(--silver);
-  border: 2px solid;
-  border-color: #fff #808080 #808080 #fff; /* raised bevel, matches .btn */
+  padding: 8px 4px;
+  /* Green felt "pool table" skin — mirrors the splash/HUD panels: dark green
+     baize with a CRT scanline overlay. */
+  background-color: #0a1a0a;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.18) 2px,
+      rgba(0, 0, 0, 0.18) 4px
+    );
+  border: 2px solid #1a4a1a;
   cursor: pointer;
   text-align: center;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
 }
 .rule-set-opt.selected {
-  border-color: #808080 #fff #fff #808080; /* sunken bevel = pressed/selected */
-  background: #cdd3da;
+  /* Selected = "lit" felt: brighter baize, a phosphor-green rim and glow. */
+  background-color: #0d240d;
+  border-color: #00ff41;
+  box-shadow:
+    0 0 8px rgba(0, 255, 80, 0.35),
+    inset 0 0 10px rgba(0, 255, 80, 0.12);
 }
 /* Visually-hidden real radio — keeps keyboard/AT behavior, hides the chrome. */
 .rule-set-radio {
@@ -405,14 +419,22 @@ html, #root {
   white-space: nowrap;
   border: 0;
 }
-/* Unselected indicator: a small solid black ball. When selected, the
-   `.cue-ball-icon` class is layered on to render the white cue ball instead. */
+/* Unselected indicator: a small black dot, half the diameter of the slot, drawn
+   inside a fixed 16px box so the option columns stay aligned whether or not the
+   full-size cue ball is showing. A faint light rim keeps the dot visible against
+   the dark felt. When selected, the `.cue-ball-icon` class is layered on to
+   render the white cue ball at the full 16px instead. */
 .rule-set-indicator {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #1f1f1f;
-  box-shadow: inset -1px -1px 0 rgba(0, 0, 0, 0.4);
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      #1f1f1f 0 4px,
+      rgba(255, 255, 255, 0.25) 4px 5px,
+      transparent 5px
+    );
   flex-shrink: 0;
 }
 /* Selected: render the white cue ball. The background MUST be re-declared here
@@ -430,15 +452,27 @@ html, #root {
     inset 0 0 0 0.0625em #000,
     inset -0.0625em -0.0625em 0 rgba(0, 0, 0, 0.25);
 }
+/* Row of one or more ball chips beneath the indicator (Second Ball shows two). */
+.rule-set-chips {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
 .rule-set-label {
+  font-family: 'Courier New', monospace;
   font-size: 10px;
   font-weight: bold;
+  letter-spacing: 0.5px;
   line-height: 1.15;
-  color: #1f1f1f;
+  color: #7aba7a; /* phosphor green, legible on the dark felt */
+}
+.rule-set-opt.selected .rule-set-label {
+  color: #00ff41;
 }
 /* Keyboard focus ring on the focused option (via the hidden radio). */
 .rule-set-radio:focus-visible + .rule-set-indicator {
-  outline: 2px solid #1f4e9e;
+  outline: 2px solid #00ff41;
   outline-offset: 2px;
 }
 
