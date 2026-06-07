@@ -32,7 +32,7 @@ const PLAYER_BALL_COLORS = ['#FDD307', '#1F4E9E', '#C3342B', '#5B247A'];
 const RULE_SET_SUBLABEL: Record<RuleSet, string> = {
   'first-ball': 'First ball locks player groups',
   'second-ball': 'Second ball locks player groups',
-  'open-through-break': 'Open through the break — next ball after locks groups',
+  'open-through-break': 'Open Through Break, next ball locks groups',
 };
 
 // Rule-set radio options. Each carries the CSS ball-chip art that signals the
