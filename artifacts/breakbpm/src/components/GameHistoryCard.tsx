@@ -91,7 +91,12 @@ export function fmtMs(ms: number): string {
 
 export function fmtDate(d: Date | string): string {
   const date = d instanceof Date ? d : new Date(d);
-  return date.toLocaleString();
+  const dd = date.getDate().toString().padStart(2, "0");
+  const mm = (date.getMonth() + 1).toString().padStart(2, "0");
+  const yyyy = date.getFullYear();
+  const hh = date.getHours().toString().padStart(2, "0");
+  const min = date.getMinutes().toString().padStart(2, "0");
+  return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
 }
 
 const GAME_TYPE_LABEL: Record<string, string> = {
