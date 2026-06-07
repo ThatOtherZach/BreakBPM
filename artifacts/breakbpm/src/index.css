@@ -368,6 +368,33 @@ html, #root {
   font-size: var(--chip-size, 26px);
   vertical-align: baseline;
 }
+
+/* ── Rainbow admin name ── */
+/* Cosmetic perk: an admin's player name renders as an animated rainbow
+   gradient during live play (HUD, player list, win banner, shot log,
+   spectator/OBS views). Uses background-clip:text so the gradient shows
+   through the glyphs over both the opaque HUD panel and the transparent OBS
+   overlay. Applied inline so it inherits the surrounding font size/weight and
+   never disturbs ellipsis/wrapping on the names it replaces. */
+@keyframes rainbow-name-pan {
+  to { background-position: 200% center; }
+}
+.rainbow-name {
+  background-image: linear-gradient(
+    90deg,
+    #ff004d, #ff8a00, #ffe600, #00e676, #00b0ff, #d500f9, #ff004d
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  font-weight: bold;
+  animation: rainbow-name-pan 2.5s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rainbow-name { animation: none; }
+}
 .about-markdown blockquote {
   border-left: 3px solid var(--navy);
   padding-left: 10px;

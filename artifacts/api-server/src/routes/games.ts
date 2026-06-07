@@ -35,6 +35,7 @@ import { resolveStats, clearUserStatsCache, windowCutoff, FREE_TIER_WINDOW, type
 import { sweepStaleGames, INACTIVITY_FORFEIT_MS, MAX_GAME_DURATION_MS } from "../lib/forfeit";
 import { newId } from "../lib/ids";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
+import { isAdminEmail } from "../lib/config";
 
 const router: IRouter = Router();
 
@@ -1446,9 +1447,21 @@ router.get("/games/state", async (req, res): Promise<void> => {
     res.json(GetGameStateByCodeResponse.parse({ found: false }));
     return;
   }
+  // Join the owning user so we can resolve a per-participant `isAdmin` flag
+  // from the email allowlist at response-build time. We deliberately do NOT
+  // denormalize an admin column — deriving it here means changing the allowlist
+  // never leaves stale flags, and the email itself never leaves the server.
   const parts = await db
-    .select()
+    .select({
+      slotIndex: gameParticipantsTable.slotIndex,
+      displayName: gameParticipantsTable.displayName,
+      isHost: gameParticipantsTable.isHost,
+      leftAt: gameParticipantsTable.leftAt,
+      userId: gameParticipantsTable.userId,
+      email: usersTable.email,
+    })
     .from(gameParticipantsTable)
+    .leftJoin(usersTable, eq(usersTable.id, gameParticipantsTable.userId))
     .where(eq(gameParticipantsTable.gameId, fresh.id))
     .orderBy(gameParticipantsTable.slotIndex);
   res.json(
@@ -1466,6 +1479,7 @@ router.get("/games/state", async (req, res): Promise<void> => {
         isHost: p.isHost,
         hasLeft: !!p.leftAt,
         isGuest: p.userId == null,
+        isAdmin: isAdminEmail(p.email),
       })),
     }),
   );

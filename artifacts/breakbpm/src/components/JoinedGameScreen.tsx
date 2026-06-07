@@ -22,6 +22,7 @@ import {
   useLeaveGame,
 } from '@workspace/api-client-react';
 import { ObsIdle } from './ObsOverlay';
+import { PlayerName } from './PlayerName';
 
 const BALL_COLORS: Record<number, string> = {
   1: '#FDD307', 2: '#1F4E9E', 3: '#C3342B', 4: '#5B247A',
@@ -287,8 +288,13 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
     isHost: boolean;
     hasLeft: boolean;
     isGuest: boolean;
+    isAdmin: boolean;
   }> } | undefined)?.participants ?? [];
   const rosterBySlot = new Map(participants.map(p => [p.slotIndex, p]));
+  // Set of admin display names (resolved server-side, carried only in the
+  // participants payload) used to rainbow matching names in the HUD/shot log.
+  const adminNames = new Set(participants.filter(p => p.isAdmin).map(p => p.displayName));
+  const isAdminName = (name: string | null | undefined): boolean => !!name && adminNames.has(name);
   const currentIdx = state?.currentPlayerIndex ?? 0;
   const cur = players[currentIdx];
   // The host is always Player 1 (slot 0). Prefer the live roster name,
@@ -363,7 +369,9 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
               {dispBpm !== null ? dispBpm.toFixed(1) : '--.-'}
             </div>
             <div className="hud-bpm-sub">
-              {dispBpm === null ? 'AWAITING PLAY' : `${dispPlayerName?.toUpperCase() ?? ''}`}
+              {dispBpm === null
+                ? 'AWAITING PLAY'
+                : <PlayerName name={dispPlayerName ?? ''} admin={isAdminName(dispPlayerName)} upper />}
             </div>
           </div>
           <div className="hud-divider" />
@@ -452,7 +460,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
                   {active ? <span className="cue-ball-icon" /> : null}
                 </span>
                 <span style={{ fontSize: 16, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {shownName}{isMe ? ' (you)' : ''}{roster?.isHost ? ' ★' : ''}
+                  <PlayerName name={shownName} admin={roster?.isAdmin ?? isAdminName(shownName)} />{isMe ? ' (you)' : ''}{roster?.isHost ? ' ★' : ''}
                 </span>
                 {roster?.hasLeft && (
                   <span style={{ fontSize: 12, color: '#ff9090' }}>· left</span>
@@ -485,7 +493,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
             }}>
               <span style={{ minWidth: 12 }} aria-hidden="true" />
               <span style={{ fontSize: 18 }}>
-                {rp.displayName}{joinResult?.slotIndex === rp.slotIndex ? ' (you)' : ''}
+                <PlayerName name={rp.displayName} admin={rp.isAdmin} />{joinResult?.slotIndex === rp.slotIndex ? ' (you)' : ''}
               </span>
               <span style={{ fontSize: 12, opacity: 0.7 }}>· joining…</span>
               {rp.hasLeft && <span style={{ fontSize: 12, color: '#ff9090' }}>· left</span>}
@@ -498,7 +506,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
               {state.winner ? (
                 <>
                   ★ {state.winner === SHARK_PLAYER_NAME && <SharkIcon size={21} />}
-                  {state.winner.toUpperCase()} WINS
+                  <PlayerName name={state.winner} admin={isAdminName(state.winner)} upper /> WINS
                 </>
               ) : 'GAME OVER'}
             </span>
@@ -515,17 +523,17 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
         ? <div style={{ color: '#006600' }}>_ no shots yet...</div>
         : shotLog.map((e, i) => ({ e, i })).reverse().slice(0, 6).map(({ e, i }) => {
           const t = formatTime(e.gameTime);
-          let line = '';
-          if (e.type === 'sink') line = `[${t}] ${e.playerName} » SINK ${ballLabel(e.ball!)}`;
-          else if (e.type === 'foul') line = `[${t}] ${e.playerName} » FOUL`;
-          else if (e.type === 'safety') line = `[${t}] ${e.playerName} » SAFETY`;
-          else if (e.type === 'miss') line = `[${t}] ${e.playerName} » MISS`;
-          else if (e.type === 'win') line = `[${t}] ${e.playerName} » WIN! ${e.ball ? ballLabel(e.ball) : ''}`;
-          else if (e.type === 'lose') line = `[${t}] ${e.playerName} » LOSS`;
+          let rest = '';
+          if (e.type === 'sink') rest = ` » SINK ${ballLabel(e.ball!)}`;
+          else if (e.type === 'foul') rest = ' » FOUL';
+          else if (e.type === 'safety') rest = ' » SAFETY';
+          else if (e.type === 'miss') rest = ' » MISS';
+          else if (e.type === 'win') rest = ` » WIN! ${e.ball ? ballLabel(e.ball) : ''}`;
+          else if (e.type === 'lose') rest = ' » LOSS';
           const bpmTag = e.bpm !== undefined ? ` · ${e.bpm.toFixed(1)} BPM` : '';
           return (
             <div key={i} className={`log-entry ${e.type}`}>
-              {line}{bpmTag}
+              {`[${t}] `}<PlayerName name={e.playerName} admin={isAdminName(e.playerName)} />{rest}{bpmTag}
             </div>
           );
         })
@@ -561,17 +569,17 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
               ? <div style={{ color: '#006600' }}>_ no shots yet...</div>
               : shotLog.map((e, i) => ({ e, i })).reverse().map(({ e, i }) => {
                 const t = formatTime(e.gameTime);
-                let line = '';
-                if (e.type === 'sink') line = `[${t}] ${e.playerName} » SINK ${ballLabel(e.ball!)}`;
-                else if (e.type === 'foul') line = `[${t}] ${e.playerName} » FOUL`;
-                else if (e.type === 'safety') line = `[${t}] ${e.playerName} » SAFETY`;
-                else if (e.type === 'miss') line = `[${t}] ${e.playerName} » MISS`;
-                else if (e.type === 'win') line = `[${t}] ${e.playerName} » WIN! ${e.ball ? ballLabel(e.ball) : ''}`;
-                else if (e.type === 'lose') line = `[${t}] ${e.playerName} » LOSS`;
+                let rest = '';
+                if (e.type === 'sink') rest = ` » SINK ${ballLabel(e.ball!)}`;
+                else if (e.type === 'foul') rest = ' » FOUL';
+                else if (e.type === 'safety') rest = ' » SAFETY';
+                else if (e.type === 'miss') rest = ' » MISS';
+                else if (e.type === 'win') rest = ` » WIN! ${e.ball ? ballLabel(e.ball) : ''}`;
+                else if (e.type === 'lose') rest = ' » LOSS';
                 const bpmTag = e.bpm !== undefined ? ` · ${e.bpm.toFixed(1)} BPM` : '';
                 return (
                   <div key={i} className={`log-entry ${e.type}`}>
-                    {line}{bpmTag}{e.note ? ` — ${e.note}` : ''}
+                    {`[${t}] `}<PlayerName name={e.playerName} admin={isAdminName(e.playerName)} />{rest}{bpmTag}{e.note ? ` — ${e.note}` : ''}
                   </div>
                 );
               })

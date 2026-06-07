@@ -49,3 +49,27 @@ export function cryptoPaymentsEnabled(): boolean {
 /** User-facing copy when a crypto flow is hit while crypto payments are off. */
 export const CRYPTO_PAYMENTS_OFF_MESSAGE =
   "Crypto checkout isn't open right now. Check back soon or use a code.";
+
+/**
+ * Admin identity allowlist. `BREAKBPM_ADMIN_EMAILS` is a comma-separated list
+ * of account emails treated as admins. Parsed (and lowercased) on every call
+ * so flipping the env var never leaves stale state anywhere. The list itself
+ * is NEVER sent to clients — callers resolve a single per-user boolean via
+ * `isAdminEmail` and ship only that.
+ */
+export function adminEmails(): Set<string> {
+  const raw = process.env.BREAKBPM_ADMIN_EMAILS;
+  if (!raw) return new Set();
+  return new Set(
+    raw
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e.length > 0),
+  );
+}
+
+/** True when `email` is on the admin allowlist (case-insensitive). */
+export function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return adminEmails().has(email.trim().toLowerCase());
+}

@@ -1321,13 +1321,17 @@ components:
           type: array
           items:
             type: object
-            required: [slotIndex, displayName, isHost, hasLeft]
+            required: [slotIndex, displayName, isHost, hasLeft, isAdmin]
             properties:
               slotIndex: { type: integer }
               displayName: { type: string }
               isHost: { type: boolean }
               hasLeft: { type: boolean }
               isGuest: { type: boolean }
+              # Whether this participant's account email is on the admin
+              # allowlist. Resolved server-side per response; the email list
+              # itself is never sent to clients. Drives the rainbow-name flair.
+              isAdmin: { type: boolean }
 
     GameHistoryResponse:
       type: object

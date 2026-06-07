@@ -13,11 +13,14 @@ import {
   SHARK_PLAYER_NAME,
 } from '../lib/gameLogic';
 import SharkIcon from './SharkIcon';
+import { PlayerName } from './PlayerName';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   useSaveGame,
   useRecordGameActivity,
   useGetMe,
+  useGetGameStateByCode,
+  getGetGameStateByCodeQueryKey,
 } from '@workspace/api-client-react';
 import { FORFEIT_INACTIVITY_MS, MAX_GAME_DURATION_MS } from '../lib/forfeit';
 
@@ -76,6 +79,35 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const forfeitedRef = useRef(false);
   const [state, setState] = useState<GameState>(initialState);
   const [elapsed, setElapsed] = useState(0);
+
+  // Resolve which of THIS game's participants are admins from the single
+  // game-state participants payload (the same source the spectator/OBS views
+  // use) so the host HUD can rainbow an admin's name too — without ever
+  // shipping the admin email list to the client. Admin-ness is static for a
+  // game, so we only poll lazily, and only for server-backed (signed-in)
+  // games (anonymous play has no server row and can never be an admin).
+  const hostStateSnap = useGetGameStateByCode(
+    { code: state.shareCode },
+    {
+      query: {
+        queryKey: getGetGameStateByCodeQueryKey({ code: state.shareCode }),
+        enabled: !!serverGameId && !!state.shareCode,
+        refetchInterval: state.phase === 'playing' ? 8000 : false,
+      },
+    },
+  );
+  const adminParticipants = hostStateSnap.data?.participants ?? [];
+  // Slot-keyed lookup for the player list (gameState.players[i] maps to
+  // participant slotIndex i), which avoids mislabeling when two players share
+  // a display name. The shot log/win banner only carry a name string, so those
+  // fall back to name matching (matched within this one game, as the task
+  // sanctions).
+  const adminBySlot = new Map(adminParticipants.map((p) => [p.slotIndex, p.isAdmin]));
+  const adminNames = new Set(
+    adminParticipants.filter((p) => p.isAdmin).map((p) => p.displayName),
+  );
+  const isAdminName = (name: string | null | undefined): boolean =>
+    !!name && adminNames.has(name);
 
   // BPM is per-player and derived from the shot log + lastActionTime
   // (see `dispBpm` below). No standalone bpm state is kept.
@@ -828,7 +860,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                         {active ? <span className="cue-ball-icon" /> : null}
                       </span>
                       <span style={{ fontSize: 16, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {p.name}
+                        <PlayerName name={p.name} admin={adminBySlot.get(i) ?? isAdminName(p.name)} />
                       </span>
                       {teamLabel && (
                         <span style={{ fontSize: 12, opacity: 0.7 }}>
@@ -864,7 +896,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
               {state.winner ? (
                 <>
                   ★ {state.winner === SHARK_PLAYER_NAME && <SharkIcon size={21} />}
-                  {state.winner.toUpperCase()} WINS
+                  <PlayerName name={state.winner} admin={isAdminName(state.winner)} upper /> WINS
                 </>
               ) : 'GAME OVER'}
             </span>
@@ -935,17 +967,17 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 ? <div style={{ color: '#006600' }}>_ no shots yet...</div>
                 : state.shotLog.map((e, i) => ({ e, i })).reverse().map(({ e, i }) => {
                   const t = formatTime(e.gameTime);
-                  let line = '';
-                  if (e.type === 'sink') line = `[${t}] ${e.playerName} » SINK ${ballLabel(e.ball!)}`;
-                  else if (e.type === 'foul') line = `[${t}] ${e.playerName} » FOUL`;
-                  else if (e.type === 'safety') line = `[${t}] ${e.playerName} » SAFETY`;
-                  else if (e.type === 'miss') line = `[${t}] ${e.playerName} » MISS`;
-                  else if (e.type === 'win') line = `[${t}] ${e.playerName} » WIN! ${e.ball ? ballLabel(e.ball) : ''}`;
-                  else if (e.type === 'lose') line = `[${t}] ${e.playerName} » LOSS`;
+                  let rest = '';
+                  if (e.type === 'sink') rest = ` » SINK ${ballLabel(e.ball!)}`;
+                  else if (e.type === 'foul') rest = ' » FOUL';
+                  else if (e.type === 'safety') rest = ' » SAFETY';
+                  else if (e.type === 'miss') rest = ' » MISS';
+                  else if (e.type === 'win') rest = ` » WIN! ${e.ball ? ballLabel(e.ball) : ''}`;
+                  else if (e.type === 'lose') rest = ' » LOSS';
                   const bpmTag = e.bpm !== undefined ? ` · ${e.bpm.toFixed(1)} BPM` : '';
                   return (
                     <div key={i} className={`log-entry ${e.type}`}>
-                      {line}{bpmTag}{e.note ? ` — ${e.note}` : ''}
+                      {`[${t}] `}<PlayerName name={e.playerName} admin={isAdminName(e.playerName)} />{rest}{bpmTag}{e.note ? ` — ${e.note}` : ''}
                     </div>
                   );
                 })

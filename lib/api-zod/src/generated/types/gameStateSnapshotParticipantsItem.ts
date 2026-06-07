@@ -12,4 +12,5 @@ export type GameStateSnapshotParticipantsItem = {
   isHost: boolean;
   hasLeft: boolean;
   isGuest?: boolean;
+  isAdmin: boolean;
 };

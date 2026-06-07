@@ -501,7 +501,8 @@ export const GetGameStateByCodeResponse = zod.object({
   "displayName": zod.string(),
   "isHost": zod.boolean(),
   "hasLeft": zod.boolean(),
-  "isGuest": zod.boolean().optional()
+  "isGuest": zod.boolean().optional(),
+  "isAdmin": zod.boolean()
 })).optional()
 })
 
