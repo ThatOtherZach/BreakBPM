@@ -819,6 +819,10 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             ) : (
               <>
                 <div className="hud-right-row">
+                  <span className="hud-meta-label">TIME</span>
+                  <span className={`hud-timer${paused ? ' hud-timer-paused' : ''}`}>{formatTime(dispTime)}</span>
+                </div>
+                <div className="hud-right-row">
                   <span className="hud-meta-label">MODE</span>
                   <span className="hud-mode">
                     {isSharkGame(state) ? 'Shark'
@@ -826,10 +830,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                       : state.gameType === '8ball' ? '8-Ball'
                       : '9-Ball'}
                   </span>
-                </div>
-                <div className="hud-right-row">
-                  <span className="hud-meta-label">TIME</span>
-                  <span className={`hud-timer${paused ? ' hud-timer-paused' : ''}`}>{formatTime(dispTime)}</span>
                 </div>
                 <div className="hud-right-row" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span className="hud-meta-label">CODE</span>

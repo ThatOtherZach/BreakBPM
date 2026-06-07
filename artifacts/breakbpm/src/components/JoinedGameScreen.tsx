@@ -390,6 +390,10 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
           <div className="hud-divider" />
           <div className="hud-right">
             <div className="hud-right-row">
+              <span className="hud-meta-label">TIME</span>
+              <span className="hud-timer">{formatTime(elapsed)}</span>
+            </div>
+            <div className="hud-right-row">
               <span className="hud-meta-label">MODE</span>
               <span className="hud-mode">
                 {state?.gameType === 'practice' ? 'PRACTICE'
@@ -408,10 +412,6 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
                   <circle cx="12" cy="12" r="3" />
                 </svg>
               </span>
-            </div>
-            <div className="hud-right-row">
-              <span className="hud-meta-label">TIME</span>
-              <span className="hud-timer">{formatTime(elapsed)}</span>
             </div>
           </div>
         </div>
