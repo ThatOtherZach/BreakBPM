@@ -11,7 +11,7 @@ import {
 } from '@workspace/api-client-react';
 import { saveInProgressGame, clearInProgressGame, normalizeSharkIdentity } from '../lib/gameLogic';
 import SharkIcon from './SharkIcon';
-import SplashQrReveal from './SplashQrReveal';
+import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../lib/authClient';
 import { APP_VERSION } from '../lib/version';
 import { pickTagline } from '../lib/taglines';
@@ -69,12 +69,13 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
   // players aren't overwhelmed. Only sent to onStart when the combo matches.
   const [sharkAggression, setSharkAggression] = useState<SharkAggression>('normal');
 
-  // Hidden easter egg: press-and-hold the splash 8-ball for 3s to reveal a
-  // QR code for breakbpm.com. The timer fires only if the press is held in
-  // place; release / move-away / cancel aborts it, so a normal tap does
-  // nothing.
-  const [qrOpen, setQrOpen] = useState(false);
+  // Hidden easter egg: press-and-hold the splash 8-ball for 3s to swap the
+  // art for a QR code to breakbpm.com, shown inline for 8s before it reverts
+  // to the 8-ball. The hold timer fires only if the press is held in place;
+  // release / move-away / cancel aborts it, so a normal tap does nothing.
+  const [showQr, setShowQr] = useState(false);
   const qrPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const qrRevertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearQrPress = () => {
     if (qrPressTimer.current !== null) {
       clearTimeout(qrPressTimer.current);
@@ -85,10 +86,18 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
     clearQrPress();
     qrPressTimer.current = setTimeout(() => {
       qrPressTimer.current = null;
-      setQrOpen(true);
+      setShowQr(true);
+      if (qrRevertTimer.current !== null) clearTimeout(qrRevertTimer.current);
+      qrRevertTimer.current = setTimeout(() => {
+        qrRevertTimer.current = null;
+        setShowQr(false);
+      }, 8000);
     }, 3000);
   };
-  useEffect(() => clearQrPress, []);
+  useEffect(() => () => {
+    clearQrPress();
+    if (qrRevertTimer.current !== null) clearTimeout(qrRevertTimer.current);
+  }, []);
 
   // Keep slot 1 in sync with the signed-in user's screen name. Runs when
   // auth resolves (login mid-session, page reload, etc.) so the field
@@ -327,7 +336,16 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
             touchAction: 'manipulation',
           } as React.CSSProperties}
         >
-          <img src={ballImg} alt="8-ball" className="splash-ball-img" draggable={false} />
+          {showQr ? (
+            <div
+              style={{ background: '#fff', padding: 6, lineHeight: 0, borderRadius: 2 }}
+              aria-label="QR code to breakbpm.com"
+            >
+              <QRCodeSVG value="https://breakbpm.com" size={104} level="M" />
+            </div>
+          ) : (
+            <img src={ballImg} alt="8-ball" className="splash-ball-img" draggable={false} />
+          )}
         </div>
 
         {/* Right: title block */}
@@ -636,7 +654,6 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
         <button type="button" className="statusbar-item statusbar-link" onClick={onLegal}>LEGAL</button>
         <div className="statusbar-item"><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v{APP_VERSION}</a></div>
       </div>
-      {qrOpen && <SplashQrReveal onClose={() => setQrOpen(false)} />}
     </div>
   );
 }
