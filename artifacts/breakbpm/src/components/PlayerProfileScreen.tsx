@@ -83,7 +83,7 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
             {/* Header — the same CRT hero readout as the Stats page, scoped to
                 this player's last 24 hours. */}
             {stats ? (
-              <StatsHero stats={stats} screenName={screenName} />
+              <StatsHero stats={stats} screenName={screenName} joinedAt={profile.data.memberSince} />
             ) : (
               <div
                 className="panel"

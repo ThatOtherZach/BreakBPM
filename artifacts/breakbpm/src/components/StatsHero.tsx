@@ -146,9 +146,11 @@ export function TrendOverlay({
 export default function StatsHero({
   stats,
   screenName,
+  joinedAt,
 }: {
   stats: StatsResult;
   screenName?: string;
+  joinedAt?: string | null;
 }) {
   const isPersonal = stats.appliedScope === "personal";
   const rateLabel = isPersonal ? "WIN RATE" : "FINISH RATE";
@@ -243,6 +245,11 @@ export default function StatsHero({
           <span className="stats-hero-side-label">AVG ACCURACY</span>
         </div>
       </div>
+      {joinedAt && (
+        <p style={{ fontSize: 11, color: "#d8b4ff", textAlign: "center", margin: "8px 0 0" }}>
+          Joined on {new Date(joinedAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+        </p>
+      )}
     </div>
   );
 }

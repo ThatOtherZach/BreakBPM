@@ -385,7 +385,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
             ) : (
               <>
                 {/* ── CRT hero readout ── */}
-                <StatsHero stats={stats} screenName={user?.screenName} />
+                <StatsHero stats={stats} screenName={user?.screenName} joinedAt={joinedAt} />
 
                 {/* ── Results ── */}
                 <div className="panel panel--wood">
@@ -600,11 +600,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
               </div>
             )}
 
-            {joinedAt && (
-              <p style={{ fontSize: 11, color: "#888", textAlign: "center", margin: "4px 0 0" }}>
-                Joined on {new Date(joinedAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
-              </p>
-            )}
           </>
         )}
       </div>
