@@ -47,15 +47,10 @@ table, and we are not responsible for disputes between players over scoring.
   code.
 - Pricing is shown in the app at the time of purchase. Prices may change; any
   change applies only to future purchases.
-- **All sales are final.** Purchases are non-refundable, except where a
-  non-waivable refund right applies under applicable law.
-- One-time passes (such as Day, Month, or Lifetime passes) grant access for
-  their stated duration and cannot be cancelled for a refund once granted.
-- Recurring subscriptions renew automatically until you cancel them. You may
-  cancel a subscription at any time to stop future renewals; cancelling stops
-  the next charge, and your access continues through the end of the period you
-  have already paid for. Cancelling does not entitle you to a refund of amounts
-  already paid.
+- **All sales are final.** Purchases are non-refundable, and there are
+  currently no cancellations or refunds, except where a non-waivable refund or
+  cancellation right applies under applicable law.
+- This applies to all paid passes and access, however they are obtained.
 - Promotional unlocks (including "Lucky Break" rolls and redeem codes) have no
   cash value and are provided as-is.
 - We may modify, suspend, or discontinue any paid feature. If we discontinue a
