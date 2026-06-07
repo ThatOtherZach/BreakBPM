@@ -7,6 +7,7 @@ import {
   subscriptionsTable,
   discountCodesTable,
   discountRedemptionsTable,
+  luckyBreakRollsTable,
   gamesTable,
   gameParticipantsTable,
   PASS_DURATIONS_SECONDS,
@@ -14,6 +15,7 @@ import {
   type Pass,
   type DiscountCode,
   type DiscountRedemption,
+  type LuckyBreakRoll,
   type Subscription,
   type Game,
   type GameParticipant,
@@ -145,6 +147,26 @@ export async function seedDiscountCode(
     issuedByUserId: opts.issuedByUserId ?? null,
     issuerKind: opts.issuerKind ?? null,
     issuedAt: opts.issuedAt ?? null,
+  });
+  createdCodes.push(code);
+}
+
+/**
+ * Seed a Lucky Break discount code (grantsPassKind = 'lucky_break'). These
+ * codes run the seeded draw on redeem rather than granting a fixed pass tier.
+ */
+export async function seedLuckyBreakDiscountCode(
+  code: string,
+  opts: { maxRedemptions?: number | null; expiresAt?: Date | null } = {},
+): Promise<void> {
+  await db.insert(discountCodesTable).values({
+    code,
+    grantsPassKind: "lucky_break",
+    maxRedemptions: opts.maxRedemptions ?? null,
+    expiresAt: opts.expiresAt ?? null,
+    issuedByUserId: null,
+    issuerKind: null,
+    issuedAt: null,
   });
   createdCodes.push(code);
 }
@@ -296,6 +318,13 @@ export async function getRedemptions(userId: string): Promise<DiscountRedemption
     .select()
     .from(discountRedemptionsTable)
     .where(eq(discountRedemptionsTable.userId, userId));
+}
+
+export async function getLuckyBreakRolls(userId: string): Promise<LuckyBreakRoll[]> {
+  return db
+    .select()
+    .from(luckyBreakRollsTable)
+    .where(eq(luckyBreakRollsTable.userId, userId));
 }
 
 /**
