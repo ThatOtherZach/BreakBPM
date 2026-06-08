@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
-import type { GameType, GameState, Player, SharkAggression, RuleSet } from '../lib/gameLogic';
+import type { GameType, GameState, Player, SharkAggression, RuleSet, ChaosMode } from '../lib/gameLogic';
 import { normalizeShareCode } from '../lib/gameLogic';
 import ballImg from '/eightball_nobg.png';
 import Navbar from './Navbar';
@@ -65,8 +65,49 @@ const RULE_SET_OPTIONS: {
   },
 ];
 
+// The four states of the Team Mode toggle, cycled in order on each tap:
+//   auto   → automatic team assignment (Rule Set radios apply)
+//   manual → assign Solids/Stripes yourself (per-player dropdowns)
+//   chaos  → no teams, anyone sinks anything, winner recorded (Win Rule radios)
+//   none   → no teams, no winner, free shoot-around with BPM tracking
+type TeamMode = 'auto' | 'manual' | 'chaos' | 'none';
+const TEAM_MODE_CYCLE: TeamMode[] = ['auto', 'manual', 'chaos', 'none'];
+const TEAM_MODE_LABEL: Record<TeamMode, string> = {
+  auto: 'On',
+  manual: 'Off',
+  chaos: 'Chaos',
+  none: 'None',
+};
+const TEAM_MODE_SUBLABEL: Record<Exclude<TeamMode, 'auto'>, string> = {
+  manual: 'Pick each player’s group yourself',
+  chaos: 'No teams — anyone sinks anything, winner recorded',
+  none: 'No teams, no winner — just track shots & BPM',
+};
+
+// Chaos "Win Rule" radio options (only shown when Team Mode = Chaos). The
+// 8-Ball option reuses the 8-ball chip art; "No Rules" shows the cue ball glyph
+// to signal "anything goes".
+const CHAOS_RULE_OPTIONS: {
+  value: Extract<ChaosMode, 'eight-last' | 'anything-goes'>;
+  label: string;
+  cueBall?: boolean;
+  chips: { number: string; chipClass: string; chipColor?: string }[];
+}[] = [
+  {
+    value: 'eight-last',
+    label: '8-Ball',
+    chips: [{ number: '8', chipClass: 'hud-chip-eight' }],
+  },
+  {
+    value: 'anything-goes',
+    label: 'No Rules',
+    cueBall: true,
+    chips: [],
+  },
+];
+
 interface Props {
-  onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, serverShareCode: string | null, sharkAggression?: SharkAggression, ruleSet?: RuleSet) => void;
+  onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, serverShareCode: string | null, sharkAggression?: SharkAggression, ruleSet?: RuleSet, chaosMode?: ChaosMode) => void;
   /** Resume an existing game from the server-side in-progress snapshot. */
   onResume: (state: GameState, serverGameId: string | null, maxGameDurationMs: number | null, pausedDuration: number) => void;
   onAbout: () => void;
@@ -96,7 +137,12 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
   const [gameType, setGameType] = useState<GameType>('8ball');
   const [playerCount, setPlayerCount] = useState(2);
   const [names, setNames] = useState(['', '', '', '']);
-  const [autoTeam, setAutoTeam] = useState(true);
+  // Team Mode is a single 4-state cycling toggle (8-ball 2P/4P only):
+  //   auto → manual → chaos → none. Defaults to 'auto'.
+  const [teamMode, setTeamMode] = useState<TeamMode>('auto');
+  // Chaos win rule (only used when teamMode === 'chaos'). 'eight-last' = 8 must
+  // be sunk last; 'anything-goes' = first to sink the 8 wins. Default 'eight-last'.
+  const [chaosRule, setChaosRule] = useState<Extract<ChaosMode, 'eight-last' | 'anything-goes'>>('eight-last');
   const [manualTeams, setManualTeams] = useState<('solids' | 'stripes' | '')[]>(['', '', '', '']);
   const [joinCode, setJoinCode] = useState('');
   // Join Shared Game panel starts collapsed to keep the main menu short
@@ -221,6 +267,9 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
       sharkAggression: gs.sharkAggression,
       sharkSunkBalls: gs.sharkSunkBalls,
       ruleSet: gs.ruleSet,
+      // Preserve Chaos/None mode across resume — otherwise a restored Chaos or
+      // None game silently degrades into a standard team 8-ball.
+      chaosMode: gs.chaosMode,
       undoCount: gs.undoCount ?? 0,
     };
     // Seed localStorage so the next refresh resumes from local too.
@@ -278,13 +327,13 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
   // → Singles. Clear slot 1 in that case so the invalid pairing can't
   // survive a mode transition and get into handleStart.
   useEffect(() => {
-    if (gameType !== '8ball' || playerCount !== 2 || autoTeam) return;
+    if (gameType !== '8ball' || playerCount !== 2 || teamMode !== 'manual') return;
     if (manualTeams[0] && manualTeams[0] === manualTeams[1]) {
       const t = [...manualTeams] as ('solids' | 'stripes' | '')[];
       t[1] = '';
       setManualTeams(t);
     }
-  }, [gameType, playerCount, autoTeam, manualTeams]);
+  }, [gameType, playerCount, teamMode, manualTeams]);
 
   async function handleStart() {
     setStartError('');
@@ -293,7 +342,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
     // change, but a mode transition (e.g. Doubles → Singles) could in
     // theory leave a stale duplicate in state — refuse to start in that
     // case rather than handing GameScreen an invalid pairing.
-    if (gameType === '8ball' && !isShark && !autoTeam && count === 2 &&
+    if (gameType === '8ball' && !isShark && teamMode === 'manual' && count === 2 &&
         manualTeams[0] && manualTeams[0] === manualTeams[1]) {
       setStartError('Players must be on opposite groups (Solids vs Stripes).');
       return;
@@ -301,11 +350,21 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
     const players: Player[] = Array.from({ length: count }, (_, i) => {
       const p: Player = { id: i, name: names[i] || DEFAULT_NAMES[i] };
       // Manual team assignment is only relevant for multiplayer 8-ball.
-      if (gameType === '8ball' && !isShark && !autoTeam && manualTeams[i]) {
+      if (gameType === '8ball' && !isShark && teamMode === 'manual' && manualTeams[i]) {
         p.team = manualTeams[i] as 'solids' | 'stripes';
       }
       return p;
     });
+    // Resolve the Chaos/None play mode (multiplayer 8-ball only). Chaos uses
+    // the selected win rule; None has no winner; auto/manual leave it undefined.
+    const chaosMode: ChaosMode | undefined =
+      gameType === '8ball' && !isShark
+        ? teamMode === 'chaos'
+          ? chaosRule
+          : teamMode === 'none'
+            ? 'none'
+            : undefined
+        : undefined;
     try {
       // Server enum only knows '8ball'/'9ball'/'practice'; shark is a
       // client-side variant of 8-ball, so the API call stays as '8ball'.
@@ -320,8 +379,9 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
         res.shareCode ?? null,
         isShark ? sharkAggression : undefined,
         // Rule set only matters for automatic-assignment 8-ball (2P/4P).
-        // Manual teams pre-assign groups; Shark/Practice have no groups.
-        gameType === '8ball' && !isShark && autoTeam ? ruleSet : undefined,
+        // Manual teams pre-assign groups; Shark/Practice/Chaos/None have none.
+        gameType === '8ball' && !isShark && teamMode === 'auto' ? ruleSet : undefined,
+        chaosMode,
       );
     } catch (e: unknown) {
       const err = e as { data?: { error?: string } };
@@ -518,7 +578,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                   title={isLockedSlot ? 'Signed in — name locked to your account' : undefined}
                   style={isLockedSlot ? { opacity: 0.85, cursor: 'not-allowed' } : undefined}
                 />
-                {gameType === '8ball' && !isShark && !autoTeam && (() => {
+                {gameType === '8ball' && !isShark && teamMode === 'manual' && (() => {
                   // Singles only: hide the group the other player has
                   // already claimed so both players can't end up on the
                   // same team. Doubles keeps both options for everyone
@@ -563,34 +623,30 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, flex: 1 }}>
-                  <span style={{ fontWeight: 'bold', fontSize: 13 }}>Automatic Team Assignment</span>
-                  <span style={{ fontSize: 11, color: '#444' }}>{RULE_SET_SUBLABEL[autoTeam ? ruleSet : 'first-ball']}</span>
+                  <span style={{ fontWeight: 'bold', fontSize: 13 }}>Team Mode</span>
+                  <span style={{ fontSize: 11, color: '#444' }}>
+                    {teamMode === 'auto' ? RULE_SET_SUBLABEL[ruleSet] : TEAM_MODE_SUBLABEL[teamMode]}
+                  </span>
                 </span>
+                {/* Single 4-state cycling toggle: On → Off → Chaos → None. */}
                 <div className="flex gap-1" style={{ flexShrink: 0 }}>
                   <button
                     type="button"
-                    className={`btn ${autoTeam ? 'selected' : ''}`}
-                    style={{ minWidth: 48, minHeight: 32, fontWeight: 'bold' }}
-                    onClick={() => setAutoTeam(true)}
-                    aria-pressed={autoTeam}
+                    className="btn selected"
+                    style={{ minWidth: 88, minHeight: 32, fontWeight: 'bold' }}
+                    onClick={() =>
+                      setTeamMode(
+                        m => TEAM_MODE_CYCLE[(TEAM_MODE_CYCLE.indexOf(m) + 1) % TEAM_MODE_CYCLE.length],
+                      )
+                    }
+                    aria-label={`Team mode: ${TEAM_MODE_LABEL[teamMode]}. Tap to cycle.`}
                   >
-                    On
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn ${!autoTeam ? 'selected' : ''}`}
-                    style={{ minWidth: 48, minHeight: 32, fontWeight: 'bold' }}
-                    onClick={() => setAutoTeam(false)}
-                    aria-pressed={!autoTeam}
-                  >
-                    Off
+                    {TEAM_MODE_LABEL[teamMode]} ▸
                   </button>
                 </div>
               </div>
-              {/* Rule set only applies when auto-assignment is on — manual
-                  mode pre-picks groups, so the timing is moot. Nested here so
-                  it reads as a sub-option of Automatic Team Assignment. */}
-              {autoTeam && (
+              {/* Auto: the Rule Set radios decide when groups lock. */}
+              {teamMode === 'auto' && (
                 <div
                   style={{
                     marginTop: 6,
@@ -641,6 +697,83 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                       );
                     })}
                   </div>
+                </div>
+              )}
+              {/* Chaos: no teams. The Win Rule radios decide how the 8 wins. */}
+              {teamMode === 'chaos' && (
+                <div
+                  style={{
+                    marginTop: 6,
+                    paddingTop: 6,
+                    borderTop: '1px solid rgba(0,0,0,0.18)',
+                  }}
+                >
+                  <span style={{ fontWeight: 'bold', fontSize: 13, display: 'block', marginBottom: 6 }}>
+                    Win Rule
+                  </span>
+                  <div
+                    role="radiogroup"
+                    aria-label="Chaos win rule"
+                    style={{ display: 'flex', gap: 6 }}
+                  >
+                    {CHAOS_RULE_OPTIONS.map(opt => {
+                      const checked = chaosRule === opt.value;
+                      return (
+                        <label
+                          key={opt.value}
+                          className={`rule-set-opt ${checked ? 'selected' : ''}`}
+                          title={opt.label}
+                        >
+                          <input
+                            type="radio"
+                            name="chaosRule"
+                            value={opt.value}
+                            checked={checked}
+                            onChange={() => setChaosRule(opt.value)}
+                            className="rule-set-radio"
+                          />
+                          <span
+                            className={`rule-set-indicator ${checked ? 'cue-ball-icon' : ''}`}
+                            aria-hidden="true"
+                          />
+                          <span className="rule-set-chips" aria-hidden="true">
+                            {opt.cueBall && (
+                              <span className="cue-ball-icon" style={{ fontSize: 18 }} />
+                            )}
+                            {opt.chips.map((chip, i) => (
+                              <span
+                                key={i}
+                                className={`hud-chip hud-chip-sm ${chip.chipClass}`}
+                                data-number={chip.number}
+                                style={{ '--chip-color': chip.chipColor } as React.CSSProperties}
+                              />
+                            ))}
+                          </span>
+                          <span className="rule-set-label">{opt.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <span style={{ display: 'block', fontSize: 10, color: '#444', marginTop: 6 }}>
+                    {chaosRule === 'eight-last'
+                      ? 'Anyone sinks any ball. Sink the 8 last to win — pot it early and you lose.'
+                      : 'Anything goes — first player to sink the 8-ball wins.'}
+                  </span>
+                </div>
+              )}
+              {/* None: no teams, no winner — a free shoot-around. */}
+              {teamMode === 'none' && (
+                <div
+                  style={{
+                    marginTop: 6,
+                    paddingTop: 6,
+                    borderTop: '1px solid rgba(0,0,0,0.18)',
+                  }}
+                >
+                  <span style={{ fontSize: 11, color: '#444' }}>
+                    Free-for-all shoot-around — no teams, no winner. Take turns, clear the
+                    table, and track everyone’s BPM.
+                  </span>
                 </div>
               )}
             </div>

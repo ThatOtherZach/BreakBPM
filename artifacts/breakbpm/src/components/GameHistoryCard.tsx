@@ -117,20 +117,46 @@ const OUTCOME_STYLE: Record<string, OutcomeStyle> = {
   completed: { label: "DONE", bg: "#c0c0c0", fg: "#000080", border: "#808080" },
 };
 
-function ResultBadge({ outcome }: { outcome: string }) {
-  const s = OUTCOME_STYLE[outcome] ?? OUTCOME_STYLE.completed;
+// A None game ("free shoot-around", no winner) gets its own teal CLEARED badge
+// — distinct from Practice's silver DONE — regardless of how it actually ended.
+const CLEARED_STYLE: OutcomeStyle = {
+  label: "CLEARED",
+  bg: "#0a3d62",
+  fg: "#7fdbff",
+  border: "#1b6ca8",
+  title: "Free shoot-around — table cleared, no winner",
+};
+
+// Chaos games render WIN/LOSS with rainbow-gradient text on a dark badge so
+// they read as the same verdict as a normal game but visibly "chaotic".
+const CHAOS_RAINBOW: React.CSSProperties = {
+  backgroundImage:
+    "linear-gradient(90deg,#ff3b3b,#ff8c00,#ffd500,#37d67a,#3ba7ff,#a64dff)",
+  WebkitBackgroundClip: "text",
+  backgroundClip: "text",
+  color: "transparent",
+  WebkitTextFillColor: "transparent",
+};
+
+function ResultBadge({ outcome, chaosMode }: { outcome: string; chaosMode?: string | null }) {
+  const isNone = chaosMode === "none";
+  const isChaos =
+    (chaosMode === "eight-last" || chaosMode === "anything-goes") &&
+    (outcome === "won" || outcome === "lost");
+  const s = isNone ? CLEARED_STYLE : OUTCOME_STYLE[outcome] ?? OUTCOME_STYLE.completed;
   return (
     <span
-      title={s.title}
+      title={isChaos ? "Chaos game" : s.title}
       style={{
         display: "inline-block",
         fontSize: 10,
         fontWeight: "bold",
         letterSpacing: 0.5,
         padding: "1px 6px",
-        background: s.bg,
-        color: s.fg,
-        border: `1px solid ${s.border}`,
+        background: isChaos ? "#1a1020" : s.bg,
+        color: isChaos ? undefined : s.fg,
+        border: `1px solid ${isChaos ? "#6a3fa0" : s.border}`,
+        ...(isChaos ? CHAOS_RAINBOW : {}),
       }}
     >
       {s.label}
@@ -173,7 +199,7 @@ export default function GameHistoryCard({ game: g }: { game: GameHistoryEntry })
             {modeLabel}
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#cdeccd", fontSize: 11 }}>
-            <ResultBadge outcome={g.outcome} />
+            <ResultBadge outcome={g.outcome} chaosMode={g.chaosMode} />
             {g.sharkMode ? (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
                 <SharkIcon size={12} />

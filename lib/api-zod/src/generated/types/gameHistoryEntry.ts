@@ -5,6 +5,7 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { GameHistoryEntryChaosMode } from './gameHistoryEntryChaosMode';
 import type { GameHistoryEntryEndReason } from './gameHistoryEntryEndReason';
 import type { GameHistoryEntryPocketSequenceItem } from './gameHistoryEntryPocketSequenceItem';
 
@@ -26,6 +27,8 @@ export interface GameHistoryEntry {
   endedAt: Date;
   startedAt?: Date;
   sharkMode: boolean;
+  /** @nullable */
+  chaosMode?: GameHistoryEntryChaosMode;
   endReason?: GameHistoryEntryEndReason;
   pocketSequence?: GameHistoryEntryPocketSequenceItem[];
 }

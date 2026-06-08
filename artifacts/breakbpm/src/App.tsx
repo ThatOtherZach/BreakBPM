@@ -16,7 +16,7 @@ import PassesScreen from "./components/PassesScreen";
 import RedeemScreen from "./components/RedeemScreen";
 import { SignInPage, SignUpPage } from "./components/SignInPage";
 import { readPendingRedeem } from "./lib/pendingRedeem";
-import type { GameType, GameState, Player, SharkAggression, RuleSet } from "./lib/gameLogic";
+import type { GameType, GameState, Player, SharkAggression, RuleSet, ChaosMode } from "./lib/gameLogic";
 import {
   generateShareCode,
   decodeGameState,
@@ -47,6 +47,7 @@ function createInitialGameState(
   serverShareCode: string | null,
   sharkAggression?: SharkAggression,
   ruleSet?: RuleSet,
+  chaosMode?: ChaosMode,
 ): GameState {
   // Shark mode is solo 8-ball with an opponent steal mechanic. Only seed
   // the shark fields when the combo actually matches — keeps state shape
@@ -70,6 +71,7 @@ function createInitialGameState(
     sharkAggression: isShark ? sharkAggression : undefined,
     sharkSunkBalls: isShark ? [] : undefined,
     ruleSet,
+    chaosMode,
     undoCount: 0,
   };
 }
@@ -185,6 +187,7 @@ function MainApp() {
         sharkAggression: restored.sharkAggression,
         sharkSunkBalls: restored.sharkSunkBalls,
         ruleSet: restored.ruleSet,
+        chaosMode: restored.chaosMode,
         undoCount: restored.undoCount ?? 0,
       });
       setView("game");
@@ -199,11 +202,12 @@ function MainApp() {
     serverShareCode: string | null,
     sharkAggression?: SharkAggression,
     ruleSet?: RuleSet,
+    chaosMode?: ChaosMode,
   ) {
     // Explicit fresh start — wipe any stale in-progress checkpoint so we
     // don't immediately resurrect the previous game on the next mount.
     clearInProgressGame();
-    setGameState(createInitialGameState(gameType, players, serverShareCode, sharkAggression, ruleSet));
+    setGameState(createInitialGameState(gameType, players, serverShareCode, sharkAggression, ruleSet, chaosMode));
     setServerGameId(gameId);
     setMaxGameDurationMs(maxMs);
     setInitialPausedDuration(0);

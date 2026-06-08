@@ -605,6 +605,7 @@ export const GetPublicProfileResponse = zod.object({
   "endedAt": zod.coerce.date(),
   "startedAt": zod.coerce.date().optional(),
   "sharkMode": zod.boolean(),
+  "chaosMode": zod.union([zod.literal('eight-last'),zod.literal('anything-goes'),zod.literal('none'),zod.literal(null)]).nullish(),
   "endReason": zod.enum(['max_duration_60min', 'inactivity_60min']).optional(),
   "pocketSequence": zod.array(zod.object({
   "ball": zod.number(),
@@ -752,6 +753,7 @@ export const GetGameHistoryResponse = zod.object({
   "endedAt": zod.coerce.date(),
   "startedAt": zod.coerce.date().optional(),
   "sharkMode": zod.boolean(),
+  "chaosMode": zod.union([zod.literal('eight-last'),zod.literal('anything-goes'),zod.literal('none'),zod.literal(null)]).nullish(),
   "endReason": zod.enum(['max_duration_60min', 'inactivity_60min']).optional(),
   "pocketSequence": zod.array(zod.object({
   "ball": zod.number(),

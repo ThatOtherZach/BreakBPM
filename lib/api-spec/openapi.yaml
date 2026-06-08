@@ -1213,6 +1213,13 @@ components:
         endedAt: { type: string, format: date-time }
         startedAt: { type: string, format: date-time }
         sharkMode: { type: boolean }
+        # Chaos / None multiplayer-8-ball play mode (no solids/stripes teams).
+        # `eight-last`/`anything-goes` are Chaos win rules; `none` is the
+        # no-winner free shoot-around. Null for normal team games, Shark,
+        # Practice, and 9-ball. Drives the CLEARED / rainbow WIN-LOSS badge.
+        chaosMode:
+          type: ["string", "null"]
+          enum: [eight-last, anything-goes, none, null]
         # Set when this row was auto-finalized by the server sweep.
         # Distinguishes the 1-hour hard wall-clock cap (`max_duration_60min`)
         # from the 60-min inactivity forfeit (`inactivity_60min`) so the

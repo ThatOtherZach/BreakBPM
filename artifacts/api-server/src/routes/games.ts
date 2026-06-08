@@ -268,6 +268,17 @@ function toHistoryEntry(
     endedAt: g.endedAt!,
     startedAt: g.startedAt,
     sharkMode: !!(gs && gs["sharkAggression"]),
+    // Chaos / None play mode (multiplayer 8-ball with no teams), surfaced so
+    // history cards can render the distinct CLEARED (none) / rainbow WIN-LOSS
+    // (chaos) badges. Null for normal team games, Shark, Practice, and 9-ball.
+    // Normalize to the allowed enum so a malformed persisted value can never
+    // fail the response's Zod/OpenAPI validation.
+    chaosMode:
+      gs?.["chaosMode"] === "eight-last" ||
+      gs?.["chaosMode"] === "anything-goes" ||
+      gs?.["chaosMode"] === "none"
+        ? (gs!["chaosMode"] as "eight-last" | "anything-goes" | "none")
+        : null,
     pocketSequence,
     ...(endReason ? { endReason } : {}),
   };

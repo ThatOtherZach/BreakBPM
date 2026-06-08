@@ -595,6 +595,18 @@ export interface SaveGameResult {
   endReason?: SaveGameResultEndReason;
 }
 
+/**
+ * @nullable
+ */
+export type GameHistoryEntryChaosMode = typeof GameHistoryEntryChaosMode[keyof typeof GameHistoryEntryChaosMode] | null;
+
+
+export const GameHistoryEntryChaosMode = {
+  'eight-last': 'eight-last',
+  'anything-goes': 'anything-goes',
+  none: 'none',
+} as const;
+
 export type GameHistoryEntryEndReason = typeof GameHistoryEntryEndReason[keyof typeof GameHistoryEntryEndReason];
 
 
@@ -626,6 +638,8 @@ export interface GameHistoryEntry {
   endedAt: string;
   startedAt?: string;
   sharkMode: boolean;
+  /** @nullable */
+  chaosMode?: GameHistoryEntryChaosMode;
   endReason?: GameHistoryEntryEndReason;
   pocketSequence?: GameHistoryEntryPocketSequenceItem[];
 }

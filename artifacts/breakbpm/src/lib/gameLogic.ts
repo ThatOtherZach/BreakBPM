@@ -45,6 +45,20 @@ export type SharkAggression = 'normal' | 'hard';
  */
 export type RuleSet = 'first-ball' | 'second-ball' | 'open-through-break';
 
+/**
+ * Chaos / None play modes — multiplayer 8-ball (2P/4P) with NO solids/stripes
+ * groups. Absent for normal team games, Shark, Practice, and 9-ball.
+ *   - 'eight-last'    → Chaos: anyone pockets any ball; the 8 wins only after
+ *                       all 14 other balls are off the table; an early 8 (incl.
+ *                       on the break) is a loss.
+ *   - 'anything-goes' → Chaos: the first player to sink the 8 wins instantly,
+ *                       no matter what is still on the table.
+ *   - 'none'          → No rules, no winner: a free multiplayer shoot-around
+ *                       that only tracks shots + per-player BPM and ends like
+ *                       Practice (table cleared / manual / inactivity-duration cap).
+ */
+export type ChaosMode = 'eight-last' | 'anything-goes' | 'none';
+
 export interface GameState {
   phase: 'setup' | 'playing' | 'ended';
   gameType: GameType;
@@ -89,6 +103,14 @@ export interface GameState {
    * field existed.
    */
   ruleSet?: RuleSet;
+  /**
+   * Chaos / None play mode for multiplayer 8-ball (see ChaosMode). Absent for
+   * normal team games, Shark, Practice, and 9-ball. When set, no solids/stripes
+   * groups are ever assigned and every remaining ball is legal for the current
+   * shooter; the value selects the win condition (or, for 'none', the absence
+   * of one).
+   */
+  chaosMode?: ChaosMode;
   /**
    * Total number of undos performed in this game ("No one Saw That"). Bumped
    * each time the scorekeeper reverts a logged action. Persisted in the
@@ -173,7 +195,8 @@ export function checkSinkResult(
   players: Player[],
   currentPlayerIndex: number,
   sunkBalls: number[],
-  ballSunk: number
+  ballSunk: number,
+  chaosMode?: ChaosMode
 ): { win: boolean; lose: boolean; message: string; switchTurn: boolean } {
   const currentPlayer = players[currentPlayerIndex];
 
@@ -186,6 +209,30 @@ export function checkSinkResult(
 
   if (gameType === '8ball') {
     const newSunk = [...sunkBalls, ballSunk];
+
+    // Chaos / None — no teams, anyone pockets any ball. The mode decides the
+    // win condition; non-8 balls are always just sinks (turn continues).
+    if (chaosMode) {
+      if (chaosMode === 'none') {
+        // No win condition at all — the table simply empties. The
+        // table-cleared end is handled by GameScreen (Practice-style).
+        return { win: false, lose: false, message: '', switchTurn: false };
+      }
+      if (ballSunk === EIGHT_BALL) {
+        if (chaosMode === 'anything-goes') {
+          // First 8 sunk wins, no matter what is still on the table.
+          return { win: true, lose: false, message: `${currentPlayer.name} sinks the 8-ball — WINNER!`, switchTurn: false };
+        }
+        // 'eight-last': the 8 only wins once every other ball is cleared;
+        // an early 8 (including on the break) is a loss.
+        const othersLeft = getRemainingBalls(newSunk, '8ball').filter(b => b !== EIGHT_BALL);
+        if (othersLeft.length === 0) {
+          return { win: true, lose: false, message: `${currentPlayer.name} sinks the 8-ball — WINNER!`, switchTurn: false };
+        }
+        return { win: false, lose: true, message: `${currentPlayer.name} pocketed the 8-ball too early — LOSS!`, switchTurn: false };
+      }
+      return { win: false, lose: false, message: '', switchTurn: false };
+    }
 
     if (ballSunk === EIGHT_BALL) {
       // Shark mode follows the same end-condition rules as 2-player 8-ball:
@@ -546,6 +593,7 @@ export function encodeGameState(state: GameState): string {
       gsb: state.sharkSunkBalls,
       psp: state.pendingSharkPick,
       rs: state.ruleSet,
+      cm: state.chaosMode,
       uc: state.undoCount,
     };
     return btoa(JSON.stringify(compact));
@@ -576,6 +624,7 @@ export function decodeGameState(encoded: string): Partial<GameState> | null {
       sharkSunkBalls: Array.isArray(d.gsb) ? d.gsb : undefined,
       pendingSharkPick: d.psp ?? false,
       ruleSet: d.rs,
+      chaosMode: d.cm,
       undoCount: typeof d.uc === 'number' ? d.uc : 0,
     };
   } catch {

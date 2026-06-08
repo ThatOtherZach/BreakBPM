@@ -263,8 +263,10 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             ? Math.max(0, Date.now() - state.timerStartTime - pausedDuration)
             : 0,
           sunkBallsCount: state.sunkBalls.length,
+          // Practice and None are no-winner modes — a forced end is recorded
+          // as a benign 'expired' (not a 'forfeit', which implies a loser).
           outcome: forfeitedRef.current
-            ? (state.gameType === 'practice' ? 'expired' : 'forfeit')
+            ? (state.gameType === 'practice' || state.chaosMode === 'none' ? 'expired' : 'forfeit')
             : (state.winner
                 ? (state.winner === SHARK_PLAYER_NAME ? 'lost' : 'won')
                 : 'completed'),
@@ -290,7 +292,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   useEffect(() => {
     // Shark mode is solo (no opponent waiting on you) — treat it like
     // practice and skip the 60-min inactivity forfeit.
-    if (state.phase !== 'playing' || state.gameType === 'practice' || isSharkGame(state) || paused) return;
+    if (state.phase !== 'playing' || state.gameType === 'practice' || state.chaosMode === 'none' || isSharkGame(state) || paused) return;
     const lastAction = state.lastActionTime ?? state.gameStartTime;
     const deadline = lastAction + FORFEIT_INACTIVITY_MS;
     const ms = deadline - Date.now();
@@ -342,9 +344,10 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     const ms = state.gameStartTime + cap - Date.now();
     const fire = () => {
       forfeitedRef.current = true;
-      const isPractice = state.gameType === 'practice';
+      // Practice and None have no winner — the cap just ends the session.
+      const noWinner = state.gameType === 'practice' || state.chaosMode === 'none';
       const shark = isSharkGame(state);
-      const winnerName = isPractice
+      const winnerName = noWinner
         ? null
         : shark
           ? SHARK_PLAYER_NAME
@@ -352,8 +355,8 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             ? state.players[(state.currentPlayerIndex + 1) % state.players.length].name
             : null;
       const capMin = Math.round(cap / 60000);
-      const msg = isPractice
-        ? `Session ended — practice sessions are capped at ${capMin} minutes.`
+      const msg = noWinner
+        ? `Session ended — sessions are capped at ${capMin} minutes.`
         : `Session ended — games are capped at ${capMin} minutes.`;
       setState(s => ({
         ...s,
@@ -396,9 +399,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           // the local in-progress checkpoint so a refresh doesn't try
           // to replay it.
           if (resp && resp.alive === false) {
-            const isPractice = state.gameType === 'practice';
+            const noWinner = state.gameType === 'practice' || state.chaosMode === 'none';
             const shark = isSharkGame(state);
-            const winnerName = isPractice
+            const winnerName = noWinner
               ? null
               : shark
                 ? SHARK_PLAYER_NAME
@@ -411,8 +414,8 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
               ...s,
               phase: 'ended',
               winner: winnerName,
-              winMessage: isPractice
-                ? 'Session ended — practice sessions are capped at 60 minutes.'
+              winMessage: noWinner
+                ? 'Session ended — sessions are capped at 60 minutes.'
                 : 'Session ended — games are capped at 60 minutes.',
               lastActionTime: Date.now(),
             }));
@@ -476,14 +479,16 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     // The break and any pre-pocket misses/fouls/safeties leave it at null.
     if (next.timerStartTime == null) next.timerStartTime = now;
 
-    if (shouldAssignTeams(state.gameType, state.teamAssigned, state.sunkBalls, state.shotLog, ball, state.ruleSet)) {
+    // Chaos / None games have no solids/stripes groups — never auto-assign.
+    if (!state.chaosMode &&
+        shouldAssignTeams(state.gameType, state.teamAssigned, state.sunkBalls, state.shotLog, ball, state.ruleSet)) {
       next.players = assignTeams(state.players, state.currentPlayerIndex, ball);
       next.teamAssigned = true;
     }
 
     next.sunkBalls = [...next.sunkBalls, ball];
 
-    const result = checkSinkResult(next.gameType, next.players, next.currentPlayerIndex, state.sunkBalls, ball);
+    const result = checkSinkResult(next.gameType, next.players, next.currentPlayerIndex, state.sunkBalls, ball, state.chaosMode);
 
     const entry: ShotLogEntry = {
       type: result.win ? 'win' : result.lose ? 'lose' : 'sink',
@@ -529,6 +534,13 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     } else if (state.gameType === 'practice' && remaining.length === 1) {
       next.phase = 'ended';
       next.winner = cur.name;
+      const finalBpm = calculatePlayerBPM([...next.shotLog, entry], cur.name) ?? 0;
+      next.winMessage = `Table cleared! Final BPM: ${finalBpm.toFixed(1)}`;
+    } else if (state.chaosMode === 'none' && remaining.length === 1) {
+      // No-winner free-for-all: emptying the table just ends the session
+      // (like Practice), with no winner recorded.
+      next.phase = 'ended';
+      next.winner = null;
       const finalBpm = calculatePlayerBPM([...next.shotLog, entry], cur.name) ?? 0;
       next.winMessage = `Table cleared! Final BPM: ${finalBpm.toFixed(1)}`;
     }
@@ -735,6 +747,12 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       const total = myLeft + eightLeft;
       remainingSubLabel = `${total} BALLS LEFT`;
     }
+  } else if (state.chaosMode === 'eight-last') {
+    // Chaos "8-Ball" rule: the 8 must be sunk last, so once it's the only
+    // ball left the table is one shot from a win.
+    const remain = getRemainingBalls(state.sunkBalls, state.gameType);
+    remainingSubLabel =
+      remain.length === 1 && remain[0] === EIGHT_BALL ? '8-BALL TO WIN' : `${remain.length} BALLS LEFT`;
   } else {
     const left = getRemainingBalls(state.sunkBalls, state.gameType).length;
     remainingSubLabel = `${left} BALLS LEFT`;
@@ -993,7 +1011,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 </button>
               ))}
             </div>
-            {state.gameType === '8ball' && !state.teamAssigned && !pendingSharkPick && (
+            {state.gameType === '8ball' && !state.chaosMode && !state.teamAssigned && !pendingSharkPick && (
               <div className="notice" style={{ marginTop: 6 }}>
                 <span>💡</span>
                 <span style={{ fontSize: 11 }}>First ball sunk assigns Solids (1-7) or Stripes (9-15)</span>
