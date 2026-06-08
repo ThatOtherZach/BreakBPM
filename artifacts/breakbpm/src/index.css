@@ -369,6 +369,27 @@ html, #root {
   vertical-align: baseline;
 }
 
+/* Rainbow cue ball — a cue-ball glyph whose body is the "Chaos" rainbow
+   gradient (same colour stops as the history WIN/LOSS rainbow badge). Used as
+   the "No Rules" / anything-goes signifier. Keeps the cue ball's sizing,
+   glossy highlight and black rim, but swaps the white body + red spot for a
+   conic rainbow sweep. */
+.rainbow-cue {
+  display: inline-block;
+  font-size: 16px; /* sizing anchor — width/height track this */
+  width: 1em;
+  height: 1em;
+  vertical-align: -3px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 30%, rgba(255,255,255,0.95) 0 0.09em, rgba(255,255,255,0) 0.32em),
+    conic-gradient(from 0deg, #ff3b3b, #ff8c00, #ffd500, #37d67a, #3ba7ff, #a64dff, #ff3b3b);
+  box-shadow:
+    inset 0 0 0 0.0625em #000,
+    inset -0.0625em -0.0625em 0 rgba(0,0,0,0.25);
+  flex-shrink: 0;
+}
+
 /* ── Rule Set radio-ball selector (8-ball auto-assignment setup) ── */
 /* Three side-by-side options. The radio indicator reads as a small black ball
    when unselected and swaps to the white cue-ball glyph when selected (the

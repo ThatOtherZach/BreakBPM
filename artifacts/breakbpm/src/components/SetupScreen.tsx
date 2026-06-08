@@ -85,8 +85,8 @@ const TEAM_MODE_SUBLABEL: Record<Exclude<TeamMode, 'auto'>, string> = {
 };
 
 // Chaos "Win Rule" radio options (only shown when Team Mode = Chaos). The
-// 8-Ball option reuses the 8-ball chip art; "No Rules" shows the cue ball glyph
-// to signal "anything goes".
+// 8-Ball option reuses the 8-ball chip art; "No Rules" shows the rainbow cue
+// glyph to signal "anything goes".
 const CHAOS_RULE_OPTIONS: {
   value: Extract<ChaosMode, 'eight-last' | 'anything-goes'>;
   label: string;
@@ -738,7 +738,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                           />
                           <span className="rule-set-chips" aria-hidden="true">
                             {opt.cueBall && (
-                              <span className="cue-ball-icon" style={{ fontSize: 18 }} />
+                              <span className="rainbow-cue" style={{ fontSize: 18 }} />
                             )}
                             {opt.chips.map((chip, i) => (
                               <span
