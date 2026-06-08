@@ -9,6 +9,8 @@ import {
   encodeGameState,
   decodeGameState,
   getLegalBalls,
+  getAllBalls,
+  getRemainingBalls,
   getLowestBall,
   getSharkPickCandidates,
   resolveSharkPick,
@@ -18,6 +20,7 @@ import {
   STRIPES,
   EIGHT_BALL,
   ALL_8BALL,
+  ALL_9BALL,
   type GameState,
   type Player,
   type ShotLogEntry,
@@ -416,6 +419,58 @@ describe("getLegalBalls", () => {
     // Alice solids; some of her solids down AND the 8 still live.
     const legal = getLegalBalls("8ball", twoPlayers("solids", "stripes"), 0, [1, 2, 9, 10]);
     expect(legal).toEqual([3, 4, 5, 6, 7, EIGHT_BALL]);
+  });
+});
+
+describe("practice rack selection", () => {
+  it("getAllBalls: practice defaults to the full 15-ball rack", () => {
+    expect(getAllBalls("practice")).toEqual(ALL_8BALL);
+    expect(getAllBalls("practice", "8ball")).toEqual(ALL_8BALL);
+  });
+
+  it("getAllBalls: practice with the 9-ball rack uses 1–9", () => {
+    expect(getAllBalls("practice", "9ball")).toEqual(ALL_9BALL);
+  });
+
+  it("getAllBalls: non-practice modes ignore the practice rack arg", () => {
+    expect(getAllBalls("9ball", "8ball")).toEqual(ALL_9BALL);
+    expect(getAllBalls("8ball", "9ball")).toEqual(ALL_8BALL);
+  });
+
+  it("getRemainingBalls: 9-ball practice rack drops sunk balls from 1–9 only", () => {
+    expect(getRemainingBalls([1, 2], "practice", "9ball")).toEqual([3, 4, 5, 6, 7, 8, 9]);
+    // The same sunk set against the default rack still spans 1–15.
+    expect(getRemainingBalls([1, 2], "practice")).toEqual(
+      ALL_8BALL.filter((b) => b !== 1 && b !== 2),
+    );
+  });
+
+  it("getLegalBalls: 9-ball practice rack offers every remaining 1–9 ball (no rotation)", () => {
+    const legal = getLegalBalls("practice", [{ id: 0, name: "Solo" }], 0, [1, 2], "9ball");
+    expect(legal).toEqual([3, 4, 5, 6, 7, 8, 9]);
+  });
+
+  it("encode/decode round-trips the practice rack", () => {
+    const state: GameState = {
+      phase: "playing",
+      gameType: "practice",
+      players: [{ id: 0, name: "Solo" }],
+      currentPlayerIndex: 0,
+      sunkBalls: [1],
+      shotLog: [],
+      gameStartTime: 0,
+      firstActionTime: null,
+      timerStartTime: null,
+      lastActionTime: null,
+      winner: null,
+      winMessage: "",
+      shareCode: "",
+      teamAssigned: false,
+      practiceRack: "9ball",
+      undoCount: 0,
+    };
+    const decoded = decodeGameState(encodeGameState(state));
+    expect(decoded?.practiceRack).toBe("9ball");
   });
 });
 

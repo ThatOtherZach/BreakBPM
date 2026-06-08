@@ -16,7 +16,7 @@ import PassesScreen from "./components/PassesScreen";
 import RedeemScreen from "./components/RedeemScreen";
 import { SignInPage, SignUpPage } from "./components/SignInPage";
 import { readPendingRedeem } from "./lib/pendingRedeem";
-import type { GameType, GameState, Player, SharkAggression, RuleSet, ChaosMode } from "./lib/gameLogic";
+import type { GameType, GameState, Player, SharkAggression, RuleSet, ChaosMode, PracticeRack } from "./lib/gameLogic";
 import {
   generateShareCode,
   decodeGameState,
@@ -49,6 +49,7 @@ function createInitialGameState(
   ruleSet?: RuleSet,
   chaosMode?: ChaosMode,
   breakerIndex?: number,
+  practiceRack?: PracticeRack,
 ): GameState {
   // Shark mode is solo 8-ball with an opponent steal mechanic. Only seed
   // the shark fields when the combo actually matches — keeps state shape
@@ -79,6 +80,9 @@ function createInitialGameState(
     sharkSunkBalls: isShark ? [] : undefined,
     ruleSet,
     chaosMode,
+    // Rack size only applies to Practice; leave it unset for other modes so
+    // the state shape stays clean.
+    practiceRack: gameType === "practice" ? practiceRack : undefined,
     undoCount: 0,
   };
 }
@@ -195,6 +199,7 @@ function MainApp() {
         sharkSunkBalls: restored.sharkSunkBalls,
         ruleSet: restored.ruleSet,
         chaosMode: restored.chaosMode,
+        practiceRack: restored.practiceRack,
         undoCount: restored.undoCount ?? 0,
       });
       setView("game");
@@ -211,11 +216,12 @@ function MainApp() {
     ruleSet?: RuleSet,
     chaosMode?: ChaosMode,
     breakerIndex?: number,
+    practiceRack?: PracticeRack,
   ) {
     // Explicit fresh start — wipe any stale in-progress checkpoint so we
     // don't immediately resurrect the previous game on the next mount.
     clearInProgressGame();
-    setGameState(createInitialGameState(gameType, players, serverShareCode, sharkAggression, ruleSet, chaosMode, breakerIndex));
+    setGameState(createInitialGameState(gameType, players, serverShareCode, sharkAggression, ruleSet, chaosMode, breakerIndex, practiceRack));
     setServerGameId(gameId);
     setMaxGameDurationMs(maxMs);
     setInitialPausedDuration(0);

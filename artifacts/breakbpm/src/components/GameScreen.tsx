@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { GameState, ShotLogEntry } from '../lib/gameLogic';
 import Navbar from './Navbar';
 import {
-  getLegalBalls, getRemainingBalls, checkSinkResult,
+  getLegalBalls, getRemainingBalls, getAllBalls, checkSinkResult,
   assignTeams, shouldAssignTeams, calculatePlayerBPM,
   calculatePlayerAccuracy, playerAccuracyCounts, formatTime,
   ballLabel,
@@ -483,11 +483,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     ? []
     : pendingSharkPick
       ? sharkPickCandidates
-      : getLegalBalls(state.gameType, state.players, state.currentPlayerIndex, state.sunkBalls);
-  const allBalls = state.gameType === '9ball'
-    ? [1, 2, 3, 4, 5, 6, 7, 8, 9]
-    : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
-  const remaining = getRemainingBalls(state.sunkBalls, state.gameType);
+      : getLegalBalls(state.gameType, state.players, state.currentPlayerIndex, state.sunkBalls, state.practiceRack);
+  // Practice can use the 8-ball (1–15) or 9-ball (1–9) rack; every other mode's
+  // rack is fixed by game type.
+  const allBalls = getAllBalls(state.gameType, state.practiceRack);
+  const remaining = getRemainingBalls(state.sunkBalls, state.gameType, state.practiceRack);
 
   function pushUndo(s: GameState) { setUndoStack(prev => [...prev.slice(-19), s]); }
 
@@ -812,7 +812,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     remainingSubLabel =
       remain.length === 1 && remain[0] === EIGHT_BALL ? '8-BALL TO WIN' : `${remain.length} BALLS LEFT`;
   } else {
-    const left = getRemainingBalls(state.sunkBalls, state.gameType).length;
+    const left = getRemainingBalls(state.sunkBalls, state.gameType, state.practiceRack).length;
     remainingSubLabel = `${left} BALLS LEFT`;
   }
 
@@ -943,12 +943,13 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           </div>
         </div>
 
-        {/* Rack tray — in 8-ball/practice the rack clusters solids on the
-            left and stripes on the right with the 8-ball centered between
-            them as the special winning ball; 9-ball shows a single line.
+        {/* Rack tray — in 8-ball (and the 8-ball practice rack) the rack
+            clusters solids on the left and stripes on the right with the
+            8-ball centered between them as the special winning ball; 9-ball
+            (and the 9-ball practice rack) shows a single line of 1–9.
             A ball drains to an empty socket once it's pocketed. */}
         <div className="hud-terminal">
-          {state.gameType === '9ball' ? (
+          {state.gameType === '9ball' || (state.gameType === 'practice' && state.practiceRack === '9ball') ? (
             <div className="rack-line">{allBalls.map(rackChip)}</div>
           ) : (
             <div className="rack-grouped">

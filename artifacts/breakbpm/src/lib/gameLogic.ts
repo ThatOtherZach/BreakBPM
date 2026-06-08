@@ -59,6 +59,15 @@ export type RuleSet = 'first-ball' | 'second-ball' | 'open-through-break';
  */
 export type ChaosMode = 'eight-last' | 'anything-goes' | 'none';
 
+/**
+ * Practice-mode rack size. Practice is a solo, no-win BPM drill; this only
+ * selects which balls are on the table:
+ *   - '8ball' → the full 15-ball rack (1–15) — the default / legacy behavior
+ *   - '9ball' → the 9-ball rack (1–9)
+ * Ignored for every non-practice game type. Absent ⇒ '8ball'.
+ */
+export type PracticeRack = '8ball' | '9ball';
+
 export interface GameState {
   phase: 'setup' | 'playing' | 'ended';
   gameType: GameType;
@@ -112,6 +121,12 @@ export interface GameState {
    */
   chaosMode?: ChaosMode;
   /**
+   * Practice-mode rack size (see PracticeRack). Only meaningful when
+   * `gameType === 'practice'`. Absent ⇒ '8ball' (the full 15-ball rack), which
+   * is also how games saved before this field existed read back.
+   */
+  practiceRack?: PracticeRack;
+  /**
    * Total number of undos performed in this game ("No one Saw That"). Bumped
    * each time the scorekeeper reverts a logged action. Persisted in the
    * gameState JSONB so the Stats page can total it across games. Defaults to
@@ -138,9 +153,23 @@ export const EIGHT_BALL = 8;
 export const ALL_8BALL = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 export const ALL_9BALL = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-export function getRemainingBalls(sunkBalls: number[], gameType: GameType): number[] {
-  const all = gameType === '9ball' ? ALL_9BALL : ALL_8BALL;
-  return all.filter(b => !sunkBalls.includes(b));
+/**
+ * The full ball set for a game type. 9-ball is always the 1–9 rack; 8-ball
+ * (and Shark) is always 1–15. Practice can be either, selected at setup via
+ * `practiceRack` — defaults to the 15-ball rack when unset.
+ */
+export function getAllBalls(gameType: GameType, practiceRack?: PracticeRack): number[] {
+  if (gameType === '9ball') return ALL_9BALL;
+  if (gameType === 'practice' && practiceRack === '9ball') return ALL_9BALL;
+  return ALL_8BALL;
+}
+
+export function getRemainingBalls(
+  sunkBalls: number[],
+  gameType: GameType,
+  practiceRack?: PracticeRack,
+): number[] {
+  return getAllBalls(gameType, practiceRack).filter(b => !sunkBalls.includes(b));
 }
 
 export function getPlayerGroup(player: Player): number[] {
@@ -152,10 +181,11 @@ export function getLegalBalls(
   gameType: GameType,
   players: Player[],
   currentPlayerIndex: number,
-  sunkBalls: number[]
+  sunkBalls: number[],
+  practiceRack?: PracticeRack
 ): number[] {
   const currentPlayer = players[currentPlayerIndex];
-  const remaining = getRemainingBalls(sunkBalls, gameType);
+  const remaining = getRemainingBalls(sunkBalls, gameType, practiceRack);
 
   if (gameType === 'practice') return remaining;
 
@@ -627,6 +657,7 @@ export function encodeGameState(state: GameState): string {
       psp: state.pendingSharkPick,
       rs: state.ruleSet,
       cm: state.chaosMode,
+      pr: state.practiceRack,
       uc: state.undoCount,
     };
     return btoa(JSON.stringify(compact));
@@ -658,6 +689,7 @@ export function decodeGameState(encoded: string): Partial<GameState> | null {
       pendingSharkPick: d.psp ?? false,
       ruleSet: d.rs,
       chaosMode: d.cm,
+      practiceRack: d.pr,
       undoCount: typeof d.uc === 'number' ? d.uc : 0,
     };
   } catch {

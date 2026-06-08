@@ -10,6 +10,7 @@ import {
   formatTime,
   ballLabel,
   normalizeSharkIdentity,
+  getAllBalls,
   SOLIDS,
   STRIPES,
   EIGHT_BALL,
@@ -273,8 +274,10 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
   }
 
   const sunk = state?.sunkBalls ?? [];
-  const allBalls = state?.gameType === '9ball'
-    ? [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  // Practice can use the 8-ball (1–15) or 9-ball (1–9) rack; every other mode's
+  // rack is fixed by game type. Default to the 8-ball rack when no state yet.
+  const allBalls = state?.gameType
+    ? getAllBalls(state.gameType, state.practiceRack)
     : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const sharkBalls = state?.sharkSunkBalls ?? [];
   const players = state?.players ?? [];
@@ -416,12 +419,13 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
           </div>
         </div>
 
-        {/* Rack tray — mirrors the host HUD: in 8-ball/practice the rack
-            clusters solids on the left and stripes on the right with the
-            8-ball centered between them; 9-ball shows a single line.
+        {/* Rack tray — mirrors the host HUD: in 8-ball (and the 8-ball
+            practice rack) the rack clusters solids on the left and stripes on
+            the right with the 8-ball centered between them; 9-ball (and the
+            9-ball practice rack) shows a single line of 1–9.
             A ball drains to an empty socket once it's pocketed. */}
         <div className="hud-terminal">
-          {state?.gameType === '9ball' ? (
+          {state?.gameType === '9ball' || (state?.gameType === 'practice' && state?.practiceRack === '9ball') ? (
             <div className="rack-line">{allBalls.map(rackChip)}</div>
           ) : (
             <div className="rack-grouped">

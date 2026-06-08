@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
-import type { GameType, GameState, Player, SharkAggression, RuleSet, ChaosMode } from '../lib/gameLogic';
+import type { GameType, GameState, Player, SharkAggression, RuleSet, ChaosMode, PracticeRack } from '../lib/gameLogic';
 import { normalizeShareCode } from '../lib/gameLogic';
 import ballImg from '/eightball_nobg.png';
 import Navbar from './Navbar';
@@ -107,7 +107,7 @@ const CHAOS_RULE_OPTIONS: {
 ];
 
 interface Props {
-  onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, serverShareCode: string | null, sharkAggression?: SharkAggression, ruleSet?: RuleSet, chaosMode?: ChaosMode, breakerIndex?: number) => void;
+  onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, serverShareCode: string | null, sharkAggression?: SharkAggression, ruleSet?: RuleSet, chaosMode?: ChaosMode, breakerIndex?: number, practiceRack?: PracticeRack) => void;
   /** Resume an existing game from the server-side in-progress snapshot. */
   onResume: (state: GameState, serverGameId: string | null, maxGameDurationMs: number | null, pausedDuration: number) => void;
   onAbout: () => void;
@@ -156,6 +156,10 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
   // Default to 'open-through-break' (the most commonly played rule). Only sent
   // to onStart for automatic-assignment 8-ball; ignored for manual/Shark/Practice.
   const [ruleSet, setRuleSet] = useState<RuleSet>('open-through-break');
+  // Practice rack size. Practice stays a no-win BPM drill either way; this only
+  // picks which balls are racked: '8ball' = full 1–15 (default/legacy) or
+  // '9ball' = 1–9. Only sent to onStart when the mode is Practice.
+  const [practiceRack, setPracticeRack] = useState<PracticeRack>('8ball');
   // Which player breaks (takes the first shot). Defaults to slot 0 (Player 1).
   // Only meaningful for multiplayer (2P/4P) — Practice/Shark are solo. Clamped
   // to the active player count (effect below) so a stale index can't survive a
@@ -276,6 +280,9 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
       // Preserve Chaos/None mode across resume — otherwise a restored Chaos or
       // None game silently degrades into a standard team 8-ball.
       chaosMode: gs.chaosMode,
+      // Preserve the Practice rack across resume — otherwise a restored 9-ball
+      // practice silently degrades into the full 15-ball rack.
+      practiceRack: gs.practiceRack,
       undoCount: gs.undoCount ?? 0,
     };
     // Seed localStorage so the next refresh resumes from local too.
@@ -399,6 +406,8 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
         // Who breaks. Solo modes (Practice/Shark) only ever have slot 0; the
         // clamp effect keeps breakerIndex valid for the active count.
         count >= 2 ? breakerIndex : 0,
+        // Rack size only matters for Practice; other modes ignore it.
+        isPractice ? practiceRack : undefined,
       );
     } catch (e: unknown) {
       const err = e as { data?: { error?: string } };
@@ -812,9 +821,33 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
         </div>)}
 
         {isPractice && (
-          <div className="notice">
-            <span>ℹ</span>
-            <span>Solo mode — no win conditions. Track every ball and watch your BPM improve.</span>
+          <div>
+            <div className="menu-section-label">▶ RACK</div>
+            <div className="flex gap-1">
+              <button
+                className={`btn ${practiceRack === '8ball' ? 'selected' : ''}`}
+                style={{ flex: 1, fontWeight: 'bold', minHeight: 40 }}
+                onClick={() => setPracticeRack('8ball')}
+              >
+                8-Ball
+                <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>Balls 1–15</span>
+              </button>
+              <button
+                className={`btn ${practiceRack === '9ball' ? 'selected' : ''}`}
+                style={{ flex: 1, fontWeight: 'bold', minHeight: 40 }}
+                onClick={() => setPracticeRack('9ball')}
+              >
+                9-Ball
+                <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>Balls 1–9</span>
+              </button>
+            </div>
+            <div className="notice" style={{ marginTop: 8 }}>
+              <span>ℹ</span>
+              <span>
+                Solo mode — no win conditions. Rack the {practiceRack === '9ball' ? '9-ball (1–9)' : '8-ball (1–15)'} set,
+                track every ball, and watch your BPM improve.
+              </span>
+            </div>
           </div>
         )}
 
