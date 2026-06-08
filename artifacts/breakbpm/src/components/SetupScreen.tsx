@@ -654,7 +654,6 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                     borderTop: '1px solid rgba(0,0,0,0.18)',
                   }}
                 >
-                  <span style={{ fontWeight: 'bold', fontSize: 13, display: 'block', marginBottom: 6 }}>Rules</span>
                   <div
                     role="radiogroup"
                     aria-label="Group assignment rule set"
