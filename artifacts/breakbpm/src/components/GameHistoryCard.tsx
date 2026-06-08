@@ -117,8 +117,11 @@ const OUTCOME_STYLE: Record<string, OutcomeStyle> = {
   completed: { label: "DONE", bg: "#c0c0c0", fg: "#000080", border: "#808080" },
 };
 
-// A None game ("free shoot-around", no winner) gets its own teal CLEARED badge
-// — distinct from Practice's silver DONE — regardless of how it actually ended.
+// A None game ("free shoot-around", no winner) that finished normally (table
+// cleared / completed) gets its own teal CLEARED badge — distinct from
+// Practice's silver DONE. A None game force-ended by the time cap or
+// inactivity sweep is NOT "cleared", so it falls through to the standard
+// outcome badge (same as a capped Practice session) instead.
 const CLEARED_STYLE: OutcomeStyle = {
   label: "CLEARED",
   bg: "#0a3d62",
@@ -139,7 +142,7 @@ const CHAOS_RAINBOW: React.CSSProperties = {
 };
 
 function ResultBadge({ outcome, chaosMode }: { outcome: string; chaosMode?: string | null }) {
-  const isNone = chaosMode === "none";
+  const isNone = chaosMode === "none" && outcome === "completed";
   const isChaos =
     (chaosMode === "eight-last" || chaosMode === "anything-goes") &&
     (outcome === "won" || outcome === "lost");
