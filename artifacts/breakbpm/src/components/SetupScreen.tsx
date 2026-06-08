@@ -71,7 +71,7 @@ const RULE_SET_OPTIONS: {
 //   chaos  → no teams, anyone sinks anything, winner recorded (Win Rule radios)
 //   none   → no teams, no winner, free shoot-around with BPM tracking
 type TeamMode = 'auto' | 'manual' | 'chaos' | 'none';
-const TEAM_MODE_CYCLE: TeamMode[] = ['auto', 'manual', 'chaos', 'none'];
+const TEAM_MODE_CYCLE: TeamMode[] = ['auto', 'manual', 'none', 'chaos'];
 const TEAM_MODE_LABEL: Record<TeamMode, string> = {
   auto: 'On',
   manual: 'Off',
