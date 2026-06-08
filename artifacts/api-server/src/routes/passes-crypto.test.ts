@@ -61,6 +61,7 @@ import {
   getPasses,
   getLuckyBreakRolls,
   getCryptoOrder,
+  getSaleEvents,
   cleanup,
 } from "../test/factories";
 import {
@@ -160,6 +161,18 @@ describe("POST /crypto/verify — Lucky Break order", () => {
     expect(settled.status).toBe("paid");
     expect(settled.passId).toBe(passes[0]!.id);
     expect(settled.txHash).toBe(txHash());
+
+    // One real, taxed crypto sale recorded, valued at what was paid and keyed
+    // by the tx hash. gst + pst + net reconciles back to the gross.
+    const sales = await getSaleEvents(user.id);
+    expect(sales).toHaveLength(1);
+    const sale = sales[0]!;
+    expect(sale.eventType).toBe("crypto_purchase");
+    expect(sale.paymentMethod).toBe("crypto");
+    expect(sale.isComp).toBe(false);
+    expect(sale.grossCents).toBe(order.priceCents);
+    expect(sale.providerRef).toBe(txHash());
+    expect(sale.gstCents + sale.pstCents + sale.netCents).toBe(sale.grossCents);
   });
 
   it("is idempotent on replay — no second roll, no second pass", async () => {
@@ -192,5 +205,8 @@ describe("POST /crypto/verify — Lucky Break order", () => {
     // Still exactly one pass and one audit row after the replay.
     expect(await getPasses(user.id)).toHaveLength(1);
     expect(await getLuckyBreakRolls(user.id)).toHaveLength(1);
+    // The sale ledger is keyed by tx hash (ON CONFLICT DO NOTHING), so the
+    // replay must not write a second row.
+    expect(await getSaleEvents(user.id)).toHaveLength(1);
   });
 });

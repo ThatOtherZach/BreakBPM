@@ -9,6 +9,7 @@ import {
   discountRedemptionsTable,
   luckyBreakRollsTable,
   cryptoOrdersTable,
+  saleEventsTable,
   gamesTable,
   gameParticipantsTable,
   PASS_DURATIONS_SECONDS,
@@ -19,6 +20,7 @@ import {
   type LuckyBreakRoll,
   type CryptoOrder,
   type CryptoAsset,
+  type SaleEvent,
   type Subscription,
   type Game,
   type GameParticipant,
@@ -388,6 +390,56 @@ export async function getLuckyBreakRolls(userId: string): Promise<LuckyBreakRoll
     .where(eq(luckyBreakRollsTable.userId, userId));
 }
 
+export async function getSaleEvents(userId: string): Promise<SaleEvent[]> {
+  return db
+    .select()
+    .from(saleEventsTable)
+    .where(eq(saleEventsTable.userId, userId));
+}
+
+/**
+ * Seed a sale_events row directly (bypassing the recording lib) so endpoint
+ * tests can control the date range, totals, and comp flag. Defaults to a $4.99
+ * tax-inclusive crypto sale (gst 22, pst 31, net 446 → sums to 499).
+ */
+export async function seedSaleEvent(
+  userId: string,
+  opts: {
+    eventType?: string;
+    paymentMethod?: string;
+    productLabel?: string;
+    isComp?: boolean;
+    grossCents?: number;
+    gstCents?: number;
+    pstCents?: number;
+    netCents?: number;
+    gstRateBps?: number;
+    pstRateBps?: number;
+    providerRef?: string;
+    occurredAt?: Date;
+  } = {},
+): Promise<SaleEvent> {
+  const gross = opts.grossCents ?? 499;
+  const values: typeof saleEventsTable.$inferInsert = {
+    id: rid(),
+    userId,
+    eventType: opts.eventType ?? "crypto_purchase",
+    productLabel: opts.productLabel ?? "Lucky Break",
+    paymentMethod: opts.paymentMethod ?? "crypto",
+    isComp: opts.isComp ?? false,
+    grossCents: gross,
+    gstCents: opts.gstCents ?? 22,
+    pstCents: opts.pstCents ?? 31,
+    netCents: opts.netCents ?? gross - 22 - 31,
+    gstRateBps: opts.gstRateBps ?? 500,
+    pstRateBps: opts.pstRateBps ?? 700,
+    providerRef: opts.providerRef ?? `ref_${rid()}`,
+    occurredAt: opts.occurredAt ?? new Date(),
+  };
+  const [row] = await db.insert(saleEventsTable).values(values).returning();
+  return row;
+}
+
 /**
  * Force a pass to be expired by back-dating its start so it falls outside its
  * own duration window. Lifetime passes (null duration) never expire and are
@@ -416,6 +468,12 @@ export async function cleanup(): Promise<void> {
     createdGameIds.length = 0;
   }
   if (createdUserIds.length > 0) {
+    // sale_events FK to users is ON DELETE SET NULL (the ledger must outlive an
+    // account), so rows are NOT cascaded — delete them explicitly first or they
+    // leak (orphaned with userId=null) across tests.
+    await db
+      .delete(saleEventsTable)
+      .where(inArray(saleEventsTable.userId, createdUserIds));
     // discount_redemptions has no FK to users, so remove those explicitly.
     // passes + subscriptions cascade on user delete.
     await db

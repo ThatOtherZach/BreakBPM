@@ -11,10 +11,12 @@
 
 import type Stripe from "stripe";
 import { db, subscriptionsTable, type PassKind } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { grantPurchasedPassTx } from "./passes";
 import { stopRenewingStripeSubscriptions } from "./paymentProvider";
 import { upsertPurchasedSubscriptionTx } from "./subscriptions";
+import { PASS_PRICES_CENTS } from "./pricing";
+import { recordSaleEventTx, PASS_PRODUCT_LABELS } from "./saleEvents";
 import {
   readSubscriptionInterval,
   readSubscriptionPeriodEnd,
@@ -48,6 +50,10 @@ export async function reconcileStripeEvent(event: Stripe.Event): Promise<void> {
       );
       break;
     }
+    case "invoice.payment_succeeded": {
+      await recordInvoiceRenewal(event.data.object as Stripe.Invoice);
+      break;
+    }
     default:
       break;
   }
@@ -70,9 +76,28 @@ async function grantPassFromSession(
       ? session.payment_intent
       : session.id;
 
-  const { deduped } = await db.transaction((tx) =>
-    grantPurchasedPassTx(tx, { userId, kind: passKind, sourceRef }),
-  );
+  const { deduped } = await db.transaction(async (tx) => {
+    const grant = await grantPurchasedPassTx(tx, {
+      userId,
+      kind: passKind,
+      sourceRef,
+    });
+    // Sales ledger: record the paid Stripe purchase once, in the same tx. The
+    // amount is the catalog price for the kind; providerRef = payment-intent so
+    // a racing verify/webhook can't double-record (unique on provider_ref).
+    if (!grant.deduped) {
+      await recordSaleEventTx(tx, {
+        userId,
+        eventType: "stripe_purchase",
+        paymentMethod: "stripe",
+        grossCents: PASS_PRICES_CENTS[passKind],
+        isComp: false,
+        productLabel: PASS_PRODUCT_LABELS[passKind],
+        providerRef: sourceRef,
+      });
+    }
+    return grant;
+  });
   logger.info(
     { userId, passKind, sourceRef, deduped },
     "Reconciled pass purchase from webhook",
@@ -126,6 +151,67 @@ async function reconcileSubscription(
   logger.info(
     { userId, subscriptionId: sub.id, status, cancelAtPeriodEnd },
     "Reconciled subscription from webhook",
+  );
+}
+
+/**
+ * Record a recurring subscription RENEWAL as a sale. Stripe fires
+ * `invoice.payment_succeeded` on every successful charge (the first one and
+ * every renewal). We resolve the buyer + interval from our own mirror of the
+ * subscription (keyed on the stable `invoice.customer`, which survives Stripe's
+ * API-version churn on the invoice→subscription field), value the row at the
+ * amount actually collected, and key it on the invoice id. `recordSaleEventTx`
+ * is ON CONFLICT DO NOTHING, so at-least-once webhook redelivery is harmless.
+ *
+ * Dormant while card payments are flagged off, but ready the moment they flip.
+ */
+async function recordInvoiceRenewal(invoice: Stripe.Invoice): Promise<void> {
+  if (!invoice.id) return;
+  if (!invoice.amount_paid || invoice.amount_paid <= 0) return; // $0 invoice
+  const customerId =
+    typeof invoice.customer === "string"
+      ? invoice.customer
+      : (invoice.customer?.id ?? null);
+  if (!customerId) {
+    logger.warn(
+      { invoiceId: invoice.id },
+      "invoice.payment_succeeded without a customer; skipping sale record",
+    );
+    return;
+  }
+  const [sub] = await db
+    .select({
+      userId: subscriptionsTable.userId,
+      interval: subscriptionsTable.interval,
+    })
+    .from(subscriptionsTable)
+    .where(eq(subscriptionsTable.providerCustomerId, customerId))
+    .orderBy(desc(subscriptionsTable.updatedAt))
+    .limit(1);
+  if (!sub) {
+    logger.warn(
+      { invoiceId: invoice.id, customerId },
+      "Could not resolve a subscription for invoice; skipping sale record",
+    );
+    return;
+  }
+  const productLabel =
+    sub.interval === "year" ? "Yearly Subscription" : "Monthly Subscription";
+  await db.transaction((tx) =>
+    recordSaleEventTx(tx, {
+      userId: sub.userId,
+      eventType: "subscription_renewal",
+      paymentMethod: "stripe",
+      grossCents: invoice.amount_paid,
+      isComp: false,
+      productLabel,
+      providerRef: invoice.id as string,
+      occurredAt: new Date((invoice.created ?? Date.now() / 1000) * 1000),
+    }),
+  );
+  logger.info(
+    { invoiceId: invoice.id, userId: sub.userId },
+    "Recorded subscription renewal sale from webhook",
   );
 }
 

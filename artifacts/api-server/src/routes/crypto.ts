@@ -23,6 +23,10 @@ import { stopRenewingStripeSubscriptions } from "../lib/paymentProvider";
 import { newId } from "../lib/ids";
 import { CRYPTO_PASS_PLANS } from "../lib/pricing";
 import {
+  recordSaleEventTx,
+  valuationForCryptoOrder,
+} from "../lib/saleEvents";
+import {
   LUCKY_BREAK_CODE_KIND,
   LUCKY_BREAK_WINDOW_DAYS,
   computeLuckyBreakRoll,
@@ -680,6 +684,21 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
           windowDays: LUCKY_BREAK_WINDOW_DAYS,
           passId: issued.id,
         });
+        // Sales ledger: a paid crypto Lucky Break is real revenue, valued at
+        // what was actually paid (the Lucky Break price snapshotted on the
+        // order), keyed on the settling tx hash.
+        {
+          const v = valuationForCryptoOrder(order.passKind, order.priceCents);
+          await recordSaleEventTx(tx, {
+            userId: user.id,
+            eventType: "crypto_purchase",
+            paymentMethod: "crypto",
+            grossCents: v.grossCents,
+            isComp: v.isComp,
+            productLabel: v.productLabel,
+            providerRef: txHash,
+          });
+        }
         await tx
           .update(cryptoOrdersTable)
           .set({
@@ -707,6 +726,20 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
         kind: order.passKind as PassKind,
         sourceRef: txHash,
       });
+      // Sales ledger: record the paid crypto purchase once (skip on a deduped
+      // re-verify — the row already exists, and providerRef is unique anyway).
+      if (!grant.deduped) {
+        const v = valuationForCryptoOrder(order.passKind, order.priceCents);
+        await recordSaleEventTx(tx, {
+          userId: user.id,
+          eventType: "crypto_purchase",
+          paymentMethod: "crypto",
+          grossCents: v.grossCents,
+          isComp: v.isComp,
+          productLabel: v.productLabel,
+          providerRef: txHash,
+        });
+      }
       await tx
         .update(cryptoOrdersTable)
         .set({

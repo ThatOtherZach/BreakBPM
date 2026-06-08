@@ -22,6 +22,12 @@ import {
 } from "@workspace/api-zod";
 import { getOrCreateUser } from "../lib/auth";
 import { issuePassTx, grantPurchasedPassTx } from "../lib/passes";
+import {
+  recordSaleEventTx,
+  valuationForCodeRedemption,
+  PASS_PRODUCT_LABELS,
+} from "../lib/saleEvents";
+import { PASS_PRICES_CENTS } from "../lib/pricing";
 import { stopRenewingActiveSubscriptionsTx } from "../lib/subscriptions";
 import { getActivePasses } from "../lib/entitlement";
 import {
@@ -247,6 +253,22 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
         });
       }
 
+      // Sales ledger: record one valued row per redemption in the same tx.
+      // Lucky Break codes are real revenue (Lucky Break price); every other
+      // code (admin/gift/seed) is a $0 comp. Keyed on the redemption id.
+      {
+        const v = valuationForCodeRedemption(discount.grantsPassKind);
+        await recordSaleEventTx(tx, {
+          userId: user.id,
+          eventType: "code_redemption",
+          paymentMethod: "code",
+          grossCents: v.grossCents,
+          isComp: v.isComp,
+          productLabel: v.productLabel,
+          providerRef: redemptionId,
+        });
+      }
+
       return { pass: issued, roll: rollResult };
     }));
   } catch (err) {
@@ -357,13 +379,30 @@ router.post("/passes/verify", async (req, res): Promise<void> => {
   // Idempotent grant — the webhook may have already granted this same
   // purchase. Dedup is keyed on the provider payment reference. Lifetime's
   // local subscription mutual-exclusion is applied inside the helper.
-  const { pass, deduped } = await db.transaction((tx) =>
-    grantPurchasedPassTx(tx, {
+  const sourceRef = verify.providerRef ?? parsed.data.opaqueToken;
+  const { pass, deduped } = await db.transaction(async (tx) => {
+    const grant = await grantPurchasedPassTx(tx, {
       userId: user.id,
       kind: verify.kind!,
-      sourceRef: verify.providerRef ?? parsed.data.opaqueToken,
-    }),
-  );
+      sourceRef,
+    });
+    // Sales ledger: record the paid Stripe purchase once, in the same tx. The
+    // webhook records the same row keyed on the same provider_ref (payment
+    // intent), so whichever path wins the grant writes the sale and the other
+    // is a no-op (ON CONFLICT) — exactly one ledger row per purchase.
+    if (!grant.deduped) {
+      await recordSaleEventTx(tx, {
+        userId: user.id,
+        eventType: "stripe_purchase",
+        paymentMethod: "stripe",
+        grossCents: PASS_PRICES_CENTS[verify.kind!],
+        isComp: false,
+        productLabel: PASS_PRODUCT_LABELS[verify.kind!],
+        providerRef: sourceRef,
+      });
+    }
+    return grant;
+  });
   req.log.info(
     { userId: user.id, kind: pass.kind, deduped },
     "Pass purchase verified",

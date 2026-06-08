@@ -45,6 +45,7 @@ import {
   seedDiscountCode,
   getSubscriptions,
   getPasses,
+  getSaleEvents,
   uniqueCode,
   cleanup,
 } from "../test/factories";
@@ -133,6 +134,59 @@ describe("Lifetime stops an active subscription from renewing", () => {
     const subs = await getSubscriptions(user.id);
     const refreshed = subs.find((s) => s.id === sub.id)!;
     expect(refreshed.cancelAtPeriodEnd).toBe(false);
+  });
+});
+
+describe("passes/verify records a Stripe sale in the ledger", () => {
+  it("records one taxed stripe_purchase row keyed on the payment intent", async () => {
+    const user = await createUser();
+    mocks.currentUser = user;
+    mocks.provider.verifyAndGrant.mockResolvedValue({
+      success: true,
+      message: "Granted",
+      kind: "day",
+      providerRef: "pi_sale_test",
+    });
+
+    const res = await request(app)
+      .post("/api/passes/verify")
+      .send({ opaqueToken: "tok_sale" });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+
+    const sales = await getSaleEvents(user.id);
+    expect(sales).toHaveLength(1);
+    const sale = sales[0]!;
+    expect(sale.eventType).toBe("stripe_purchase");
+    expect(sale.paymentMethod).toBe("stripe");
+    expect(sale.isComp).toBe(false);
+    expect(sale.providerRef).toBe("pi_sale_test");
+    // Tax is backed out of the gross and reconciles exactly.
+    expect(sale.gstCents + sale.pstCents + sale.netCents).toBe(sale.grossCents);
+  });
+
+  it("is idempotent — a replayed verify (same payment intent) writes no second row", async () => {
+    const user = await createUser();
+    mocks.currentUser = user;
+    mocks.provider.verifyAndGrant.mockResolvedValue({
+      success: true,
+      message: "Granted",
+      kind: "day",
+      providerRef: "pi_dupe_test",
+    });
+
+    const first = await request(app)
+      .post("/api/passes/verify")
+      .send({ opaqueToken: "tok_dupe" });
+    expect(first.body.success).toBe(true);
+
+    const second = await request(app)
+      .post("/api/passes/verify")
+      .send({ opaqueToken: "tok_dupe" });
+    expect(second.body.success).toBe(true);
+
+    // The grant deduped on the second call, so exactly one sale row exists.
+    expect(await getSaleEvents(user.id)).toHaveLength(1);
   });
 });
 

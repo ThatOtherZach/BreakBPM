@@ -39,6 +39,7 @@ import {
   getDiscountCode,
   getRedemptions,
   getLuckyBreakRolls,
+  getSaleEvents,
   expirePass,
   uniqueCode,
   cleanup,
@@ -336,6 +337,14 @@ describe("POST /passes/redeem — admin-issued code redemption", () => {
     expect(passes).toHaveLength(1);
     expect(passes[0]!.kind).toBe("day");
     expect((await getDiscountCode(code))!.redemptionCount).toBe(1);
+
+    // A non-Lucky-Break code redemption is a $0 comp in the sales ledger.
+    const sales = await getSaleEvents(user.id);
+    expect(sales).toHaveLength(1);
+    expect(sales[0]!.eventType).toBe("code_redemption");
+    expect(sales[0]!.isComp).toBe(true);
+    expect(sales[0]!.grossCents).toBe(0);
+    expect(sales[0]!.netCents).toBe(0);
   });
 
   it("grants a Month pass when redeeming an admin month code", async () => {
@@ -536,6 +545,16 @@ describe("POST /passes/redeem — Lucky Break code", () => {
 
     // The code's redemption count is incremented.
     expect((await getDiscountCode(code))!.redemptionCount).toBe(1);
+
+    // A Lucky Break redemption is a REAL $4.99 sale (not a comp), taxed
+    // inclusive: gst + pst + net reconciles back to the gross.
+    const sales = await getSaleEvents(user.id);
+    expect(sales).toHaveLength(1);
+    const sale = sales[0]!;
+    expect(sale.eventType).toBe("code_redemption");
+    expect(sale.isComp).toBe(false);
+    expect(sale.grossCents).toBe(499);
+    expect(sale.gstCents + sale.pstCents + sale.netCents).toBe(sale.grossCents);
   });
 
   it("grants the correct pass kind when the roll lands on lifetime (deterministic seed)", async () => {

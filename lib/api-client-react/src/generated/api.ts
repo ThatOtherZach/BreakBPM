@@ -26,6 +26,7 @@ import type {
   AdminCodeInput,
   AdminCodeList,
   AdminCodeResult,
+  AdminSalesResponse,
   CancelFindPlayerPostInput,
   CancelFindPlayerPostResult,
   CancelSubscriptionResult,
@@ -54,6 +55,7 @@ import type {
   JoinGameResult,
   LeaveGameInput,
   LeaveGameResult,
+  ListAdminSalesParams,
   ListFindPlayerPostsParams,
   MeResponse,
   MyGiftCodesResult,
@@ -2659,4 +2661,90 @@ export const useCancelFindPlayerPost = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getCancelFindPlayerPostMutationOptions(options));
     }
+
+export const getListAdminSalesUrl = (params?: ListAdminSalesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/sales?${stringifiedParams}` : `/api/admin/sales`
+}
+
+/**
+ * Admin-only. Returns valued, taxed sale rows newest-first over an optional [from, to) date range, with revenue totals. Tax is the figure frozen at sale time (BC Canada: GST 5% + PST 7%, tax-inclusive). Comps (admin/gift/seed code redemptions) appear at $0 with `isComp: true`. `format=csv` streams a CSV download instead of JSON. 403s for non-admins.
+
+ * @summary Sales/revenue ledger for the accountant (admin only)
+ */
+export const listAdminSales = async (params?: ListAdminSalesParams, options?: RequestInit): Promise<AdminSalesResponse> => {
+
+  return customFetch<AdminSalesResponse>(getListAdminSalesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminSalesQueryKey = (params?: ListAdminSalesParams,) => {
+    return [
+    `/api/admin/sales`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminSalesQueryOptions = <TData = Awaited<ReturnType<typeof listAdminSales>>, TError = ErrorType<unknown>>(params?: ListAdminSalesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminSales>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminSalesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminSales>>> = ({ signal }) => listAdminSales(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminSales>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminSalesQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminSales>>>
+export type ListAdminSalesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Sales/revenue ledger for the accountant (admin only)
+ */
+
+export function useListAdminSales<TData = Awaited<ReturnType<typeof listAdminSales>>, TError = ErrorType<unknown>>(
+ params?: ListAdminSalesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminSales>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminSalesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 

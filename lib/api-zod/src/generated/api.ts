@@ -945,3 +945,53 @@ export const CancelFindPlayerPostResponse = zod.object({
 })
 
 
+/**
+ * Admin-only. Returns valued, taxed sale rows newest-first over an optional [from, to) date range, with revenue totals. Tax is the figure frozen at sale time (BC Canada: GST 5% + PST 7%, tax-inclusive). Comps (admin/gift/seed code redemptions) appear at $0 with `isComp: true`. `format=csv` streams a CSV download instead of JSON. 403s for non-admins.
+
+ * @summary Sales/revenue ledger for the accountant (admin only)
+ */
+export const listAdminSalesQueryPageDefault = 1;
+
+export const listAdminSalesQueryLimitDefault = 50;
+export const listAdminSalesQueryLimitMax = 200;
+
+export const listAdminSalesQueryFormatDefault = `json`;
+
+export const ListAdminSalesQueryParams = zod.object({
+  "from": zod.date().optional().describe('Inclusive lower bound on occurredAt (ISO 8601).'),
+  "to": zod.date().optional().describe('Exclusive upper bound on occurredAt (ISO 8601).'),
+  "page": zod.coerce.number().min(1).default(listAdminSalesQueryPageDefault),
+  "limit": zod.coerce.number().min(1).max(listAdminSalesQueryLimitMax).default(listAdminSalesQueryLimitDefault),
+  "format": zod.enum(['json', 'csv']).default(listAdminSalesQueryFormatDefault).describe('json (default) returns AdminSalesResponse; csv streams a download.')
+})
+
+export const ListAdminSalesResponse = zod.object({
+  "rows": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.string().nullish(),
+  "screenName": zod.string().nullish(),
+  "eventType": zod.enum(['crypto_purchase', 'stripe_purchase', 'subscription_renewal', 'code_redemption']),
+  "productLabel": zod.string(),
+  "paymentMethod": zod.enum(['crypto', 'stripe', 'code']),
+  "isComp": zod.boolean(),
+  "grossCents": zod.number(),
+  "gstCents": zod.number(),
+  "pstCents": zod.number(),
+  "netCents": zod.number(),
+  "providerRef": zod.string(),
+  "occurredAt": zod.coerce.date()
+})),
+  "totals": zod.object({
+  "grossCents": zod.number(),
+  "gstCents": zod.number(),
+  "pstCents": zod.number(),
+  "netCents": zod.number(),
+  "compCount": zod.number(),
+  "rowCount": zod.number()
+}),
+  "page": zod.number(),
+  "limit": zod.number(),
+  "total": zod.number()
+})
+
+

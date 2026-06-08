@@ -21,6 +21,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "./Navbar";
 import GameHistoryCard, { fmtDate } from "./GameHistoryCard";
 import LuckyBreakReveal from "./LuckyBreakReveal";
+import AdminSalesPanel from "./AdminSalesPanel";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // The rack tumbles for at least this long so a seeded Lucky Break draw always
@@ -629,6 +630,9 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
             </div>
           </div>
         )}
+
+        {/* Admin sales/revenue ledger — gated on isAdmin (endpoint 403s too). */}
+        {isAdmin && <AdminSalesPanel />}
 
         {/* Redeem a Code panel — handles both Lucky Break roll codes (animated
             reveal) and plain gifted Day/Year/Lifetime codes (plain message). */}

@@ -695,6 +695,49 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/CancelFindPlayerPostResult" }
 
+  /admin/sales:
+    get:
+      operationId: listAdminSales
+      tags: [admin]
+      summary: Sales/revenue ledger for the accountant (admin only)
+      description: >
+        Admin-only. Returns valued, taxed sale rows newest-first over an
+        optional [from, to) date range, with revenue totals. Tax is the figure
+        frozen at sale time (BC Canada: GST 5% + PST 7%, tax-inclusive). Comps
+        (admin/gift/seed code redemptions) appear at $0 with `isComp: true`.
+        `format=csv` streams a CSV download instead of JSON. 403s for
+        non-admins.
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+          description: Inclusive lower bound on occurredAt (ISO 8601).
+        - name: to
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+          description: Exclusive upper bound on occurredAt (ISO 8601).
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - name: format
+          in: query
+          required: false
+          schema: { type: string, enum: [json, csv], default: json }
+          description: json (default) returns AdminSalesResponse; csv streams a download.
+      responses:
+        "200":
+          description: OK (JSON body, or a CSV download when format=csv)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminSalesResponse" }
+
 components:
   schemas:
     HealthStatus:
@@ -780,6 +823,72 @@ components:
         codes:
           type: array
           items: { $ref: "#/components/schemas/AdminCode" }
+
+    AdminSaleRow:
+      type: object
+      required:
+        [
+          id,
+          eventType,
+          productLabel,
+          paymentMethod,
+          isComp,
+          grossCents,
+          gstCents,
+          pstCents,
+          netCents,
+          providerRef,
+          occurredAt,
+        ]
+      properties:
+        id: { type: string }
+        userId: { type: ["string", "null"] }
+        screenName: { type: ["string", "null"] }
+        eventType:
+          {
+            type: string,
+            enum:
+              [
+                crypto_purchase,
+                stripe_purchase,
+                subscription_renewal,
+                code_redemption,
+              ],
+          }
+        productLabel: { type: string }
+        paymentMethod: { type: string, enum: [crypto, stripe, code] }
+        isComp: { type: boolean }
+        grossCents: { type: integer }
+        gstCents: { type: integer }
+        pstCents: { type: integer }
+        netCents: { type: integer }
+        providerRef: { type: string }
+        occurredAt: { type: string, format: date-time }
+
+    AdminSalesTotals:
+      type: object
+      required:
+        [grossCents, gstCents, pstCents, netCents, compCount, rowCount]
+      properties:
+        # Totals span the full date range (all pages), not just the page shown.
+        grossCents: { type: integer }
+        gstCents: { type: integer }
+        pstCents: { type: integer }
+        netCents: { type: integer }
+        compCount: { type: integer }
+        rowCount: { type: integer }
+
+    AdminSalesResponse:
+      type: object
+      required: [rows, totals, page, limit, total]
+      properties:
+        rows:
+          type: array
+          items: { $ref: "#/components/schemas/AdminSaleRow" }
+        totals: { $ref: "#/components/schemas/AdminSalesTotals" }
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
 
     Plan:
       type: object

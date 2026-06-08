@@ -123,6 +123,60 @@ export interface AdminCodeList {
   codes: AdminCode[];
 }
 
+export type AdminSaleRowEventType = typeof AdminSaleRowEventType[keyof typeof AdminSaleRowEventType];
+
+
+export const AdminSaleRowEventType = {
+  crypto_purchase: 'crypto_purchase',
+  stripe_purchase: 'stripe_purchase',
+  subscription_renewal: 'subscription_renewal',
+  code_redemption: 'code_redemption',
+} as const;
+
+export type AdminSaleRowPaymentMethod = typeof AdminSaleRowPaymentMethod[keyof typeof AdminSaleRowPaymentMethod];
+
+
+export const AdminSaleRowPaymentMethod = {
+  crypto: 'crypto',
+  stripe: 'stripe',
+  code: 'code',
+} as const;
+
+export interface AdminSaleRow {
+  id: string;
+  /** @nullable */
+  userId?: string | null;
+  /** @nullable */
+  screenName?: string | null;
+  eventType: AdminSaleRowEventType;
+  productLabel: string;
+  paymentMethod: AdminSaleRowPaymentMethod;
+  isComp: boolean;
+  grossCents: number;
+  gstCents: number;
+  pstCents: number;
+  netCents: number;
+  providerRef: string;
+  occurredAt: string;
+}
+
+export interface AdminSalesTotals {
+  grossCents: number;
+  gstCents: number;
+  pstCents: number;
+  netCents: number;
+  compCount: number;
+  rowCount: number;
+}
+
+export interface AdminSalesResponse {
+  rows: AdminSaleRow[];
+  totals: AdminSalesTotals;
+  page: number;
+  limit: number;
+  total: number;
+}
+
 export type PlanId = typeof PlanId[keyof typeof PlanId];
 
 
@@ -1112,4 +1166,36 @@ page?: number;
  */
 all?: boolean;
 };
+
+export type ListAdminSalesParams = {
+/**
+ * Inclusive lower bound on occurredAt (ISO 8601).
+ */
+from?: string;
+/**
+ * Exclusive upper bound on occurredAt (ISO 8601).
+ */
+to?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 200
+ */
+limit?: number;
+/**
+ * json (default) returns AdminSalesResponse; csv streams a download.
+ */
+format?: ListAdminSalesFormat;
+};
+
+export type ListAdminSalesFormat = typeof ListAdminSalesFormat[keyof typeof ListAdminSalesFormat];
+
+
+export const ListAdminSalesFormat = {
+  json: 'json',
+  csv: 'csv',
+} as const;
 
