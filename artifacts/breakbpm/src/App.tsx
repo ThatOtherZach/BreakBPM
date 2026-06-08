@@ -48,16 +48,23 @@ function createInitialGameState(
   sharkAggression?: SharkAggression,
   ruleSet?: RuleSet,
   chaosMode?: ChaosMode,
+  breakerIndex?: number,
 ): GameState {
   // Shark mode is solo 8-ball with an opponent steal mechanic. Only seed
   // the shark fields when the combo actually matches — keeps state shape
   // clean for the 99% of games that aren't shark.
   const isShark = gameType === "8ball" && players.length === 1 && sharkAggression !== undefined;
+  // Clamp the requested breaker into range so a bad index can't point past
+  // the players array. Defaults to slot 0 (Player 1) — the historical behavior.
+  const safeBreaker =
+    typeof breakerIndex === "number" && Number.isFinite(breakerIndex)
+      ? Math.max(0, Math.min(players.length - 1, Math.floor(breakerIndex)))
+      : 0;
   return {
     phase: "playing",
     gameType,
     players,
-    currentPlayerIndex: 0,
+    currentPlayerIndex: safeBreaker,
     sunkBalls: [],
     shotLog: [],
     gameStartTime: Date.now(),
@@ -203,11 +210,12 @@ function MainApp() {
     sharkAggression?: SharkAggression,
     ruleSet?: RuleSet,
     chaosMode?: ChaosMode,
+    breakerIndex?: number,
   ) {
     // Explicit fresh start — wipe any stale in-progress checkpoint so we
     // don't immediately resurrect the previous game on the next mount.
     clearInProgressGame();
-    setGameState(createInitialGameState(gameType, players, serverShareCode, sharkAggression, ruleSet, chaosMode));
+    setGameState(createInitialGameState(gameType, players, serverShareCode, sharkAggression, ruleSet, chaosMode, breakerIndex));
     setServerGameId(gameId);
     setMaxGameDurationMs(maxMs);
     setInitialPausedDuration(0);

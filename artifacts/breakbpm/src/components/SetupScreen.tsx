@@ -107,7 +107,7 @@ const CHAOS_RULE_OPTIONS: {
 ];
 
 interface Props {
-  onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, serverShareCode: string | null, sharkAggression?: SharkAggression, ruleSet?: RuleSet, chaosMode?: ChaosMode) => void;
+  onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, serverShareCode: string | null, sharkAggression?: SharkAggression, ruleSet?: RuleSet, chaosMode?: ChaosMode, breakerIndex?: number) => void;
   /** Resume an existing game from the server-side in-progress snapshot. */
   onResume: (state: GameState, serverGameId: string | null, maxGameDurationMs: number | null, pausedDuration: number) => void;
   onAbout: () => void;
@@ -156,6 +156,12 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
   // Default to 'open-through-break' (the most commonly played rule). Only sent
   // to onStart for automatic-assignment 8-ball; ignored for manual/Shark/Practice.
   const [ruleSet, setRuleSet] = useState<RuleSet>('open-through-break');
+  // Which player breaks (takes the first shot). Defaults to slot 0 (Player 1).
+  // Only meaningful for multiplayer (2P/4P) — Practice/Shark are solo. Clamped
+  // to the active player count (effect below) so a stale index can't survive a
+  // switch from Doubles → Singles/Practice/Shark and hand the break to a now-
+  // absent slot.
+  const [breakerIndex, setBreakerIndex] = useState(0);
 
   // Hidden easter egg: press-and-hold the splash 8-ball for 3s to swap the
   // art for a QR code to breakbpm.com, shown inline for 8s before it reverts
@@ -321,6 +327,14 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
     }
   }, [gameType, playerCount]);
 
+  // Keep the breaker selection in range. Switching Doubles → Singles, or to
+  // Practice/Shark (solo), can leave breakerIndex pointing at a now-absent
+  // slot — reset to slot 0 so the wrong (or missing) player can't be handed
+  // the break.
+  useEffect(() => {
+    if (breakerIndex > count - 1) setBreakerIndex(0);
+  }, [count, breakerIndex]);
+
   // Normalize manualTeams when entering Singles 8-ball manual mode. Doubles
   // legally allows duplicates (3v1 splits), so the user can land here with
   // both slot 0 and slot 1 on the same group after switching from Doubles
@@ -382,6 +396,9 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
         // Manual teams pre-assign groups; Shark/Practice/Chaos/None have none.
         gameType === '8ball' && !isShark && teamMode === 'auto' ? ruleSet : undefined,
         chaosMode,
+        // Who breaks. Solo modes (Practice/Shark) only ever have slot 0; the
+        // clamp effect keeps breakerIndex valid for the active count.
+        count >= 2 ? breakerIndex : 0,
       );
     } catch (e: unknown) {
       const err = e as { data?: { error?: string } };
@@ -554,6 +571,11 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
         {/* Player names — hidden in Shark Mode (solo, no need to name) */}
         {!isShark && (<div>
           <div className="menu-section-label">▶ {isPractice ? 'YOUR NAME' : 'PLAYERS'}</div>
+          {count >= 2 && (
+            <div style={{ fontSize: 11, color: '#444', margin: '-2px 0 4px' }}>
+              Tap a ball to choose who breaks first
+            </div>
+          )}
           <div className="flex flex-col gap-2">
             {Array.from({ length: count }).map((_, i) => {
               // Slot 1 is locked to the signed-in user so they can't
@@ -561,12 +583,44 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
               const isLockedSlot = i === 0 && lockedPlayer1Name !== null;
               return (
               <div key={i} className="player-row">
-                <span
-                  className="hud-chip hud-chip-solid"
-                  data-number={i + 1}
-                  aria-hidden="true"
-                  style={{ '--chip-color': PLAYER_BALL_COLORS[i] } as React.CSSProperties}
-                />
+                {count >= 2 ? (
+                  // Multiplayer: the leading ball doubles as a radio that picks
+                  // who breaks. Selected → white cue ball; unselected → that
+                  // player's numbered colour ball. (Don't add `hud-chip` to the
+                  // cue ball — its ::after would paint a stray white dot over it.)
+                  <label
+                    className="breaker-opt"
+                    title={`${(isLockedSlot ? lockedPlayer1Name : names[i]) || DEFAULT_NAMES[i]} breaks first`}
+                  >
+                    <input
+                      type="radio"
+                      name="breaker"
+                      checked={breakerIndex === i}
+                      onChange={() => setBreakerIndex(i)}
+                      className="rule-set-radio"
+                      // The visible label is aria-hidden ball art, so name the
+                      // radio explicitly for screen readers / AT.
+                      aria-label={`${(isLockedSlot ? lockedPlayer1Name : names[i]) || DEFAULT_NAMES[i]} breaks first`}
+                    />
+                    {breakerIndex === i ? (
+                      <span className="cue-ball-icon cue-ball-icon--chip" aria-hidden="true" />
+                    ) : (
+                      <span
+                        className="hud-chip hud-chip-solid"
+                        data-number={i + 1}
+                        aria-hidden="true"
+                        style={{ '--chip-color': PLAYER_BALL_COLORS[i] } as React.CSSProperties}
+                      />
+                    )}
+                  </label>
+                ) : (
+                  <span
+                    className="hud-chip hud-chip-solid"
+                    data-number={i + 1}
+                    aria-hidden="true"
+                    style={{ '--chip-color': PLAYER_BALL_COLORS[i] } as React.CSSProperties}
+                  />
+                )}
                 <input
                   className="input"
                   value={isLockedSlot ? lockedPlayer1Name : names[i]}

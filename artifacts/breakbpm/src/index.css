@@ -522,6 +522,31 @@ html, #root {
   outline-offset: 2px;
 }
 
+/* ── Breaker selector ── */
+/* The leading ball on each player row doubles as a radio that picks who breaks
+   (takes the first shot). Selected shows the white cue ball; unselected shows
+   that player's numbered colour ball. Mirrors the Rules/Format radio pattern
+   (a visually-hidden real radio via .rule-set-radio + the ball art). */
+.breaker-opt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.breaker-opt .hud-chip,
+.breaker-opt .cue-ball-icon {
+  cursor: pointer;
+}
+/* Keyboard focus ring on the focused option (via the hidden radio). */
+.breaker-opt .rule-set-radio:focus-visible + .hud-chip,
+.breaker-opt .rule-set-radio:focus-visible + .cue-ball-icon {
+  outline: 2px solid #00ff41;
+  outline-offset: 2px;
+}
+
 /* ── Rainbow admin name ── */
 /* Cosmetic perk: an admin's player name renders as an animated rainbow
    gradient during live play (HUD, player list, win banner, shot log,
