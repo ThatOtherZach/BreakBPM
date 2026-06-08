@@ -623,12 +623,12 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, flex: 1 }}>
-                  <span style={{ fontWeight: 'bold', fontSize: 13 }}>Team Mode</span>
+                  <span style={{ fontWeight: 'bold', fontSize: 13 }}>Format</span>
                   <span style={{ fontSize: 11, color: '#444' }}>
                     {teamMode === 'auto' ? RULE_SET_SUBLABEL[ruleSet] : TEAM_MODE_SUBLABEL[teamMode]}
                   </span>
                 </span>
-                {/* Single 4-state cycling toggle: On → Off → Chaos → None. */}
+                {/* Single 4-state cycling toggle: On → Off → None → Chaos. */}
                 <div className="flex gap-1" style={{ flexShrink: 0 }}>
                   <button
                     type="button"
@@ -639,14 +639,14 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                         m => TEAM_MODE_CYCLE[(TEAM_MODE_CYCLE.indexOf(m) + 1) % TEAM_MODE_CYCLE.length],
                       )
                     }
-                    aria-label={`Team mode: ${TEAM_MODE_LABEL[teamMode]}. Tap to cycle.`}
+                    aria-label={`Format: ${TEAM_MODE_LABEL[teamMode]}. Tap to cycle.`}
                   >
                     {TEAM_MODE_LABEL[teamMode]} ▸
                   </button>
                 </div>
               </div>
-              {/* Auto: the Rule Set radios decide when groups lock. */}
-              {teamMode === 'auto' && (
+              {/* On/Off: the Rule Set radios show for both auto and manual play. */}
+              {(teamMode === 'auto' || teamMode === 'manual') && (
                 <div
                   style={{
                     marginTop: 6,
@@ -759,18 +759,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                   </span>
                 </div>
               )}
-              {/* None: no teams, no winner — a free shoot-around. */}
-              {teamMode === 'none' && (
-                <div
-                  style={{
-                    marginTop: 6,
-                    paddingTop: 6,
-                    borderTop: '1px solid rgba(0,0,0,0.18)',
-                  }}
-                >
-                  <span style={{ fontSize: 11, color: '#444' }}>Take turns and clear the table.</span>
-                </div>
-              )}
+              {/* None: no teams, no winner, no rules — panel stays blank. */}
             </div>
           )}
         </div>)}
