@@ -376,18 +376,39 @@ html, #root {
    conic rainbow sweep. */
 .rainbow-cue {
   display: inline-block;
+  position: relative;
   font-size: 16px; /* sizing anchor — width/height track this */
   width: 1em;
   height: 1em;
   vertical-align: -3px;
   border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+/* Spinning conic rainbow body (bottom layer). */
+.rainbow-cue::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #ff3b3b, #ff8c00, #ffd500, #37d67a, #3ba7ff, #a64dff, #ff3b3b);
+  animation: rainbow-cue-spin 3s linear infinite;
+}
+/* Static overlay: red cue spot + glossy highlight + black rim (top layer). */
+.rainbow-cue::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
   background:
     radial-gradient(circle at 32% 30%, rgba(255,255,255,0.95) 0 0.09em, rgba(255,255,255,0) 0.32em),
-    conic-gradient(from 0deg, #ff3b3b, #ff8c00, #ffd500, #37d67a, #3ba7ff, #a64dff, #ff3b3b);
+    radial-gradient(circle at 50% 50%, #d11212 0 0.16em, rgba(255,255,255,0) 0.17em);
   box-shadow:
     inset 0 0 0 0.0625em #000,
     inset -0.0625em -0.0625em 0 rgba(0,0,0,0.25);
-  flex-shrink: 0;
+}
+@keyframes rainbow-cue-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ── Rule Set radio-ball selector (8-ball auto-assignment setup) ── */
@@ -527,6 +548,7 @@ html, #root {
 }
 @media (prefers-reduced-motion: reduce) {
   .rainbow-name { animation: none; }
+  .rainbow-cue::before { animation: none; }
 }
 .about-markdown blockquote {
   border-left: 3px solid var(--navy);
