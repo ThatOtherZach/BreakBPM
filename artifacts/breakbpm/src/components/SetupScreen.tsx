@@ -757,7 +757,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                   <span style={{ display: 'block', fontSize: 10, color: '#444', marginTop: 6 }}>
                     {chaosRule === 'eight-last'
                       ? 'Anyone sinks any ball. Sink the 8 last to win — pot it early and you lose.'
-                      : 'Anything goes — first player to sink the 8-ball wins.'}
+                      : 'Anything goes — clear the table, then whoever sank the most balls wins.'}
                   </span>
                 </div>
               )}

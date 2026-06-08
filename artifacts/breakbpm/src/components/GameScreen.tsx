@@ -10,7 +10,7 @@ import {
   saveInProgressGame, clearInProgressGame,
   isSharkGame, applySharkMiss,
   getSharkPickCandidates, resolveSharkPick,
-  SHARK_PLAYER_NAME,
+  SHARK_PLAYER_NAME, chaosMostSunkWinner,
 } from '../lib/gameLogic';
 import SharkIcon from './SharkIcon';
 import { PlayerName } from './PlayerName';
@@ -543,6 +543,15 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       next.winner = null;
       const finalBpm = calculatePlayerBPM([...next.shotLog, entry], cur.name) ?? 0;
       next.winMessage = `Table cleared! Final BPM: ${finalBpm.toFixed(1)}`;
+    } else if (state.chaosMode === 'anything-goes' && remaining.length === 1) {
+      // No Rules: the 8 isn't special — clearing the table ends the game and
+      // whoever pocketed the most balls wins (a tie records no winner).
+      next.phase = 'ended';
+      const { winner, tie } = chaosMostSunkWinner([...next.shotLog, entry], next.players);
+      next.winner = winner;
+      next.winMessage = tie
+        ? `Table cleared — it's a TIE! No single winner.`
+        : `Table cleared — ${winner} wins with the most balls sunk!`;
     }
 
     next.shotLog = [...next.shotLog, entry];

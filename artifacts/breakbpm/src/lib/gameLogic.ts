@@ -218,13 +218,16 @@ export function checkSinkResult(
         // table-cleared end is handled by GameScreen (Practice-style).
         return { win: false, lose: false, message: '', switchTurn: false };
       }
+      if (chaosMode === 'anything-goes') {
+        // No Rules: the 8 is just another ball. The game ends only when the
+        // table is cleared, and the winner is whoever pocketed the most balls
+        // — resolved by GameScreen via chaosMostSunkWinner. Every sink (the 8
+        // included) just continues play.
+        return { win: false, lose: false, message: '', switchTurn: false };
+      }
+      // 'eight-last': the 8 only wins once every other ball is cleared; an
+      // early 8 (including on the break) is a loss. Other balls are plain sinks.
       if (ballSunk === EIGHT_BALL) {
-        if (chaosMode === 'anything-goes') {
-          // First 8 sunk wins, no matter what is still on the table.
-          return { win: true, lose: false, message: `${currentPlayer.name} sinks the 8-ball — WINNER!`, switchTurn: false };
-        }
-        // 'eight-last': the 8 only wins once every other ball is cleared;
-        // an early 8 (including on the break) is a loss.
         const othersLeft = getRemainingBalls(newSunk, '8ball').filter(b => b !== EIGHT_BALL);
         if (othersLeft.length === 0) {
           return { win: true, lose: false, message: `${currentPlayer.name} sinks the 8-ball — WINNER!`, switchTurn: false };
@@ -261,6 +264,36 @@ export function checkSinkResult(
   }
 
   return { win: false, lose: false, message: '', switchTurn: false };
+}
+
+/**
+ * Chaos "No Rules" (anything-goes) winner resolution: once the table is
+ * cleared, the player who pocketed the most balls wins. Counts pocket entries
+ * per player from the shot log. Returns the sole leader's name, or `null` on a
+ * tie (no single winner). Pure + side-effect free so it stays unit-testable.
+ */
+export function chaosMostSunkWinner(
+  shotLog: ShotLogEntry[],
+  players: Player[],
+): { winner: string | null; tie: boolean } {
+  const counts = new Map<string, number>();
+  for (const e of shotLog) {
+    if (e.type === 'sink' && typeof e.ball === 'number' && e.playerName) {
+      counts.set(e.playerName, (counts.get(e.playerName) ?? 0) + 1);
+    }
+  }
+  let best = -1;
+  let leaders: string[] = [];
+  for (const p of players) {
+    const c = counts.get(p.name) ?? 0;
+    if (c > best) {
+      best = c;
+      leaders = [p.name];
+    } else if (c === best) {
+      leaders.push(p.name);
+    }
+  }
+  return { winner: leaders.length === 1 ? leaders[0] : null, tie: leaders.length !== 1 };
 }
 
 /**
