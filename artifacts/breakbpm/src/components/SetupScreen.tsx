@@ -653,7 +653,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                     paddingTop: 6,
                     borderTop: '1px solid rgba(0,0,0,0.18)',
                   }}
-                  className="pt-[2px] pb-[2px] mt-[2px] border-t-[0px]">
+                  className="pt-[2px] pb-[2px] border-t-[0px] mt-[4px]">
                   <div
                     role="radiogroup"
                     aria-label="Group assignment rule set"
