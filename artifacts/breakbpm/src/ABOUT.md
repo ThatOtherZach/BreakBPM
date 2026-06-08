@@ -16,6 +16,17 @@ The higher the BPM, the faster the game moves. It’s calculated per-player from
 - **Practice**: Unlimited solo racks. Log shots and watch your accuracy improve.
 - **🦈 Shark Mode**: Solo 8-ball against an invisible opponent. Miss or foul and the Shark gets a chance to pocket. Honor system — you remove the ball from the real table.
 
+### 8-Ball team modes
+
+In 8-Ball, the Team Mode toggle cycles through four ways to play:
+
+- **On**: Solids vs Stripes, teams assigned automatically by the rule set you pick.
+- **Off**: Solids vs Stripes, but you pick each player's group yourself.
+- **None**: No teams, no winner. Track shots and BPM.
+- **Chaos**: No teams, free-for-all, with a win rule of your choice:
+  - **8-Ball Last**: Sink the 8 last to win or early to lose.
+  - **No Rules**: Anything goes. Clear the table; whoever sank the most wins.
+
 ## Play anywhere, with anyone
 
 Every game has a **5-character share code**. One device is the scorekeeper while everyone else follows live.
