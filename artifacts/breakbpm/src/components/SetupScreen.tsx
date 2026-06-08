@@ -770,7 +770,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                     borderTop: '1px solid rgba(0,0,0,0.18)',
                   }}
                 >
-                  <span style={{ fontSize: 11, color: '#444' }}>Take turns, clear the table, and track shots and BPM.</span>
+                  <span style={{ fontSize: 11, color: '#444' }}>Take turns and clear the table.</span>
                 </div>
               )}
             </div>
