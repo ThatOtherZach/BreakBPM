@@ -81,7 +81,7 @@ const TEAM_MODE_LABEL: Record<TeamMode, string> = {
 const TEAM_MODE_SUBLABEL: Record<Exclude<TeamMode, 'auto'>, string> = {
   manual: 'Pick each player’s group yourself',
   chaos: 'No teams — anyone sinks anything, winner recorded',
-  none: 'No teams, no winner — just track shots & BPM',
+  none: 'No teams, no winner. Track shots and BPM',
 };
 
 // Chaos "Win Rule" radio options (only shown when Team Mode = Chaos). The
@@ -770,10 +770,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                     borderTop: '1px solid rgba(0,0,0,0.18)',
                   }}
                 >
-                  <span style={{ fontSize: 11, color: '#444' }}>
-                    Free-for-all shoot-around — no teams, no winner. Take turns, clear the
-                    table, and track everyone’s BPM.
-                  </span>
+                  <span style={{ fontSize: 11, color: '#444' }}>Take turns, clear the table, and track shots and BPM.</span>
                 </div>
               )}
             </div>
