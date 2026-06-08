@@ -80,7 +80,7 @@ const TEAM_MODE_LABEL: Record<TeamMode, string> = {
 };
 const TEAM_MODE_SUBLABEL: Record<Exclude<TeamMode, 'auto'>, string> = {
   manual: 'Pick each player’s group yourself',
-  chaos: 'No teams — anyone sinks anything, winner recorded',
+  chaos: 'No teams, anyone sinks anything, winner recorded',
   none: 'No teams, no winner. Track shots and BPM',
 };
 
