@@ -28,6 +28,15 @@ const EVENT_LABELS: Record<string, string> = {
 };
 
 /**
+ * Shorten a long reference (crypto tx hash / Stripe id) for the table while
+ * keeping the full value in a tooltip. Short refs (redeem codes) pass through.
+ */
+function shortRef(ref: string): string {
+  if (ref.length <= 16) return ref;
+  return `${ref.slice(0, 8)}…${ref.slice(-6)}`;
+}
+
+/**
  * Admin-only sales/revenue ledger. Renders a date-range picker (defaults to the
  * current month), a paginated table with GST + PST as their own columns,
  * full-range revenue totals, and a CSV export for the accountant. Parent gates
@@ -194,12 +203,13 @@ export default function AdminSalesPanel() {
                     <Th align="right">GST</Th>
                     <Th align="right">PST</Th>
                     <Th align="right">Net</Th>
+                    <Th>Reference</Th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.rows.length === 0 && (
                     <tr>
-                      <td colSpan={8} style={{ padding: 8, color: "#666" }}>
+                      <td colSpan={9} style={{ padding: 8, color: "#666" }}>
                         No sales in this range.
                       </td>
                     </tr>
@@ -217,6 +227,11 @@ export default function AdminSalesPanel() {
                       <Td align="right">{cad(r.gstCents)}</Td>
                       <Td align="right">{cad(r.pstCents)}</Td>
                       <Td align="right">{cad(r.netCents)}</Td>
+                      <Td>
+                        <span title={r.providerRef} style={{ fontFamily: "monospace" }}>
+                          {shortRef(r.providerRef)}
+                        </span>
+                      </Td>
                     </tr>
                   ))}
                 </tbody>
