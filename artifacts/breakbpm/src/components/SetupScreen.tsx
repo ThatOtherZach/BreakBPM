@@ -647,13 +647,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
               </div>
               {/* On/Off: the Rule Set radios show for both auto and manual play. */}
               {(teamMode === 'auto' || teamMode === 'manual') && (
-                <div
-                  style={{
-                    marginTop: 6,
-                    paddingTop: 6,
-                    borderTop: '1px solid rgba(0,0,0,0.18)',
-                  }}
-                  className="pt-[2px] pb-[2px] border-t-[0px] mt-[4px]">
+                <div style={{ marginTop: 6 }}>
                   <div
                     role="radiogroup"
                     aria-label="Group assignment rule set"
