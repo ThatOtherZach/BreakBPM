@@ -29,6 +29,26 @@ vi.mock("../lib/paymentProvider", () => ({
   stopRenewingStripeSubscriptions: vi.fn(async () => {}),
 }));
 
+// Pin the USD→CAD rate so the sale ledger is deterministic and never hits the
+// Bank-of-Canada network. 1.35 is non-unity to prove the conversion is applied.
+vi.mock("../lib/fx", () => ({
+  getUsdToCadRate: vi.fn(async () => ({
+    rateMicros: 1_350_000,
+    rateDate: "2026-06-01",
+    source: "bank_of_canada" as const,
+  })),
+  getUsdToCadRateForDate: vi.fn(async () => ({
+    rateMicros: 1_350_000,
+    rateDate: "2026-06-01",
+    source: "bank_of_canada" as const,
+  })),
+  convertUsdToCad: (usdCents: number, rateMicros: number) =>
+    Math.round((usdCents * rateMicros) / 1_000_000),
+}));
+const FX_MICROS = 1_350_000;
+const toCad = (usdCents: number) =>
+  Math.round((usdCents * FX_MICROS) / 1_000_000);
+
 // These suites exercise the card-payment-gated flows (passes/verify,
 // subscriptions/checkout) plus the Lifetime-stops-subscription rule, all of
 // which assume in-app card payments are ON. cardPaymentsEnabled() reads the
@@ -161,6 +181,10 @@ describe("passes/verify records a Stripe sale in the ledger", () => {
     expect(sale.paymentMethod).toBe("stripe");
     expect(sale.isComp).toBe(false);
     expect(sale.providerRef).toBe("pi_sale_test");
+    // gross is the CAD value of the USD source price at the pinned BoC rate.
+    expect(sale.sourceCurrency).toBe("USD");
+    expect(sale.fxRateMicros).toBe(FX_MICROS);
+    expect(sale.grossCents).toBe(toCad(sale.sourceGrossCents));
     // Tax is backed out of the gross and reconciles exactly.
     expect(sale.gstCents + sale.pstCents + sale.netCents).toBe(sale.grossCents);
   });

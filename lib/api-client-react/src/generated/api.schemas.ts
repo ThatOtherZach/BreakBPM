@@ -156,6 +156,11 @@ export interface AdminSaleRow {
   gstCents: number;
   pstCents: number;
   netCents: number;
+  sourceGrossCents: number;
+  sourceCurrency: string;
+  fxRateMicros: number;
+  /** @nullable */
+  fxRateDate?: string | null;
   providerRef: string;
   occurredAt: string;
 }

@@ -22,5 +22,6 @@
 - [Admin effective-Lifetime gating](admin-effective-lifetime-gating.md) — gate Lifetime-only perks on entitlement (synthesizes Lifetime for admins), never raw getActivePasses, or admin perks leak per-feature.
 - [Auth-redirect intent handoff](auth-redirect-intent-handoff.md) — Clerk forceRedirectUrl always lands on "/"; carry per-link intent via localStorage stash + a top-level resumer scoped to "/", not a route-local effect.
 - [Team-assignment pre-pocket contract](team-assignment-pre-pocket-contract.md) — shouldAssignTeams runs BEFORE the pocketed ball is appended; 8-ball ruleSet timing (second-ball/open-through-break) depends on that ordering.
+- [Sales ledger CAD/FX freeze](sales-ledger-cad-fx.md) — prices are USD but ledger reports CAD; freeze a pre-tx BoC USD→CAD rate per sale_events row, tax the CAD gross, keep USD+rate for audit; mock fx in route tests.
 - [Stripe sale dual-path recording](stripe-sale-dual-path.md) — both /passes/verify AND the webhook reconcile must record the stripe_purchase sale (gated on !grant.deduped, keyed on payment_intent) or whichever path wins the grant leaves zero ledger rows.
 - [Orval date-time query params are zod.date()](orval-date-query-params.md) — generated query schemas type date-time params as zod.date() (NOT coerce), so routes must coerce ISO query strings to Date before safeParse or every request 400s.

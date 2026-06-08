@@ -28,6 +28,26 @@ vi.mock("../lib/luckyBreakEntropy", () => ({
   gatherShotEntropy: vi.fn(async () => []),
 }));
 
+// Pin the USD→CAD rate so the sale ledger is deterministic and never hits the
+// Bank-of-Canada network. 1.35 is non-unity to prove the conversion is applied.
+vi.mock("../lib/fx", () => ({
+  getUsdToCadRate: vi.fn(async () => ({
+    rateMicros: 1_350_000,
+    rateDate: "2026-06-01",
+    source: "bank_of_canada" as const,
+  })),
+  getUsdToCadRateForDate: vi.fn(async () => ({
+    rateMicros: 1_350_000,
+    rateDate: "2026-06-01",
+    source: "bank_of_canada" as const,
+  })),
+  convertUsdToCad: (usdCents: number, rateMicros: number) =>
+    Math.round((usdCents * rateMicros) / 1_000_000),
+}));
+const FX_MICROS = 1_350_000;
+const toCad = (usdCents: number) =>
+  Math.round((usdCents * FX_MICROS) / 1_000_000);
+
 import passesRouter from "./passes";
 import {
   createUser,
@@ -553,7 +573,11 @@ describe("POST /passes/redeem — Lucky Break code", () => {
     const sale = sales[0]!;
     expect(sale.eventType).toBe("code_redemption");
     expect(sale.isComp).toBe(false);
-    expect(sale.grossCents).toBe(499);
+    // $4.99 USD source, converted to CAD at the pinned BoC rate.
+    expect(sale.sourceGrossCents).toBe(499);
+    expect(sale.sourceCurrency).toBe("USD");
+    expect(sale.fxRateMicros).toBe(FX_MICROS);
+    expect(sale.grossCents).toBe(toCad(499));
     expect(sale.gstCents + sale.pstCents + sale.netCents).toBe(sale.grossCents);
   });
 

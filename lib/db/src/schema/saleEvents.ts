@@ -55,12 +55,23 @@ export const saleEventsTable = pgTable(
     isComp: boolean("is_comp").notNull().default(false),
     // All amounts in integer cents, CAD. The tax columns are computed once at
     // sale time (see tax.ts) and stored; gst + pst + net always sums to gross.
+    // gross is the CAD value AFTER the USD→CAD conversion below.
     grossCents: integer("gross_cents").notNull(),
     gstCents: integer("gst_cents").notNull(),
     pstCents: integer("pst_cents").notNull(),
     netCents: integer("net_cents").notNull(),
     gstRateBps: integer("gst_rate_bps").notNull(),
     pstRateBps: integer("pst_rate_bps").notNull(),
+    // Currency audit trail. Every sale is priced in USD (Stripe currency=usd,
+    // USDC≈USD, ETH off an ETH/USD feed) but the ledger reports CAD. We freeze
+    // the original USD amount, the Bank-of-Canada USD→CAD rate (scaled ×1e6),
+    // its observation date, and the source ('bank_of_canada' | 'fallback') so
+    // every CAD figure above is reproducible and CRA-auditable. See fx.ts.
+    sourceGrossCents: integer("source_gross_cents").notNull().default(0),
+    sourceCurrency: text("source_currency").notNull().default("USD"),
+    fxRateMicros: integer("fx_rate_micros").notNull().default(1_000_000),
+    fxRateDate: text("fx_rate_date"),
+    fxSource: text("fx_source"),
     // Idempotency key: crypto tx hash / Stripe payment-intent or invoice id /
     // redemption id. Unique so duplicate webhook/verify deliveries are no-ops.
     providerRef: text("provider_ref").notNull(),

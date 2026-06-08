@@ -7,6 +7,7 @@ import {
 } from "@workspace/db";
 import { newId } from "./ids";
 import { computeTaxInclusive } from "./tax";
+import { convertUsdToCad, type UsdCadRate } from "./fx";
 import { LUCKY_BREAK_PRICE_CENTS } from "./pricing";
 import { LUCKY_BREAK_CODE_KIND } from "./luckyBreak";
 
@@ -77,9 +78,15 @@ export interface RecordSaleEventInput {
   userId: string | null;
   eventType: SaleEventType;
   paymentMethod: SalePaymentMethod;
+  /** The amount actually paid, in USD cents (the catalog/charge currency). */
   grossCents: number;
   isComp: boolean;
   productLabel: string;
+  /**
+   * USD→CAD rate (from fx.ts), fetched by the caller BEFORE opening the tx so
+   * the network call never runs inside the transaction. Frozen onto the row.
+   */
+  fx: UsdCadRate;
   /** Idempotency key (tx hash / payment-intent / invoice / redemption id). */
   providerRef: string;
   occurredAt?: Date;
@@ -87,7 +94,9 @@ export interface RecordSaleEventInput {
 
 /**
  * Insert one fully-valued, taxed sale row inside a caller-provided transaction.
- * Tax is computed here (once) and frozen into the stored columns. The insert is
+ * The source USD amount is converted to CAD using the caller-supplied BoC rate,
+ * tax is computed on the CAD gross (once) and frozen into the stored columns,
+ * and the source amount + rate are persisted for audit. The insert is
  * `ON CONFLICT (provider_ref) DO NOTHING` so duplicate webhook/verify
  * deliveries — and a re-run of the back-fill — are harmless no-ops.
  */
@@ -95,7 +104,8 @@ export async function recordSaleEventTx(
   tx: Pick<typeof db, "insert">,
   input: RecordSaleEventInput,
 ): Promise<void> {
-  const tax = computeTaxInclusive(input.grossCents);
+  const cadGrossCents = convertUsdToCad(input.grossCents, input.fx.rateMicros);
+  const tax = computeTaxInclusive(cadGrossCents);
   await tx
     .insert(saleEventsTable)
     .values({
@@ -105,12 +115,17 @@ export async function recordSaleEventTx(
       productLabel: input.productLabel,
       paymentMethod: input.paymentMethod,
       isComp: input.isComp,
-      grossCents: input.grossCents,
+      grossCents: cadGrossCents,
       gstCents: tax.gstCents,
       pstCents: tax.pstCents,
       netCents: tax.netCents,
       gstRateBps: tax.gstRateBps,
       pstRateBps: tax.pstRateBps,
+      sourceGrossCents: input.grossCents,
+      sourceCurrency: "USD",
+      fxRateMicros: input.fx.rateMicros,
+      fxRateDate: input.fx.rateDate,
+      fxSource: input.fx.source,
       providerRef: input.providerRef,
       occurredAt: input.occurredAt ?? new Date(),
     })

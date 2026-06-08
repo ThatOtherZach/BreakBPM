@@ -59,6 +59,7 @@ import {
   type LuckyBreakRollResult,
 } from "../lib/luckyBreak";
 import { gatherShotEntropy } from "../lib/luckyBreakEntropy";
+import { getUsdToCadRate } from "../lib/fx";
 
 const router: IRouter = Router();
 
@@ -135,6 +136,9 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
     .limit(1);
   const isLuckyBreak = peek?.kind === LUCKY_BREAK_CODE_KIND;
   const entropy: EntropyShot[] = isLuckyBreak ? await gatherShotEntropy() : [];
+
+  // Freeze today's USD→CAD rate for the ledger BEFORE the tx (fx never throws).
+  const fx = await getUsdToCadRate();
 
   // We use a thrown sentinel for any "validation failed" path INSIDE the
   // transaction so that pg rolls back any writes that already happened
@@ -265,6 +269,7 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
           grossCents: v.grossCents,
           isComp: v.isComp,
           productLabel: v.productLabel,
+          fx,
           providerRef: redemptionId,
         });
       }
@@ -380,6 +385,8 @@ router.post("/passes/verify", async (req, res): Promise<void> => {
   // purchase. Dedup is keyed on the provider payment reference. Lifetime's
   // local subscription mutual-exclusion is applied inside the helper.
   const sourceRef = verify.providerRef ?? parsed.data.opaqueToken;
+  // Freeze today's USD→CAD rate for the ledger BEFORE the tx (fx never throws).
+  const fx = await getUsdToCadRate();
   const { pass, deduped } = await db.transaction(async (tx) => {
     const grant = await grantPurchasedPassTx(tx, {
       userId: user.id,
@@ -398,6 +405,7 @@ router.post("/passes/verify", async (req, res): Promise<void> => {
         grossCents: PASS_PRICES_CENTS[verify.kind!],
         isComp: false,
         productLabel: PASS_PRODUCT_LABELS[verify.kind!],
+        fx,
         providerRef: sourceRef,
       });
     }

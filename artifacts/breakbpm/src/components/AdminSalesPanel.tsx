@@ -20,6 +20,11 @@ function cad(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+/** Original charge currency (every sale is priced in USD). */
+function usd(cents: number): string {
+  return `US$${(cents / 100).toFixed(2)}`;
+}
+
 const EVENT_LABELS: Record<string, string> = {
   crypto_purchase: "Crypto",
   stripe_purchase: "Card",
@@ -203,13 +208,14 @@ export default function AdminSalesPanel() {
                     <Th align="right">GST</Th>
                     <Th align="right">PST</Th>
                     <Th align="right">Net</Th>
+                    <Th align="right">Source</Th>
                     <Th>Reference</Th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.rows.length === 0 && (
                     <tr>
-                      <td colSpan={9} style={{ padding: 8, color: "#666" }}>
+                      <td colSpan={10} style={{ padding: 8, color: "#666" }}>
                         No sales in this range.
                       </td>
                     </tr>
@@ -227,6 +233,17 @@ export default function AdminSalesPanel() {
                       <Td align="right">{cad(r.gstCents)}</Td>
                       <Td align="right">{cad(r.pstCents)}</Td>
                       <Td align="right">{cad(r.netCents)}</Td>
+                      <Td align="right">
+                        <span
+                          title={
+                            r.fxRateDate
+                              ? `USD→CAD ${(r.fxRateMicros / 1_000_000).toFixed(4)} (BoC ${r.fxRateDate})`
+                              : `USD→CAD ${(r.fxRateMicros / 1_000_000).toFixed(4)}`
+                          }
+                        >
+                          {usd(r.sourceGrossCents)}
+                        </span>
+                      </Td>
                       <Td>
                         <span title={r.providerRef} style={{ fontFamily: "monospace" }}>
                           {shortRef(r.providerRef)}

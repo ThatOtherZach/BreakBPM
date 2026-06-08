@@ -837,6 +837,9 @@ components:
           gstCents,
           pstCents,
           netCents,
+          sourceGrossCents,
+          sourceCurrency,
+          fxRateMicros,
           providerRef,
           occurredAt,
         ]
@@ -862,6 +865,13 @@ components:
         gstCents: { type: integer }
         pstCents: { type: integer }
         netCents: { type: integer }
+        # Currency audit: the original USD amount and the Bank-of-Canada
+        # USD→CAD rate (scaled ×1e6) frozen at sale time. CAD figures above are
+        # reproducible as round(sourceGrossCents * fxRateMicros / 1e6).
+        sourceGrossCents: { type: integer }
+        sourceCurrency: { type: string }
+        fxRateMicros: { type: integer }
+        fxRateDate: { type: ["string", "null"] }
         providerRef: { type: string }
         occurredAt: { type: string, format: date-time }
 

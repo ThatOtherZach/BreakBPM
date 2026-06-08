@@ -28,6 +28,27 @@ vi.mock("../lib/luckyBreakEntropy", () => ({
   gatherShotEntropy: vi.fn(async () => []),
 }));
 
+// Pin the USD→CAD rate so the sale ledger is deterministic and never hits the
+// Bank-of-Canada network. 1.35 is intentionally non-unity to prove the CAD
+// conversion is actually applied (CAD gross = round(USD * 1.35)).
+vi.mock("../lib/fx", () => ({
+  getUsdToCadRate: vi.fn(async () => ({
+    rateMicros: 1_350_000,
+    rateDate: "2026-06-01",
+    source: "bank_of_canada" as const,
+  })),
+  getUsdToCadRateForDate: vi.fn(async () => ({
+    rateMicros: 1_350_000,
+    rateDate: "2026-06-01",
+    source: "bank_of_canada" as const,
+  })),
+  convertUsdToCad: (usdCents: number, rateMicros: number) =>
+    Math.round((usdCents * rateMicros) / 1_000_000),
+}));
+const FX_MICROS = 1_350_000;
+const toCad = (usdCents: number) =>
+  Math.round((usdCents * FX_MICROS) / 1_000_000);
+
 // Stub all on-chain access. The verify route resolves config + reads the tx via
 // these; we make config "ready", pin the chain id, and report a confirmed
 // payment so the route runs its in-tx draw + grant against the real database.
@@ -170,7 +191,12 @@ describe("POST /crypto/verify — Lucky Break order", () => {
     expect(sale.eventType).toBe("crypto_purchase");
     expect(sale.paymentMethod).toBe("crypto");
     expect(sale.isComp).toBe(false);
-    expect(sale.grossCents).toBe(order.priceCents);
+    // gross is the CAD value (USD price converted at the pinned BoC rate); the
+    // original USD amount is preserved for audit.
+    expect(sale.sourceGrossCents).toBe(order.priceCents);
+    expect(sale.sourceCurrency).toBe("USD");
+    expect(sale.fxRateMicros).toBe(FX_MICROS);
+    expect(sale.grossCents).toBe(toCad(order.priceCents));
     expect(sale.providerRef).toBe(txHash());
     expect(sale.gstCents + sale.pstCents + sale.netCents).toBe(sale.grossCents);
   });

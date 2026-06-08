@@ -156,7 +156,7 @@ describe("GET /admin/sales — admin ledger", () => {
     const lines = res.text.split("\r\n");
     // Header + both rows despite limit=1 (CSV ignores pagination).
     expect(lines[0]).toBe(
-      "date,user,product,method,comp,gross_cad,gst_cad,pst_cad,net_cad,reference",
+      "date,user,product,method,comp,gross_cad,gst_cad,pst_cad,net_cad,source_amount,source_currency,fx_rate,fx_date,reference",
     );
     expect(lines).toHaveLength(3);
     expect(res.text).toContain("4.99");

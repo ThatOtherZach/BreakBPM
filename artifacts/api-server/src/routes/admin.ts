@@ -104,6 +104,10 @@ router.get("/admin/sales", async (req, res): Promise<void> => {
     gstCents: saleEventsTable.gstCents,
     pstCents: saleEventsTable.pstCents,
     netCents: saleEventsTable.netCents,
+    sourceGrossCents: saleEventsTable.sourceGrossCents,
+    sourceCurrency: saleEventsTable.sourceCurrency,
+    fxRateMicros: saleEventsTable.fxRateMicros,
+    fxRateDate: saleEventsTable.fxRateDate,
     providerRef: saleEventsTable.providerRef,
     occurredAt: saleEventsTable.occurredAt,
   };
@@ -127,6 +131,10 @@ router.get("/admin/sales", async (req, res): Promise<void> => {
       "gst_cad",
       "pst_cad",
       "net_cad",
+      "source_amount",
+      "source_currency",
+      "fx_rate",
+      "fx_date",
       "reference",
     ].join(",");
     const lines = rows.map((r) =>
@@ -140,6 +148,10 @@ router.get("/admin/sales", async (req, res): Promise<void> => {
         toCad(r.gstCents),
         toCad(r.pstCents),
         toCad(r.netCents),
+        toCad(r.sourceGrossCents),
+        r.sourceCurrency,
+        (r.fxRateMicros / 1_000_000).toFixed(6),
+        r.fxRateDate ?? "",
         r.providerRef,
       ]
         .map((c) => csvCell(String(c)))

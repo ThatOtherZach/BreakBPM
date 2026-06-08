@@ -27,6 +27,7 @@ import {
   PASS_PRODUCT_LABELS,
 } from "../lib/saleEvents";
 import { PASS_PRICES_CENTS } from "../lib/pricing";
+import { getUsdToCadRateForDate } from "../lib/fx";
 
 async function main(): Promise<void> {
   let crypto = 0;
@@ -48,6 +49,7 @@ async function main(): Promise<void> {
       grossCents: v.grossCents,
       isComp: v.isComp,
       productLabel: v.productLabel,
+      fx: await getUsdToCadRateForDate(order.updatedAt),
       providerRef: order.txHash,
       occurredAt: order.updatedAt,
     });
@@ -76,6 +78,7 @@ async function main(): Promise<void> {
       grossCents: v.grossCents,
       isComp: v.isComp,
       productLabel: v.productLabel,
+      fx: await getUsdToCadRateForDate(r.redeemedAt),
       providerRef: r.id,
       occurredAt: r.redeemedAt,
     });
@@ -99,6 +102,7 @@ async function main(): Promise<void> {
       grossCents: pass.priceCents ?? PASS_PRICES_CENTS[kind] ?? 0,
       isComp: false,
       productLabel: PASS_PRODUCT_LABELS[kind] ?? pass.kind,
+      fx: await getUsdToCadRateForDate(pass.createdAt),
       providerRef: pass.sourceRef,
       occurredAt: pass.createdAt,
     });

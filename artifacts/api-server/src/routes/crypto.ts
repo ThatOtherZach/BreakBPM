@@ -32,6 +32,7 @@ import {
   computeLuckyBreakRoll,
 } from "../lib/luckyBreak";
 import { gatherShotEntropy } from "../lib/luckyBreakEntropy";
+import { getUsdToCadRate } from "../lib/fx";
 import {
   cryptoPaymentsEnabled,
   CRYPTO_PAYMENTS_OFF_MESSAGE,
@@ -604,6 +605,10 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
   const isLuckyBreak = order.passKind === LUCKY_BREAK_CODE_KIND;
   const entropy = isLuckyBreak ? await gatherShotEntropy() : [];
 
+  // Freeze today's USD→CAD rate for the ledger BEFORE the tx (it can hit the
+  // network; fx never throws and falls back to a cached/env/default rate).
+  const fx = await getUsdToCadRate();
+
   // Issue the pass and settle the order in one transaction. The grant is
   // idempotent on the tx hash; for a Lucky Break order the roll is seeded by the
   // stable order id, so a re-verify reproduces the same outcome and we never
@@ -696,6 +701,7 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
             grossCents: v.grossCents,
             isComp: v.isComp,
             productLabel: v.productLabel,
+            fx,
             providerRef: txHash,
           });
         }
@@ -737,6 +743,7 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
           grossCents: v.grossCents,
           isComp: v.isComp,
           productLabel: v.productLabel,
+          fx,
           providerRef: txHash,
         });
       }

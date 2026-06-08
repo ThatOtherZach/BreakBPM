@@ -17,6 +17,7 @@ import { stopRenewingStripeSubscriptions } from "./paymentProvider";
 import { upsertPurchasedSubscriptionTx } from "./subscriptions";
 import { PASS_PRICES_CENTS } from "./pricing";
 import { recordSaleEventTx, PASS_PRODUCT_LABELS } from "./saleEvents";
+import { getUsdToCadRate } from "./fx";
 import {
   readSubscriptionInterval,
   readSubscriptionPeriodEnd,
@@ -76,6 +77,8 @@ async function grantPassFromSession(
       ? session.payment_intent
       : session.id;
 
+  // Freeze today's USD→CAD rate for the ledger BEFORE the tx (fx never throws).
+  const fx = await getUsdToCadRate();
   const { deduped } = await db.transaction(async (tx) => {
     const grant = await grantPurchasedPassTx(tx, {
       userId,
@@ -93,6 +96,7 @@ async function grantPassFromSession(
         grossCents: PASS_PRICES_CENTS[passKind],
         isComp: false,
         productLabel: PASS_PRODUCT_LABELS[passKind],
+        fx,
         providerRef: sourceRef,
       });
     }
@@ -197,6 +201,8 @@ async function recordInvoiceRenewal(invoice: Stripe.Invoice): Promise<void> {
   }
   const productLabel =
     sub.interval === "year" ? "Yearly Subscription" : "Monthly Subscription";
+  // Freeze today's USD→CAD rate for the ledger BEFORE the tx (fx never throws).
+  const fx = await getUsdToCadRate();
   await db.transaction((tx) =>
     recordSaleEventTx(tx, {
       userId: sub.userId,
@@ -205,6 +211,7 @@ async function recordInvoiceRenewal(invoice: Stripe.Invoice): Promise<void> {
       grossCents: invoice.amount_paid,
       isComp: false,
       productLabel,
+      fx,
       providerRef: invoice.id as string,
       occurredAt: new Date((invoice.created ?? Date.now() / 1000) * 1000),
     }),

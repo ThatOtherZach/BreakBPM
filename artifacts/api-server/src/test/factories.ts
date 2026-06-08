@@ -415,6 +415,11 @@ export async function seedSaleEvent(
     netCents?: number;
     gstRateBps?: number;
     pstRateBps?: number;
+    sourceGrossCents?: number;
+    sourceCurrency?: string;
+    fxRateMicros?: number;
+    fxRateDate?: string;
+    fxSource?: string;
     providerRef?: string;
     occurredAt?: Date;
   } = {},
@@ -433,6 +438,11 @@ export async function seedSaleEvent(
     netCents: opts.netCents ?? gross - 22 - 31,
     gstRateBps: opts.gstRateBps ?? 500,
     pstRateBps: opts.pstRateBps ?? 700,
+    sourceGrossCents: opts.sourceGrossCents ?? gross,
+    sourceCurrency: opts.sourceCurrency ?? "USD",
+    fxRateMicros: opts.fxRateMicros ?? 1_000_000,
+    fxRateDate: opts.fxRateDate ?? "2026-01-01",
+    fxSource: opts.fxSource ?? "bank_of_canada",
     providerRef: opts.providerRef ?? `ref_${rid()}`,
     occurredAt: opts.occurredAt ?? new Date(),
   };

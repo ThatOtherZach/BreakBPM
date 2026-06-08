@@ -978,6 +978,10 @@ export const ListAdminSalesResponse = zod.object({
   "gstCents": zod.number(),
   "pstCents": zod.number(),
   "netCents": zod.number(),
+  "sourceGrossCents": zod.number(),
+  "sourceCurrency": zod.string(),
+  "fxRateMicros": zod.number(),
+  "fxRateDate": zod.string().nullish(),
   "providerRef": zod.string(),
   "occurredAt": zod.coerce.date()
 })),
