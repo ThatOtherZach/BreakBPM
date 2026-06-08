@@ -57,6 +57,11 @@ const BALL_COLORS: Record<number, string> = {
 
 const SPINNER_FRAMES = ['|', '/', '-', '\\'];
 
+// How long an accidental game-ending shot can be taken back before the
+// final result is saved and locked in.
+const END_UNDO_WINDOW_SEC = 5;
+const END_UNDO_WINDOW_MS = END_UNDO_WINDOW_SEC * 1000;
+
 function ballClass(ball: number, legal: number[], sunk: number[], _gameType: string) {
   if (sunk.includes(ball)) return 'ball-btn sunk';
   const ok = legal.includes(ball);
@@ -116,6 +121,12 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const [undoStack, setUndoStack] = useState<GameState[]>([]);
   const [clock, setClock] = useState('');
   const [confirmNew, setConfirmNew] = useState(false);
+  // End-of-game undo window: when a player-action ending (win/lose/foul-on-8)
+  // happens, we briefly hold the save and offer an Undo so an accidental
+  // last shot can be taken back. After the window the button swaps to
+  // "New Game" and the final state is saved (locked in).
+  const [endUndoOpen, setEndUndoOpen] = useState(false);
+  const [endUndoLeft, setEndUndoLeft] = useState(0);
   const [spinFrame, setSpinFrame] = useState(0);
   const [logOpen, setLogOpen] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
@@ -221,68 +232,102 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
   // Auto-save the game once when it ends. Anonymous calls return saved:false
   // and are silently ignored — saved games show up in the user's history.
+  //
+  // A player-action ending (win/lose/foul-on-8) is *undoable*: it left a
+  // snapshot on the undo stack and did NOT set forfeitedRef. For those we
+  // hold the save for END_UNDO_WINDOW_MS and surface an Undo button so an
+  // accidental final shot can be taken back; the save fires when the window
+  // closes. Authoritative endings (60-min forfeit, wall-clock cap, server
+  // sweep — all flagged via forfeitedRef) are not undoable and save
+  // immediately, exactly as before.
   useEffect(() => {
     if (state.phase !== 'ended' || savedRef.current) return;
-    savedRef.current = true;
-    // Saved BPM is the winning player's per-player BPM. In Shark Mode we
-    // always save the human's BPM regardless of who won (Shark has no
-    // meaningful pace metric).
-    const bpmPlayerName = isSharkGame(state)
-      ? state.players[0]?.name ?? ''
-      : (state.winner ?? state.players[state.currentPlayerIndex]?.name ?? '');
-    const finalBpmSnap = bpmPlayerName
-      ? calculatePlayerBPM(state.shotLog, bpmPlayerName)
-      : null;
-    // Accuracy mirrors BPM exactly: the same player, snapshotted at game end.
-    const finalAccSnap = bpmPlayerName
-      ? calculatePlayerAccuracy(state.shotLog, bpmPlayerName)
-      : null;
-    // Per-participant accuracy: each player's own accuracy, keyed by slot
-    // index (slot i == state.players[i], matching the server's slot
-    // allocation). The host computes every slot from the shots it logged
-    // under that player's name so a joiner sees their OWN accuracy in
-    // history, not the host/winner's. The invisible Shark is virtual (not
-    // in state.players), so it never produces a slot here.
-    const participantAccuracies = state.players.map((p, i) => ({
-      slotIndex: i,
-      accuracy: calculatePlayerAccuracy(state.shotLog, p.name),
-    }));
-    saveGame.mutate(
-      {
-        data: {
-          // If signed-in, finalize the in-progress server-side row. Anonymous
-          // play is dropped on the server side (no row stored).
-          gameId: serverGameId,
-          gameType: state.gameType,
-          shareCode: state.shareCode,
-          winner: state.winner,
-          bpm: finalBpmSnap,
-          accuracy: finalAccSnap,
-          participantAccuracies,
-          durationMs: state.timerStartTime != null
-            ? Math.max(0, Date.now() - state.timerStartTime - pausedDuration)
-            : 0,
-          sunkBallsCount: state.sunkBalls.length,
-          // Practice and None are no-winner modes — a forced end is recorded
-          // as a benign 'expired' (not a 'forfeit', which implies a loser).
-          outcome: forfeitedRef.current
-            ? (state.gameType === 'practice' || state.chaosMode === 'none' ? 'expired' : 'forfeit')
-            : (state.winner
-                ? (state.winner === SHARK_PLAYER_NAME ? 'lost' : 'won')
-                : 'completed'),
-          gameState: state as unknown as Record<string, unknown>,
-          startedAt: new Date(state.gameStartTime).toISOString(),
+
+    // Freeze the end timestamp so the deferred save records the true game
+    // duration (not duration + the 5s undo window).
+    const endedAt = Date.now();
+
+    const doSave = () => {
+      if (savedRef.current) return;
+      savedRef.current = true;
+      setEndUndoOpen(false);
+      // Saved BPM is the winning player's per-player BPM. In Shark Mode we
+      // always save the human's BPM regardless of who won (Shark has no
+      // meaningful pace metric).
+      const bpmPlayerName = isSharkGame(state)
+        ? state.players[0]?.name ?? ''
+        : (state.winner ?? state.players[state.currentPlayerIndex]?.name ?? '');
+      const finalBpmSnap = bpmPlayerName
+        ? calculatePlayerBPM(state.shotLog, bpmPlayerName)
+        : null;
+      // Accuracy mirrors BPM exactly: the same player, snapshotted at game end.
+      const finalAccSnap = bpmPlayerName
+        ? calculatePlayerAccuracy(state.shotLog, bpmPlayerName)
+        : null;
+      // Per-participant accuracy: each player's own accuracy, keyed by slot
+      // index (slot i == state.players[i], matching the server's slot
+      // allocation). The host computes every slot from the shots it logged
+      // under that player's name so a joiner sees their OWN accuracy in
+      // history, not the host/winner's. The invisible Shark is virtual (not
+      // in state.players), so it never produces a slot here.
+      const participantAccuracies = state.players.map((p, i) => ({
+        slotIndex: i,
+        accuracy: calculatePlayerAccuracy(state.shotLog, p.name),
+      }));
+      saveGame.mutate(
+        {
+          data: {
+            // If signed-in, finalize the in-progress server-side row. Anonymous
+            // play is dropped on the server side (no row stored).
+            gameId: serverGameId,
+            gameType: state.gameType,
+            shareCode: state.shareCode,
+            winner: state.winner,
+            bpm: finalBpmSnap,
+            accuracy: finalAccSnap,
+            participantAccuracies,
+            durationMs: state.timerStartTime != null
+              ? Math.max(0, endedAt - state.timerStartTime - pausedDuration)
+              : 0,
+            sunkBallsCount: state.sunkBalls.length,
+            // Practice and None are no-winner modes — a forced end is recorded
+            // as a benign 'expired' (not a 'forfeit', which implies a loser).
+            outcome: forfeitedRef.current
+              ? (state.gameType === 'practice' || state.chaosMode === 'none' ? 'expired' : 'forfeit')
+              : (state.winner
+                  ? (state.winner === SHARK_PLAYER_NAME ? 'lost' : 'won')
+                  : 'completed'),
+            gameState: state as unknown as Record<string, unknown>,
+            startedAt: new Date(state.gameStartTime).toISOString(),
+          },
         },
-      },
-      {
-        // Drop the in-progress checkpoint on successful save OR when
-        // the server tells us it already finalized the row itself
-        // (alreadyEnded — sweep beat us to it). In both cases there is
-        // nothing more to retry; keeping the checkpoint would cause an
-        // infinite replay loop against an immutable row.
-        onSuccess: () => clearInProgressGame(),
-      },
-    );
+        {
+          // Drop the in-progress checkpoint on successful save OR when
+          // the server tells us it already finalized the row itself
+          // (alreadyEnded — sweep beat us to it). In both cases there is
+          // nothing more to retry; keeping the checkpoint would cause an
+          // infinite replay loop against an immutable row.
+          onSuccess: () => clearInProgressGame(),
+        },
+      );
+    };
+
+    // Undoable iff a player action ended the game (snapshot on the stack)
+    // and it wasn't a forfeit/cap/sweep ending.
+    const undoable = !forfeitedRef.current && undoStack.length > 0;
+    if (!undoable) {
+      doSave();
+      return;
+    }
+
+    // Hold the save and run the undo countdown. Undoing (handleUndo) flips
+    // the phase back to 'playing', which tears down this effect and cancels
+    // the timers below before doSave can fire.
+    setEndUndoOpen(true);
+    setEndUndoLeft(END_UNDO_WINDOW_SEC);
+    const tick = setInterval(() => setEndUndoLeft((n) => Math.max(0, n - 1)), 1000);
+    const timer = setTimeout(() => { clearInterval(tick); doSave(); }, END_UNDO_WINDOW_MS);
+    return () => { clearInterval(tick); clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);
 
@@ -635,6 +680,10 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
   function handleUndo() {
     if (!undoStack.length) return;
+    // Taking back the game-ending shot closes the end-of-game undo window
+    // (the deferred save is cancelled by the effect teardown when the phase
+    // flips back to 'playing'). Harmless no-op for in-game undos.
+    setEndUndoOpen(false);
     const prev = undoStack[undoStack.length - 1];
     setUndoStack(s => s.slice(0, -1));
     // "No one Saw That" — every revert bumps the running undo tally, which
@@ -997,10 +1046,18 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       </div>
       <div className="app-body">
 
-        {/* Win screen action buttons */}
+        {/* Win screen action buttons. During the brief undo window the
+            primary action is Undo (with a countdown); once it elapses the
+            game is saved and the button swaps to New Game. */}
         {state.phase === 'ended' && (
           <div className="grid-2" style={{ marginTop: 0 }}>
-            <button className="btn btn-primary btn-big" onClick={onNewGame}>▶ New Game</button>
+            {endUndoOpen ? (
+              <button className="btn btn-big" onClick={handleUndo}>
+                <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo ({endUndoLeft})
+              </button>
+            ) : (
+              <button className="btn btn-primary btn-big" onClick={onNewGame}>▶ New Game</button>
+            )}
             <button className="btn btn-big" onClick={handleShare}>📋 Share</button>
           </div>
         )}
