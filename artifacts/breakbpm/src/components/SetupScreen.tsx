@@ -652,7 +652,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                     role="radiogroup"
                     aria-label="Group assignment rule set"
                     style={{ display: 'flex', gap: 6 }}
-                  >
+                    className="pt-[2px] pb-[2px]">
                     {RULE_SET_OPTIONS.map(opt => {
                       const checked = ruleSet === opt.value;
                       return (
