@@ -580,17 +580,23 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         };
                         return (
                           <div
-                            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}
+                            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}
                             className="pt-[8px] pb-[8px]">
-                            <div className="stats-ball-item">
-                              <span className="cue-ball-icon cue-ball-icon--chip" aria-label="Cue ball" />
-                              <span className="stats-ball-count">×{fmtInt(stats.totalFouls)}</span>
+                            {/* Cue ball (fouls) and 8-ball sit on top, above the
+                                solids/stripes rack below. */}
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
+                              <div className="stats-ball-item">
+                                <span className="cue-ball-icon cue-ball-icon--chip" aria-label="Cue ball" />
+                                <span className="stats-ball-count">×{fmtInt(stats.totalFouls)}</span>
+                              </div>
+                              {renderBall(8)}
                             </div>
                             {/* Grouped like the in-game HUD rack: solids cluster
-                                left, 8-ball centered, stripes cluster right. */}
-                            <div className="stats-ball-grid stats-ball-side">{[1, 2, 3, 4, 5, 6, 7].map(renderBall)}</div>
-                            <div className="stats-ball-grid stats-ball-side">{[9, 10, 11, 12, 13, 14, 15].map(renderBall)}</div>
-                            {renderBall(8)}
+                                left, stripes cluster right. */}
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
+                              <div className="stats-ball-grid stats-ball-side">{[1, 2, 3, 4, 5, 6, 7].map(renderBall)}</div>
+                              <div className="stats-ball-grid stats-ball-side">{[9, 10, 11, 12, 13, 14, 15].map(renderBall)}</div>
+                            </div>
                           </div>
                         );
                       })()}
