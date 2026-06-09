@@ -830,7 +830,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                 onClick={() => setPracticeRack('8ball')}
               >
                 8-Ball
-                <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>Balls 1–15</span>
+                <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>(1–15)</span>
               </button>
               <button
                 className={`btn ${practiceRack === '9ball' ? 'selected' : ''}`}
