@@ -198,7 +198,7 @@ export default function LeaderboardScreen({
         onSignIn={onSignIn}
       />
       <div className="app-body">
-        <div className="panel">
+        {isAuthenticated && <div className="panel">
           <div className="panel-header">
             <span>🏆 Leaderboard</span>
             {data && (
@@ -230,7 +230,7 @@ export default function LeaderboardScreen({
               })}
             </div>
           </div>
-        </div>
+        </div>}
 
         {!authLoading && !isAuthenticated && (
           <div className="panel">
