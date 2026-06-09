@@ -717,7 +717,11 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                     readOnly={isLockedSlot}
                     aria-readonly={isLockedSlot || undefined}
                     title={isLockedSlot ? 'Signed in — name locked to your account' : undefined}
-                    style={isLockedSlot ? { opacity: 0.85, cursor: 'not-allowed' } : undefined}
+                    style={
+                      isLockedSlot
+                        ? { background: 'var(--silver)', color: '#555', cursor: 'not-allowed' }
+                        : undefined
+                    }
                   />
                   {gameType === '8ball' && !isShark && teamMode === 'manual' && (() => {
                     // Singles only: hide the group the other player has
