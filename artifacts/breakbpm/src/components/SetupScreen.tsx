@@ -838,14 +838,13 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                 onClick={() => setPracticeRack('9ball')}
               >
                 9-Ball
-                <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>Balls 1–9</span>
+                <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>(1–9)</span>
               </button>
             </div>
             <div className="notice" style={{ marginTop: 8 }}>
               <span>ℹ</span>
               <span>
-                Solo mode — no win conditions. Rack the {practiceRack === '9ball' ? '9-ball (1–9)' : '8-ball (1–15)'} set,
-                track every ball, and watch your BPM improve.
+                Solo, no win conditions. Rack a 9-ball, or 8-ball. Track every shot.
               </span>
             </div>
           </div>
