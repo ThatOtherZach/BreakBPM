@@ -39,6 +39,12 @@ If all spots ae filled, you join as a spectator. Spectators can join anytime to 
 
 **Streaming?** Add `?obs=1` to a watch link for an overlay you can drop straight into OBS as a browser source (`breakbpm.com/watch/USERNAME?obs=1`). Chain flags such as `&log=1` to add a compact shot log and `&scale=1.5` to resize.
 
+### Link players by @mention
+
+Not on the same device? If you have a pass, type `@username` into another player's slot during setup to link a registered friend straight from your phone — no share code needed.
+
+It's completely opt-in. After the game finishes, your friend sees an invite on their account page: **Accept** to count the game toward their stats and history, or **Delete** to ignore it (it never counts). Accepted games can be removed later, too — and your own copy is never touched either way.
+
 ## Why BPM?
 
 Because most pool nights suck to keep track of.
@@ -60,6 +66,12 @@ The Stats page shows your shooting over time — results, accuracy, pace, and mo
 
 Anyone can see a live 24-hour global snapshot. Sign in to save and view your own numbers. Grab a pass or subscription to unlock full history (30 days, a year, or all-time), compare against everyone, and refresh on demand.
 
+## Leaderboard
+
+See who's fastest. The **🏆 Leaderboard** ranks players by BPM across recent 8-ball 1-on-1 games, and a top-10 (30-day) board sits right on the main menu for everyone to see.
+
+Sign in to open the full leaderboard, tap any standing to jump to that player's live profile, and watch the 🦈 marks pile up on the Shark grinders. Pass holders can also switch the ranking window to 90 days or all-time.
+
 ## Features
 
 - Live per-player BPM + game timer
@@ -69,6 +81,8 @@ Anyone can see a live 24-hour global snapshot. Sign in to save and view your own
 - Automatic or manual team assignment
 - 5-character share code for easy joining
 - Spectate by name
+- Link registered players with @mentions
+- Global BPM leaderboard
 - Stats with accuracy and pace breakdowns
 - Works in any browser, no install
 - Free to play. Sign in to save your stats.
@@ -101,6 +115,8 @@ A pass unlocks everything:
 
 - **Post to Find Players** — create meetup posts so other players can find your game. Free accounts can browse the board and map, but only pass holders can post.
 - **Let others spectate** — when you host a game with a pass, anyone can watch it live, by share code or by your name. Without a pass, your games can't be spectated.
+- **Link players by @mention** — type `@username` to link a registered friend to a game slot without a share code or sharing a device. (Your friend doesn't need a pass to accept the invite.)
+- **Leaderboard windows** — rank the BPM leaderboard over 90 days or all-time, not just the public 30-day board.
 - **Full game history** — every game you've ever played, not just your last 3, with pagination.
 - **Full stats** — switch between 24-hour, 30-day, 365-day, and all-time windows, and refresh on demand. Free accounts see personal stats for the last 24 hours only, but can still toggle over to the all-time global "Everyone" view as a taste.
 - **Full data export** — download every game and shot you've ever logged as a CSV. Free accounts can export their last 24 hours only.
