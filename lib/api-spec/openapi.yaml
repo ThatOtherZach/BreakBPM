@@ -1766,7 +1766,7 @@ components:
 
     LeaderboardRow:
       type: object
-      required: [rank, screenName, bpm, accuracy, gamesPlayed]
+      required: [rank, screenName, bpm, accuracy, gamesPlayed, sharkLevel]
       properties:
         # 1-indexed standing within the ranking (after sorting by bpm desc).
         rank: { type: integer }
@@ -1780,6 +1780,9 @@ components:
         accuracy: { type: ["number", "null"] }
         # Count of the player's qualifying games in the window.
         gamesPlayed: { type: integer }
+        # All-time count of the player's completed Shark-mode games (window-
+        # independent), matching the profile `sharkLevel`. 0 when they have none.
+        sharkLevel: { type: integer }
 
     LeaderboardResult:
       type: object

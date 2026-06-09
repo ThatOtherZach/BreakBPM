@@ -623,6 +623,9 @@ export interface LeaderboardRow {
   bpm: number;
   accuracy: number | null;
   gamesPlayed: number;
+  // All-time completed Shark-mode game count (window-independent), mirroring
+  // the profile `sharkLevel`. 0 when the player has no Shark games.
+  sharkLevel: number;
 }
 
 /** Defensive cap on eligible game rows parsed in one ranking pass (cached). */
@@ -733,21 +736,56 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
     }
   }
 
-  const result: LeaderboardRow[] = [];
-  for (const entry of byUser.values()) {
+  // Qualifying players (>= min games), keeping userId so we can attach each
+  // one's all-time Shark-mode count below.
+  const ranked: Array<{
+    userId: string;
+    screenName: string;
+    bpm: number;
+    accuracy: number | null;
+    gamesPlayed: number;
+  }> = [];
+  for (const [userId, entry] of byUser.entries()) {
     if (entry.games.length < LEADERBOARD_MIN_GAMES) continue;
     const best = [...entry.games].sort((a, b) => b.bpm - a.bpm).slice(0, LEADERBOARD_BEST_N);
     const avgBpm = round1(best.reduce((s, g) => s + g.bpm, 0) / best.length);
     const accs = best.map((g) => g.accuracy).filter((a): a is number => a != null);
     const accuracy = accs.length > 0 ? Math.round(accs.reduce((s, a) => s + a, 0) / accs.length) : null;
-    result.push({
-      rank: 0,
-      screenName: entry.screenName,
-      bpm: avgBpm,
-      accuracy,
-      gamesPlayed: entry.games.length,
-    });
+    ranked.push({ userId, screenName: entry.screenName, bpm: avgBpm, accuracy, gamesPlayed: entry.games.length });
   }
+
+  // All-time completed Shark-mode game count per ranked user (window-
+  // independent), matching how the profile derives `sharkLevel`. Shark games
+  // are solo and flagged by a top-level `sharkAggression` key in the gameState
+  // JSONB; one grouped count covers every ranked user.
+  const sharkByUser = new Map<string, number>();
+  const rankedUserIds = ranked.map((r) => r.userId);
+  if (rankedUserIds.length > 0) {
+    const sharkCounts = await db
+      .select({ userId: gameParticipantsTable.userId, c: count() })
+      .from(gameParticipantsTable)
+      .innerJoin(gamesTable, eq(gameParticipantsTable.gameId, gamesTable.id))
+      .where(
+        and(
+          inArray(gameParticipantsTable.userId, rankedUserIds),
+          isNotNull(gamesTable.endedAt),
+          sql`${gamesTable.gameState} ->> 'sharkAggression' IS NOT NULL`,
+        ),
+      )
+      .groupBy(gameParticipantsTable.userId);
+    for (const sc of sharkCounts) {
+      if (sc.userId) sharkByUser.set(sc.userId, Number(sc.c));
+    }
+  }
+
+  const result: LeaderboardRow[] = ranked.map((r) => ({
+    rank: 0,
+    screenName: r.screenName,
+    bpm: r.bpm,
+    accuracy: r.accuracy,
+    gamesPlayed: r.gamesPlayed,
+    sharkLevel: sharkByUser.get(r.userId) ?? 0,
+  }));
   // Rank by score (bpm) desc; tie-break by accuracy desc then name for stability.
   result.sort(
     (a, b) =>

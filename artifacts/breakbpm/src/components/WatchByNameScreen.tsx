@@ -37,6 +37,15 @@ export default function WatchByNameScreen({ name, onBack, onAbout, onAccount, on
   const [liveCode, setLiveCode] = useState<string | null>(null);
   useObsBodyClass(obs);
 
+  // Land at the top when arriving here (e.g. the leaderboard "Who?" jump):
+  // client-side route changes keep the previous scroll position, so reset both
+  // the document (page-scroll variants) and the .app-body container.
+  useEffect(() => {
+    if (obs) return;
+    window.scrollTo(0, 0);
+    document.querySelector(".app-body")?.scrollTo?.(0, 0);
+  }, []);
+
   const resolve = useResolveWatchByName(
     { name },
     {

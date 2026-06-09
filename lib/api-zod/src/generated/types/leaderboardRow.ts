@@ -13,4 +13,5 @@ export interface LeaderboardRow {
   /** @nullable */
   accuracy: number | null;
   gamesPlayed: number;
+  sharkLevel: number;
 }

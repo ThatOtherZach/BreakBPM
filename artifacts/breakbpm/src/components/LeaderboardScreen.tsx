@@ -54,22 +54,35 @@ function LeaderboardRowCard({
       >
         {rankBadge(row.rank)}
       </span>
-      <span
-        style={{
-          flex: 1,
-          minWidth: 0,
-          fontFamily: "VT323",
-          fontSize: 20,
-          lineHeight: 1,
-          color: "#f4f4dc",
-          textShadow: "1px 1px 0 #042414",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {row.screenName}
-      </span>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+        <span
+          style={{
+            fontFamily: "VT323",
+            fontSize: 20,
+            lineHeight: 1,
+            color: "#f4f4dc",
+            textShadow: "1px 1px 0 #042414",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {row.screenName}
+        </span>
+        {row.sharkLevel != null && row.sharkLevel > 0 && (
+          <span
+            style={{
+              fontFamily: "VT323",
+              fontSize: 14,
+              lineHeight: 1,
+              color: "#9fc6ff",
+              textShadow: "1px 1px 0 #042414",
+            }}
+          >
+            🦈 Shark Lv {row.sharkLevel}
+          </span>
+        )}
+      </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
         <span
           style={{

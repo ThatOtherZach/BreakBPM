@@ -1035,6 +1035,7 @@ export interface LeaderboardRow {
   /** @nullable */
   accuracy: number | null;
   gamesPlayed: number;
+  sharkLevel: number;
 }
 
 export type LeaderboardResultWindow = typeof LeaderboardResultWindow[keyof typeof LeaderboardResultWindow];

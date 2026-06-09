@@ -870,7 +870,8 @@ export const GetLeaderboardResponse = zod.object({
   "screenName": zod.string(),
   "bpm": zod.number(),
   "accuracy": zod.number().nullable(),
-  "gamesPlayed": zod.number()
+  "gamesPlayed": zod.number(),
+  "sharkLevel": zod.number()
 }))
 })
 
