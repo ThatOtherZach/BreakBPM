@@ -79,7 +79,7 @@ function LeaderboardRowCard({
               textShadow: "1px 1px 0 #042414",
             }}
             className="font-normal">
-            🦈 Shark Lv {row.sharkLevel}
+            🦈{row.sharkLevel}
           </span>
         )}
       </div>
