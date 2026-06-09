@@ -581,9 +581,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
         {!isShark && (<div>
           <div className="menu-section-label">▶ {isPractice ? 'YOUR NAME' : 'PLAYERS'}</div>
           {count >= 2 && (
-            <div style={{ fontSize: 11, color: '#444', margin: '-2px 0 4px' }}>
-              Tap a ball to choose who breaks first
-            </div>
+            <div style={{ fontSize: 11, color: '#444', margin: '-2px 0 4px' }}>Select who breaks</div>
           )}
           <div className="flex flex-col gap-2">
             {Array.from({ length: count }).map((_, i) => {
@@ -591,86 +589,86 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
               // play under someone else's name and skew their stats.
               const isLockedSlot = i === 0 && lockedPlayer1Name !== null;
               return (
-              <div key={i} className="player-row">
-                {count >= 2 ? (
-                  // Multiplayer: the leading ball doubles as a radio that picks
-                  // who breaks. Selected → white cue ball; unselected → that
-                  // player's numbered colour ball. (Don't add `hud-chip` to the
-                  // cue ball — its ::after would paint a stray white dot over it.)
-                  <label
-                    className="breaker-opt"
-                    title={`${(isLockedSlot ? lockedPlayer1Name : names[i]) || DEFAULT_NAMES[i]} breaks first`}
-                  >
-                    <input
-                      type="radio"
-                      name="breaker"
-                      checked={breakerIndex === i}
-                      onChange={() => setBreakerIndex(i)}
-                      className="rule-set-radio"
-                      // The visible label is aria-hidden ball art, so name the
-                      // radio explicitly for screen readers / AT.
-                      aria-label={`${(isLockedSlot ? lockedPlayer1Name : names[i]) || DEFAULT_NAMES[i]} breaks first`}
-                    />
-                    {breakerIndex === i ? (
-                      <span className="cue-ball-icon cue-ball-icon--chip" aria-hidden="true" />
-                    ) : (
-                      <span
-                        className="hud-chip hud-chip-solid"
-                        data-number={i + 1}
-                        aria-hidden="true"
-                        style={{ '--chip-color': PLAYER_BALL_COLORS[i] } as React.CSSProperties}
-                      />
-                    )}
-                  </label>
-                ) : (
-                  <span
-                    className="hud-chip hud-chip-solid"
-                    data-number={i + 1}
-                    aria-hidden="true"
-                    style={{ '--chip-color': PLAYER_BALL_COLORS[i] } as React.CSSProperties}
-                  />
-                )}
-                <input
-                  className="input"
-                  value={isLockedSlot ? lockedPlayer1Name : names[i]}
-                  onChange={e => setName(i, e.target.value)}
-                  placeholder={DEFAULT_NAMES[i]}
-                  maxLength={16}
-                  readOnly={isLockedSlot}
-                  aria-readonly={isLockedSlot || undefined}
-                  title={isLockedSlot ? 'Signed in — name locked to your account' : undefined}
-                  style={isLockedSlot ? { opacity: 0.85, cursor: 'not-allowed' } : undefined}
-                />
-                {gameType === '8ball' && !isShark && teamMode === 'manual' && (() => {
-                  // Singles only: hide the group the other player has
-                  // already claimed so both players can't end up on the
-                  // same team. Doubles keeps both options for everyone
-                  // so 3v1 / 2v2 / 4v0 splits remain possible.
-                  const takenByOther = count === 2
-                    ? manualTeams[i === 0 ? 1 : 0]
-                    : '';
-                  return (
-                    <select
-                      className="input"
-                      // Fixed width sized for the longer label "Stripes (9-15)"
-                      // so the dropdown doesn't shrink when "Stripes" is hidden
-                      // (because the other player took it). Keeps both rows
-                      // visually aligned.
-                      style={{ width: 130, flex: '0 0 auto' }}
-                      value={manualTeams[i]}
-                      onChange={e => setTeam(i, e.target.value)}
+                <div key={i} className="player-row">
+                  {count >= 2 ? (
+                    // Multiplayer: the leading ball doubles as a radio that picks
+                    // who breaks. Selected → white cue ball; unselected → that
+                    // player's numbered colour ball. (Don't add `hud-chip` to the
+                    // cue ball — its ::after would paint a stray white dot over it.)
+                    (<label
+                      className="breaker-opt"
+                      title={`${(isLockedSlot ? lockedPlayer1Name : names[i]) || DEFAULT_NAMES[i]} breaks first`}
                     >
-                      <option value="">-Select-</option>
-                      {takenByOther !== 'solids' && (
-                        <option value="solids">Solids (1-7)</option>
+                      <input
+                        type="radio"
+                        name="breaker"
+                        checked={breakerIndex === i}
+                        onChange={() => setBreakerIndex(i)}
+                        className="rule-set-radio"
+                        // The visible label is aria-hidden ball art, so name the
+                        // radio explicitly for screen readers / AT.
+                        aria-label={`${(isLockedSlot ? lockedPlayer1Name : names[i]) || DEFAULT_NAMES[i]} breaks first`}
+                      />
+                      {breakerIndex === i ? (
+                        <span className="cue-ball-icon cue-ball-icon--chip" aria-hidden="true" />
+                      ) : (
+                        <span
+                          className="hud-chip hud-chip-solid"
+                          data-number={i + 1}
+                          aria-hidden="true"
+                          style={{ '--chip-color': PLAYER_BALL_COLORS[i] } as React.CSSProperties}
+                        />
                       )}
-                      {takenByOther !== 'stripes' && (
-                        <option value="stripes">Stripes (9-15)</option>
-                      )}
-                    </select>
-                  );
-                })()}
-              </div>
+                    </label>)
+                  ) : (
+                    <span
+                      className="hud-chip hud-chip-solid"
+                      data-number={i + 1}
+                      aria-hidden="true"
+                      style={{ '--chip-color': PLAYER_BALL_COLORS[i] } as React.CSSProperties}
+                    />
+                  )}
+                  <input
+                    className="input"
+                    value={isLockedSlot ? lockedPlayer1Name : names[i]}
+                    onChange={e => setName(i, e.target.value)}
+                    placeholder={DEFAULT_NAMES[i]}
+                    maxLength={16}
+                    readOnly={isLockedSlot}
+                    aria-readonly={isLockedSlot || undefined}
+                    title={isLockedSlot ? 'Signed in — name locked to your account' : undefined}
+                    style={isLockedSlot ? { opacity: 0.85, cursor: 'not-allowed' } : undefined}
+                  />
+                  {gameType === '8ball' && !isShark && teamMode === 'manual' && (() => {
+                    // Singles only: hide the group the other player has
+                    // already claimed so both players can't end up on the
+                    // same team. Doubles keeps both options for everyone
+                    // so 3v1 / 2v2 / 4v0 splits remain possible.
+                    const takenByOther = count === 2
+                      ? manualTeams[i === 0 ? 1 : 0]
+                      : '';
+                    return (
+                      <select
+                        className="input"
+                        // Fixed width sized for the longer label "Stripes (9-15)"
+                        // so the dropdown doesn't shrink when "Stripes" is hidden
+                        // (because the other player took it). Keeps both rows
+                        // visually aligned.
+                        style={{ width: 130, flex: '0 0 auto' }}
+                        value={manualTeams[i]}
+                        onChange={e => setTeam(i, e.target.value)}
+                      >
+                        <option value="">-Select-</option>
+                        {takenByOther !== 'solids' && (
+                          <option value="solids">Solids (1-7)</option>
+                        )}
+                        {takenByOther !== 'stripes' && (
+                          <option value="stripes">Stripes (9-15)</option>
+                        )}
+                      </select>
+                    );
+                  })()}
+                </div>
               );
             })}
           </div>
