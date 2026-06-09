@@ -1853,8 +1853,14 @@ html, #root {
    bold weight, and rainbow-name-pan animation — clipped to the glyphs via
    background-clip:text so the whole value (number + BPM unit) becomes one
    animated rainbow. text-shadow is cleared so the base green glow doesn't muddy
-   the gradient. */
+   the gradient.
+   NOTE: switched off the base `display:flex` to `inline-block` here — animating
+   `background-position` under `background-clip:text` does NOT repaint on a flex
+   container (Chrome/WebKit quirk), which is why the admin name (inline) sweeps
+   but the flex value sat static. The flex `gap` is replaced by a margin on the
+   unit so the number↔BPM spacing is preserved. */
 .stats-hero-value.chaos-rainbow {
+  display: inline-block;
   background-image: linear-gradient(
     90deg,
     #ff004d, #ff8a00, #ffe600, #00e676, #00b0ff, #d500f9, #ff004d
@@ -1867,6 +1873,9 @@ html, #root {
   font-weight: bold;
   text-shadow: none;
   animation: rainbow-name-pan 2.5s linear infinite;
+}
+.stats-hero-value.chaos-rainbow .stats-hero-unit {
+  margin-left: 6px;
 }
 /* Reduced motion: keep the static rainbow gradient, drop the animation. */
 @media (prefers-reduced-motion: reduce) {
