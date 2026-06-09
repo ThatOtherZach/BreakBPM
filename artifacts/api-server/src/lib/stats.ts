@@ -657,7 +657,7 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
     isNotNull(gamesTable.endedAt),
     eq(gamesTable.gameType, "8ball"),
     eq(gamesTable.maxPlayers, 2),
-    sql`${gamesTable.gameState} ->> 'ruleSet' = 'open-through-break'`,
+    sql`(${gamesTable.gameState} ->> 'ruleSet' = 'open-through-break' OR ${gamesTable.gameState} ->> 'ruleSet' IS NULL)`,
     sql`${gamesTable.gameState} ->> 'sharkAggression' IS NULL`,
     sql`${gamesTable.gameState} ->> 'chaosMode' IS NULL`,
   ];
