@@ -594,7 +594,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
               <div className="stats-upsell">
                 <p style={{ fontSize: 12, color: "#444", marginBottom: 8 }}>
                   {stats.tier === "public"
-                    ? "🔓 Sign in to track your own stats, or get a pass to unlock longer windows, the global leaderboard view, and live refresh."
+                    ? "🔓 Sign in to get more detailed statistics and track your games. Get a pass to unlock longer windows, leaderboards, as well as full data export."
                     : "🔓 Get a pass to unlock 30-day, 1-year and all-time windows, the global comparison view, and manual refresh."}
                 </p>
                 <button
