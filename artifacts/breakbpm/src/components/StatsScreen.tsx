@@ -231,8 +231,8 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
     <div className="app-window app-window--page">
       <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
       <div className="app-body">
-        {/* ── Controls ── */}
-        <div className="panel">
+        {/* ── Controls — only shown when signed in ── */}
+        {isAuthenticated && <div className="panel">
           <div className="panel-header">
             <span>
               <span className="stats-sec-emoji" aria-hidden="true">📊</span>
@@ -352,7 +352,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
               </p>
             )}
           </div>
-        </div>
+        </div>}
 
         {statsQuery.isLoading && (
           <div className="panel">
