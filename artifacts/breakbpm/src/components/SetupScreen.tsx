@@ -843,9 +843,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
             </div>
             <div className="notice" style={{ marginTop: 8 }}>
               <span>ℹ</span>
-              <span>
-                Solo, no win conditions. Rack a 9-ball, or 8-ball. Track every shot.
-              </span>
+              <span>Solo, no win conditions. Track every shot.</span>
             </div>
           </div>
         )}
