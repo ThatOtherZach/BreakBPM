@@ -473,14 +473,16 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         </div>
                         <div className="digit-label">AVG BPM</div>
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <div className="digit-display">
-                          <div className="digit-bpm" style={{ color: "var(--amber)" }}>
-                            {stats.bestBpm == null ? "--" : stats.bestBpm.toFixed(1)}
+                      {isAuthenticated && (
+                        <div style={{ flex: 1 }}>
+                          <div className="digit-display">
+                            <div className="digit-bpm" style={{ color: "var(--amber)" }}>
+                              {stats.bestBpm == null ? "--" : stats.bestBpm.toFixed(1)}
+                            </div>
                           </div>
+                          <div className="digit-label">BEST BPM</div>
                         </div>
-                        <div className="digit-label">BEST BPM</div>
-                      </div>
+                      )}
                     </div>
                     {stats.playTimeByType.length > 0 && (() => {
                       const totalMs = stats.playTimeByType.reduce((sum, p) => sum + p.avgDurationMs * p.gameCount, 0);
