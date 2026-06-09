@@ -221,7 +221,7 @@ export default function GameHistoryCard({
             ) : g.opponent ? (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  vs. {hideOpponent ? "???" : g.opponent}
+                  vs. {hideOpponent ? "🕴️" : g.opponent}
                 </span>
               </span>
             ) : null}
