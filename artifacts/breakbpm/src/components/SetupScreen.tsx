@@ -710,7 +710,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                   )}
                   <input
                     className="input"
-                    value={isLockedSlot ? `@${lockedPlayer1Name}` : names[i]}
+                    value={isLockedSlot ? (canMention ? `@${lockedPlayer1Name}` : lockedPlayer1Name) : names[i]}
                     onChange={e => setName(i, e.target.value)}
                     placeholder={DEFAULT_NAMES[i]}
                     maxLength={110}
