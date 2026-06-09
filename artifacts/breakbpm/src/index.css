@@ -1848,38 +1848,15 @@ html, #root {
 }
 
 /* Chaos rainbow: a cosmetic flourish on the AVG-BPM number for players who've
-   won a Chaos ("No Rules") game within their last 10 completed games. Mirrors
-   the admin name effect (.rainbow-name) exactly — same gradient stops, sweep,
-   bold weight, and rainbow-name-pan animation — clipped to the glyphs via
-   background-clip:text so the whole value (number + BPM unit) becomes one
-   animated rainbow. text-shadow is cleared so the base green glow doesn't muddy
-   the gradient.
-   NOTE: switched off the base `display:flex` to `inline-block` here — animating
-   `background-position` under `background-clip:text` does NOT repaint on a flex
-   container (Chrome/WebKit quirk), which is why the admin name (inline) sweeps
-   but the flex value sat static. The flex `gap` is replaced by a margin on the
-   unit so the number↔BPM spacing is preserved. */
-.stats-hero-value.chaos-rainbow {
-  display: inline-block;
-  background-image: linear-gradient(
-    90deg,
-    #ff004d, #ff8a00, #ffe600, #00e676, #00b0ff, #d500f9, #ff004d
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  font-weight: bold;
+   won a Chaos ("No Rules") game within their last 10 completed games. Rather
+   than maintain a parallel gradient rule, the number reuses the exact admin
+   name effect (.rainbow-name, an inline span — see StatsHero) so the two stay
+   visually identical and animate the same way. The only tweak: the value box
+   carries a green text-shadow glow that would bleed a halo behind the
+   transparent rainbow glyphs, so it's cleared here (admin names have no such
+   glow). Animation + reduced-motion handling live with .rainbow-name. */
+.stats-hero-value .rainbow-name {
   text-shadow: none;
-  animation: rainbow-name-pan 2.5s linear infinite;
-}
-.stats-hero-value.chaos-rainbow .stats-hero-unit {
-  margin-left: 6px;
-}
-/* Reduced motion: keep the static rainbow gradient, drop the animation. */
-@media (prefers-reduced-motion: reduce) {
-  .stats-hero-value.chaos-rainbow { animation: none; }
 }
 
 .stats-hero-sub {

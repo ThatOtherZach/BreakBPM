@@ -198,12 +198,14 @@ export default function StatsHero({
         )}
         <div className="stats-hero-main">
           <span className="stats-hero-label">▲ AVG BPM</span>
-          <span
-            className={`stats-hero-value${stats.avgBpm == null ? " dim" : ""}${
-              stats.chaosWinRecent && stats.avgBpm != null ? " chaos-rainbow" : ""
-            }`}
-          >
-            {stats.avgBpm == null ? "--" : stats.avgBpm.toFixed(1)}
+          <span className={`stats-hero-value${stats.avgBpm == null ? " dim" : ""}`}>
+            {stats.avgBpm == null ? (
+              "--"
+            ) : stats.chaosWinRecent ? (
+              <span className="rainbow-name">{stats.avgBpm.toFixed(1)}</span>
+            ) : (
+              stats.avgBpm.toFixed(1)
+            )}
             <span className="stats-hero-unit">BPM</span>
           </span>
           <span className="stats-hero-sub">
