@@ -1485,11 +1485,9 @@ html, #root {
    Scoped to .hud-terminal so the per-player scoreboard chips below are
    unaffected. */
 .hud-terminal .hud-chip-sunk {
-  background: #04130b;
-  border-color: #0a4322;
-  box-shadow:
-    inset 0 1px 3px rgba(0, 0, 0, 0.65),
-    0 1px 0 rgba(255, 255, 255, 0.05);
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.65);
+  box-shadow: none;
 }
 
 .hud-terminal .hud-chip-sunk::before {
@@ -1499,7 +1497,7 @@ html, #root {
 .hud-terminal .hud-chip-sunk::after {
   background: transparent;
   border-color: transparent;
-  color: #2e6b40;
+  color: rgba(255, 255, 255, 0.65);
 }
 
 /* Inline ball chips — 8-bit pixel-art billiard balls.
