@@ -387,6 +387,23 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                 {/* ── CRT hero readout — only shown when signed in ── */}
                 {isAuthenticated && <StatsHero stats={stats} screenName={user?.screenName} joinedAt={joinedAt} />}
 
+                {/* ── Upsell for non-pass tiers ── */}
+                {stats.tier !== "pass" && (
+                  <div className="stats-upsell">
+                    <p style={{ fontSize: 12, color: "#444", marginBottom: 8 }}>
+                      {stats.tier === "public"
+                        ? "🔓 Sign in to get more detailed statistics and track your games. Get a pass to unlock longer windows, leaderboards, as well as full data export."
+                        : "🔓 Get a pass to unlock 30-day, 1-year and all-time windows, the global comparison view, and manual refresh."}
+                    </p>
+                    <button
+                      className="btn btn-primary w-full"
+                      onClick={stats.tier === "public" ? onSignIn : onAccount}
+                    >
+                      {stats.tier === "public" ? "Sign In" : "Get a Pass"}
+                    </button>
+                  </div>
+                )}
+
                 {/* ── Results ── */}
                 <div className="panel panel--wood">
                   <SectionHeader emoji="🏆" title="Results" />
@@ -589,22 +606,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
               </>
             )}
 
-            {/* ── Upsell for non-pass tiers ── */}
-            {stats.tier !== "pass" && (
-              <div className="stats-upsell">
-                <p style={{ fontSize: 12, color: "#444", marginBottom: 8 }}>
-                  {stats.tier === "public"
-                    ? "🔓 Sign in to get more detailed statistics and track your games. Get a pass to unlock longer windows, leaderboards, as well as full data export."
-                    : "🔓 Get a pass to unlock 30-day, 1-year and all-time windows, the global comparison view, and manual refresh."}
-                </p>
-                <button
-                  className="btn btn-primary w-full"
-                  onClick={stats.tier === "public" ? onSignIn : onAccount}
-                >
-                  {stats.tier === "public" ? "Sign In" : "Get a Pass"}
-                </button>
-              </div>
-            )}
 
           </>
         )}
