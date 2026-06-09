@@ -384,8 +384,8 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
               </div>
             ) : (
               <>
-                {/* ── CRT hero readout ── */}
-                <StatsHero stats={stats} screenName={user?.screenName} joinedAt={joinedAt} />
+                {/* ── CRT hero readout — only shown when signed in ── */}
+                {isAuthenticated && <StatsHero stats={stats} screenName={user?.screenName} joinedAt={joinedAt} />}
 
                 {/* ── Results ── */}
                 <div className="panel panel--wood">
