@@ -1,145 +1,117 @@
 # BreakBPM
 
-**The no-bullshit pool scorekeeper.**
+BreakBPM logs every shot, one ball at a time, and gives you two numbers back: **accuracy** (what actually matters) and **BPM**, a realative stat you can compare with friends (or no one).
 
-Most pool nights turn into a mess — forgotten shots, slow play, bar rules arguments, and nobody remembering what actually happened. BreakBPM cuts through all of it.
-
-## What it does
-
-BreakBPM logs every shot, one ball at a time, and gives you two numbers back: **accuracy** (what actually matters) and **BPM** — a stupid but addictive stat you can compare with your friends.
-
-The higher the BPM, the faster the game moves. It’s calculated per-player from your first pocketed ball, so it reflects *your* pace. No vision AI, no physics simulation, no trying to replace the table. Just a clean remote for the game.
-
-### Game modes
-- **8-Ball**: Solids vs Stripes. Golden Break and foul-on-8 included.
-- **9-Ball**: Sink in order, win with the 9.
-- **Practice**: Unlimited solo racks. Log shots and watch your accuracy improve.
-- **🦈 Shark Mode**: Solo 8-ball against an invisible opponent. Miss or foul and the Shark gets a chance to pocket. Honor system — you remove the ball from the real table.
-
-### 8-Ball formats
-
-In 8-Ball, the Format toggle cycles through four ways to play:
-
-- **Normal**: Solids vs Stripes, teams assigned automatically by the rule set you pick.
-- **Manual**: Solids vs Stripes, but you pick each player's group yourself.
-- **None**: No teams, no winner. Track shots and BPM.
-- **Chaos**: No teams, free-for-all, with a win rule of your choice:
-  - **8-Ball Last**: Sink the 8 last to win or early to lose.
-  - **No Rules**: Anything goes. Clear the table; whoever sank the most wins.
-
-## Play anywhere, with anyone
-
-Every game has a **5-character share code**. One device is the scorekeeper while everyone else follows live.
-
-Join with the code (`breakbpm.com/join/CODE`) before the first ball drops and you’re in the game as a player. Players not signed in will be identified by "Player #".
-
-If all spots ae filled, you join as a spectator. Spectators can join anytime to watch, but as a player you should sign in to save the game history.
-
-**Spectate by name** at `breakbpm.com/watch/USERNAME` to follow someone’s game without needing the code.
-
-**Streaming?** Add `?obs=1` to a watch link for an overlay you can drop straight into OBS as a browser source (`breakbpm.com/watch/USERNAME?obs=1`). Chain flags such as `&log=1` to add a compact shot log and `&scale=1.5` to resize.
-
-### Link players by @mention
-
-Not on the same device? If you have a pass, type `@username` into another player's slot during setup to link a registered friend straight from your phone — no share code needed.
-
-It's completely opt-in. After the game finishes, your friend sees an invite on their account page: **Accept** to count the game toward their stats and history, or **Delete** to ignore it (it never counts). Accepted games can be removed later, too — and your own copy is never touched either way.
-
-## Why BPM?
-
-Because most pool nights suck to keep track of.
-
-Different bar rules. People forgetting what they’re shooting. Slow play. Arguments. After ten years of dealing with it, I built the app I actually wanted — one that strips everything unnecessary away.
-
-BreakBPM doesn’t try to simulate the table or do AI vision bullshit. It just logs your shots and gives you two things:
-
-- **Accuracy** — the real number
-- **BPM** — a made-up but fun number to chase and talk shit about with your friends
-
-The higher the BPM, the faster the game moves. That’s it. No fake science. Just something simple to focus on while you’re actually playing.
-
-The app is basically a remote for the table. Simple. Fast. No bullshit.
-
-## Track your stats
-
-The Stats page shows your shooting over time — results, accuracy, pace, and most-sunk balls.
-
-Anyone can see a live 24-hour global snapshot. Sign in to save and view your own numbers. Grab a pass or subscription to unlock full history (30 days, a year, or all-time), compare against everyone, and refresh on demand.
-
-## Leaderboard
-
-See who's fastest. The **🏆 Leaderboard** ranks players by BPM across recent 8-ball 1-on-1 games, and a top-10 (30-day) board sits right on the main menu for everyone to see.
-
-Sign in to open the full leaderboard, tap any standing to jump to that player's live profile, and watch the 🦈 marks pile up on the Shark grinders. Pass holders can also switch the ranking window to 90 days or all-time.
+The higher the BPM, the faster the game moves. It’s calculated per-player from your first pocketed ball to the last.
 
 ## Features
-
 - Live per-player BPM + game timer
 - Smart ball selector (only shows legal shots)
 - Full shot log with undo
 - Track fouls, safeties, and misses
-- Automatic or manual team assignment
 - 5-character share code for easy joining
-- Spectate by name
-- Link registered players with @mentions
+- Spectate any game
+- Link players with @ mentions
 - Global BPM leaderboard
 - Stats with accuracy and pace breakdowns
 - Works in any browser, no install
 - Free to play. Sign in to save your stats.
+- Data deletion by default, full export included in pass.
 
-## 🦈 Shark Mode (detailed)
+### Game Modes
+- **8-Ball**: Solids vs Stripes (Golden Break and foul-on-8 incl.)
+- **9-Ball**: Sink in order, win on the 9.
+- **Practice**: Unlimited solo racks.
+- **🦈 Shark Mode**: Solo 8-ball against an invisible shark. Miss and/or foul and the Shark scores a ball.
 
-Play solo against an invisible Shark. Your first sink locks your group (solids or stripes); the rest go to the Shark. Clear your group and sink the 8 to win.
+### 8-Ball Formats
 
-Every miss or foul gives the Shark a chance to pocket a ball. This is an honor system — when the Shark “pockets” a ball, you physically remove one of its balls from the real table.
+In 8-Ball, the Format toggle cycles through four ways to play:
+- **Normal**: Solids vs Stripes, teams assigned automatically by the rule set.
+- **Manual**: Solids vs Stripes, rule sets included and you pick each player's grouping.
+- **None**: No teams, no winner. Track shots and BPM.
+<!-- Shhhh, secret
+- **Chaos**: No teams, free-for-all, with a win rule of your choice:
+  - **Straight Pool**: Sink the 8 last to win or early to lose.
+  - **No Rules**: Anything goes. Clear the table; whoever sank the most wins.
+-->
 
-**Two ways to handle it:**
-- Pick whichever of the Shark’s balls looks easiest and lift it off the table.
-- Line up one of the Shark’s balls and shoot it yourself (playing *as* the Shark). Miss? Remove it anyway.
+## 🦈 Shark Mode
 
-**Shark Mode Rules**
-- Sink a ball → counts for you
-- Safety → never triggers a Shark pocket (valid play)
-- Only the 8 left + you miss or foul → Shark wins
-- Sink the 8 after clearing your group → you win
+Play solo against an invisible Shark. Your first pocketed ball locks your group (solids or stripes); clear your group and sink the 8 ball to win.
+
+Based on the aggression setting, determines when the Shark pockets a ball. It is an honor system; when the Shark “pockets” a ball, you should physically remove one of the Sharks grouping balls from the table.
 
 **Shark Aggression**
 - **Normal**: Shark only pockets on fouls
 - **Hard**: Shark pockets on every miss *and* every foul
 
+**Two Ways to Play:**
+- When its the Sharks turn, pick whichever of the Shark’s balls looks easiest and lift it off the table.
+- Or shoot the shark's ball yourself (playing *as* the Shark). Missed? Remove it anyway.
+
+**Shark Mode Rules**
+- Sink a ball → counts for you
+- Safety → does not trigger a Shark pocket (valid play)
+- Only the 8 left + you miss or foul → Shark wins
+- Sink the 8 after clearing your group → you win
+
+## Play Anywhere, With Anyone
+
+One device keeps score and acts as host for other players to join using a **5-character share code**. 
+
+Join with the code (`breakbpm.com/join/CODE`) before the first pocketed ball and you’ll be added to the game as a player. Players that are not signed in will be identified as "Player #".
+
+If the game is full (max 4 players), you join as a spectator only. You can also **Spectate by name** at `breakbpm.com/watch/USERNAME` to watch without a code.
+
+<!--**Streaming?** Add `?obs=1` to a watch link for an overlay you can drop straight into OBS as a browser source (`breakbpm.com/watch/USERNAME?obs=1`). Chain flags such as `&log=1` to add a compact shot log and `&scale=1.5` to resize.-->
+
+### Link Friends In
+
+If you have a pass, type `@USERNAME` into another player input during setup to link and save thier stats. No share code needed.
+
+When the game finishes the tagged user can **Accept** or **Delete** the game from thier stats and game history. There is a max number of invites a player can recieve.
+
+## Track Your Racks
+
+The Stats page shows your shooting over time a results including relative accuracy, pace, and ball patterns.
+
+Free 24-hour global snapshot, sign in to save and view your own. Grab a pass to unlock full history (30 days, a year, or all-time) to compare against everyone. Full export included.
+
+## Leaderboard
+
+Who's fastest? The **🏆 Leaderboard** ranks players by BPM across recent 8-ball singles games with a time weighted average, recent games only.
+
+Sign in to open the full leaderboard. Pass holders can switch the ranking window to 90 days or all-time.
+
 ## Passes
 
-BreakBPM is free to play. Sign in (no charge) to save your games — you'll keep your 3 most recent — and resume an in-progress game on any device.
+BreakBPM is free to play. Sign in (no charge) to save your games, but you'll need a pass to access more data.
 
-A pass unlocks everything:
-
-- **Post to Find Players** — create meetup posts so other players can find your game. Free accounts can browse the board and map, but only pass holders can post.
-- **Let others spectate** — when you host a game with a pass, anyone can watch it live, by share code or by your name. Without a pass, your games can't be spectated.
-- **Link players by @mention** — type `@username` to link a registered friend to a game slot without a share code or sharing a device. (Your friend doesn't need a pass to accept the invite.)
-- **Leaderboard windows** — rank the BPM leaderboard over 90 days or all-time, not just the public 30-day board.
-- **Full game history** — every game you've ever played, not just your last 3, with pagination.
-- **Full stats** — switch between 24-hour, 30-day, 365-day, and all-time windows, and refresh on demand. Free accounts see personal stats for the last 24 hours only, but can still toggle over to the all-time global "Everyone" view as a taste.
-- **Full data export** — download every game and shot you've ever logged as a CSV. Free accounts can export their last 24 hours only.
-- **Custom screen name** — *Lifetime only:* pick your own display name instead of the auto-assigned one.
+Pass Unlocks:
+- **Post to Find Players** Create meetup posts for other players to join your game. Free accounts can browse, only pass holders can post.
+- **Let others spectate** Hosting with a pass allowes anyone to watch live via the share code or by name. Without a pass, your games can not be spectated.
+- **Link players by @mention** Use `@USERNAME` to link a friend to your game without a share code. You do not need a pass to accept an invite, but there is a limit.
+- **Leaderboard windows** Over 90 days or all-time, not just the normie 30-day leaderboard.
+- **Full game history** See every game you've ever played.
+- **Full stats** Switch between 24-hour, 30-day, 365-day, and all-time windows, and refresh on demand. Free accounts see personal stats for the last 24 hours only.
+- **Full data export** Download every game and shot you've ever played. Free accounts can only export their last 24 hours only.
+- **Custom screen name***Lifetime only:* Pick your own display name instead of the auto-assigned one.
 
 | Pass     | Price              | Access                                     |
 |----------|:------------------:|--------------------------------------------|
-| Day Pass | $1.99 one-time     | Everything above for 24 hours              |
-| Monthly  | $4.99              | Everything above for 30 days               |
-| Yearly   | $14.99             | Everything above for 30 days               |
-| Lifetime | $24.99 one-time    | Everything above forever + custom screen name |
+| Day Pass | $1.99     | Everything for 24 hours              |
+| Monthly  | $4.99     | Everything for 30 days               |
+| Yearly   | $14.99    | Everything for 365 days               |
+| Lifetime | $24.99    | Everything + custom screen name |
 
-Day Pass and Lifetime are one-time purchases. Monthly and Yearly are recurring (cancel anytime). Buying Lifetime stops any active subscription from renewing.
-
-Plans can be purchased from your account page or redeemed with a code.
+Passes can be purchased from your account page or redeemed with a code. All pass types are non-refundable. If you need assistance, use the Github first. 
 
 ### 🎱 Lucky Break
 
-Lucky Break is a $4.99 roll that guarantees you a pass — you always win something. Every roll lands on at least a 30-day Monthly Pass, with a disclosed chance (**20% today**) of upgrading to a Lifetime Pass instead. The exact odds are always shown before you roll.
+Lucky Break is a $4.99 roll that guarantees you a 30 day pass but there's an 80/20 chance it's upgraded to a Lifetime Pass instead.
 
-The outcome is determined by a seeded draw using the last 30 days of global shot activity across all players, hashed together with your unique roll ID. The odds never change based on how you or anyone else plays — the shot data only selects which outcome you land on, it doesn't shift the disclosed threshold.
-
-Lucky Break is available to purchase on your passes page — your pass is granted automatically when payment is confirmed.
+The outcome is determined by a seeded draw using the last 30 days of global shot activity. You are guarenteed a 30 day pass regardless of winning outcome. Your pass is granted automatically after payment is confirmed.
 
 ---
 
