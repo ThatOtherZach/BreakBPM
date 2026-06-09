@@ -31,6 +31,22 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/HealthStatus" }
 
+  /config:
+    get:
+      operationId: getAppConfig
+      tags: [health]
+      summary: Public runtime app config (no auth)
+      description: >
+        Server-resolved, client-safe config read fresh from the environment on
+        every request so values can be swapped without rebuilding the static
+        frontend. Currently exposes the splash QR/promo URL.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AppConfig" }
+
   /auth/me:
     get:
       operationId: getMe
@@ -782,6 +798,17 @@ components:
       required: [status]
       properties:
         status: { type: string }
+
+    AppConfig:
+      type: object
+      required: [qrUrl]
+      properties:
+        qrUrl:
+          type: string
+          description: >
+            URL encoded into the splash-art QR easter egg. Configurable via the
+            BREAKBPM_PROMO_QR_URL env var so promo links can be swapped at
+            runtime; defaults to the marketing site.
 
     Account:
       type: object

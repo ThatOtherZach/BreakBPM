@@ -17,6 +17,16 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * Server-resolved, client-safe config read fresh from the environment on every request so values can be swapped without rebuilding the static frontend. Currently exposes the splash QR/promo URL.
+
+ * @summary Public runtime app config (no auth)
+ */
+export const GetAppConfigResponse = zod.object({
+  "qrUrl": zod.string().describe('URL encoded into the splash-art QR easter egg. Configurable via the BREAKBPM_PROMO_QR_URL env var so promo links can be swapped at runtime; defaults to the marketing site.\n')
+})
+
+
+/**
  * @summary Current account state (or null if signed-out)
  */
 export const GetMeResponse = zod.object({

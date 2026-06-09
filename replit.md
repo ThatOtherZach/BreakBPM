@@ -12,6 +12,7 @@ A billiards scoring app that tracks shots, calculates per-player Balls Per Minut
 - Required env: `DATABASE_URL` — Postgres connection string
 - Optional env: `BREAKBPM_LUCKY_BREAK_LIFETIME_PROBABILITY` — Lucky Break Lifetime-upgrade odds as a decimal fraction in `[0,1]` (e.g. `0.2` = 20%). Defaults to `0.20`; invalid/out-of-range values log a warning and fall back to the default. Restart the api-server workflow after changing it.
 - Optional env: `BREAKBPM_USD_CAD_FALLBACK_RATE` — USD→CAD rate (e.g. `1.37`) used only when the Bank of Canada FX lookup is unreachable and no last-good rate is cached. Invalid values fall back to a hardcoded default (~1.37). See the sales-ledger FX decision below.
+- Optional env: `BREAKBPM_PROMO_QR_URL` — URL encoded into the splash-art QR easter egg (press-and-hold the splash 8-ball for 3s). Read fresh from the env on every `GET /config` request, so promo links can be swapped at runtime without rebuilding the static frontend. Defaults to `https://breakbpm.com` when unset/blank. Restart the api-server workflow after changing it.
 
 ## Stack
 
@@ -56,7 +57,7 @@ artifacts/
   api-server/         Express backend
     src/
       index.ts          Server entry, port binding
-      routes/           games.ts, auth.ts, passes.ts, subscriptions.ts, health.ts
+      routes/           games.ts, auth.ts, passes.ts, subscriptions.ts, health.ts, config.ts
       lib/
         auth.ts         Clerk → local user upsert
         stats.ts        Tiered /stats aggregation (personal vs global)

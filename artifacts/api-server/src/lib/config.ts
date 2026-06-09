@@ -104,3 +104,19 @@ export function isAdminEmail(email: string | null | undefined): boolean {
   if (!email) return false;
   return adminEmails().has(email.trim().toLowerCase());
 }
+
+/** Default splash QR target when no promo override is configured. */
+export const DEFAULT_PROMO_QR_URL = "https://breakbpm.com";
+
+/**
+ * URL encoded into the splash-art QR easter egg, served to the client via
+ * `GET /config`. Read fresh from `BREAKBPM_PROMO_QR_URL` on every request so a
+ * promo link can be swapped at runtime (the static frontend bakes nothing in —
+ * just restart the API server after changing the secret). Falls back to the
+ * marketing site when unset or blank.
+ */
+export function promoQrUrl(): string {
+  const raw = process.env.BREAKBPM_PROMO_QR_URL;
+  if (raw === undefined || raw.trim() === "") return DEFAULT_PROMO_QR_URL;
+  return raw.trim();
+}

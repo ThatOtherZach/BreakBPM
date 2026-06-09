@@ -9,6 +9,12 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface AppConfig {
+  /** URL encoded into the splash-art QR easter egg. Configurable via the BREAKBPM_PROMO_QR_URL env var so promo links can be swapped at runtime; defaults to the marketing site.
+   */
+  qrUrl: string;
+}
+
 export interface Account {
   id: string;
   screenName: string;

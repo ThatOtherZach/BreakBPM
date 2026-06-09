@@ -27,6 +27,7 @@ import type {
   AdminCodeList,
   AdminCodeResult,
   AdminSalesResponse,
+  AppConfig,
   CancelFindPlayerPostInput,
   CancelFindPlayerPostResult,
   CancelSubscriptionResult,
@@ -158,6 +159,85 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getHealthCheckQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAppConfigUrl = () => {
+
+
+
+
+  return `/api/config`
+}
+
+/**
+ * Server-resolved, client-safe config read fresh from the environment on every request so values can be swapped without rebuilding the static frontend. Currently exposes the splash QR/promo URL.
+
+ * @summary Public runtime app config (no auth)
+ */
+export const getAppConfig = async ( options?: RequestInit): Promise<AppConfig> => {
+
+  return customFetch<AppConfig>(getGetAppConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAppConfigQueryKey = () => {
+    return [
+    `/api/config`
+    ] as const;
+    }
+
+
+export const getGetAppConfigQueryOptions = <TData = Awaited<ReturnType<typeof getAppConfig>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAppConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAppConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAppConfig>>> = ({ signal }) => getAppConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAppConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAppConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getAppConfig>>>
+export type GetAppConfigQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Public runtime app config (no auth)
+ */
+
+export function useGetAppConfig<TData = Awaited<ReturnType<typeof getAppConfig>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAppConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAppConfigQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

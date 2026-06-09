@@ -9,6 +9,7 @@ import {
   useStartGame,
   useGetResumableGame,
   useAbandonGame,
+  useGetAppConfig,
 } from '@workspace/api-client-react';
 import { saveInProgressGame, clearInProgressGame, normalizeSharkIdentity } from '../lib/gameLogic';
 import SharkIcon from './SharkIcon';
@@ -169,10 +170,15 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
   const [breakerIndex, setBreakerIndex] = useState(0);
 
   // Hidden easter egg: press-and-hold the splash 8-ball for 3s to swap the
-  // art for a QR code to breakbpm.com, shown inline for 8s before it reverts
-  // to the 8-ball. The hold timer fires only if the press is held in place;
-  // release / move-away / cancel aborts it, so a normal tap does nothing.
+  // art for a QR code (server-configured promo target), shown inline for 8s
+  // before it reverts to the 8-ball. The hold timer fires only if the press is
+  // held in place; release / move-away / cancel aborts it, so a tap does nothing.
   const [showQr, setShowQr] = useState(false);
+  // The QR target is server-configured (BREAKBPM_PROMO_QR_URL) so promo links
+  // can be swapped at runtime without rebuilding the static frontend. Falls
+  // back to the marketing site until the config resolves / if it fails.
+  const appConfig = useGetAppConfig();
+  const qrUrl = appConfig.data?.qrUrl ?? 'https://breakbpm.com';
   const qrPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const qrRevertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearQrPress = () => {
@@ -472,9 +478,9 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
           {showQr ? (
             <div
               style={{ background: '#fff', padding: 6, lineHeight: 0, borderRadius: 2 }}
-              aria-label="QR code to breakbpm.com"
+              aria-label={`QR code to ${qrUrl}`}
             >
-              <QRCodeSVG value="https://breakbpm.com" size={104} level="M" />
+              <QRCodeSVG value={qrUrl} size={104} level="M" />
             </div>
           ) : (
             <img src={ballImg} alt="8-ball" className="splash-ball-img" draggable={false} />

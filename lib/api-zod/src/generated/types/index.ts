@@ -20,6 +20,7 @@ export * from './adminSaleRowEventType';
 export * from './adminSaleRowPaymentMethod';
 export * from './adminSalesResponse';
 export * from './adminSalesTotals';
+export * from './appConfig';
 export * from './cancelFindPlayerPostInput';
 export * from './cancelFindPlayerPostResult';
 export * from './cancelSubscriptionResult';
