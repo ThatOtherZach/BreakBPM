@@ -421,6 +421,37 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
     .orderBy(desc(gamesTable.endedAt))
     .limit(MAX_ROWS)) as Array<RowLike & { id: string }>;
 
+  // Recent-chaos-win flag (cosmetic — drives the rainbow AVG-BPM flourish).
+  // Computed BEFORE the empty-window early return because it is
+  // window-independent: it looks at the caller's 10 most-recent COMPLETED games
+  // overall (not the selected window), so a user with no games in the current
+  // window can still be eligible (e.g. the fixed-24h /watch profile, or a 24h
+  // /stats request after an idle day). Chaos games are flagged by a top-level
+  // `chaosMode` key in the gameState JSONB; a win is the game's `winner`
+  // matching the caller's slot name (same convention as the Shark win count).
+  // The Chaos `none` variant and ties store `winner = null`, so they correctly
+  // never trigger it.
+  const recentRows = await db
+    .select({
+      winner: gamesTable.winner,
+      displayName: gameParticipantsTable.displayName,
+      chaosMode: sql<string | null>`${gamesTable.gameState} ->> 'chaosMode'`,
+    })
+    .from(gamesTable)
+    .innerJoin(
+      gameParticipantsTable,
+      and(
+        eq(gameParticipantsTable.gameId, gamesTable.id),
+        eq(gameParticipantsTable.userId, userId),
+      ),
+    )
+    .where(and(inArray(gamesTable.id, ids), isNotNull(gamesTable.endedAt)))
+    .orderBy(desc(gamesTable.endedAt))
+    .limit(10);
+  core.chaosWinRecent = recentRows.some(
+    (r) => r.chaosMode != null && r.winner != null && r.winner === r.displayName,
+  );
+
   if (rows.length === 0) return core;
   core.gamesPlayed = rows.length;
 
@@ -565,34 +596,6 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
       ),
     );
   core.sharkLevel = Number(sharkRows[0]?.c ?? 0);
-
-  // Recent-chaos-win flag (cosmetic — drives the rainbow AVG-BPM flourish).
-  // Look at the caller's 10 most-recent COMPLETED games (window-independent,
-  // like Shark Level above) and flag true if any was a Chaos ("No Rules") game
-  // they WON. Chaos games are flagged by a top-level `chaosMode` key in the
-  // gameState JSONB; a win is the game's `winner` matching the caller's slot
-  // name (same convention as the Shark win count). The Chaos `none` variant and
-  // ties store `winner = null`, so they correctly never trigger it.
-  const recentRows = await db
-    .select({
-      winner: gamesTable.winner,
-      displayName: gameParticipantsTable.displayName,
-      chaosMode: sql<string | null>`${gamesTable.gameState} ->> 'chaosMode'`,
-    })
-    .from(gamesTable)
-    .innerJoin(
-      gameParticipantsTable,
-      and(
-        eq(gameParticipantsTable.gameId, gamesTable.id),
-        eq(gameParticipantsTable.userId, userId),
-      ),
-    )
-    .where(and(inArray(gamesTable.id, ids), isNotNull(gamesTable.endedAt)))
-    .orderBy(desc(gamesTable.endedAt))
-    .limit(10);
-  core.chaosWinRecent = recentRows.some(
-    (r) => r.chaosMode != null && r.winner != null && r.winner === r.displayName,
-  );
 
   core.computedAt = Date.now();
   return core;
