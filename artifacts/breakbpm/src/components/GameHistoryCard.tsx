@@ -105,7 +105,7 @@ const GAME_TYPE_LABEL: Record<string, string> = {
 
 type OutcomeStyle = { label: string; bg: string; fg: string; border: string; title?: string };
 const OUTCOME_STYLE: Record<string, OutcomeStyle> = {
-  won: { label: "WIN", bg: "#c9a000", fg: "#1a0800", border: "#7a5f00" },
+  won: { label: "WIN", bg: "#000000", fg: "#f4c430", border: "#c9a000" },
   lost: { label: "LOSS", bg: "#c62828", fg: "#fff", border: "#8e1b1b" },
   forfeit: {
     label: "DNF",
