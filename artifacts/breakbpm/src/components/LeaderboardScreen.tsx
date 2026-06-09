@@ -78,7 +78,7 @@ function LeaderboardRowCard({
               color: "#9fc6ff",
               textShadow: "1px 1px 0 #042414",
             }}
-          >
+            className="font-normal">
             🦈 Shark Lv {row.sharkLevel}
           </span>
         )}

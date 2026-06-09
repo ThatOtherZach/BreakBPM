@@ -3,6 +3,7 @@ import Navbar from "./Navbar";
 import GameHistoryCard from "./GameHistoryCard";
 import StatsHero from "./StatsHero";
 import { PlayerName } from "./PlayerName";
+import { useAuth } from "../lib/authClient";
 import { useGetPublicProfile, getGetPublicProfileQueryKey } from "@workspace/api-client-react";
 
 interface Props {
@@ -31,6 +32,9 @@ function fmtMemberSince(d: string): string {
  */
 export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, onSignIn }: Props) {
   const [, setLocation] = useLocation();
+  // Opponent names in the recent-games list are only revealed to signed-in
+  // visitors; signed-out spectators see them redacted.
+  const { isAuthenticated } = useAuth();
   // Poll the profile so the hero readout and recent games stay live while a
   // watcher sits on the page — roughly the same cadence as the live spectator
   // view. The server busts the player's stats cache when they finish a game,
@@ -130,7 +134,9 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
                 {games.length === 0 ? (
                   <p style={{ fontSize: 12, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}>No games played yet.</p>
                 ) : (
-                  games.map((g) => <GameHistoryCard key={g.id} game={g} />)
+                  games.map((g) => (
+                    <GameHistoryCard key={g.id} game={g} hideOpponent={!isAuthenticated} />
+                  ))
                 )}
               </div>
             </div>

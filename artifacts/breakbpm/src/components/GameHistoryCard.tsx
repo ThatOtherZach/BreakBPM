@@ -173,7 +173,15 @@ function ResultBadge({ outcome, chaosMode }: { outcome: string; chaosMode?: stri
  * the owner's account page and the public /watch/{name} profile so both stay
  * pixel-identical.
  */
-export default function GameHistoryCard({ game: g }: { game: GameHistoryEntry }) {
+export default function GameHistoryCard({
+  game: g,
+  hideOpponent = false,
+}: {
+  game: GameHistoryEntry;
+  /** Redact the opponent's name (e.g. on the public watch page for signed-out
+   *  visitors). Shark games are unaffected — they show no real player name. */
+  hideOpponent?: boolean;
+}) {
   const modeLabel = GAME_TYPE_LABEL[g.gameType] ?? g.gameType;
   const hasBpm = g.bpm != null;
   const hasAcc = g.accuracy != null;
@@ -213,7 +221,7 @@ export default function GameHistoryCard({ game: g }: { game: GameHistoryEntry })
             ) : g.opponent ? (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  vs. {g.opponent}
+                  vs. {hideOpponent ? "???" : g.opponent}
                 </span>
               </span>
             ) : null}
