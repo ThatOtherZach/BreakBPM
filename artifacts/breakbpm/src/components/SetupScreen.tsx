@@ -713,7 +713,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                     value={isLockedSlot ? `@${lockedPlayer1Name}` : names[i]}
                     onChange={e => setName(i, e.target.value)}
                     placeholder={DEFAULT_NAMES[i]}
-                    maxLength={16}
+                    maxLength={110}
                     readOnly={isLockedSlot}
                     aria-readonly={isLockedSlot || undefined}
                     title={isLockedSlot ? 'Signed in — name locked to your account' : undefined}
