@@ -21,3 +21,15 @@ class), which becomes a normal flex item whose own text clips/animates fine. The
 only extra CSS is `.stats-hero-value .rainbow-name { text-shadow: none }` to kill
 the value box's inherited green glow. Don't recreate a parallel `.chaos-rainbow`
 gradient rule on the flex value — it silently won't animate.
+
+## Related gotcha: bg-clip:text eats the solid fill too
+
+`background-clip: text` clips **every** background layer to the glyphs — the
+solid `background-color` AND any gradient image. So you can NOT have a visible
+filled badge/pill background *and* gradient-clipped text on the same element:
+the fill gets clipped away too, leaving floating low-contrast text in a bare
+border. **Fix:** keep the solid fill (+ border + padding) on the outer element
+and put the gradient + `background-clip:text` on an **inner span** wrapping only
+the text. This is exactly what the chaos WIN/LOSS badge in `GameHistoryCard.tsx`
+does (`CHAOS_RAINBOW` lives on a nested `<span>`, dark `#1a1020` fill on the
+outer badge).

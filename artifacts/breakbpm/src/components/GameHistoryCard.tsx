@@ -159,10 +159,9 @@ function ResultBadge({ outcome, chaosMode }: { outcome: string; chaosMode?: stri
         background: isChaos ? "#1a1020" : s.bg,
         color: isChaos ? undefined : s.fg,
         border: `1px solid ${isChaos ? "#6a3fa0" : s.border}`,
-        ...(isChaos ? CHAOS_RAINBOW : {}),
       }}
     >
-      {s.label}
+      {isChaos ? <span style={CHAOS_RAINBOW}>{s.label}</span> : s.label}
     </span>
   );
 }
