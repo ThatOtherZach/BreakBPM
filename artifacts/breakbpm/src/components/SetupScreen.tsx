@@ -74,10 +74,10 @@ const RULE_SET_OPTIONS: {
 type TeamMode = 'auto' | 'manual' | 'chaos' | 'none';
 const TEAM_MODE_CYCLE: TeamMode[] = ['auto', 'manual', 'none', 'chaos'];
 const TEAM_MODE_LABEL: Record<TeamMode, string> = {
-  auto: 'Normal',
-  manual: 'Manual',
-  chaos: 'Chaos',
-  none: 'None',
+  auto: '🤝 Normal',
+  manual: '🕹️ Manual',
+  chaos: '🌪️ Chaos',
+  none: '🤷 None',
 };
 const TEAM_MODE_SUBLABEL: Record<Exclude<TeamMode, 'auto'>, string> = {
   manual: 'Pick each player’s group yourself',
