@@ -708,6 +708,14 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                       style={{ '--chip-color': PLAYER_BALL_COLORS[i] } as React.CSSProperties}
                     />
                   )}
+                  {isLockedSlot && (
+                    <span
+                      aria-hidden="true"
+                      style={{ fontWeight: 'bold', color: '#555', flex: '0 0 auto' }}
+                    >
+                      @
+                    </span>
+                  )}
                   <input
                     className="input"
                     value={isLockedSlot ? lockedPlayer1Name : names[i]}
