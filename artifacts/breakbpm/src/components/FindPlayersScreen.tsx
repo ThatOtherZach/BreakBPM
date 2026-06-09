@@ -403,6 +403,103 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
     <div className="app-window app-window--page">
       <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
       <div className="app-body">
+        <SignedIn>
+          {/* ── Create form (paid only, collapsible) ── */}
+          {canCreate ? (
+            <div className="panel fpp-form">
+              <button
+                type="button"
+                className="panel-header"
+                onClick={() => setFormOpen((o) => !o)}
+                aria-expanded={formOpen}
+                style={{ width: "100%", border: "none", cursor: "pointer", font: "inherit", textAlign: "left" }}
+              >
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+                  className="text-[13px] font-semibold text-[#ffffff]">
+                  POST A MEETUP
+                </span>
+                <span aria-hidden="true" className="text-[#000000]">{formOpen ? "▼" : "▶"}</span>
+              </button>
+              {formOpen && (
+              <div className="fpp-form-fields">
+              <div className="fpp-map fpp-map--form">
+                <MapContainer center={position ?? DEFAULT_CENTER} zoom={position ? 15 : DEFAULT_ZOOM} style={{ height: "100%", width: "100%" }}>
+                  <TileLayer
+                    attribution='&copy; OpenStreetMap'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <LocationPicker position={position} setPosition={setPosition} />
+                  <FlyTo position={position} flyKey={flyKey} />
+                </MapContainer>
+              </div>
+              <div className="fpp-form-row fpp-form-row--compact">
+                <label className="fpp-label fpp-label--row">Location</label>
+                <button className="btn fpp-locate-btn" type="button" onClick={locateMe}>
+                  📍 Locate me
+                </button>
+                <span className="fpp-row-hint fpp-row-hint--coords text-[#777777]">
+                  {locationPreview ?? (position ? "Locating…" : "Or tap the map")}
+                </span>
+              </div>
+              <div className="fpp-form-row fpp-form-row--compact">
+                <label className="fpp-label fpp-label--row">
+                  Table #
+                </label>
+                <input
+                  className="input fpp-table-input"
+                  type="number"
+                  min={0}
+                  max={99999}
+                  value={tableNumber}
+                  onChange={(e) => setTableNumber(e.target.value)}
+                  placeholder="e.g. 3"
+                />
+                <span className="fpp-row-hint">Which table you'll be on</span>
+              </div>
+              <div className="fpp-form-row fpp-form-row--compact">
+                <label className="fpp-label fpp-label--row">Date</label>
+                <input
+                  className="input fpp-date-input"
+                  type="date"
+                  min={today}
+                  max={maxDate}
+                  value={dateStr}
+                  onChange={(e) => setDateStr(e.target.value)}
+                />
+                <span className="fpp-row-hint">Up to 1 year out</span>
+              </div>
+              <div className="fpp-form-row fpp-form-row--compact">
+                <label className="fpp-label fpp-label--row">Time</label>
+                <input
+                  className="input fpp-time-input"
+                  type="time"
+                  step={60}
+                  value={timeStr}
+                  onChange={(e) => setTimeStr(e.target.value)}
+                />
+                <span className="fpp-row-hint">24-hour clock</span>
+              </div>
+              {formError && <p className="fpp-error">{formError}</p>}
+              {atLimit && (
+                <p className="fpp-hint">You're at the 5-post limit. Cancel one to free a slot.</p>
+              )}
+              <button
+                className="btn btn-primary btn-big w-full"
+                onClick={submit}
+                disabled={createPost.isPending || atLimit}
+              >
+                {createPost.isPending ? "Posting…" : "Post Meetup"}
+              </button>
+              </div>
+              )}
+            </div>
+          ) : (
+            <p className="fpp-hint">
+              Browsing as a member. A pass unlocks posting your own games.
+            </p>
+          )}
+        </SignedIn>
+
         <div className="panel panel--wood">
           <div className="panel-header">FIND PLAYERS</div>
           <div className="panel-body">
@@ -416,100 +513,6 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
             </SignedOut>
 
             <SignedIn>
-              {/* ── Create form (paid only, collapsible) ── */}
-              {canCreate ? (
-                <div className="panel fpp-form">
-                  <button
-                    type="button"
-                    className="panel-header"
-                    onClick={() => setFormOpen((o) => !o)}
-                    aria-expanded={formOpen}
-                    style={{ width: "100%", border: "none", cursor: "pointer", font: "inherit", textAlign: "left" }}
-                  >
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
-                      className="text-[13px] font-semibold text-[#ffffff]">
-                      POST A MEETUP
-                    </span>
-                    <span aria-hidden="true" className="text-[#000000]">{formOpen ? "▼" : "▶"}</span>
-                  </button>
-                  {formOpen && (
-                  <div className="fpp-form-fields">
-                  <div className="fpp-map fpp-map--form">
-                    <MapContainer center={position ?? DEFAULT_CENTER} zoom={position ? 15 : DEFAULT_ZOOM} style={{ height: "100%", width: "100%" }}>
-                      <TileLayer
-                        attribution='&copy; OpenStreetMap'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      />
-                      <LocationPicker position={position} setPosition={setPosition} />
-                      <FlyTo position={position} flyKey={flyKey} />
-                    </MapContainer>
-                  </div>
-                  <div className="fpp-form-row fpp-form-row--compact">
-                    <label className="fpp-label fpp-label--row">Location</label>
-                    <button className="btn fpp-locate-btn" type="button" onClick={locateMe}>
-                      📍 Locate me
-                    </button>
-                    <span className="fpp-row-hint fpp-row-hint--coords text-[#777777]">
-                      {locationPreview ?? (position ? "Locating…" : "Or tap the map")}
-                    </span>
-                  </div>
-                  <div className="fpp-form-row fpp-form-row--compact">
-                    <label className="fpp-label fpp-label--row">
-                      Table #
-                    </label>
-                    <input
-                      className="input fpp-table-input"
-                      type="number"
-                      min={0}
-                      max={99999}
-                      value={tableNumber}
-                      onChange={(e) => setTableNumber(e.target.value)}
-                      placeholder="e.g. 3"
-                    />
-                    <span className="fpp-row-hint">Which table you'll be on</span>
-                  </div>
-                  <div className="fpp-form-row fpp-form-row--compact">
-                    <label className="fpp-label fpp-label--row">Date</label>
-                    <input
-                      className="input fpp-date-input"
-                      type="date"
-                      min={today}
-                      max={maxDate}
-                      value={dateStr}
-                      onChange={(e) => setDateStr(e.target.value)}
-                    />
-                    <span className="fpp-row-hint">Up to 1 year out</span>
-                  </div>
-                  <div className="fpp-form-row fpp-form-row--compact">
-                    <label className="fpp-label fpp-label--row">Time</label>
-                    <input
-                      className="input fpp-time-input"
-                      type="time"
-                      step={60}
-                      value={timeStr}
-                      onChange={(e) => setTimeStr(e.target.value)}
-                    />
-                    <span className="fpp-row-hint">24-hour clock</span>
-                  </div>
-                  {formError && <p className="fpp-error">{formError}</p>}
-                  {atLimit && (
-                    <p className="fpp-hint">You're at the 5-post limit. Cancel one to free a slot.</p>
-                  )}
-                  <button
-                    className="btn btn-primary btn-big w-full"
-                    onClick={submit}
-                    disabled={createPost.isPending || atLimit}
-                  >
-                    {createPost.isPending ? "Posting…" : "Post Meetup"}
-                  </button>
-                  </div>
-                  )}
-                </div>
-              ) : (
-                <p className="fpp-hint">
-                  Browsing as a member. A pass unlocks posting your own games.
-                </p>
-              )}
 
               {/* ── List / Map toggle (single button) ──
                   Hidden while the Post-a-Meetup form is open to declutter. */}
