@@ -1477,15 +1477,19 @@ html, #root {
   --chip-size: 28px;
 }
 
-/* Pocketed balls read as emptied sockets in the rack tray: the color
-   drains out, the chip recesses into the panel, and only a faint number
-   remains. On-table balls keep their full pixel-art color, so a glance
-   tells you exactly what's left. Scoped to .hud-terminal so the
-   per-player scoreboard chips below are unaffected. */
+/* Pocketed balls read as emptied pockets cut into the felt: the color
+   drains out, the chip recesses into the baize with a dark hole + soft
+   rim shadow, and only a faint number remains. Tuned to sit on the green
+   felt skin (rim picks up the felt's inset rail #0a4322). On-table balls
+   keep their full pixel-art color, so a glance tells you what's left.
+   Scoped to .hud-terminal so the per-player scoreboard chips below are
+   unaffected. */
 .hud-terminal .hud-chip-sunk {
-  background: #06120a;
-  border-color: #1e3a1e;
-  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.7);
+  background: #04130b;
+  border-color: #0a4322;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.65),
+    0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .hud-terminal .hud-chip-sunk::before {
@@ -1494,8 +1498,8 @@ html, #root {
 
 .hud-terminal .hud-chip-sunk::after {
   background: transparent;
-  border-color: #1e3a1e;
-  color: #3f7d3f;
+  border-color: transparent;
+  color: #2e6b40;
 }
 
 /* Inline ball chips — 8-bit pixel-art billiard balls.
