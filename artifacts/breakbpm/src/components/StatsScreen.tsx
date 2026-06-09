@@ -451,12 +451,14 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       display={stats.totalShots > 0 ? `${Math.round((stats.totalFouls / stats.totalShots) * 100)}%` : "—"}
                       tone="red"
                     />
-                    <div className="stats-card-grid">
-                      <StatCard emoji="❌" value={fmtNum(stats.avgMissesPerGame)} label="MISSES" sub="per game" />
-                      <StatCard emoji={<span className="cue-ball-icon" style={{ fontSize: 21, verticalAlign: "baseline" }} />} value={fmtNum(stats.avgFoulsPerGame)} label="FOULS" sub="per game" />
-                      <StatCard emoji="🛡️" value={fmtNum(stats.avgSafetiesPerGame)} label="SAFETIES" sub="per game" />
-                      <StatCard emoji="↩️" value={fmtInt(stats.totalUndos)} label="TIMES NO ONE SAW THAT (UNDOS)" />
-                    </div>
+                    {isAuthenticated && (
+                      <div className="stats-card-grid">
+                        <StatCard emoji="❌" value={fmtNum(stats.avgMissesPerGame)} label="MISSES" sub="per game" />
+                        <StatCard emoji={<span className="cue-ball-icon" style={{ fontSize: 21, verticalAlign: "baseline" }} />} value={fmtNum(stats.avgFoulsPerGame)} label="FOULS" sub="per game" />
+                        <StatCard emoji="🛡️" value={fmtNum(stats.avgSafetiesPerGame)} label="SAFETIES" sub="per game" />
+                        <StatCard emoji="↩️" value={fmtInt(stats.totalUndos)} label="TIMES NO ONE SAW THAT (UNDOS)" />
+                      </div>
+                    )}
                   </div>
                 </div>
 
