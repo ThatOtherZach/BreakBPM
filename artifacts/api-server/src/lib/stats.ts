@@ -534,18 +534,29 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
     .map(([ball, count]) => ({ ball, count }));
   core.sharkWinRate = core.sharkGames > 0 ? round3(sharkWins / core.sharkGames) : null;
 
-  // Shark Level is the user's ALL-TIME count of completed Shark-mode games
+  // Shark Level is the user's ALL-TIME count of Shark-mode WINS — only games
+  // the caller actually beat the Shark in, not every Shark game played
   // (window-independent, unlike sharkGames above). Shark games are flagged by a
-  // top-level `sharkAggression` key in the gameState JSONB; count them in SQL
-  // across every game the caller participated in, regardless of the window.
+  // top-level `sharkAggression` key in the gameState JSONB; a win is the game's
+  // `winner` matching the caller's slot name. Count in SQL across every game the
+  // caller participated in, regardless of the window.
   const sharkRows = await db
     .select({ c: count() })
     .from(gamesTable)
+    .innerJoin(
+      gameParticipantsTable,
+      and(
+        eq(gameParticipantsTable.gameId, gamesTable.id),
+        eq(gameParticipantsTable.userId, userId),
+      ),
+    )
     .where(
       and(
         inArray(gamesTable.id, ids),
         isNotNull(gamesTable.endedAt),
         sql`${gamesTable.gameState} ->> 'sharkAggression' IS NOT NULL`,
+        sql`${gamesTable.winner} = ${gameParticipantsTable.displayName}`,
+        sql`${gamesTable.winner} <> ${SHARK_PLAYER_NAME}`,
       ),
     );
   core.sharkLevel = Number(sharkRows[0]?.c ?? 0);
@@ -768,10 +779,12 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
     ranked.push({ userId, screenName: entry.screenName, bpm: avgBpm, accuracy, gamesPlayed: entry.games.length });
   }
 
-  // All-time completed Shark-mode game count per ranked user (window-
-  // independent), matching how the profile derives `sharkLevel`. Shark games
-  // are solo and flagged by a top-level `sharkAggression` key in the gameState
-  // JSONB; one grouped count covers every ranked user.
+  // All-time Shark-mode WIN count per ranked user (window-independent),
+  // matching how the profile derives `sharkLevel` — only games the user beat
+  // the Shark in, not every Shark game played. Shark games are solo and flagged
+  // by a top-level `sharkAggression` key in the gameState JSONB; a win is the
+  // game's `winner` matching the user's slot name. One grouped count covers
+  // every ranked user.
   const sharkByUser = new Map<string, number>();
   const rankedUserIds = ranked.map((r) => r.userId);
   if (rankedUserIds.length > 0) {
@@ -784,6 +797,8 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
           inArray(gameParticipantsTable.userId, rankedUserIds),
           isNotNull(gamesTable.endedAt),
           sql`${gamesTable.gameState} ->> 'sharkAggression' IS NOT NULL`,
+          sql`${gamesTable.winner} = ${gameParticipantsTable.displayName}`,
+          sql`${gamesTable.winner} <> ${SHARK_PLAYER_NAME}`,
         ),
       )
       .groupBy(gameParticipantsTable.userId);
