@@ -76,7 +76,7 @@ const TEAM_MODE_CYCLE: TeamMode[] = ['auto', 'manual', 'none', 'chaos'];
 const TEAM_MODE_LABEL: Record<TeamMode, string> = {
   auto: '🤝 Normal',
   manual: '🕹️ Manual',
-  chaos: '🌪️ Chaos',
+  chaos: '😈 Chaos',
   none: '🤷 None',
 };
 const TEAM_MODE_SUBLABEL: Record<Exclude<TeamMode, 'auto'>, string> = {
