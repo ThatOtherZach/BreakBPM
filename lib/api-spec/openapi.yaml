@@ -1865,6 +1865,7 @@ components:
           topBalls,
           trend,
           sharkLevel,
+          chaosWinRecent,
         ]
       properties:
         # The caller's resolved entitlement tier.
@@ -1948,6 +1949,11 @@ components:
         # Shark in, not every Shark game played (window-independent). Null in
         # global scope; 0 when the user has none.
         sharkLevel: { type: ["integer", "null"] }
+        # Cosmetic flag: true when the caller WON at least one Chaos ("No Rules")
+        # game within their 10 most-recent completed games (window-independent).
+        # Drives the rainbow AVG-BPM flourish on the Stats hero. Always false in
+        # global scope.
+        chaosWinRecent: { type: boolean }
 
     LeaderboardRow:
       type: object

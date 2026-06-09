@@ -674,7 +674,8 @@ export const GetPublicProfileResponse = zod.object({
   "stripesCount": zod.number().optional(),
   "sharkWinRate": zod.number().nullish(),
   "sharkGames": zod.number().optional(),
-  "sharkLevel": zod.number().nullable()
+  "sharkLevel": zod.number().nullable(),
+  "chaosWinRecent": zod.boolean()
 }),zod.null()]).optional()
 })
 
@@ -935,7 +936,8 @@ export const GetStatsResponse = zod.object({
   "stripesCount": zod.number().optional(),
   "sharkWinRate": zod.number().nullish(),
   "sharkGames": zod.number().optional(),
-  "sharkLevel": zod.number().nullable()
+  "sharkLevel": zod.number().nullable(),
+  "chaosWinRecent": zod.boolean()
 })
 
 

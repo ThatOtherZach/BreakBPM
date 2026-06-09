@@ -84,6 +84,10 @@ export interface StatsCore {
   sharkWinRate: number | null;
   sharkGames: number;
   sharkLevel: number | null;
+  // True when the caller WON at least one Chaos ("No Rules") game within their
+  // 10 most-recent completed games (window-independent). Cosmetic only — drives
+  // the rainbow AVG-BPM flourish on the Stats hero. Always false for global scope.
+  chaosWinRecent: boolean;
   computedAt: number;
 }
 
@@ -207,6 +211,7 @@ function emptyCore(): StatsCore {
     sharkWinRate: null,
     sharkGames: 0,
     sharkLevel: null,
+    chaosWinRecent: false,
     computedAt: Date.now(),
   };
 }
@@ -560,6 +565,35 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
       ),
     );
   core.sharkLevel = Number(sharkRows[0]?.c ?? 0);
+
+  // Recent-chaos-win flag (cosmetic — drives the rainbow AVG-BPM flourish).
+  // Look at the caller's 10 most-recent COMPLETED games (window-independent,
+  // like Shark Level above) and flag true if any was a Chaos ("No Rules") game
+  // they WON. Chaos games are flagged by a top-level `chaosMode` key in the
+  // gameState JSONB; a win is the game's `winner` matching the caller's slot
+  // name (same convention as the Shark win count). The Chaos `none` variant and
+  // ties store `winner = null`, so they correctly never trigger it.
+  const recentRows = await db
+    .select({
+      winner: gamesTable.winner,
+      displayName: gameParticipantsTable.displayName,
+      chaosMode: sql<string | null>`${gamesTable.gameState} ->> 'chaosMode'`,
+    })
+    .from(gamesTable)
+    .innerJoin(
+      gameParticipantsTable,
+      and(
+        eq(gameParticipantsTable.gameId, gamesTable.id),
+        eq(gameParticipantsTable.userId, userId),
+      ),
+    )
+    .where(and(inArray(gamesTable.id, ids), isNotNull(gamesTable.endedAt)))
+    .orderBy(desc(gamesTable.endedAt))
+    .limit(10);
+  core.chaosWinRecent = recentRows.some(
+    (r) => r.chaosMode != null && r.winner != null && r.winner === r.displayName,
+  );
+
   core.computedAt = Date.now();
   return core;
 }
