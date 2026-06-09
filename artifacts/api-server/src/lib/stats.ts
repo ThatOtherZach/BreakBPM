@@ -641,6 +641,20 @@ const LEADERBOARD_BEST_N = 3;
  */
 const LEADERBOARD_MAX_PLAUSIBLE_BPM = 60;
 
+/**
+ * Grandfather cutoff for ruleSet-less games. The leaderboard only counts
+ * standard 1-on-1 8-ball (`ruleSet = 'open-through-break'`). Games predating
+ * the ruleSet field stored NULL, so a NULL ruleSet is allowed ONLY for games
+ * that ended before this date — genuinely historical ones. Any game ending on
+ * or after it must carry a real ruleSet to qualify, which keeps post-cutoff
+ * "None"/manual-team 2-player 8-ball games (no opponent pressure, honor-system
+ * ball removal — a BPM pace-padding vector) off the competitive board.
+ *
+ * The date sits in the clean gap between the last NULL-ruleSet game
+ * (2026-06-07) and the first ruleSet-bearing game (2026-06-08).
+ */
+const LEADERBOARD_NULL_RULESET_CUTOFF = new Date("2026-06-08T00:00:00Z");
+
 function leaderboardCutoff(window: LeaderboardWindow): Date | null {
   const day = 24 * 60 * 60 * 1000;
   const now = Date.now();
@@ -660,7 +674,7 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
     isNotNull(gamesTable.endedAt),
     eq(gamesTable.gameType, "8ball"),
     eq(gamesTable.maxPlayers, 2),
-    sql`(${gamesTable.gameState} ->> 'ruleSet' = 'open-through-break' OR ${gamesTable.gameState} ->> 'ruleSet' IS NULL)`,
+    sql`(${gamesTable.gameState} ->> 'ruleSet' = 'open-through-break' OR (${gamesTable.gameState} ->> 'ruleSet' IS NULL AND ${gamesTable.endedAt} < ${LEADERBOARD_NULL_RULESET_CUTOFF}))`,
     sql`${gamesTable.gameState} ->> 'sharkAggression' IS NULL`,
     sql`${gamesTable.gameState} ->> 'chaosMode' IS NULL`,
   ];
