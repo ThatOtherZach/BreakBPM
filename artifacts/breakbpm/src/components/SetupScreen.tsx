@@ -943,6 +943,25 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
           )}
         </div>
 
+        <div className="flex gap-1">
+          <button
+            type="button"
+            className="btn"
+            style={{ flex: 1, fontWeight: 'bold' }}
+            onClick={() => setLocation('/leaderboard')}
+          >
+            🏆 Leaderboard
+          </button>
+          <button
+            type="button"
+            className="btn"
+            style={{ flex: 1, fontWeight: 'bold' }}
+            onClick={onFindPlayers}
+          >
+            🔍 Find Players
+          </button>
+        </div>
+
         {/* 30-day top-shooters leaderboard — visible to everyone. */}
         <LeaderboardWidget />
 
