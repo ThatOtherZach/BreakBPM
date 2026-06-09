@@ -403,11 +403,17 @@ export const VerifyCryptoPaymentResponse = zod.object({
  */
 export const startGameBodyMaxPlayersMax = 4;
 
+export const startGameBodyMentionsItemSlotIndexMax = 3;
+
 
 
 export const StartGameBody = zod.object({
   "gameType": zod.enum(['8ball', '9ball', 'practice']),
-  "maxPlayers": zod.number().min(1).max(startGameBodyMaxPlayersMax).optional()
+  "maxPlayers": zod.number().min(1).max(startGameBodyMaxPlayersMax).optional(),
+  "mentions": zod.array(zod.object({
+  "slotIndex": zod.number().min(1).max(startGameBodyMentionsItemSlotIndexMax),
+  "screenName": zod.string()
+})).optional()
 })
 
 export const StartGameResponse = zod.object({
@@ -782,6 +788,89 @@ export const DeleteMyGameDataResponse = zod.object({
   "deleted": zod.boolean(),
   "deletedGames": zod.number(),
   "anonymizedGames": zod.number()
+})
+
+
+/**
+ * Resolves a typed @handle to a real user for the inline Setup-screen check. Requires a paid signed-in host; reports whether the handle maps to a real (non-self) user and whether that recipient is already at their pending-invite cap. Never exposes any private data.
+
+ * @summary Validate an @handle for the Setup-screen mention affordance
+ */
+export const ResolveMentionQueryParams = zod.object({
+  "name": zod.coerce.string()
+})
+
+export const ResolveMentionResponse = zod.object({
+  "eligible": zod.boolean(),
+  "found": zod.boolean(),
+  "screenName": zod.string().nullish(),
+  "atCap": zod.boolean()
+})
+
+
+/**
+ * Returns the caller's @mention invites for finished games. Pending invites render as opt-in cards (Accept / Delete); accepted ones let the account page surface a per-game remove-me action on the matching history card. Declined/removed invites are never returned.
+
+ * @summary List the caller's game invites (pending + accepted)
+ */
+export const ListMyInvitesResponse = zod.object({
+  "invites": zod.array(zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['pending', 'accepted', 'declined']),
+  "invitedBy": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "game": zod.object({
+  "id": zod.string(),
+  "gameType": zod.string(),
+  "winner": zod.string().nullish(),
+  "opponent": zod.string().nullish(),
+  "bpm": zod.number().nullish(),
+  "accuracy": zod.number().nullish(),
+  "durationMs": zod.number(),
+  "sunkBallsCount": zod.number(),
+  "outcome": zod.string(),
+  "shareCode": zod.string().optional(),
+  "endedAt": zod.coerce.date(),
+  "startedAt": zod.coerce.date().optional(),
+  "sharkMode": zod.boolean(),
+  "chaosMode": zod.union([zod.literal('eight-last'),zod.literal('anything-goes'),zod.literal('none'),zod.literal(null)]).nullish(),
+  "endReason": zod.enum(['max_duration_60min', 'inactivity_60min']).optional(),
+  "pocketSequence": zod.array(zod.object({
+  "ball": zod.number(),
+  "player": zod.string()
+})).optional()
+})
+}))
+})
+
+
+/**
+ * Links the caller to the game by creating their participant slot (reusing the join flow's slot/displayName/stats-window conventions) so the game counts toward their history and stats. Idempotent for an already-accepted invite.
+
+ * @summary Accept a pending game invite (creates the real participant slot)
+ */
+export const AcceptInviteParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AcceptInviteResponse = zod.object({
+  "accepted": zod.boolean(),
+  "gameId": zod.string(),
+  "reason": zod.string().nullish()
+})
+
+
+/**
+ * Deleting a PENDING invite removes the invite row (it never counted). Deleting an ACCEPTED invite anonymizes the caller's slot in that game (reusing the per-game remove-me logic) so the game leaves their history/stats while the host's copy stays intact, then removes the invite. Busts the caller's stats cache.
+
+ * @summary Delete / decline an invite (or remove an accepted mention game)
+ */
+export const RemoveInviteParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RemoveInviteResponse = zod.object({
+  "removed": zod.boolean()
 })
 
 

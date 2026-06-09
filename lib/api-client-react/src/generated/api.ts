@@ -22,6 +22,7 @@ import type {
 import type {
   AbandonGameInput,
   AbandonGameResult,
+  AcceptInviteResult,
   Account,
   AdminCodeInput,
   AdminCodeList,
@@ -44,6 +45,7 @@ import type {
   GameActivityInput,
   GameActivityResult,
   GameHistoryResponse,
+  GameInviteList,
   GameSaveInput,
   GameStateSnapshot,
   GetGameHistoryParams,
@@ -61,11 +63,14 @@ import type {
   ListAdminSalesParams,
   ListFindPlayerPostsParams,
   MeResponse,
+  MentionResolveResult,
   MyGiftCodesResult,
   PassCheckoutInput,
   PlanCatalog,
   PublicProfileResult,
   RedeemResult,
+  RemoveInviteResult,
+  ResolveMentionParams,
   ResolveShareCodeInput,
   ResolveShareCodeResult,
   ResolveWatchByNameParams,
@@ -2424,6 +2429,315 @@ export const useDeleteMyGameData = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteMyGameDataMutationOptions(options));
+    }
+
+export const getResolveMentionUrl = (params: ResolveMentionParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/mentions/resolve?${stringifiedParams}` : `/api/mentions/resolve`
+}
+
+/**
+ * Resolves a typed @handle to a real user for the inline Setup-screen check. Requires a paid signed-in host; reports whether the handle maps to a real (non-self) user and whether that recipient is already at their pending-invite cap. Never exposes any private data.
+
+ * @summary Validate an @handle for the Setup-screen mention affordance
+ */
+export const resolveMention = async (params: ResolveMentionParams, options?: RequestInit): Promise<MentionResolveResult> => {
+
+  return customFetch<MentionResolveResult>(getResolveMentionUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getResolveMentionQueryKey = (params?: ResolveMentionParams,) => {
+    return [
+    `/api/mentions/resolve`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getResolveMentionQueryOptions = <TData = Awaited<ReturnType<typeof resolveMention>>, TError = ErrorType<unknown>>(params: ResolveMentionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveMention>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getResolveMentionQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof resolveMention>>> = ({ signal }) => resolveMention(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof resolveMention>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ResolveMentionQueryResult = NonNullable<Awaited<ReturnType<typeof resolveMention>>>
+export type ResolveMentionQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Validate an @handle for the Setup-screen mention affordance
+ */
+
+export function useResolveMention<TData = Awaited<ReturnType<typeof resolveMention>>, TError = ErrorType<unknown>>(
+ params: ResolveMentionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveMention>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getResolveMentionQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListMyInvitesUrl = () => {
+
+
+
+
+  return `/api/mentions`
+}
+
+/**
+ * Returns the caller's @mention invites for finished games. Pending invites render as opt-in cards (Accept / Delete); accepted ones let the account page surface a per-game remove-me action on the matching history card. Declined/removed invites are never returned.
+
+ * @summary List the caller's game invites (pending + accepted)
+ */
+export const listMyInvites = async ( options?: RequestInit): Promise<GameInviteList> => {
+
+  return customFetch<GameInviteList>(getListMyInvitesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyInvitesQueryKey = () => {
+    return [
+    `/api/mentions`
+    ] as const;
+    }
+
+
+export const getListMyInvitesQueryOptions = <TData = Awaited<ReturnType<typeof listMyInvites>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyInvites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyInvitesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyInvites>>> = ({ signal }) => listMyInvites({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyInvites>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyInvitesQueryResult = NonNullable<Awaited<ReturnType<typeof listMyInvites>>>
+export type ListMyInvitesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the caller's game invites (pending + accepted)
+ */
+
+export function useListMyInvites<TData = Awaited<ReturnType<typeof listMyInvites>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyInvites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyInvitesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAcceptInviteUrl = (id: string,) => {
+
+
+
+
+  return `/api/mentions/${id}/accept`
+}
+
+/**
+ * Links the caller to the game by creating their participant slot (reusing the join flow's slot/displayName/stats-window conventions) so the game counts toward their history and stats. Idempotent for an already-accepted invite.
+
+ * @summary Accept a pending game invite (creates the real participant slot)
+ */
+export const acceptInvite = async (id: string, options?: RequestInit): Promise<AcceptInviteResult> => {
+
+  return customFetch<AcceptInviteResult>(getAcceptInviteUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAcceptInviteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptInvite>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptInvite>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['acceptInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptInvite>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  acceptInvite(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptInviteMutationResult = NonNullable<Awaited<ReturnType<typeof acceptInvite>>>
+
+    export type AcceptInviteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Accept a pending game invite (creates the real participant slot)
+ */
+export const useAcceptInvite = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptInvite>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptInvite>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getAcceptInviteMutationOptions(options));
+    }
+
+export const getRemoveInviteUrl = (id: string,) => {
+
+
+
+
+  return `/api/mentions/${id}`
+}
+
+/**
+ * Deleting a PENDING invite removes the invite row (it never counted). Deleting an ACCEPTED invite anonymizes the caller's slot in that game (reusing the per-game remove-me logic) so the game leaves their history/stats while the host's copy stays intact, then removes the invite. Busts the caller's stats cache.
+
+ * @summary Delete / decline an invite (or remove an accepted mention game)
+ */
+export const removeInvite = async (id: string, options?: RequestInit): Promise<RemoveInviteResult> => {
+
+  return customFetch<RemoveInviteResult>(getRemoveInviteUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveInviteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeInvite>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeInvite>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['removeInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeInvite>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  removeInvite(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveInviteMutationResult = NonNullable<Awaited<ReturnType<typeof removeInvite>>>
+
+    export type RemoveInviteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete / decline an invite (or remove an accepted mention game)
+ */
+export const useRemoveInvite = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeInvite>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeInvite>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getRemoveInviteMutationOptions(options));
     }
 
 export const getGetStatsUrl = (params?: GetStatsParams,) => {

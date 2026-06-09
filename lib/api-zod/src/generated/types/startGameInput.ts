@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { StartGameInputGameType } from './startGameInputGameType';
+import type { StartGameInputMentionsItem } from './startGameInputMentionsItem';
 
 export interface StartGameInput {
   gameType: StartGameInputGameType;
@@ -14,4 +15,5 @@ export interface StartGameInput {
      * @maximum 4
      */
   maxPlayers?: number;
+  mentions?: StartGameInputMentionsItem[];
 }

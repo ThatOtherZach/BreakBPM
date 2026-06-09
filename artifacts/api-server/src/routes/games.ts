@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { randomUUID } from "node:crypto";
 import { and, count, desc, eq, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
-import { db, gamesTable, gameParticipantsTable, usersTable } from "@workspace/db";
+import { db, gamesTable, gameParticipantsTable, usersTable, gameMentionsTable } from "@workspace/db";
 import {
   StartGameBody,
   StartGameResponse,
@@ -30,6 +30,11 @@ import {
   GetLeaderboardQueryParams,
   GetLeaderboardResponse,
   DeleteMyGameDataResponse,
+  ResolveMentionQueryParams,
+  ResolveMentionResponse,
+  ListMyInvitesResponse,
+  AcceptInviteResponse,
+  RemoveInviteResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser, getVerifiedSubject } from "../lib/auth";
 import { computeEntitlement, getActivePasses, getActiveSubscription } from "../lib/entitlement";
@@ -456,6 +461,51 @@ router.post("/games/start", async (req, res): Promise<void> => {
     });
   });
 
+  // @mention links: create one PENDING invite per resolved, valid mention so
+  // the game shows up (opt-in) on each recipient's account page once it ends.
+  // Best-effort and OUTSIDE the game-creation tx — a mention failure never
+  // blocks the game from starting. Re-validated server-side (the client is
+  // not trusted): only a paid signed-in host may attach mentions; never the
+  // host themselves; the @handle must resolve to a real user; and the
+  // recipient must be under their pending-invite cap.
+  const mentions = parsed.data.mentions ?? [];
+  if (mentions.length > 0 && entitlement.tier === "pass") {
+    const seen = new Set<string>();
+    for (const m of mentions) {
+      if (m.slotIndex < 1 || m.slotIndex >= maxPlayers) continue;
+      const handle = m.screenName.trim().toLowerCase().replace(/^@/, "");
+      if (!handle) continue;
+      const [recipient] = await db
+        .select({ id: usersTable.id, screenName: usersTable.screenName })
+        .from(usersTable)
+        .where(sql`lower(${usersTable.screenName}) = ${handle}`)
+        .limit(1);
+      if (!recipient || recipient.id === user.id) continue;
+      if (seen.has(recipient.id)) continue;
+      seen.add(recipient.id);
+      const cap = await pendingInviteCap(recipient.id);
+      try {
+        // Atomic cap-check + insert in ONE statement: the row is only written
+        // when the recipient is still under their pending cap, so concurrent
+        // /games/start calls can't overrun the 3/6 limit (a separate count-then-
+        // insert would race). ON CONFLICT DO NOTHING absorbs the duplicate
+        // (gameId, invitedUserId) case (already invited to this game).
+        await db.execute(sql`
+          INSERT INTO ${gameMentionsTable}
+            (id, game_id, invited_user_id, invited_by_user_id, slot_index, display_name, status)
+          SELECT ${newId()}, ${id}, ${recipient.id}, ${user.id}, ${m.slotIndex}, ${recipient.screenName}, 'pending'
+          WHERE (
+            SELECT count(*) FROM ${gameMentionsTable}
+            WHERE invited_user_id = ${recipient.id} AND status = 'pending'
+          ) < ${cap}
+          ON CONFLICT DO NOTHING
+        `);
+      } catch (e) {
+        req.log.warn({ err: e, recipientId: recipient.id, gameId: id }, "Failed to create mention invite");
+      }
+    }
+  }
+
   res.json(
     StartGameResponse.parse({
       allowed: true,
@@ -817,6 +867,33 @@ async function bustGameStatsCache(gameId: string): Promise<void> {
   for (const p of parts) {
     if (p.userId) clearUserStatsCache(p.userId);
   }
+}
+
+/**
+ * How many PENDING @mention invites a recipient may hold at once, by tier:
+ * 3 for free/account users, 6 for paid (active pass OR subscription). The cap
+ * is the recipient's, not the host's — it protects each user from invite spam.
+ */
+const PENDING_INVITE_CAP_FREE = 3;
+const PENDING_INVITE_CAP_PAID = 6;
+
+async function pendingInviteCap(userId: string): Promise<number> {
+  return (await hostSpectatingEnabled(userId))
+    ? PENDING_INVITE_CAP_PAID
+    : PENDING_INVITE_CAP_FREE;
+}
+
+async function countPendingInvites(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ c: count() })
+    .from(gameMentionsTable)
+    .where(
+      and(
+        eq(gameMentionsTable.invitedUserId, userId),
+        eq(gameMentionsTable.status, "pending"),
+      ),
+    );
+  return Number(row?.c ?? 0);
 }
 
 /**
@@ -2249,6 +2326,102 @@ function uniqueAnonName(taken: Set<string>): string {
 }
 
 /**
+ * Remove one user from one game, inside a caller-supplied transaction:
+ *   - "deleted": no OTHER real (signed-in) player remains, so the whole game
+ *     row is dropped (cascade clears slots; the shot log goes with the row).
+ *   - "anonymized": someone else keeps the game, so the caller's name is
+ *     replaced with a collision-safe "🕴️ Mr. X" placeholder everywhere (player
+ *     list, every shot-log entry, winner — both gameState and the denormalized
+ *     games.winner column) and their slot is detached (userId nulled).
+ *   - "skipped": the caller no longer holds a slot here (already detached / not
+ *     a participant), so there is nothing to do. Keeps repeat calls idempotent.
+ *
+ * Renaming is consistent and never removes shot entries — the engine derives
+ * pace/accuracy/rack state from the full ordered log, so dropping entries would
+ * corrupt the remaining players' game. Shared by the account-wide data wipe
+ * (DELETE /games/data) and per-game mention removal (DELETE /mentions/{id}).
+ */
+async function removeUserFromGameTx(
+  tx: Pick<typeof db, "select" | "update" | "delete">,
+  gameId: string,
+  userId: string,
+): Promise<"deleted" | "anonymized" | "skipped"> {
+  // Lock this game's participant rows for the rest of the transaction so two
+  // real players removing the same game serialize: the second sees the first's
+  // slot already detached and full-deletes (the intended outcome).
+  const participants = await tx
+    .select()
+    .from(gameParticipantsTable)
+    .where(eq(gameParticipantsTable.gameId, gameId))
+    .for("update");
+
+  // Other REAL players = signed-in slots that aren't the caller. Guests
+  // (userId null) and already-anonymized slots do not count.
+  const realOthers = participants.filter(
+    (p) => p.userId != null && p.userId !== userId,
+  );
+
+  if (realOthers.length === 0) {
+    await tx.delete(gamesTable).where(eq(gamesTable.id, gameId));
+    return "deleted";
+  }
+
+  const myPart = participants.find((p) => p.userId === userId);
+  if (!myPart) return "skipped";
+  const [game] = await tx
+    .select({ winner: gamesTable.winner, gameState: gamesTable.gameState })
+    .from(gamesTable)
+    .where(eq(gamesTable.id, gameId));
+  if (!game) return "skipped";
+
+  const gs = (game.gameState ?? {}) as Record<string, unknown>;
+  const players = Array.isArray(gs["players"])
+    ? (gs["players"] as Array<Record<string, unknown>>)
+    : [];
+  const shotLog = Array.isArray(gs["shotLog"])
+    ? (gs["shotLog"] as Array<Record<string, unknown>>)
+    : [];
+
+  const myName = myPart.displayName;
+
+  const otherNames = new Set<string>();
+  for (const p of players) {
+    const n = p["name"];
+    if (typeof n === "string" && n !== myName) otherNames.add(n);
+  }
+  for (const p of participants) {
+    if (p.userId !== userId) otherNames.add(p.displayName);
+  }
+  const anonName = uniqueAnonName(otherNames);
+
+  for (const p of players) {
+    if (p["name"] === myName) p["name"] = anonName;
+  }
+  for (const e of shotLog) {
+    if (e["playerName"] === myName) e["playerName"] = anonName;
+  }
+  if (gs["winner"] === myName) gs["winner"] = anonName;
+  const newWinner = game.winner === myName ? anonName : game.winner;
+
+  await tx
+    .update(gamesTable)
+    .set({ gameState: gs, winner: newWinner })
+    .where(eq(gamesTable.id, gameId));
+
+  await tx
+    .update(gameParticipantsTable)
+    .set({ userId: null, displayName: anonName })
+    .where(
+      and(
+        eq(gameParticipantsTable.gameId, gameId),
+        eq(gameParticipantsTable.slotIndex, myPart.slotIndex),
+      ),
+    );
+
+  return "anonymized";
+}
+
+/**
  * Permanently scrub the caller from all of their game data. Runs in one
  * transaction over every game the user took part in (hosted or joined),
  * in-progress or completed:
@@ -2299,95 +2472,9 @@ router.delete("/games/data", async (req, res): Promise<void> => {
     let anonymizedGames = 0;
 
     for (const gameId of gameIds) {
-      // Lock this game's participant rows for the rest of the transaction so
-      // two real players deleting the same game serialize: the second one
-      // then sees the first's slot already detached and full-deletes (which
-      // is the intended "second deleter removes the game" outcome).
-      const participants = await tx
-        .select()
-        .from(gameParticipantsTable)
-        .where(eq(gameParticipantsTable.gameId, gameId))
-        .for("update");
-
-      // Other REAL players = signed-in slots that aren't the caller. Guests
-      // (userId null) and already-anonymized slots do not count.
-      const realOthers = participants.filter(
-        (p) => p.userId != null && p.userId !== user.id,
-      );
-
-      if (realOthers.length === 0) {
-        // No one else would lose this game → delete it outright (cascade
-        // clears participant rows; the shot log goes with the row).
-        await tx.delete(gamesTable).where(eq(gamesTable.id, gameId));
-        deletedGames += 1;
-        continue;
-      }
-
-      // Someone else keeps this game → anonymize just the caller. This
-      // requires the caller to still hold a participant slot here. A hosted
-      // game can re-surface on a later delete call (we leave games.userId
-      // intact), but once the slot is detached the caller is no longer a
-      // real player in it, so skip — this keeps repeat calls idempotent and
-      // stops a detached caller from re-mutating a shared game.
-      const myPart = participants.find((p) => p.userId === user.id);
-      if (!myPart) continue;
-      const [game] = await tx
-        .select({ winner: gamesTable.winner, gameState: gamesTable.gameState })
-        .from(gamesTable)
-        .where(eq(gamesTable.id, gameId));
-      if (!game) continue;
-
-      const gs = (game.gameState ?? {}) as Record<string, unknown>;
-      const players = Array.isArray(gs["players"])
-        ? (gs["players"] as Array<Record<string, unknown>>)
-        : [];
-      const shotLog = Array.isArray(gs["shotLog"])
-        ? (gs["shotLog"] as Array<Record<string, unknown>>)
-        : [];
-
-      // The caller's name in this game, taken from their participant slot.
-      const myName = myPart.displayName;
-
-      // Build a collision-safe placeholder against every OTHER name present
-      // (gameState players + participant slots).
-      const otherNames = new Set<string>();
-      for (const p of players) {
-        const n = p["name"];
-        if (typeof n === "string" && n !== myName) otherNames.add(n);
-      }
-      for (const p of participants) {
-        if (p.userId !== user.id) otherNames.add(p.displayName);
-      }
-      const anonName = uniqueAnonName(otherNames);
-
-      // Rewrite every occurrence of the caller's name, consistently.
-      for (const p of players) {
-        if (p["name"] === myName) p["name"] = anonName;
-      }
-      for (const e of shotLog) {
-        if (e["playerName"] === myName) e["playerName"] = anonName;
-      }
-      if (gs["winner"] === myName) gs["winner"] = anonName;
-      const newWinner = game.winner === myName ? anonName : game.winner;
-
-      await tx
-        .update(gamesTable)
-        .set({ gameState: gs, winner: newWinner })
-        .where(eq(gamesTable.id, gameId));
-
-      // Detach the caller from this game so it leaves their history/stats/
-      // export, and stamp the placeholder on their (now ownerless) slot.
-      await tx
-        .update(gameParticipantsTable)
-        .set({ userId: null, displayName: anonName })
-        .where(
-          and(
-            eq(gameParticipantsTable.gameId, gameId),
-            eq(gameParticipantsTable.slotIndex, myPart.slotIndex),
-          ),
-        );
-
-      anonymizedGames += 1;
+      const outcome = await removeUserFromGameTx(tx, gameId, user.id);
+      if (outcome === "deleted") deletedGames += 1;
+      else if (outcome === "anonymized") anonymizedGames += 1;
     }
 
     return { deletedGames, anonymizedGames };
@@ -2407,6 +2494,286 @@ router.delete("/games/data", async (req, res): Promise<void> => {
       anonymizedGames: result.anonymizedGames,
     }),
   );
+});
+
+/**
+ * Resolve an @handle a paid host typed into a non-host setup slot. Used live as
+ * the host types, so it returns capability flags (never throws on a miss):
+ *   - eligible: the CALLER may attach mentions at all (signed-in AND paid). The
+ *     client shows "Pass Required" when false.
+ *   - found:    the handle matches a real, OTHER user (self never resolves).
+ *   - atCap:    that recipient already holds their max pending invites.
+ * No invite is created here — rows are minted at /games/start from the slots the
+ * host actually kept.
+ */
+router.get("/mentions/resolve", async (req, res): Promise<void> => {
+  const empty = { eligible: false, found: false, screenName: null, atCap: false };
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.json(ResolveMentionResponse.parse(empty));
+    return;
+  }
+  const entitlement = await computeEntitlement(user);
+  if (entitlement.tier !== "pass") {
+    res.json(ResolveMentionResponse.parse(empty));
+    return;
+  }
+  const parsed = ResolveMentionQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const handle = parsed.data.name.trim().toLowerCase().replace(/^@/, "");
+  if (!handle) {
+    res.json(ResolveMentionResponse.parse({ ...empty, eligible: true }));
+    return;
+  }
+  const [match] = await db
+    .select({ id: usersTable.id, screenName: usersTable.screenName })
+    .from(usersTable)
+    .where(sql`lower(${usersTable.screenName}) = ${handle}`)
+    .limit(1);
+  if (!match || match.id === user.id) {
+    res.json(ResolveMentionResponse.parse({ ...empty, eligible: true }));
+    return;
+  }
+  const cap = await pendingInviteCap(match.id);
+  const atCap = (await countPendingInvites(match.id)) >= cap;
+  res.json(
+    ResolveMentionResponse.parse({
+      eligible: true,
+      found: true,
+      screenName: match.screenName,
+      atCap,
+    }),
+  );
+});
+
+/**
+ * List the caller's @mention invites for FINISHED games (pending + accepted).
+ * Pending invites render as opt-in cards (Accept / Delete); accepted ones let
+ * the account page surface a per-game remove-me action. Each invite carries the
+ * full game summary (same shape as history cards), with the subject pinned to
+ * the mentioned slot so the outcome/pace read from the recipient's point of view.
+ */
+router.get("/mentions", async (req, res): Promise<void> => {
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.json(ListMyInvitesResponse.parse({ invites: [] }));
+    return;
+  }
+  const rows = await db
+    .select({
+      mentionId: gameMentionsTable.id,
+      status: gameMentionsTable.status,
+      slotIndex: gameMentionsTable.slotIndex,
+      createdAt: gameMentionsTable.createdAt,
+      inviterName: usersTable.screenName,
+      game: gamesTable,
+    })
+    .from(gameMentionsTable)
+    .innerJoin(gamesTable, eq(gamesTable.id, gameMentionsTable.gameId))
+    .leftJoin(usersTable, eq(usersTable.id, gameMentionsTable.invitedByUserId))
+    .where(
+      and(
+        eq(gameMentionsTable.invitedUserId, user.id),
+        inArray(gameMentionsTable.status, ["pending", "accepted"]),
+        isNotNull(gamesTable.endedAt),
+      ),
+    )
+    .orderBy(desc(gamesTable.endedAt));
+
+  // Accepted invites have a participant slot whose accuracy / stats window we
+  // surface; pending invites have none yet (fall back to the mention slot and
+  // the game start as the stats anchor).
+  const gameIds = rows.map((r) => r.game.id);
+  const myParts =
+    gameIds.length > 0
+      ? await db
+          .select({
+            gameId: gameParticipantsTable.gameId,
+            accuracy: gameParticipantsTable.accuracy,
+            slotIndex: gameParticipantsTable.slotIndex,
+            statsStartAt: gameParticipantsTable.statsStartAt,
+          })
+          .from(gameParticipantsTable)
+          .where(
+            and(
+              inArray(gameParticipantsTable.gameId, gameIds),
+              eq(gameParticipantsTable.userId, user.id),
+            ),
+          )
+      : [];
+  const partByGame = new Map(myParts.map((p) => [p.gameId, p]));
+
+  const invites = rows.map((r) => {
+    const part = partByGame.get(r.game.id);
+    const slot = part?.slotIndex ?? r.slotIndex;
+    const pace = resolveParticipantPace(r.game, {
+      slot,
+      statsStartAt: part?.statsStartAt ?? r.game.startedAt,
+      isHost: false,
+      known: true,
+    });
+    return {
+      id: r.mentionId,
+      status: r.status,
+      invitedBy: r.inviterName ?? "Someone",
+      createdAt: r.createdAt,
+      game: toHistoryEntry(
+        r.game,
+        part ? (part.accuracy ?? null) : null,
+        { slot, name: user.screenName },
+        pace,
+      ),
+    };
+  });
+
+  res.json(ListMyInvitesResponse.parse({ invites }));
+});
+
+/**
+ * Accept a pending invite: create the caller's real participant slot (mirroring
+ * the join flow's slot/displayName conventions, with the stats window anchored
+ * at game start so the whole game counts) and mark the invite accepted. The slot
+ * the host reserved is normally free; if it was somehow taken (a race with a
+ * code-join), we surface reason="slot_unavailable" rather than 500. Idempotent
+ * for an already-accepted invite.
+ */
+router.post("/mentions/:id/accept", async (req, res): Promise<void> => {
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "sign_in_required" });
+    return;
+  }
+  const id = String(req.params.id);
+  // Everything runs in one tx with the mention row locked FOR UPDATE so two
+  // concurrent accepts of the same invite serialize: the first wins, the second
+  // observes the now-accepted row and returns success (idempotent). The slot
+  // insert is conflict-safe and we then verify the caller actually holds the
+  // slot — distinguishing "I already have it" (success) from "someone else grabbed
+  // it via a code-join" (slot_unavailable). Distinct reasons let the client
+  // refresh deterministically instead of treating every failure the same.
+  type AcceptOutcome =
+    | { ok: true; gameId: string }
+    | { ok: false; gameId: string | null; reason: string };
+  let outcome: AcceptOutcome;
+  try {
+    outcome = await db.transaction(async (tx): Promise<AcceptOutcome> => {
+      const [inv] = await tx
+        .select()
+        .from(gameMentionsTable)
+        .where(
+          and(
+            eq(gameMentionsTable.id, id),
+            eq(gameMentionsTable.invitedUserId, user.id),
+          ),
+        )
+        .for("update")
+        .limit(1);
+      if (!inv) return { ok: false, gameId: null, reason: "not_found" };
+      if (inv.status === "accepted") return { ok: true, gameId: inv.gameId };
+      if (inv.status === "declined")
+        return { ok: false, gameId: inv.gameId, reason: "declined" };
+
+      const [game] = await tx
+        .select({ startedAt: gamesTable.startedAt })
+        .from(gamesTable)
+        .where(eq(gamesTable.id, inv.gameId))
+        .limit(1);
+      if (!game) return { ok: false, gameId: inv.gameId, reason: "game_gone" };
+
+      // Idempotent slot claim — a prior partial accept or a code-join in the
+      // same slot won't error; we resolve the true owner immediately below.
+      await tx
+        .insert(gameParticipantsTable)
+        .values({
+          gameId: inv.gameId,
+          slotIndex: inv.slotIndex,
+          userId: user.id,
+          displayName: inv.displayName,
+          isHost: false,
+          joinedAt: new Date(),
+          statsStartAt: game.startedAt,
+        })
+        .onConflictDoNothing();
+      const [slot] = await tx
+        .select({ userId: gameParticipantsTable.userId })
+        .from(gameParticipantsTable)
+        .where(
+          and(
+            eq(gameParticipantsTable.gameId, inv.gameId),
+            eq(gameParticipantsTable.slotIndex, inv.slotIndex),
+          ),
+        )
+        .limit(1);
+      if (!slot || slot.userId !== user.id)
+        return { ok: false, gameId: inv.gameId, reason: "slot_unavailable" };
+
+      await tx
+        .update(gameMentionsTable)
+        .set({ status: "accepted", respondedAt: new Date() })
+        .where(eq(gameMentionsTable.id, id));
+      return { ok: true, gameId: inv.gameId };
+    });
+  } catch (e) {
+    req.log.warn({ err: e, mentionId: id }, "Failed to accept mention invite");
+    res.status(500).json({ error: "accept_failed" });
+    return;
+  }
+
+  if (!outcome.ok && outcome.reason === "not_found") {
+    res.status(404).json({ error: "not_found" });
+    return;
+  }
+  if (outcome.ok) {
+    // The caller is now a participant — recompute their (and co-players') stats.
+    await bustGameStatsCache(outcome.gameId);
+  }
+  res.json(
+    AcceptInviteResponse.parse({
+      accepted: outcome.ok,
+      gameId: outcome.gameId ?? "",
+      reason: outcome.ok ? null : outcome.reason,
+    }),
+  );
+});
+
+/**
+ * Delete / decline an invite. A PENDING invite just drops its row (it never
+ * counted). An ACCEPTED invite anonymizes the caller's slot in that game
+ * (shared `removeUserFromGameTx`, so the game leaves their history/stats while
+ * the host's copy stays intact) and then drops the invite. Idempotent.
+ */
+router.delete("/mentions/:id", async (req, res): Promise<void> => {
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "sign_in_required" });
+    return;
+  }
+  const id = String(req.params.id);
+  const [inv] = await db
+    .select()
+    .from(gameMentionsTable)
+    .where(
+      and(eq(gameMentionsTable.id, id), eq(gameMentionsTable.invitedUserId, user.id)),
+    )
+    .limit(1);
+  if (!inv) {
+    res.json(RemoveInviteResponse.parse({ removed: true }));
+    return;
+  }
+  if (inv.status === "accepted") {
+    await db.transaction(async (tx) => {
+      await removeUserFromGameTx(tx, inv.gameId, user.id);
+      await tx.delete(gameMentionsTable).where(eq(gameMentionsTable.id, id));
+    });
+    clearUserStatsCache(user.id);
+    await bustGameStatsCache(inv.gameId);
+  } else {
+    await db.delete(gameMentionsTable).where(eq(gameMentionsTable.id, id));
+  }
+  res.json(RemoveInviteResponse.parse({ removed: true }));
 });
 
 export default router;

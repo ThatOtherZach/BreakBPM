@@ -515,6 +515,15 @@ export const StartGameInputGameType = {
   practice: 'practice',
 } as const;
 
+export type StartGameInputMentionsItem = {
+  /**
+     * @minimum 1
+     * @maximum 3
+     */
+  slotIndex: number;
+  screenName: string;
+};
+
 export interface StartGameInput {
   gameType: StartGameInputGameType;
   /**
@@ -522,6 +531,7 @@ export interface StartGameInput {
      * @maximum 4
      */
   maxPlayers?: number;
+  mentions?: StartGameInputMentionsItem[];
 }
 
 export type StartGameResultTier = typeof StartGameResultTier[keyof typeof StartGameResultTier];
@@ -707,6 +717,46 @@ export interface GameHistoryEntry {
   chaosMode?: GameHistoryEntryChaosMode;
   endReason?: GameHistoryEntryEndReason;
   pocketSequence?: GameHistoryEntryPocketSequenceItem[];
+}
+
+export interface MentionResolveResult {
+  eligible: boolean;
+  found: boolean;
+  /** @nullable */
+  screenName?: string | null;
+  atCap: boolean;
+}
+
+export type GameInviteStatus = typeof GameInviteStatus[keyof typeof GameInviteStatus];
+
+
+export const GameInviteStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+  declined: 'declined',
+} as const;
+
+export interface GameInvite {
+  id: string;
+  status: GameInviteStatus;
+  invitedBy: string;
+  createdAt: string;
+  game: GameHistoryEntry;
+}
+
+export interface GameInviteList {
+  invites: GameInvite[];
+}
+
+export interface AcceptInviteResult {
+  accepted: boolean;
+  gameId: string;
+  /** @nullable */
+  reason?: string | null;
+}
+
+export interface RemoveInviteResult {
+  removed: boolean;
 }
 
 export type GeneratedDiscountCodeGrantsPassKind = typeof GeneratedDiscountCodeGrantsPassKind[keyof typeof GeneratedDiscountCodeGrantsPassKind];
@@ -1156,6 +1206,10 @@ export type GetGameHistoryParams = {
  * @minimum 1
  */
 page?: number;
+};
+
+export type ResolveMentionParams = {
+name: string;
 };
 
 export type GetStatsParams = {

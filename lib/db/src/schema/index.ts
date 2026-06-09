@@ -5,5 +5,6 @@ export * from "./subscriptions";
 export * from "./discountCodes";
 export * from "./luckyBreak";
 export * from "./games";
+export * from "./mentions";
 export * from "./findPlayers";
 export * from "./saleEvents";

@@ -10,6 +10,8 @@ import {
   useGetResumableGame,
   useAbandonGame,
   useGetAppConfig,
+  useGetMe,
+  resolveMention,
 } from '@workspace/api-client-react';
 import { saveInProgressGame, clearInProgressGame, normalizeSharkIdentity } from '../lib/gameLogic';
 import SharkIcon from './SharkIcon';
@@ -124,6 +126,11 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
   const [, setLocation] = useLocation();
   const startGame = useStartGame();
   const abandonGame = useAbandonGame();
+  const me = useGetMe();
+  // Paid, signed-in hosts can @mention registered players into a non-host slot
+  // to link them (no join code). Used to surface the inline hint; the server
+  // re-validates eligibility, so this is presentation only.
+  const canMention = me.data?.entitlement?.tier === 'pass';
   const { user } = useAuth();
   // Signed-in users always play as themselves in slot 1 — their screen
   // name is prefilled and the input is locked so they can't masquerade
@@ -168,6 +175,22 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
   // switch from Doubles → Singles/Practice/Shark and hand the break to a now-
   // absent slot.
   const [breakerIndex, setBreakerIndex] = useState(0);
+
+  // Live @mention resolution per non-host slot. When a paid host types
+  // "@handle" into a Player 2/3/4 field, we debounce-resolve it to a real
+  // registered user; on game start the resolved slots are sent as `mentions`
+  // so the server mints a pending invite (the recipient opts in from their
+  // account). State is per-slot index → resolution status.
+  type MentionState =
+    | { kind: 'idle' }
+    | { kind: 'checking' }
+    | { kind: 'found'; screenName: string }
+    | { kind: 'notfound' }
+    | { kind: 'atcap' }
+    | { kind: 'pass_required' };
+  const [mentions, setMentions] = useState<Record<number, MentionState>>({});
+  // Per-slot request token so a slow resolve can't overwrite a newer one.
+  const mentionReqId = useRef<Record<number, number>>({});
 
   // Hidden easter egg: press-and-hold the splash 8-ball for 3s to swap the
   // art for a QR code (server-configured promo target), shown inline for 8s
@@ -363,6 +386,44 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
     }
   }, [gameType, playerCount, teamMode, manualTeams]);
 
+  // Debounced @mention resolution for non-host slots (index >= 1). Watches the
+  // editable names; whenever a slot starts with "@" and has a handle, it resolves
+  // after a short delay. Slots that don't start with "@" reset to idle so a
+  // stale "linked" badge can't linger after the host clears the mention.
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (let i = 1; i < count; i++) {
+      const raw = names[i] ?? '';
+      if (!raw.startsWith('@')) {
+        setMentions(prev => (prev[i] && prev[i].kind !== 'idle' ? { ...prev, [i]: { kind: 'idle' } } : prev));
+        continue;
+      }
+      const handle = raw.slice(1).trim();
+      if (!handle) {
+        setMentions(prev => (prev[i] && prev[i].kind !== 'idle' ? { ...prev, [i]: { kind: 'idle' } } : prev));
+        continue;
+      }
+      setMentions(prev => ({ ...prev, [i]: { kind: 'checking' } }));
+      const reqId = (mentionReqId.current[i] ?? 0) + 1;
+      mentionReqId.current[i] = reqId;
+      const t = setTimeout(async () => {
+        try {
+          const r = await resolveMention({ name: handle });
+          if (mentionReqId.current[i] !== reqId) return;
+          if (!r.eligible) setMentions(prev => ({ ...prev, [i]: { kind: 'pass_required' } }));
+          else if (!r.found) setMentions(prev => ({ ...prev, [i]: { kind: 'notfound' } }));
+          else if (r.atCap) setMentions(prev => ({ ...prev, [i]: { kind: 'atcap' } }));
+          else setMentions(prev => ({ ...prev, [i]: { kind: 'found', screenName: r.screenName ?? handle } }));
+        } catch {
+          if (mentionReqId.current[i] !== reqId) return;
+          setMentions(prev => ({ ...prev, [i]: { kind: 'idle' } }));
+        }
+      }, 350);
+      timers.push(t);
+    }
+    return () => timers.forEach(clearTimeout);
+  }, [names, count]);
+
   async function handleStart() {
     setStartError('');
     // Defensive guard: in Singles 8-ball manual mode the two players must
@@ -375,8 +436,15 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
       setStartError('Players must be on opposite groups (Solids vs Stripes).');
       return;
     }
+    // Collect resolved @mentions for non-host slots and pin those slots' player
+    // names to the canonical screen name so the shot log attributes correctly
+    // (shotLog playerName must equal the invite's displayName).
+    const mentionPayload: { slotIndex: number; screenName: string }[] = [];
     const players: Player[] = Array.from({ length: count }, (_, i) => {
-      const p: Player = { id: i, name: names[i] || DEFAULT_NAMES[i] };
+      const mention = i >= 1 ? mentions[i] : undefined;
+      const linkedName = mention?.kind === 'found' ? mention.screenName : null;
+      if (linkedName) mentionPayload.push({ slotIndex: i, screenName: linkedName });
+      const p: Player = { id: i, name: linkedName ?? (names[i] || DEFAULT_NAMES[i]) };
       // Manual team assignment is only relevant for multiplayer 8-ball.
       if (gameType === '8ball' && !isShark && teamMode === 'manual' && manualTeams[i]) {
         p.team = manualTeams[i] as 'solids' | 'stripes';
@@ -397,7 +465,11 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
       // Server enum only knows '8ball'/'9ball'/'practice'; shark is a
       // client-side variant of 8-ball, so the API call stays as '8ball'.
       const res = await startGame.mutateAsync({
-        data: { gameType, maxPlayers: count },
+        data: {
+          gameType,
+          maxPlayers: count,
+          ...(mentionPayload.length > 0 ? { mentions: mentionPayload } : {}),
+        },
       });
       onStart(
         gameType,
@@ -676,10 +748,37 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                       </select>
                     );
                   })()}
+                  {/* Live @mention status (non-host slots only). */}
+                  {i >= 1 && !isLockedSlot && (() => {
+                    const st = mentions[i];
+                    if (!st || st.kind === 'idle') return null;
+                    const map: Record<Exclude<MentionState['kind'], 'idle'>, { text: string; color: string }> = {
+                      checking: { text: '…', color: '#555' },
+                      found: { text: st.kind === 'found' ? `🔗 ${st.screenName}` : '', color: '#0a7d2c' },
+                      notfound: { text: 'Not Found :(', color: '#b00020' },
+                      atcap: { text: 'Invite List Full :(', color: '#b00020' },
+                      pass_required: { text: 'Pass Required', color: '#9a6b00' },
+                    };
+                    const m = map[st.kind];
+                    return (
+                      <span
+                        style={{ fontSize: 11, fontWeight: 'bold', color: m.color, flex: '0 0 auto', whiteSpace: 'nowrap' }}
+                      >
+                        {m.text}
+                      </span>
+                    );
+                  })()}
                 </div>
               );
             })}
           </div>
+          {/* Discoverability hint for paid hosts — links a registered player by
+              handle without a join code. Shown only for multiplayer setups. */}
+          {canMention && count >= 2 && !isShark && (
+            <div style={{ fontSize: 11, color: '#444', marginTop: 4, paddingLeft: 2 }}>
+              Tip: type <strong>@username</strong> in a player slot to invite a registered player.
+            </div>
+          )}
 
           {gameType === '8ball' && !isPractice && !isShark && (
             <div

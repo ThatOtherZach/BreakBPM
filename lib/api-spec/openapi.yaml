@@ -591,6 +591,90 @@ paths:
         "401":
           description: Sign in required
 
+  /mentions/resolve:
+    get:
+      operationId: resolveMention
+      tags: [games]
+      summary: Validate an @handle for the Setup-screen mention affordance
+      description: >
+        Resolves a typed @handle to a real user for the inline Setup-screen
+        check. Requires a paid signed-in host; reports whether the handle maps
+        to a real (non-self) user and whether that recipient is already at
+        their pending-invite cap. Never exposes any private data.
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentionResolveResult" }
+
+  /mentions:
+    get:
+      operationId: listMyInvites
+      tags: [games]
+      summary: List the caller's game invites (pending + accepted)
+      description: >
+        Returns the caller's @mention invites for finished games. Pending
+        invites render as opt-in cards (Accept / Delete); accepted ones let
+        the account page surface a per-game remove-me action on the matching
+        history card. Declined/removed invites are never returned.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameInviteList" }
+
+  /mentions/{id}/accept:
+    post:
+      operationId: acceptInvite
+      tags: [games]
+      summary: Accept a pending game invite (creates the real participant slot)
+      description: >
+        Links the caller to the game by creating their participant slot
+        (reusing the join flow's slot/displayName/stats-window conventions) so
+        the game counts toward their history and stats. Idempotent for an
+        already-accepted invite.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AcceptInviteResult" }
+
+  /mentions/{id}:
+    delete:
+      operationId: removeInvite
+      tags: [games]
+      summary: Delete / decline an invite (or remove an accepted mention game)
+      description: >
+        Deleting a PENDING invite removes the invite row (it never counted).
+        Deleting an ACCEPTED invite anonymizes the caller's slot in that game
+        (reusing the per-game remove-me logic) so the game leaves their
+        history/stats while the host's copy stays intact, then removes the
+        invite. Busts the caller's stats cache.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RemoveInviteResult" }
+
   /stats:
     get:
       operationId: getStats
@@ -1237,6 +1321,25 @@ components:
         # cap how many participants can be allocated. Defaults vary by
         # game type (1 for practice, 2 for versus).
         maxPlayers: { type: integer, minimum: 1, maximum: 4 }
+        # Resolved @mention links the host attached to non-host player slots.
+        # Each names a registered user (by their canonical screen name) the
+        # host wants to attribute this game to. The server re-validates every
+        # one (host must be a paid signed-in tier; no self-mention; recipient
+        # must exist and be under their pending-invite cap) and silently skips
+        # any that fail. On a valid mention a PENDING invite is created — the
+        # game never auto-counts for the recipient until they Accept it.
+        mentions:
+          type: array
+          items:
+            type: object
+            required: [slotIndex, screenName]
+            properties:
+              # gameState player slot this mention occupies (1-based human
+              # slots; slot 0 is always the host). The recipient's display
+              # name in the game equals `screenName`, so Accept can recreate
+              # the exact per-slot attribution from the shot log.
+              slotIndex: { type: integer, minimum: 1, maximum: 3 }
+              screenName: { type: string }
 
     StartGameResult:
       type: object
@@ -1423,6 +1526,60 @@ components:
             properties:
               ball: { type: integer }
               player: { type: string }
+
+    MentionResolveResult:
+      type: object
+      required: [eligible, found, atCap]
+      properties:
+        # False when the caller isn't a paid signed-in host. The client gates
+        # the @mention affordance on its own entitlement, but the server also
+        # refuses to resolve for ineligible callers (defense in depth).
+        eligible: { type: boolean }
+        # True when the handle maps to a real, non-self user.
+        found: { type: boolean }
+        # The canonical screen name for the matched user (the exact casing to
+        # display and to store as the slot display name). Null when not found.
+        screenName: { type: ["string", "null"] }
+        # True when the matched recipient is already at their pending-invite
+        # cap (3 free / 6 paid) — drives the "Invite List Full :(" message.
+        atCap: { type: boolean }
+
+    GameInvite:
+      type: object
+      required: [id, status, invitedBy, createdAt, game]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [pending, accepted, declined] }
+        # Screen name of the host who added the recipient to this game.
+        invitedBy: { type: string }
+        createdAt: { type: string, format: date-time }
+        # The finished game's summary, shaped exactly like a history entry and
+        # made subject-relative to the recipient's mentioned slot.
+        game: { $ref: "#/components/schemas/GameHistoryEntry" }
+
+    GameInviteList:
+      type: object
+      required: [invites]
+      properties:
+        invites:
+          type: array
+          items: { $ref: "#/components/schemas/GameInvite" }
+
+    AcceptInviteResult:
+      type: object
+      required: [accepted, gameId]
+      properties:
+        accepted: { type: boolean }
+        gameId: { type: string }
+        # Set when the invite could not be accepted (e.g. the target slot was
+        # taken by a code-joiner in the meantime). The client shows a message.
+        reason: { type: ["string", "null"] }
+
+    RemoveInviteResult:
+      type: object
+      required: [removed]
+      properties:
+        removed: { type: boolean }
 
     GeneratedDiscountCode:
       type: object

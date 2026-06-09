@@ -10,10 +10,14 @@ import {
   useRedeemDiscountCode,
   useListAdminDiscountCodes,
   useCreateAdminDiscountCode,
+  useListMyInvites,
+  useAcceptInvite,
+  useRemoveInvite,
   getGetMeQueryKey,
   getGetGameHistoryQueryKey,
   getListMyGiftCodesQueryKey,
   getListAdminDiscountCodesQueryKey,
+  getListMyInvitesQueryKey,
   type LuckyBreakResult,
   type AdminCodeInputKind,
 } from "@workspace/api-client-react";
@@ -92,6 +96,56 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
     query: { queryKey: getListAdminDiscountCodesQueryKey(), enabled: isAdmin },
   });
   const createAdminCode = useCreateAdminDiscountCode();
+
+  // @Mention invites: games where another paid host linked the caller by
+  // screen name. Pending invites are opt-in (Accept counts the game toward
+  // the caller's stats/history; Delete removes it and it never counts).
+  // Accepted invites stay listed so the caller can later remove the game
+  // (anonymizes their slot; the host's copy is untouched).
+  const invites = useListMyInvites({
+    query: { queryKey: getListMyInvitesQueryKey(), enabled: me.data?.signedIn === true },
+  });
+  const acceptInvite = useAcceptInvite();
+  const removeInvite = useRemoveInvite();
+  const [inviteMsg, setInviteMsg] = useState("");
+  const [inviteBusyId, setInviteBusyId] = useState<string | null>(null);
+
+  async function refetchInviteSideEffects() {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: getListMyInvitesQueryKey() }),
+      qc.invalidateQueries({ queryKey: getGetGameHistoryQueryKey() }),
+      qc.invalidateQueries({ queryKey: getGetMeQueryKey() }),
+    ]);
+  }
+
+  async function handleAcceptInvite(id: string) {
+    setInviteMsg("");
+    setInviteBusyId(id);
+    try {
+      const res = await acceptInvite.mutateAsync({ id });
+      if (!res.accepted) {
+        setInviteMsg(res.reason === "slot_unavailable" ? "That slot is no longer available." : "Could not accept invite.");
+      }
+      await refetchInviteSideEffects();
+    } catch {
+      setInviteMsg("Could not accept invite. Please try again.");
+    } finally {
+      setInviteBusyId(null);
+    }
+  }
+
+  async function handleRemoveInvite(id: string) {
+    setInviteMsg("");
+    setInviteBusyId(id);
+    try {
+      await removeInvite.mutateAsync({ id });
+      await refetchInviteSideEffects();
+    } catch {
+      setInviteMsg("Could not update invite. Please try again.");
+    } finally {
+      setInviteBusyId(null);
+    }
+  }
 
   useEffect(() => {
     const id = setInterval(() => setClockTick((n) => n + 1), 5 * 60 * 1000);
@@ -667,6 +721,53 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
             )}
           </div>
         </div>
+
+        {/* @Mention invites panel — only when the caller has any invites */}
+        {invites.data && invites.data.invites.length > 0 && (
+          <div className="panel panel--wood">
+            <div className="panel-header">
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🔗</span>Game Invites
+              </span>
+            </div>
+            <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {inviteMsg && (
+                <p style={{ fontSize: 11, color: "#ffd2d2", textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}>{inviteMsg}</p>
+              )}
+              {invites.data.invites.map((inv) => {
+                const busy = inviteBusyId === inv.id;
+                return (
+                  <div key={inv.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: 11, color: "#cdeccd" }}>
+                      {inv.status === "pending" ? "Invited by " : "Linked by "}
+                      <strong>{inv.invitedBy}</strong>
+                      {inv.status === "accepted" ? " · counts toward your stats" : ""}
+                    </span>
+                    <GameHistoryCard game={inv.game} />
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {inv.status === "pending" && (
+                        <button
+                          className="btn"
+                          disabled={busy}
+                          onClick={() => handleAcceptInvite(inv.id)}
+                        >
+                          {busy ? "…" : "Accept"}
+                        </button>
+                      )}
+                      <button
+                        className="btn"
+                        disabled={busy}
+                        onClick={() => handleRemoveInvite(inv.id)}
+                      >
+                        {busy ? "…" : inv.status === "pending" ? "Delete" : "Remove"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* History panel */}
         <div className="panel panel--wood">
