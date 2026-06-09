@@ -76,7 +76,7 @@ const TEAM_MODE_CYCLE: TeamMode[] = ['auto', 'manual', 'none', 'chaos'];
 const TEAM_MODE_LABEL: Record<TeamMode, string> = {
   auto: '🤝 Normal',
   manual: '🕹️ Manual',
-  chaos: '😈 Chaos',
+  chaos: '🌪️ Chaos',
   none: '🤷 None',
 };
 const TEAM_MODE_SUBLABEL: Record<Exclude<TeamMode, 'auto'>, string> = {
@@ -96,12 +96,12 @@ const CHAOS_RULE_OPTIONS: {
 }[] = [
   {
     value: 'eight-last',
-    label: 'No Rules',
+    label: '8-Ball',
     chips: [{ number: '8', chipClass: 'hud-chip-eight' }],
   },
   {
     value: 'anything-goes',
-    label: 'Straight Pool',
+    label: 'No Rules',
     cueBall: true,
     chips: [],
   },
