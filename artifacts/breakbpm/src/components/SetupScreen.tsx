@@ -948,14 +948,6 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
             type="button"
             className="btn"
             style={{ flex: 1, fontWeight: 'bold' }}
-            onClick={() => setLocation('/leaderboard')}
-          >
-            🏆 Leaderboard
-          </button>
-          <button
-            type="button"
-            className="btn"
-            style={{ flex: 1, fontWeight: 'bold' }}
             onClick={onFindPlayers}
           >
             🔍 Find Players
