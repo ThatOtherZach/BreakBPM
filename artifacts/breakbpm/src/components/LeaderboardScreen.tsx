@@ -208,9 +208,7 @@ export default function LeaderboardScreen({
             )}
           </div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <p style={{ fontSize: 11, color: "#444", margin: 0, lineHeight: 1.4 }}>
-              Fastest shooters by pace (balls per minute) over recent 1-on-1 games.
-            </p>
+            <p style={{ fontSize: 11, color: "#444", margin: 0, lineHeight: 1.4 }}>Fastest by BPM, recent 8-ball 1-on-1 games only.</p>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               {WINDOWS.map((w) => {
                 const active = window === w;
