@@ -779,7 +779,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
           {/* Discoverability hint for paid hosts — links a registered player by
               handle without a join code. Shown only for multiplayer setups. */}
           {canMention && count >= 2 && !isShark && (
-            <div style={{ fontSize: 11, color: '#444', marginTop: 4, paddingLeft: 2 }}>
+            <div style={{ fontSize: 11, color: '#444', marginTop: 4, paddingLeft: 34 }}>
               Tip: type <strong>@username</strong> in a player slot to invite a registered player.
             </div>
           )}
