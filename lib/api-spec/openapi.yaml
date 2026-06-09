@@ -623,6 +623,43 @@ paths:
         "429":
           description: Too many requests
 
+  /leaderboard:
+    get:
+      operationId: getLeaderboard
+      tags: [games]
+      summary: Balls-Per-Minute leaderboard
+      description: >
+        Ranking of registered players by their typical recent pace. The 30-day
+        window is public (so the signed-out home-page widget works); the 90-day
+        and all-time windows require a pass and are enforced server-side.
+        Results are computed once per window and cached for one hour, then
+        paginated from the cache.
+      parameters:
+        - name: window
+          in: query
+          required: false
+          schema: { type: string, enum: [30d, 90d, all], default: 30d }
+          description: >
+            Ranking window. 30d is public; 90d and all require a pass.
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LeaderboardResult" }
+        "403":
+          description: A pass is required for the requested window.
+        "429":
+          description: Too many requests
+
   /find-players/posts:
     get:
       operationId: listFindPlayerPosts
@@ -1726,6 +1763,38 @@ components:
         # All-time count of the caller's completed Shark-mode games (window-
         # independent). Null in global scope; 0 when the user has none.
         sharkLevel: { type: ["integer", "null"] }
+
+    LeaderboardRow:
+      type: object
+      required: [rank, screenName, bpm, accuracy, gamesPlayed]
+      properties:
+        # 1-indexed standing within the ranking (after sorting by bpm desc).
+        rank: { type: integer }
+        # The player's canonical screen name — also the /watch/{name} key.
+        screenName: { type: string }
+        # The ranking score: average pace (balls per minute) across the
+        # player's best qualifying games in the window.
+        bpm: { type: number }
+        # Average shooting accuracy (0–100) across those same games. Null when
+        # none of them recorded a usable accuracy.
+        accuracy: { type: ["number", "null"] }
+        # Count of the player's qualifying games in the window.
+        gamesPlayed: { type: integer }
+
+    LeaderboardResult:
+      type: object
+      required: [window, page, pageSize, totalPlayers, totalPages, rows]
+      properties:
+        window: { type: string, enum: [30d, 90d, all] }
+        page: { type: integer }
+        pageSize: { type: integer }
+        # Total number of ranked players for this window (across all pages).
+        totalPlayers: { type: integer }
+        totalPages: { type: integer }
+        # The requested page of ranked players, in rank order.
+        rows:
+          type: array
+          items: { $ref: "#/components/schemas/LeaderboardRow" }
 
     FindPlayerPost:
       type: object

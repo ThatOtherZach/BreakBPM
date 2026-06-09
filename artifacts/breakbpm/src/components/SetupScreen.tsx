@@ -4,6 +4,7 @@ import type { GameType, GameState, Player, SharkAggression, RuleSet, ChaosMode, 
 import { normalizeShareCode } from '../lib/gameLogic';
 import ballImg from '/eightball_nobg.png';
 import Navbar from './Navbar';
+import { LeaderboardWidget } from './LeaderboardScreen';
 import {
   useStartGame,
   useGetResumableGame,
@@ -943,6 +944,9 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
             </div>
           )}
         </div>
+
+        {/* 30-day top-shooters leaderboard — visible to everyone. */}
+        <LeaderboardWidget />
 
       </div>
       {/* Status bar */}

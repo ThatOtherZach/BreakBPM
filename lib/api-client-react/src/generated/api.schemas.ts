@@ -1028,6 +1028,33 @@ export interface PublicProfileResult {
   stats?: StatsResult | null;
 }
 
+export interface LeaderboardRow {
+  rank: number;
+  screenName: string;
+  bpm: number;
+  /** @nullable */
+  accuracy: number | null;
+  gamesPlayed: number;
+}
+
+export type LeaderboardResultWindow = typeof LeaderboardResultWindow[keyof typeof LeaderboardResultWindow];
+
+
+export const LeaderboardResultWindow = {
+  '30d': '30d',
+  '90d': '90d',
+  all: 'all',
+} as const;
+
+export interface LeaderboardResult {
+  window: LeaderboardResultWindow;
+  page: number;
+  pageSize: number;
+  totalPlayers: number;
+  totalPages: number;
+  rows: LeaderboardRow[];
+}
+
 export interface FindPlayerPost {
   id: string;
   displayName: string;
@@ -1158,6 +1185,32 @@ export type GetStatsScope = typeof GetStatsScope[keyof typeof GetStatsScope];
 export const GetStatsScope = {
   personal: 'personal',
   global: 'global',
+} as const;
+
+export type GetLeaderboardParams = {
+/**
+ * Ranking window. 30d is public; 90d and all require a pass.
+
+ */
+window?: GetLeaderboardWindow;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+pageSize?: number;
+};
+
+export type GetLeaderboardWindow = typeof GetLeaderboardWindow[keyof typeof GetLeaderboardWindow];
+
+
+export const GetLeaderboardWindow = {
+  '30d': '30d',
+  '90d': '90d',
+  all: 'all',
 } as const;
 
 export type ListFindPlayerPostsParams = {

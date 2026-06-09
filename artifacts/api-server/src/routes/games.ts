@@ -27,11 +27,13 @@ import {
   GetPublicProfileResponse,
   GetStatsQueryParams,
   GetStatsResponse,
+  GetLeaderboardQueryParams,
+  GetLeaderboardResponse,
   DeleteMyGameDataResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser, getVerifiedSubject } from "../lib/auth";
 import { computeEntitlement, getActivePasses, getActiveSubscription } from "../lib/entitlement";
-import { resolveStats, clearUserStatsCache, windowCutoff, FREE_TIER_WINDOW, type StatScope, type StatWindow } from "../lib/stats";
+import { resolveStats, resolveLeaderboard, clearUserStatsCache, windowCutoff, FREE_TIER_WINDOW, type StatScope, type StatWindow, type LeaderboardWindow } from "../lib/stats";
 import { sweepStaleGames, INACTIVITY_FORFEIT_MS, MAX_GAME_DURATION_MS } from "../lib/forfeit";
 import { newId } from "../lib/ids";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
@@ -2050,6 +2052,56 @@ router.get("/stats", async (req, res): Promise<void> => {
       cached,
       computedAt: new Date(computedAt).toISOString(),
       ...rest,
+    }),
+  );
+});
+
+/**
+ * Balls-Per-Minute leaderboard over eligible games (see `computeLeaderboard`
+ * in stats.ts for the eligibility/scoring rules). The 30-day window is public
+ * so the signed-out home-page widget works; 90-day and all-time require a pass
+ * and are enforced here server-side. The full ranking is cached (1h) per
+ * window and paginated from cache.
+ */
+router.get("/leaderboard", async (req, res): Promise<void> => {
+  const ip = req.ip ?? "unknown";
+  if (!rateLimit(ip, "state")) {
+    res.status(429).json({ error: "rate_limited" });
+    return;
+  }
+
+  const parsed = GetLeaderboardQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "invalid_query" });
+    return;
+  }
+  const { window, page, pageSize } = parsed.data;
+
+  const user = await getOrCreateUser(req);
+  const entitlement = await computeEntitlement(user);
+  const isPass = entitlement.tier === "pass";
+
+  // Longer windows are a paid perk; the public widget only ever asks for 30d.
+  if (window !== "30d" && !isPass) {
+    res.status(403).json({ error: "pass_required" });
+    return;
+  }
+
+  const all = await resolveLeaderboard(window as LeaderboardWindow);
+  const totalPlayers = all.length;
+  const totalPages = Math.max(1, Math.ceil(totalPlayers / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const offset = (safePage - 1) * pageSize;
+  const rows = all.slice(offset, offset + pageSize);
+
+  res.json(
+    GetLeaderboardResponse.parse({
+      window,
+      page: safePage,
+      pageSize,
+      totalPlayers,
+      totalPages,
+      rows,
     }),
   );
 });

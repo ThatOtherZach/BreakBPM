@@ -11,6 +11,7 @@ import AboutScreen from "./components/AboutScreen";
 import LegalScreen from "./components/LegalScreen";
 import AccountScreen from "./components/AccountScreen";
 import StatsScreen from "./components/StatsScreen";
+import LeaderboardScreen from "./components/LeaderboardScreen";
 import FindPlayersScreen from "./components/FindPlayersScreen";
 import PassesScreen from "./components/PassesScreen";
 import RedeemScreen from "./components/RedeemScreen";
@@ -330,6 +331,20 @@ function StatsRoute() {
   );
 }
 
+function LeaderboardRoute() {
+  const [, setLocation] = useLocation();
+  return (
+    <LeaderboardScreen
+      onBack={() => setLocation("/")}
+      onAbout={() => setLocation("/about")}
+      onAccount={() => setLocation("/account")}
+      onFindPlayers={() => setLocation("/find-players")}
+      onStats={() => setLocation("/stats")}
+      onSignIn={() => setLocation("/sign-in")}
+    />
+  );
+}
+
 function AboutRoute() {
   const [, setLocation] = useLocation();
   return <AboutScreen onBack={() => setLocation("/")} />;
@@ -431,6 +446,7 @@ function Routes() {
       <Route path="/sign-up/*?" component={SignUpRouteWrapper} />
       <Route path="/account" component={AccountRoute} />
       <Route path="/stats" component={StatsRoute} />
+      <Route path="/leaderboard" component={LeaderboardRoute} />
       <Route path="/find-players" component={FindPlayersRoute} />
       <Route path="/about" component={AboutRoute} />
       <Route path="/legal" component={LegalRoute} />

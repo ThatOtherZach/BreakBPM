@@ -841,6 +841,41 @@ export const GetStatsResponse = zod.object({
 
 
 /**
+ * Ranking of registered players by their typical recent pace. The 30-day window is public (so the signed-out home-page widget works); the 90-day and all-time windows require a pass and are enforced server-side. Results are computed once per window and cached for one hour, then paginated from the cache.
+
+ * @summary Balls-Per-Minute leaderboard
+ */
+export const getLeaderboardQueryWindowDefault = `30d`;
+export const getLeaderboardQueryPageDefault = 1;
+
+export const getLeaderboardQueryPageSizeDefault = 10;
+export const getLeaderboardQueryPageSizeMax = 50;
+
+
+
+export const GetLeaderboardQueryParams = zod.object({
+  "window": zod.enum(['30d', '90d', 'all']).default(getLeaderboardQueryWindowDefault).describe('Ranking window. 30d is public; 90d and all require a pass.\n'),
+  "page": zod.coerce.number().min(1).default(getLeaderboardQueryPageDefault),
+  "pageSize": zod.coerce.number().min(1).max(getLeaderboardQueryPageSizeMax).default(getLeaderboardQueryPageSizeDefault)
+})
+
+export const GetLeaderboardResponse = zod.object({
+  "window": zod.enum(['30d', '90d', 'all']),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPlayers": zod.number(),
+  "totalPages": zod.number(),
+  "rows": zod.array(zod.object({
+  "rank": zod.number(),
+  "screenName": zod.string(),
+  "bpm": zod.number(),
+  "accuracy": zod.number().nullable(),
+  "gamesPlayed": zod.number()
+}))
+})
+
+
+/**
  * Returns active (today-or-later, non-expired) posts soonest-first, 10 per page. Signed-out callers receive `signedIn: false` and an empty list — they see the page shell but no posts. Includes capability flags (`canCreate`) and the caller's current active-post count so the UI can react without hardcoding tier logic.
 
  * @summary List active meetup posts (signed-in callers only)

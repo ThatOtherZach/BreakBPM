@@ -1,5 +1,5 @@
 import { and, count, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
-import { db, gamesTable, gameParticipantsTable } from "@workspace/db";
+import { db, gamesTable, gameParticipantsTable, usersTable } from "@workspace/db";
 
 /**
  * Server-side statistics aggregation for the /stats endpoint.
@@ -597,4 +597,187 @@ export function clearUserStatsCache(userId: string): void {
   for (const key of statsCache.keys()) {
     if (key.startsWith(prefix)) statsCache.delete(key);
   }
+}
+
+// ───────────────────────── Leaderboard ─────────────────────────
+//
+// A pace (Balls-Per-Minute) ranking over a deliberately narrow, apples-to-
+// apples slice of games so the numbers are comparable: standard 8-ball,
+// 1-versus-1 singles (maxPlayers === 2), opened on the break (the
+// `open-through-break` ruleSet). 9-ball, Practice, Shark, 4-player / team,
+// chaos and manual-team games are all excluded. Only registered players
+// (game_participants with a non-null userId) can appear.
+//
+// A player's score is the average BPM of their best few qualifying games, with
+// a matching average accuracy over those same games. Physically implausible
+// per-game paces (sub-millisecond sinks → 0, or absurdly fast runs) are
+// discarded before ranking, and a player needs a minimum number of qualifying
+// games to appear at all. The full ranking is computed once per window and
+// cached for one hour (the same TTL as /stats); the route slices pages from it.
+
+export type LeaderboardWindow = "30d" | "90d" | "all";
+
+export interface LeaderboardRow {
+  rank: number;
+  screenName: string;
+  bpm: number;
+  accuracy: number | null;
+  gamesPlayed: number;
+}
+
+/** Defensive cap on eligible game rows parsed in one ranking pass (cached). */
+const LEADERBOARD_MAX_ROWS = 20000;
+/** Minimum qualifying games before a player is ranked at all. */
+const LEADERBOARD_MIN_GAMES = 3;
+/** Number of a player's best games averaged into their score. */
+const LEADERBOARD_BEST_N = 3;
+/**
+ * Upper bound on a plausible per-game BPM. A sustained pace above this implies
+ * sub-second sinks (mis-logged timestamps), so the game is dropped as an
+ * outlier rather than letting it distort a player's average.
+ */
+const LEADERBOARD_MAX_PLAUSIBLE_BPM = 60;
+
+function leaderboardCutoff(window: LeaderboardWindow): Date | null {
+  const day = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  switch (window) {
+    case "30d":
+      return new Date(now - 30 * day);
+    case "90d":
+      return new Date(now - 90 * day);
+    case "all":
+      return null;
+  }
+}
+
+async function computeLeaderboard(window: LeaderboardWindow): Promise<LeaderboardRow[]> {
+  const cutoff = leaderboardCutoff(window);
+  const conds = [
+    isNotNull(gamesTable.endedAt),
+    eq(gamesTable.gameType, "8ball"),
+    eq(gamesTable.maxPlayers, 2),
+    sql`${gamesTable.gameState} ->> 'ruleSet' = 'open-through-break'`,
+    sql`${gamesTable.gameState} ->> 'sharkAggression' IS NULL`,
+    sql`${gamesTable.gameState} ->> 'chaosMode' IS NULL`,
+  ];
+  if (cutoff) conds.push(gte(gamesTable.endedAt, cutoff));
+
+  const rows = await db
+    .select({ id: gamesTable.id, gameState: gamesTable.gameState })
+    .from(gamesTable)
+    .where(and(...conds))
+    .orderBy(desc(gamesTable.endedAt))
+    .limit(LEADERBOARD_MAX_ROWS);
+  if (rows.length === 0) return [];
+
+  const gameIds = rows.map((r) => r.id);
+  // Only registered participants count — guests (userId null) are skipped via
+  // the inner join. screenName is the canonical name (also the /watch key),
+  // not the per-game displayName, so a renamed player stays one entry.
+  const parts = await db
+    .select({
+      gameId: gameParticipantsTable.gameId,
+      userId: gameParticipantsTable.userId,
+      displayName: gameParticipantsTable.displayName,
+      statsStartAt: gameParticipantsTable.statsStartAt,
+      leftAt: gameParticipantsTable.leftAt,
+      screenName: usersTable.screenName,
+    })
+    .from(gameParticipantsTable)
+    .innerJoin(usersTable, eq(gameParticipantsTable.userId, usersTable.id))
+    .where(
+      and(
+        inArray(gameParticipantsTable.gameId, gameIds),
+        isNotNull(gameParticipantsTable.userId),
+      ),
+    );
+
+  const partsByGame = new Map<string, typeof parts>();
+  for (const p of parts) {
+    const arr = partsByGame.get(p.gameId) ?? [];
+    arr.push(p);
+    partsByGame.set(p.gameId, arr);
+  }
+
+  // Per-user accumulation of qualifying per-game {bpm, accuracy}. Keyed by
+  // userId so the same player across renames stays one entry.
+  const byUser = new Map<
+    string,
+    { screenName: string; games: Array<{ bpm: number; accuracy: number | null }> }
+  >();
+
+  for (const r of rows) {
+    const ps = partsByGame.get(r.id);
+    if (!ps) continue;
+    const { shotLog } = parseGameState(r.gameState);
+    for (const p of ps) {
+      if (!p.userId) continue;
+      const startMs = p.statsStartAt ? p.statsStartAt.getTime() : -Infinity;
+      const leftMs = p.leftAt ? p.leftAt.getTime() : Infinity;
+      const mine = shotLog.filter(
+        (e) =>
+          e.playerName === p.displayName &&
+          typeof e.timestamp === "number" &&
+          e.timestamp >= startMs &&
+          e.timestamp <= leftMs,
+      );
+      const bpm = playerBpm(mine);
+      // Drop games with no usable pace or an implausible (outlier) one.
+      if (bpm == null || bpm <= 0 || bpm > LEADERBOARD_MAX_PLAUSIBLE_BPM) continue;
+      const { made, attempts } = accuracyCounts(mine);
+      const accuracy = attempts > 0 ? Math.round((made / attempts) * 100) : null;
+      const entry = byUser.get(p.userId) ?? { screenName: p.screenName, games: [] };
+      entry.games.push({ bpm, accuracy });
+      byUser.set(p.userId, entry);
+    }
+  }
+
+  const result: LeaderboardRow[] = [];
+  for (const entry of byUser.values()) {
+    if (entry.games.length < LEADERBOARD_MIN_GAMES) continue;
+    const best = [...entry.games].sort((a, b) => b.bpm - a.bpm).slice(0, LEADERBOARD_BEST_N);
+    const avgBpm = round1(best.reduce((s, g) => s + g.bpm, 0) / best.length);
+    const accs = best.map((g) => g.accuracy).filter((a): a is number => a != null);
+    const accuracy = accs.length > 0 ? Math.round(accs.reduce((s, a) => s + a, 0) / accs.length) : null;
+    result.push({
+      rank: 0,
+      screenName: entry.screenName,
+      bpm: avgBpm,
+      accuracy,
+      gamesPlayed: entry.games.length,
+    });
+  }
+  // Rank by score (bpm) desc; tie-break by accuracy desc then name for stability.
+  result.sort(
+    (a, b) =>
+      b.bpm - a.bpm ||
+      (b.accuracy ?? -1) - (a.accuracy ?? -1) ||
+      a.screenName.localeCompare(b.screenName),
+  );
+  result.forEach((r, i) => {
+    r.rank = i + 1;
+  });
+  return result;
+}
+
+interface LeaderboardCacheEntry {
+  rows: LeaderboardRow[];
+  expiresAt: number;
+}
+const leaderboardCache = new Map<string, LeaderboardCacheEntry>();
+
+/**
+ * Resolve the full ranking for a window, using the 1-hour cache. The route
+ * paginates / slices the returned array; the whole ranking is computed once per
+ * window so per-page and widget reads are cheap.
+ */
+export async function resolveLeaderboard(window: LeaderboardWindow): Promise<LeaderboardRow[]> {
+  const key = `leaderboard:${window}`;
+  const now = Date.now();
+  const hit = leaderboardCache.get(key);
+  if (hit && hit.expiresAt > now) return hit.rows;
+  const rows = await computeLeaderboard(window);
+  leaderboardCache.set(key, { rows, expiresAt: now + STATS_CACHE_TTL_MS });
+  return rows;
 }
