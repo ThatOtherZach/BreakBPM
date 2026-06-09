@@ -759,7 +759,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                     const map: Record<Exclude<MentionState['kind'], 'idle'>, { text: string; color: string }> = {
                       checking: { text: '…', color: '#555' },
                       found: { text: '🟢 Player Found :)', color: '#0a7d2c' },
-                      notfound: { text: 'Not Found :(', color: '#b00020' },
+                      notfound: { text: '🔴 Not Found :(', color: '#b00020' },
                       atcap: { text: 'Invite List Full :(', color: '#b00020' },
                       pass_required: { text: 'Pass Required', color: '#9a6b00' },
                     };
