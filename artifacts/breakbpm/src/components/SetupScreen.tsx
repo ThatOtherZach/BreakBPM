@@ -96,12 +96,12 @@ const CHAOS_RULE_OPTIONS: {
 }[] = [
   {
     value: 'eight-last',
-    label: 'Straight Pool',
+    label: 'No Rules',
     chips: [{ number: '8', chipClass: 'hud-chip-eight' }],
   },
   {
     value: 'anything-goes',
-    label: 'No Rules',
+    label: 'Straight Pool',
     cueBall: true,
     chips: [],
   },
