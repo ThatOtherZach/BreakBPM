@@ -1848,10 +1848,12 @@ html, #root {
 }
 
 /* Chaos rainbow: a cosmetic flourish on the AVG-BPM number for players who've
-   won a Chaos ("No Rules") game within their last 10 completed games. Sweeps
-   the same rainbow gradient as the admin name through the glyphs via
-   background-clip:text (reusing the rainbow-name-pan keyframe). The BPM unit is
-   re-coloured so it stays readable instead of being clipped to transparent. */
+   won a Chaos ("No Rules") game within their last 10 completed games. Mirrors
+   the admin name effect (.rainbow-name) exactly — same gradient stops, sweep,
+   bold weight, and rainbow-name-pan animation — clipped to the glyphs via
+   background-clip:text so the whole value (number + BPM unit) becomes one
+   animated rainbow. text-shadow is cleared so the base green glow doesn't muddy
+   the gradient. */
 .stats-hero-value.chaos-rainbow {
   background-image: linear-gradient(
     90deg,
@@ -1862,12 +1864,9 @@ html, #root {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
+  font-weight: bold;
   text-shadow: none;
   animation: rainbow-name-pan 2.5s linear infinite;
-}
-.stats-hero-value.chaos-rainbow .stats-hero-unit {
-  -webkit-text-fill-color: #2a7a2a;
-  color: #2a7a2a;
 }
 /* Reduced motion: keep the static rainbow gradient, drop the animation. */
 @media (prefers-reduced-motion: reduce) {
