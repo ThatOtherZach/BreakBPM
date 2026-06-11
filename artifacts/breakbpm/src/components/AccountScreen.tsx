@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { useAuth, signInPath } from "../lib/authClient";
 import {
   useGetMe,
@@ -60,6 +61,7 @@ function fmtHoursUntil(target: Date | string | null): string | null {
 export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers, onStats, onSignIn }: Props) {
   const { logout: signOut } = useAuth();
   const qc = useQueryClient();
+  const [, setLocation] = useLocation();
 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
@@ -397,8 +399,10 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 📺{" "}
                 <a
                   href={`/watch/${encodeURIComponent(account.screenName)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setLocation(`/watch/${encodeURIComponent(account.screenName)}`);
+                  }}
                   style={{ color: "#000080" }}
                 >
                   breakbpm.com/watch/{account.screenName}
