@@ -485,16 +485,16 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     <div style={{ display: "flex", gap: 8 }}>
                       <div style={{ flex: 1 }}>
-                        <div className="digit-display" data-ghost="88.8">
-                          <div className="digit-bpm">{stats.avgBpm == null ? "--.-" : stats.avgBpm.toFixed(1)}</div>
+                        <div className="digit-display">
+                          <div className="digit-bpm">{stats.avgBpm == null ? "--" : stats.avgBpm.toFixed(1)}</div>
                         </div>
                         <div className="digit-label">AVG BPM</div>
                       </div>
                       {isAuthenticated && (
                         <div style={{ flex: 1 }}>
-                          <div className="digit-display" data-ghost="88.8" style={{ '--digit-color': 'var(--amber)' } as React.CSSProperties}>
-                            <div className="digit-bpm">
-                              {stats.bestBpm == null ? "--.-" : stats.bestBpm.toFixed(1)}
+                          <div className="digit-display">
+                            <div className="digit-bpm" style={{ color: "var(--amber)" }}>
+                              {stats.bestBpm == null ? "--" : stats.bestBpm.toFixed(1)}
                             </div>
                           </div>
                           <div className="digit-label">BEST BPM</div>
