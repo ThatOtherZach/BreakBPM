@@ -984,16 +984,63 @@ html, #root {
 /* ── BPM / Timer displays ── */
 .digit-display {
   font-family: 'VT323', 'Courier New', monospace;
-  background: #000;
+  background: #030803;
   border: 2px solid;
   border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
   text-align: center;
   letter-spacing: 2px;
   line-height: 1;
   padding: 4px 8px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 12px rgba(0,0,0,0.9);
+  /* Per-display colour token — override inline to recolour ghost + glow. */
+  --digit-color: var(--green);
 }
 
-.digit-bpm { font-size: 40px; color: var(--green); }
+/* Dim "ghost" inactive-segment layer — mimics an unlit 7-segment LCD. Set
+   data-ghost on the element to control which ghost characters appear. */
+.digit-display::before {
+  content: attr(data-ghost);
+  position: absolute;
+  inset: 0;
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 40px;
+  letter-spacing: 2px;
+  line-height: 1;
+  padding: 4px 8px;
+  text-align: center;
+  pointer-events: none;
+  color: var(--digit-color);
+  opacity: 0.10;
+  z-index: 0;
+}
+
+/* CRT/LCD scanline overlay */
+.digit-display::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0,0,0,0.12) 2px,
+    rgba(0,0,0,0.12) 4px
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+.digit-bpm {
+  font-size: 40px;
+  color: var(--digit-color);
+  position: relative;
+  z-index: 1;
+  text-shadow:
+    0 0 5px var(--digit-color),
+    0 0 12px var(--digit-color);
+}
 .digit-timer { font-size: 30px; color: var(--amber); }
 .digit-label { font-size: 9px; color: #555; text-align: center; letter-spacing: 1px; margin-top: 1px; font-family: monospace; }
 
