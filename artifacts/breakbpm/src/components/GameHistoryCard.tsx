@@ -223,12 +223,14 @@ export default function GameHistoryCard({
                 : "Ended — inactive for 60 min"}
             </span>
           )}
+          {/* Date stays left-aligned under the badge; duration moved to the
+              right column under accuracy. */}
           <span style={{ fontSize: 10, color: "#a9c9b3" }}>
-            🕐 {fmtMs(g.durationMs)} · {fmtDate(g.endedAt)}
+            {fmtDate(g.endedAt)}
           </span>
         </div>
 
-        {/* Right: BPM hero + acc */}
+        {/* Right: BPM hero + acc + duration */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
           <span
             style={{
@@ -251,6 +253,9 @@ export default function GameHistoryCard({
             }}
           >
             {hasAcc ? `${g.accuracy}% ACC` : "—% ACC"}
+          </span>
+          <span style={{ fontSize: 10, color: "#a9c9b3" }}>
+            🕐 {fmtMs(g.durationMs)}
           </span>
         </div>
       </div>
