@@ -2,7 +2,7 @@
 
 BreakBPM logs every shot, one ball at a time, and gives you two numbers back: **accuracy** (what actually matters) and **BPM**, a realative stat you can compare with friends (or no one).
 
-The higher the BPM, the faster the game moves. It’s calculated per-player from your first pocketed ball to the last.
+The higher the BPM, the faster the game moves. It’s calculated per-player from your first pocketed ball to the last. Want a sticker? [Grab one here](https://www.redbubble.com/i/sticker/BreakBPM-Sticker-by-ThatOtherZach/181421812/7sgk).
 
 ## Features
 - Live per-player BPM + game timer
