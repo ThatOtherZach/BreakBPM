@@ -130,17 +130,6 @@ const CLEARED_STYLE: OutcomeStyle = {
   title: "Free shoot-around — table cleared, no winner",
 };
 
-// Chaos games render WIN/LOSS with rainbow-gradient text on a dark badge so
-// they read as the same verdict as a normal game but visibly "chaotic".
-const CHAOS_RAINBOW: React.CSSProperties = {
-  backgroundImage:
-    "linear-gradient(90deg,#ff3b3b,#ff8c00,#ffd500,#37d67a,#3ba7ff,#a64dff)",
-  WebkitBackgroundClip: "text",
-  backgroundClip: "text",
-  color: "transparent",
-  WebkitTextFillColor: "transparent",
-};
-
 function ResultBadge({ outcome, chaosMode }: { outcome: string; chaosMode?: string | null }) {
   const isNone = chaosMode === "none" && outcome === "completed";
   const isChaos =
@@ -161,7 +150,9 @@ function ResultBadge({ outcome, chaosMode }: { outcome: string; chaosMode?: stri
         border: `1px solid ${isChaos ? "#6a3fa0" : s.border}`,
       }}
     >
-      {isChaos ? <span style={CHAOS_RAINBOW}>{s.label}</span> : s.label}
+      {/* Chaos games animate the WIN/LOSS verdict through the same panning
+          rainbow as the AVG-BPM hero (.rainbow-name) so the two stay in sync. */}
+      {isChaos ? <span className="rainbow-name">{s.label}</span> : s.label}
     </span>
   );
 }
