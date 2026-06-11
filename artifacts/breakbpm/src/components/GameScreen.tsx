@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { GameState, ShotLogEntry } from '../lib/gameLogic';
+import type { GameState, ShotLogEntry, RematchConfig } from '../lib/gameLogic';
 import Navbar from './Navbar';
 import {
   getLegalBalls, getRemainingBalls, getAllBalls, checkSinkResult,
@@ -40,6 +40,12 @@ interface Props {
    */
   initialPausedDuration?: number;
   onNewGame: () => void;
+  /**
+   * Start a Rematch with the same mode/players/settings. Resolves once a new
+   * server game is created and the app swaps to it; rejects on failure so the
+   * end screen can re-enable the button for a retry.
+   */
+  onRematch: (cfg: RematchConfig) => Promise<void>;
   onAbout: () => void;
   onAccount: () => void;
   onStats: () => void;
@@ -74,7 +80,7 @@ function ballClass(ball: number, legal: number[], sunk: number[], _gameType: str
   return base;
 }
 
-export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, initialPausedDuration = 0, onNewGame, onAbout, onAccount, onStats, onFindPlayers, onSignIn }: Props) {
+export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, initialPausedDuration = 0, onNewGame, onRematch, onAbout, onAccount, onStats, onFindPlayers, onSignIn }: Props) {
   const saveGame = useSaveGame();
   const recordActivity = useRecordGameActivity();
   const me = useGetMe();
@@ -127,6 +133,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   // "New Game" and the final state is saved (locked in).
   const [endUndoOpen, setEndUndoOpen] = useState(false);
   const [endUndoLeft, setEndUndoLeft] = useState(0);
+  // True while a Rematch is being created (server round-trip). Disables the
+  // end-screen buttons so a double-tap can't spawn two games.
+  const [rematchPending, setRematchPending] = useState(false);
   const [spinFrame, setSpinFrame] = useState(0);
   const [logOpen, setLogOpen] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
@@ -313,8 +322,10 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     };
 
     // Undoable iff a player action ended the game (snapshot on the stack)
-    // and it wasn't a forfeit/cap/sweep ending.
-    const undoable = !forfeitedRef.current && undoStack.length > 0;
+    // and it wasn't a forfeit/cap/sweep ending. Shark Mode is excluded — it's
+    // a solo, honor-system mode, so its result saves immediately with no
+    // end-of-game undo window.
+    const undoable = !forfeitedRef.current && undoStack.length > 0 && !isSharkGame(state);
     if (!undoable) {
       doSave();
       return;
@@ -701,6 +712,46 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       .catch(() => { setToast(joinUrl); setTimeout(() => setToast(''), 3000); });
   }
 
+  async function handleRematch() {
+    if (rematchPending) return;
+    // The breaker inherits to the winner's slot; if there's no mappable winner
+    // (solo/Practice/None modes, or the Shark won) fall back to the previous
+    // game's breaker, then slot 0.
+    const winnerSlot = state.winner != null
+      ? state.players.findIndex(p => p.name === state.winner)
+      : -1;
+    const breakerIndex = winnerSlot >= 0 ? winnerSlot : (state.breakerIndex ?? 0);
+    // Carry teams forward only for MANUAL-team 8-ball (groups pre-assigned at
+    // setup). Auto-assign games (ruleSet set) earn their teams during play, so
+    // a rematch must start with a clean, unassigned table — strip teams.
+    const isManualTeam =
+      state.gameType === '8ball' &&
+      !isSharkGame(state) &&
+      state.chaosMode === undefined &&
+      state.ruleSet === undefined &&
+      state.players.some(p => p.team !== undefined);
+    const players = state.players.map(p =>
+      isManualTeam ? { id: p.id, name: p.name, team: p.team } : { id: p.id, name: p.name },
+    );
+    setRematchPending(true);
+    try {
+      await onRematch({
+        gameType: state.gameType,
+        players,
+        maxPlayers: state.players.length,
+        breakerIndex,
+        sharkAggression: state.sharkAggression,
+        ruleSet: state.ruleSet,
+        chaosMode: state.chaosMode,
+        practiceRack: state.practiceRack,
+      });
+      // On success the app swaps to the new game and remounts this component
+      // (keyed on shareCode), so there's no need to clear the pending flag.
+    } catch {
+      setRematchPending(false);
+    }
+  }
+
   function handlePause() {
     if (!paused) {
       // Freeze elapsed precisely at this moment before the interval stops
@@ -1047,20 +1098,23 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       </div>
       <div className="app-body">
 
-        {/* Win screen action buttons. During the brief undo window the
-            primary action is Undo (with a countdown); once it elapses the
-            game is saved and the button swaps to New Game. */}
+        {/* Win screen action buttons. During the brief undo window the only
+            action is a full-width Undo (with a countdown); once it elapses the
+            game is saved and the buttons swap to New Game + Rematch. Rematch
+            starts a fresh game with the same mode/players/settings. */}
         {state.phase === 'ended' && (
-          <div className="grid-2" style={{ marginTop: 0 }}>
-            {endUndoOpen ? (
-              <button className="btn btn-big" onClick={handleUndo}>
-                <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo ({endUndoLeft})
+          endUndoOpen ? (
+            <button className="btn btn-big w-full" onClick={handleUndo} style={{ marginTop: 0 }}>
+              <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo ({endUndoLeft})
+            </button>
+          ) : (
+            <div className="grid-2" style={{ marginTop: 0 }}>
+              <button className="btn btn-primary btn-big" onClick={onNewGame} disabled={rematchPending}>▶ New Game</button>
+              <button className="btn btn-big" onClick={handleRematch} disabled={rematchPending}>
+                {rematchPending ? 'Starting…' : '🔄 Rematch'}
               </button>
-            ) : (
-              <button className="btn btn-primary btn-big" onClick={onNewGame}>▶ New Game</button>
-            )}
-            <button className="btn btn-big" onClick={handleShare}>📋 Share</button>
-          </div>
+            </div>
+          )
         )}
 
         {/* ── Ball selector ── */}

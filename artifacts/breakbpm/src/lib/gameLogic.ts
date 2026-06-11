@@ -127,12 +127,37 @@ export interface GameState {
    */
   practiceRack?: PracticeRack;
   /**
+   * The slot index that broke (took the opening shot) when this game was
+   * created — the initial `currentPlayerIndex`. Stored separately because
+   * `currentPlayerIndex` is mutated as turns pass. Used so a Rematch can fall
+   * back to the original breaker when the just-finished game had no winner
+   * to inherit the break. Absent ⇒ slot 0 (historical default).
+   */
+  breakerIndex?: number;
+  /**
    * Total number of undos performed in this game ("No one Saw That"). Bumped
    * each time the scorekeeper reverts a logged action. Persisted in the
    * gameState JSONB so the Stats page can total it across games. Defaults to
    * 0; historical games (saved before this field existed) read back as 0.
    */
   undoCount: number;
+}
+
+/**
+ * Configuration for starting a Rematch — a fresh game that reuses the
+ * just-finished game's mode, players, and settings (a new server game /
+ * share code is minted separately). The breaker is decided by the caller
+ * (winner's slot, else the previous game's breaker).
+ */
+export interface RematchConfig {
+  gameType: GameType;
+  players: Player[];
+  maxPlayers: number;
+  breakerIndex: number;
+  sharkAggression?: SharkAggression;
+  ruleSet?: RuleSet;
+  chaosMode?: ChaosMode;
+  practiceRack?: PracticeRack;
 }
 
 /** True when this is the solo-vs-Shark flavor of 8-ball. */

@@ -17,7 +17,7 @@ import PassesScreen from "./components/PassesScreen";
 import RedeemScreen from "./components/RedeemScreen";
 import { SignInPage, SignUpPage } from "./components/SignInPage";
 import { readPendingRedeem } from "./lib/pendingRedeem";
-import type { GameType, GameState, Player, SharkAggression, RuleSet, ChaosMode, PracticeRack } from "./lib/gameLogic";
+import type { GameType, GameState, Player, SharkAggression, RuleSet, ChaosMode, PracticeRack, RematchConfig } from "./lib/gameLogic";
 import {
   generateShareCode,
   decodeGameState,
@@ -27,7 +27,7 @@ import {
 } from "./lib/gameLogic";
 import { queryClient } from "./lib/queryClient";
 import { AuthProvider, useAuth } from "./lib/authClient";
-import { useAbandonGame } from "@workspace/api-client-react";
+import { useAbandonGame, useStartGame } from "@workspace/api-client-react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -84,6 +84,9 @@ function createInitialGameState(
     // Rack size only applies to Practice; leave it unset for other modes so
     // the state shape stays clean.
     practiceRack: gameType === "practice" ? practiceRack : undefined,
+    // Remember who broke so a Rematch can fall back to the original breaker
+    // when the finished game had no winner to inherit the break.
+    breakerIndex: safeBreaker,
     undoCount: 0,
   };
 }
@@ -151,6 +154,7 @@ function MainApp() {
   const [view, setView] = useState<AppView>("setup");
   const [gameState, setGameState] = useState<GameState | null>(null);
   const abandonGame = useAbandonGame();
+  const startGame = useStartGame();
   // Server-issued in-progress game id (signed-in users only). Held outside
   // the URL-shared GameState so it isn't leaked via share links.
   const [serverGameId, setServerGameId] = useState<string | null>(null);
@@ -264,6 +268,38 @@ function MainApp() {
     url.searchParams.delete("game");
     window.history.replaceState(null, "", url.toString());
   }
+  /**
+   * Start a Rematch — a fresh game reusing the just-finished game's mode,
+   * players, and settings, with a brand-new server game / share code. The
+   * just-finished game was already saved (its row is finalized), so there is
+   * nothing to abandon. Throws on failure so the caller can surface a retry.
+   */
+  async function handleRematch(cfg: RematchConfig) {
+    clearInProgressGame();
+    const res = await startGame.mutateAsync({
+      data: { gameType: cfg.gameType, maxPlayers: cfg.maxPlayers },
+    });
+    setGameState(
+      createInitialGameState(
+        cfg.gameType,
+        cfg.players,
+        res.shareCode ?? null,
+        cfg.sharkAggression,
+        cfg.ruleSet,
+        cfg.chaosMode,
+        cfg.breakerIndex,
+        cfg.practiceRack,
+      ),
+    );
+    setServerGameId(res.gameId ?? null);
+    setMaxGameDurationMs(res.maxGameDurationMs ?? null);
+    setInitialPausedDuration(0);
+    setView("game");
+    const url = new URL(window.location.href);
+    url.searchParams.delete("state");
+    url.searchParams.delete("game");
+    window.history.replaceState(null, "", url.toString());
+  }
 
   const goSignIn = () => setLocation("/sign-in");
   const goAbout = () => setLocation("/about");
@@ -281,6 +317,7 @@ function MainApp() {
         maxGameDurationMs={maxGameDurationMs}
         initialPausedDuration={initialPausedDuration}
         onNewGame={handleNewGame}
+        onRematch={handleRematch}
         onAbout={goAbout}
         onAccount={goAccount}
         onStats={goStats}
