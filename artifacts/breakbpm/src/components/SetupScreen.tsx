@@ -478,9 +478,15 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
         res.maxGameDurationMs ?? null,
         res.shareCode ?? null,
         isShark ? sharkAggression : undefined,
-        // Rule set only matters for automatic-assignment 8-ball (2P/4P).
-        // Manual teams pre-assign groups; Shark/Practice/Chaos/None have none.
-        gameType === '8ball' && !isShark && teamMode === 'auto' ? ruleSet : undefined,
+        // Rule set drives group assignment for solos/stripes 8-ball. Shark is
+        // solo 8-ball and always plays Open Table (balls on the break don't
+        // lock a group; the next pocket after the break does). Auto 2P/4P use
+        // the chosen rule. Manual teams pre-assign; Practice/Chaos/None have none.
+        isShark
+          ? 'open-through-break'
+          : gameType === '8ball' && teamMode === 'auto'
+            ? ruleSet
+            : undefined,
         chaosMode,
         // Who breaks. Solo modes (Practice/Shark) only ever have slot 0; the
         // clamp effect keeps breakerIndex valid for the active count.
