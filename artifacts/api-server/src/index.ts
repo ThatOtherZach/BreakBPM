@@ -1,7 +1,6 @@
 import { runMigrations } from "stripe-replit-sync";
 import app from "./app";
 import { logger } from "./lib/logger";
-import { sweepAllStaleGames } from "./lib/forfeit";
 import { seedAdminDiscountCodes } from "./lib/seedDiscountCodes";
 import { getStripeSync } from "./lib/stripeClient";
 
@@ -67,22 +66,8 @@ app.listen(port, (err) => {
       );
     });
 
-  // Periodic global sweep — closes stale in-progress games even when no
-  // user touches an endpoint. Belt-and-suspenders alongside the lazy
-  // per-request sweep. Tracked on globalThis so dev hot-reloads don't
-  // stack up duplicate intervals.
-  const SWEEP_INTERVAL_MS = 5 * 60 * 1000;
-  const g = globalThis as { __breakbpmSweepTimer?: NodeJS.Timeout };
-  if (g.__breakbpmSweepTimer) clearInterval(g.__breakbpmSweepTimer);
-  g.__breakbpmSweepTimer = setInterval(() => {
-    sweepAllStaleGames()
-      .then((n) => {
-        if (n > 0) logger.info({ swept: n }, "Periodic sweep closed stale games");
-      })
-      .catch((err) => {
-        logger.error({ err }, "Periodic sweep failed");
-      });
-  }, SWEEP_INTERVAL_MS);
-  // Don't keep the event loop alive just for the sweep.
-  g.__breakbpmSweepTimer.unref?.();
+  // No periodic background sweep: an always-on timer would query the DB every
+  // few minutes forever and prevent it from auto-suspending while idle. Stale
+  // in-progress games are instead finalized lazily — on the owner's next write
+  // (sweepStaleGames) or when a viewer reads the game (finalizeGameIfStale).
 });

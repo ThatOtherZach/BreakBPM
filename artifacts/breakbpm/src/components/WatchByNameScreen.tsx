@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import JoinedGameScreen from './JoinedGameScreen';
 import PlayerProfileScreen from './PlayerProfileScreen';
 import { ObsIdle, useObsBodyClass } from './ObsOverlay';
@@ -33,6 +33,13 @@ interface Props {
  * and JoinedGameScreen owns everything from there (polling + the ended state);
  * to follow a later game, reload the page.
  */
+// "Waiting room" poll cadences (no live game yet). Fast while a human is
+// present; backs off to slow after a stretch of no interaction so an
+// unattended overlay/tab lets the DB suspend.
+const RESOLVE_FAST_MS = 4000;
+const RESOLVE_IDLE_MS = 30000;
+const RESOLVE_IDLE_AFTER_MS = 2 * 60 * 1000;
+
 export default function WatchByNameScreen({ name, onBack, onAbout, onAccount, onSignIn, obs = false, obsLog = false, obsScale = 1 }: Props) {
   const [liveCode, setLiveCode] = useState<string | null>(null);
   useObsBodyClass(obs);
@@ -46,12 +53,44 @@ export default function WatchByNameScreen({ name, onBack, onAbout, onAccount, on
     document.querySelector(".app-body")?.scrollTo?.(0, 0);
   }, []);
 
+  // Idle-backoff for the "waiting for a live game" poll. While the host has no
+  // live game we keep polling so the page promotes itself the instant they
+  // break — but an unattended overlay/forgotten tab shouldn't keep the DB
+  // awake forever. So we poll fast (4s) while a human is present, and after a
+  // stretch of no interaction we back off to a slow 30s cadence. ANY user
+  // interaction (or the tab regaining focus) snaps it back to fast. An OBS
+  // overlay generates no interaction, so it backs off and lets the DB suspend;
+  // a person actively waiting always gets the fast pickup. This affects ONLY
+  // the no-live-game waiting state — once a game resolves, JoinedGameScreen
+  // owns polling at the full spectator cadence.
+  const [resolveInterval, setResolveInterval] = useState<number>(RESOLVE_FAST_MS);
+  const lastActiveRef = useRef<number>(Date.now());
+  useEffect(() => {
+    if (liveCode) return;
+    const markActive = () => {
+      if (document.visibilityState === 'hidden') return;
+      lastActiveRef.current = Date.now();
+      setResolveInterval(RESOLVE_FAST_MS);
+    };
+    const events = ['pointerdown', 'pointermove', 'keydown', 'touchstart', 'scroll', 'visibilitychange'] as const;
+    for (const e of events) document.addEventListener(e, markActive, { passive: true });
+    const checkId = window.setInterval(() => {
+      if (Date.now() - lastActiveRef.current >= RESOLVE_IDLE_AFTER_MS) {
+        setResolveInterval(RESOLVE_IDLE_MS);
+      }
+    }, 10000);
+    return () => {
+      for (const e of events) document.removeEventListener(e, markActive);
+      window.clearInterval(checkId);
+    };
+  }, [liveCode]);
+
   const resolve = useResolveWatchByName(
     { name },
     {
       query: {
         queryKey: getResolveWatchByNameQueryKey({ name }),
-        refetchInterval: liveCode ? false : 4000,
+        refetchInterval: liveCode ? false : resolveInterval,
         enabled: !liveCode,
       },
     },

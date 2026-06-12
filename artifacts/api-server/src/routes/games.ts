@@ -39,7 +39,7 @@ import {
 import { getOrCreateUser, getVerifiedSubject } from "../lib/auth";
 import { computeEntitlement, getActivePasses, getActiveSubscription } from "../lib/entitlement";
 import { resolveStats, resolveLeaderboard, clearUserStatsCache, windowCutoff, FREE_TIER_WINDOW, type StatScope, type StatWindow, type LeaderboardWindow } from "../lib/stats";
-import { sweepStaleGames, INACTIVITY_FORFEIT_MS, MAX_GAME_DURATION_MS } from "../lib/forfeit";
+import { sweepStaleGames, finalizeGameIfStale, INACTIVITY_FORFEIT_MS, MAX_GAME_DURATION_MS } from "../lib/forfeit";
 import { newId } from "../lib/ids";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
 import { isAdminEmail } from "../lib/config";
@@ -1529,13 +1529,16 @@ router.get("/games/state", async (req, res): Promise<void> => {
     res.json(GetGameStateByCodeResponse.parse({ found: false }));
     return;
   }
-  await sweepStaleGames(row.userId);
-  const fresh = (
-    await db.select().from(gamesTable).where(eq(gamesTable.id, row.id)).limit(1)
-  )[0];
-  if (!fresh) {
-    res.json(GetGameStateByCodeResponse.parse({ found: false }));
-    return;
+  // Lazily finalize ONLY this game if it has gone stale, instead of scanning
+  // all of the owner's games on every spectator poll. In the common (still
+  // live) case this avoids a second read entirely — we reuse the row we just
+  // selected and only re-read when we actually closed it.
+  let fresh = row;
+  if (!row.endedAt && (await finalizeGameIfStale(row))) {
+    const reread = (
+      await db.select().from(gamesTable).where(eq(gamesTable.id, row.id)).limit(1)
+    )[0];
+    if (reread) fresh = reread;
   }
   // Join the owning user so we can resolve a per-participant `isAdmin` flag
   // from the email allowlist at response-build time. We deliberately do NOT
@@ -1618,17 +1621,17 @@ router.get("/games/watch-resolve", async (req, res): Promise<void> => {
     res.json(ResolveWatchByNameResponse.parse({ found: false, reason: "not_found" }));
     return;
   }
-  // Auto-forfeit any stale rows first so a long-idle game surfaces as
-  // "not_live" rather than resolving to a dead share code.
-  await sweepStaleGames(host.id);
-  // Most recent still-running game this user hosts.
+  // Most recent still-running game this user hosts. We finalize only THIS one
+  // row if it has gone stale (instead of sweeping all of the host's games on
+  // every watch poll) so a long-idle game surfaces as "not_live" rather than
+  // resolving to a dead share code.
   const [live] = await db
-    .select({ shareCode: gamesTable.shareCode })
+    .select()
     .from(gamesTable)
     .where(and(eq(gamesTable.userId, host.id), isNull(gamesTable.endedAt)))
     .orderBy(desc(gamesTable.startedAt))
     .limit(1);
-  if (!live) {
+  if (!live || (await finalizeGameIfStale(live))) {
     res.json(ResolveWatchByNameResponse.parse({ found: false, reason: "not_live" }));
     return;
   }

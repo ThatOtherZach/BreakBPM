@@ -98,6 +98,36 @@ function reasonFor(row: GameRow, now: Date): string {
 }
 
 /**
+ * Pure single-row staleness check — the JS mirror of `stalePredicate` for a
+ * row that's already been fetched. Lets a read path decide whether the ONE
+ * game a viewer is looking at should be finalized, without scanning all of a
+ * user's games on every poll.
+ */
+export function isRowStale(row: GameRow, now: Date = new Date()): boolean {
+  if (row.endedAt) return false;
+  if (row.startedAt.getTime() + MAX_GAME_DURATION_MS <= now.getTime()) return true;
+  if (row.gameType !== "practice") {
+    if (row.lastActivityAt.getTime() + INACTIVITY_FORFEIT_MS <= now.getTime()) return true;
+  }
+  return false;
+}
+
+/**
+ * Finalize a single already-fetched in-progress row IFF it is stale. Returns
+ * true when it (was stale and) closed the row. Used by the polled spectator
+ * read paths (/games/state, /games/watch-resolve) so an idle game is closed
+ * lazily — on the next view — instead of by a per-user full sweep every poll.
+ */
+export async function finalizeGameIfStale(
+  row: GameRow,
+  now: Date = new Date(),
+): Promise<boolean> {
+  if (!isRowStale(row, now)) return false;
+  await finalizeStaleRow(row, reasonFor(row, now), now);
+  return true;
+}
+
+/**
  * Sweep stale in-progress games for a single user. Invoked lazily by
  * /games/start, /games/activity, /games/save, /games/resume, and
  * /games/history so a user touching the API never sees a stale row.
@@ -107,19 +137,6 @@ export async function sweepStaleGames(userId: string, now: Date = new Date()): P
     .select()
     .from(gamesTable)
     .where(and(eq(gamesTable.userId, userId), stalePredicate(now)));
-  if (candidates.length === 0) return 0;
-  for (const row of candidates) {
-    await finalizeStaleRow(row, reasonFor(row, now), now);
-  }
-  return candidates.length;
-}
-
-/**
- * Global sweep across all users. Invoked by a periodic interval in the
- * API server entry so games close even when nobody hits an endpoint.
- */
-export async function sweepAllStaleGames(now: Date = new Date()): Promise<number> {
-  const candidates = await db.select().from(gamesTable).where(stalePredicate(now));
   if (candidates.length === 0) return 0;
   for (const row of candidates) {
     await finalizeStaleRow(row, reasonFor(row, now), now);

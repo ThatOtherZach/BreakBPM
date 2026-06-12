@@ -24,6 +24,7 @@ import {
 } from '@workspace/api-client-react';
 import { ObsIdle } from './ObsOverlay';
 import { PlayerName } from './PlayerName';
+import { useAuth } from '../lib/authClient';
 
 const BALL_COLORS: Record<number, string> = {
   1: '#FDD307', 2: '#1F4E9E', 3: '#C3342B', 4: '#5B247A',
@@ -152,18 +153,28 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
       });
   }, [code, join, guestTokenKey, spectatorOnly]);
 
-  // Polling: every 1s while tab is visible, 10s when hidden. Disabled
-  // once the game ends so we stop hitting the server in a tight loop.
+  // Polling cadence, tiered by audience to keep idle DB load down:
+  //  - signed-in watchers get the snappiest updates (2s)
+  //  - anonymous watchers poll at 4s
+  //  - OBS overlays (commonly left running unattended 24/7) are pinned to the
+  //    slow 4s bucket regardless of sign-in
+  // Hidden tabs back off to 10s; polling stops entirely once the game ends.
+  const { isAuthenticated } = useAuth();
+  const activeMs = obs ? 4000 : isAuthenticated ? 2000 : 4000;
   const [pollInterval, setPollInterval] = useState<number | false>(
-    typeof document !== 'undefined' && document.hidden ? 10000 : 1000,
+    typeof document !== 'undefined' && document.hidden ? 10000 : activeMs,
   );
   useEffect(() => {
-    const onVis = () => {
-      setPollInterval(prev => (prev === false ? false : (document.hidden ? 10000 : 1000)));
+    const apply = () => {
+      setPollInterval(prev => (prev === false ? false : (document.hidden ? 10000 : activeMs)));
     };
-    document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
-  }, []);
+    // Apply immediately so an auth-state change after mount (e.g. /auth/me
+    // resolving) re-tiers the live interval without waiting for a visibility
+    // toggle, then keep it in sync with tab visibility.
+    apply();
+    document.addEventListener('visibilitychange', apply);
+    return () => document.removeEventListener('visibilitychange', apply);
+  }, [activeMs]);
   const snap = useGetGameStateByCode(
     { code },
     {
