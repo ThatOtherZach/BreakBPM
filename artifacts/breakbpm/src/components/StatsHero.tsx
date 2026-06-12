@@ -159,6 +159,32 @@ export default function StatsHero({
   const rateLabel = isPersonal ? "WIN RATE" : "FINISH RATE";
   const rateValue = isPersonal ? stats.winRate : stats.finishRate;
 
+  if (stats.gamesPlayed === 0) {
+    return (
+      <div className="stats-hero">
+        {screenName && isPersonal && (
+          <div className="stats-hero-header">
+            <div className="stats-hero-player">
+              <div className="stats-hero-name-row">
+                <span className="stats-hero-name text-[28px]">
+                  <PlayerName name={screenName} admin={adminName ?? false} />
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+        <p style={{ fontSize: 12, color: "#aaa", textAlign: "center", margin: "12px 0 0", letterSpacing: "0.1em" }}>
+          NO RECENT GAMES
+        </p>
+        {joinedAt && (
+          <p style={{ fontSize: 11, color: "#d8b4ff", textAlign: "center", margin: "8px 0 0" }}>
+            Joined: {new Date(joinedAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="stats-hero">
       <div className="stats-hero-header">
