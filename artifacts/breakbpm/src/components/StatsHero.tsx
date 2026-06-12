@@ -173,9 +173,7 @@ export default function StatsHero({
             </div>
           </div>
         )}
-        <p style={{ fontSize: 12, color: "#aaa", textAlign: "center", margin: "12px 0 0", letterSpacing: "0.1em" }}>
-          NO RECENT GAMES
-        </p>
+        <p style={{ fontSize: 12, color: "#aaa", textAlign: "center", margin: "12px 0 0", letterSpacing: "0.1em" }}>No recent games in the last 24 hours :(</p>
         {joinedAt && (
           <p style={{ fontSize: 11, color: "#d8b4ff", textAlign: "center", margin: "8px 0 0" }}>
             Joined: {new Date(joinedAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
