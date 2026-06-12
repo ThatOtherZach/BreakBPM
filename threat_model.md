@@ -28,10 +28,10 @@ Production scope for this repo is the `artifacts/breakbpm` frontend, the `artifa
 ## Scan Anchors
 
 - **Production entry points:** `artifacts/api-server/src/index.ts`, `artifacts/api-server/src/app.ts`, `artifacts/api-server/src/routes/*.ts`, `artifacts/breakbpm/src/App.tsx`.
-- **Highest-risk areas:** `routes/games.ts`, `routes/findPlayers.ts`, `routes/passes.ts`, `routes/subscriptions.ts`, `routes/crypto.ts`, `routes/admin.ts`, `lib/paymentProvider.ts`, `lib/stripeReconcile.ts`, `lib/auth.ts`, `lib/clerkAuthProvider.ts`.
+- **Highest-risk areas:** `routes/games.ts`, `routes/findPlayers.ts`, `routes/venues.ts`, `routes/passes.ts`, `routes/subscriptions.ts`, `routes/crypto.ts`, `routes/admin.ts`, `lib/paymentProvider.ts`, `lib/stripeReconcile.ts`, `lib/auth.ts`, `lib/clerkAuthProvider.ts`.
 - **Public surfaces:** `/games/resolve`, `/games/join`, `/games/state`, `/games/watch-resolve`, `/games/profile`, `/stats` (limited mode), `/leaderboard`, `/passes/plans`, `/config`, Find Players listing.
-- **Privacy-sensitive public-adjacent surfaces:** watch-by-name spectator resolution, share-code game-state polling, and Find Players location publication/geocoding flows. These are likely to create real information-disclosure issues even when they do not expose classic account secrets.
-- **Authenticated / paid / admin surfaces:** account routes, game writes, redeem and checkout verification, mention acceptance/deletion, discount-code generation, admin code minting, `/admin/sales`.
+- **Privacy-sensitive public-adjacent surfaces:** watch-by-name spectator resolution, share-code game-state polling, and Find Players location publication/geocoding flows. These are likely to create real information-disclosure issues even when they do not expose classic account secrets. **Precise meetup coordinates are now entitlement-gated**: the Find Players listing returns exact lat/lng only to the post's owner or a paid (`tier==='pass'`) caller, and returns a coarse locality label to other signed-in users (signalled by `preciseLocationsVisible` on the list response). Verified venue coordinates are intentionally exact for any signed-in user.
+- **Authenticated / paid / admin surfaces:** account routes, game writes, redeem and checkout verification, mention acceptance/deletion, discount-code generation, admin code minting, `/admin/sales`, venue listing (`GET /venues`, any signed-in user) and admin venue management (`POST/PATCH/DELETE /admin/venues`, admin-allowlist only).
 - **Dev-only areas usually out of scope:** `artifacts/mockup-sandbox/**`, tests, and one-off scripts unless they are imported by production code.
 
 ## Accepted Risk Notes

@@ -10,6 +10,7 @@ import type { FindPlayerPost } from './findPlayerPost';
 export interface FindPlayerPostsResult {
   signedIn: boolean;
   canCreate: boolean;
+  preciseLocationsVisible: boolean;
   activePostCount: number;
   maxActivePosts: number;
   posts: FindPlayerPost[];

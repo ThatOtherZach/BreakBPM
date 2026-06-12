@@ -400,6 +400,7 @@ function FindPlayersRoute() {
       onAbout={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onSignIn={() => setLocation("/sign-in")}
+      onPasses={() => setLocation("/passes")}
     />
   );
 }

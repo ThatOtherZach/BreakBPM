@@ -25,6 +25,7 @@
 - [Sales ledger CAD/FX freeze](sales-ledger-cad-fx.md) — prices are USD but ledger reports CAD; freeze a pre-tx BoC USD→CAD rate per sale_events row, tax the CAD gross, keep USD+rate for audit; mock fx in route tests.
 - [Stripe sale dual-path recording](stripe-sale-dual-path.md) — both /passes/verify AND the webhook reconcile must record the stripe_purchase sale (gated on !grant.deduped, keyed on payment_intent) or whichever path wins the grant leaves zero ledger rows.
 - [Orval date-time query params are zod.date()](orval-date-query-params.md) — generated query schemas type date-time params as zod.date() (NOT coerce), so routes must coerce ISO query strings to Date before safeParse or every request 400s.
+- [Orval hooks need explicit queryKey](orval-query-options-need-querykey.md) — passing any `query` option (enabled/refetchInterval) to a generated useX hook makes queryKey required (TS2741); pass getXQueryKey().
 - [breakbpm scroll containers](breakbpm-scroll-containers.md) — `app-window--page` scrolls the document/window; other pages scroll `.app-body`. Reset both on route-change scroll-to-top.
 - [Shark Level = wins, two lockstep queries](shark-level-win-semantics.md) — sharkLevel counts Shark-mode WINS (winner=displayName AND winner<>'Shark'); computed in both computePersonalStats and computeLeaderboard — keep in sync.
 - [Runtime-configurable client values](runtime-client-config.md) — swap a client-visible value at runtime via api-server GET /config (reads env per-request), NOT a VITE_ build-time var; needs api-server restart.

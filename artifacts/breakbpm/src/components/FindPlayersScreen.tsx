@@ -6,7 +6,7 @@
  * anywhere in this screen. We read/write the literal Y/M/D H:M via the Date's
  * getUTC accessors and Date.UTC so the displayed value never drifts by locale.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
@@ -15,12 +15,17 @@ import {
   useListFindPlayerPosts,
   useCreateFindPlayerPost,
   useCancelFindPlayerPost,
+  useListVenues,
+  getListVenuesQueryKey,
   getListFindPlayerPostsQueryKey,
 } from "@workspace/api-client-react";
-import type { FindPlayerPost } from "@workspace/api-client-react";
+import type { FindPlayerPost, Venue } from "@workspace/api-client-react";
 import Navbar from "./Navbar";
 import { SignedIn, SignedOut } from "../lib/authClient";
 import { SOLIDS } from "../lib/gameLogic";
+import { haversineKm } from "../lib/geo";
+import { fetchOsmVenues, MIN_VENUE_ZOOM, type OsmVenue } from "../lib/osmVenues";
+import NearestHallCompass from "./NearestHallCompass";
 
 /** Pool-ball colors, mirrored from the game HUD, for the rank chips. */
 const BALL_COLORS: Record<number, string> = {
@@ -34,15 +39,51 @@ interface Props {
   onAbout: () => void;
   onAccount: () => void;
   onSignIn: () => void;
+  onPasses: () => void;
 }
 
-/** 🎱 pin used for every map marker (divIcon avoids bundling marker assets). */
-const poolIcon = L.divIcon({
-  html: "🎱",
+/** Cue-ball pin for MEETUP posts (divIcon avoids bundling marker assets). */
+const cueBallIcon = L.divIcon({
+  html: '<span class="cue-ball-icon" style="font-size:26px"></span>',
   className: "fpp-pin",
   iconSize: [28, 28],
   iconAnchor: [14, 14],
 });
+
+/** Real 8-ball pin for an OSM pool-hall VENUE. */
+const venueIcon = L.divIcon({
+  html: '<span class="hud-chip hud-chip-eight" data-number="8"></span>',
+  className: "fpp-venue-pin",
+  iconSize: [26, 26],
+  iconAnchor: [13, 13],
+});
+
+/** 8-ball pin with a Verified badge for an admin-authorized VENUE. */
+const verifiedVenueIcon = L.divIcon({
+  html:
+    '<span class="hud-chip hud-chip-eight" data-number="8"></span>' +
+    '<span class="fpp-verified-badge">✓</span>',
+  className: "fpp-venue-pin fpp-venue-pin--verified",
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+});
+
+/** OSM venue layer loading/feedback state, surfaced over the map. */
+type OsmStatus = "idle" | "loading" | "ok" | "empty" | "zoom-in" | "error";
+
+/** Map an OSM layer status to a user-facing overlay message (null = silent). */
+function osmStatusMessage(s: OsmStatus): string | null {
+  switch (s) {
+    case "loading":
+      return "Loading pool halls…";
+    case "zoom-in":
+      return "Zoom in to see pool halls";
+    case "error":
+      return "Couldn't load pool halls";
+    default:
+      return null;
+  }
+}
 
 const DEFAULT_CENTER: [number, number] = [20, 0];
 const DEFAULT_ZOOM = 2;
@@ -55,19 +96,7 @@ function cityOf(label: string): string {
   return label.split(",")[0].trim();
 }
 
-/** Great-circle distance between two [lat, lng] points, in kilometres. */
-function haversineKm(a: [number, number], b: [number, number]): number {
-  const R = 6371;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(b[0] - a[0]);
-  const dLng = toRad(b[1] - a[1]);
-  const lat1 = toRad(a[0]);
-  const lat2 = toRad(b[0]);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
+// haversineKm is imported from ../lib/geo (shared with the nearest-hall compass).
 
 /** Fits the map view to all visible pins whenever the set of pins changes. */
 function FitBounds({ positions }: { positions: [number, number][] }) {
@@ -83,6 +112,110 @@ function FitBounds({ positions }: { positions: [number, number][] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, map]);
   return null;
+}
+
+/**
+ * Live OSM pool-hall layer. Tracks the map viewport and (debounced) fetches
+ * billiards venues from Overpass for the visible bounds, rendering an 8-ball
+ * pin per hall. Refuses to query below {@link MIN_VENUE_ZOOM}. De-dupes any
+ * OSM hall that sits on top of an admin-verified one so they never double-pin.
+ * `onStatus` lets the parent surface a "zoom in / loading / error" overlay.
+ */
+function OsmVenueLayer({
+  verifiedVenues,
+  onStatus,
+}: {
+  verifiedVenues: Venue[];
+  onStatus: (s: OsmStatus) => void;
+}) {
+  const map = useMap();
+  const [osm, setOsm] = useState<OsmVenue[]>([]);
+  const timerRef = useRef<number | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const run = useCallback(() => {
+    if (map.getZoom() < MIN_VENUE_ZOOM) {
+      setOsm([]);
+      onStatus("zoom-in");
+      return;
+    }
+    const b = map.getBounds();
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+    onStatus("loading");
+    void fetchOsmVenues(
+      { south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast() },
+      { signal: ac.signal },
+    ).then((res) => {
+      if (ac.signal.aborted) return;
+      if (res.status === "ok") {
+        setOsm(res.venues);
+        onStatus(res.venues.length ? "ok" : "empty");
+      } else if (res.status === "too-broad") {
+        setOsm([]);
+        onStatus("zoom-in");
+      } else {
+        onStatus("error"); // keep the last good venues on the map
+      }
+    });
+  }, [map, onStatus]);
+
+  const schedule = useCallback(() => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(run, 500);
+  }, [run]);
+
+  useMapEvents({ moveend: schedule, zoomend: schedule });
+
+  useEffect(() => {
+    run();
+    return () => {
+      abortRef.current?.abort();
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+    };
+  }, [run]);
+
+  // Hide an OSM venue that sits within ~50m of a verified one (same hall).
+  const deduped = osm.filter(
+    (o) =>
+      !verifiedVenues.some(
+        (v) => haversineKm([o.latitude, o.longitude], [v.latitude, v.longitude]) < 0.05,
+      ),
+  );
+
+  return (
+    <>
+      {deduped.map((v) => (
+        <Marker
+          key={v.id}
+          position={[v.latitude, v.longitude]}
+          icon={venueIcon}
+          zIndexOffset={100}
+        >
+          <Popup>
+            <div className="fpp-popup">
+              <div className="fpp-popup-name">🎱 {v.name}</div>
+              {v.tableCount != null && (
+                <div className="fpp-popup-when">{v.tableCount} tables</div>
+              )}
+              <div className="fpp-popup-coords">Pool hall (OpenStreetMap)</div>
+              <div className="fpp-popup-actions">
+                <a
+                  className="btn"
+                  href={`https://www.google.com/maps?q=${v.latitude},${v.longitude}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  🗺️ Maps
+                </a>
+              </div>
+            </div>
+          </Popup>
+        </Marker>
+      ))}
+    </>
+  );
 }
 
 const CREATE_REASONS: Record<string, string> = {
@@ -130,7 +263,7 @@ function LocationPicker({
   return (
     <Marker
       position={position}
-      icon={poolIcon}
+      icon={cueBallIcon}
       draggable
       eventHandlers={{
         dragend(e) {
@@ -193,7 +326,13 @@ function downloadIcs(post: FindPlayerPost) {
   URL.revokeObjectURL(url);
 }
 
-export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn }: Props) {
+export default function FindPlayersScreen({
+  onBack,
+  onAbout,
+  onAccount,
+  onSignIn,
+  onPasses,
+}: Props) {
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const [mapView, setMapView] = useState(false);
@@ -203,6 +342,9 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
   const [userCoords, setUserCoords] = useState<[number, number] | null>(null);
   const [geoBusy, setGeoBusy] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
+  const [compassOpen, setCompassOpen] = useState(false);
+  const [osmStatus, setOsmStatus] = useState<OsmStatus>("idle");
+  const [ackPublic, setAckPublic] = useState(false);
 
   const list = useListFindPlayerPosts({ page });
   const data = list.data;
@@ -218,6 +360,16 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
       },
     },
   );
+
+  // Verified venues (admin listings). Fetched whenever a venue surface is
+  // visible — the map layer or the nearest-hall compass.
+  const venuesQuery = useListVenues({
+    query: {
+      enabled: mapView || compassOpen,
+      queryKey: getListVenuesQueryKey(),
+    },
+  });
+  const verifiedVenues = venuesQuery.data?.venues ?? [];
 
   const createPost = useCreateFindPlayerPost();
   const cancelPost = useCancelFindPlayerPost();
@@ -347,6 +499,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
       setTableNumber("");
       setDateStr("");
       setTimeStr("");
+      setAckPublic(false);
       setFormOpen(false);
       setPage(1);
       invalidate();
@@ -365,6 +518,7 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
   };
 
   const canCreate = data?.canCreate ?? false;
+  const preciseLocationsVisible = data?.preciseLocationsVisible ?? false;
   const todayStr = useMemo(() => localDateStr(new Date()), []);
   const next30Str = useMemo(() => {
     const d = new Date();
@@ -441,6 +595,10 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                   {locationPreview ?? (position ? "Locating…" : "Or tap the map")}
                 </span>
               </div>
+              <p className="fpp-disclose">
+                ⚠️ Your exact pin is shared publicly with pass holders. Pick a
+                public spot — a pool hall, not your home.
+              </p>
               <div className="fpp-form-row fpp-form-row--compact">
                 <label className="fpp-label fpp-label--row">
                   Table #
@@ -483,10 +641,18 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
               {atLimit && (
                 <p className="fpp-hint">You're at the 5-post limit. Cancel one to free a slot.</p>
               )}
+              <label className="fpp-ack">
+                <input
+                  type="checkbox"
+                  checked={ackPublic}
+                  onChange={(e) => setAckPublic(e.target.checked)}
+                />
+                I understand my pin is public to pass holders.
+              </label>
               <button
                 className="btn btn-primary btn-big w-full"
                 onClick={submit}
-                disabled={createPost.isPending || atLimit}
+                disabled={createPost.isPending || atLimit || !ackPublic}
               >
                 {createPost.isPending ? "Posting…" : "Post Meetup"}
               </button>
@@ -515,14 +681,20 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
             <SignedIn>
 
               {/* ── List / Map toggle (single button) ──
-                  Hidden while the Post-a-Meetup form is open to declutter. */}
-              {!formOpen && (
+                  Hidden while the Post-a-Meetup form or compass is open. */}
+              {!formOpen && !compassOpen && (
               <div className="fpp-toggle">
                 <button
                   className="btn btn-primary fpp-toggle-btn"
                   onClick={() => { setMapView((v) => { if (!v) invalidate(); return !v; }); setTodayOnly(false); setNext30Only(false); setNearMeOnly(false); }}
                 >
                   {mapView ? "📋 List View" : "🗺️ Map View"}
+                </button>
+                <button
+                  className="btn fpp-toggle-btn"
+                  onClick={() => { setCompassOpen(true); setMapView(false); }}
+                >
+                  🧭 Nearest Hall
                 </button>
                 <button
                   className={`btn fpp-toggle-btn${todayOnly ? " btn-primary" : ""}`}
@@ -546,9 +718,25 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
               </div>
               )}
 
-              {list.isLoading ? (
+              {!preciseLocationsVisible && !compassOpen && !mapView && (
+                <p className="fpp-hint fpp-coarse-note">
+                  📍 Showing approximate areas only.{" "}
+                  <button className="fpp-link" onClick={onPasses}>
+                    Get a pass
+                  </button>{" "}
+                  to see exact meetup spots.
+                </p>
+              )}
+
+              {compassOpen ? (
+                <NearestHallCompass
+                  verifiedVenues={verifiedVenues}
+                  onExit={() => setCompassOpen(false)}
+                />
+              ) : list.isLoading ? (
                 <p className="fpp-hint">Loading…</p>
               ) : mapView ? (
+                <>
                 <div className="fpp-map fpp-map--view">
                   <MapContainer center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} style={{ height: "100%", width: "100%" }}>
                     <TileLayer
@@ -558,11 +746,45 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                     <FitBounds
                       positions={mappable.map((p) => [p.latitude as number, p.longitude as number])}
                     />
+                    {verifiedVenues.map((v) => (
+                      <Marker
+                        key={v.id}
+                        position={[v.latitude, v.longitude]}
+                        icon={verifiedVenueIcon}
+                        zIndexOffset={1000}
+                      >
+                        <Popup>
+                          <div className="fpp-popup">
+                            <div className="fpp-popup-name">🎱 {v.name}</div>
+                            {v.locality && (
+                              <div className="fpp-popup-coords">📍 {v.locality}</div>
+                            )}
+                            {v.tableCount != null && (
+                              <div className="fpp-popup-when">{v.tableCount} tables</div>
+                            )}
+                            <div className="fpp-popup-coords fpp-popup-verified">
+                              ✓ Verified hall
+                            </div>
+                            <div className="fpp-popup-actions">
+                              <a
+                                className="btn"
+                                href={`https://www.google.com/maps?q=${v.latitude},${v.longitude}`}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                🗺️ Maps
+                              </a>
+                            </div>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    ))}
+                    <OsmVenueLayer verifiedVenues={verifiedVenues} onStatus={setOsmStatus} />
                     {mappable.map((post) => (
                       <Marker
                         key={post.id}
                         position={[post.latitude as number, post.longitude as number]}
-                        icon={poolIcon}
+                        icon={cueBallIcon}
                       >
                         <Popup>
                           <div className="fpp-popup">
@@ -595,7 +817,18 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
                       </Marker>
                     ))}
                   </MapContainer>
+                  {osmStatusMessage(osmStatus) && (
+                    <div className="fpp-map-status">{osmStatusMessage(osmStatus)}</div>
+                  )}
                 </div>
+                <p className="fpp-attribution">
+                  <span className="fpp-attribution-key">
+                    <span className="cue-ball-icon" /> meetup ·{" "}
+                    <span className="hud-chip hud-chip-eight" data-number="8" /> pool hall
+                  </span>
+                  Venue data © OpenStreetMap contributors
+                </p>
+                </>
               ) : posts.length === 0 ? (
                 <p className="fpp-empty">
                   {nearMeOnly
@@ -609,7 +842,15 @@ export default function FindPlayersScreen({ onBack, onAbout, onAccount, onSignIn
               ) : (
                 <div className="fpp-list">
                   {posts.map((post, i) => (
-                    <PostCard key={post.id} post={post} rank={i + 1} onCancel={cancel} pending={cancelPost.isPending} />
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      rank={i + 1}
+                      onCancel={cancel}
+                      pending={cancelPost.isPending}
+                      preciseLocationsVisible={preciseLocationsVisible}
+                      onUpsell={onPasses}
+                    />
                   ))}
                 </div>
               )}
@@ -641,11 +882,15 @@ function PostCard({
   rank,
   onCancel,
   pending,
+  preciseLocationsVisible,
+  onUpsell,
 }: {
   post: FindPlayerPost;
   rank: number;
   onCancel: (id: string) => void;
   pending: boolean;
+  preciseLocationsVisible: boolean;
+  onUpsell: () => void;
 }) {
   const cancelled = post.cancelled;
   const chipClass =
@@ -687,6 +932,11 @@ function PostCard({
             >
               🗺️ Open in Maps
             </a>
+          )}
+          {post.latitude == null && !preciseLocationsVisible && !post.isOwn && (
+            <button className="btn fpp-upsell-btn" onClick={onUpsell}>
+              🔒 Unlock exact location
+            </button>
           )}
           <button className="btn" onClick={() => downloadIcs(post)}>
             📅 Add to Calendar

@@ -12,6 +12,8 @@ import {
   saleEventsTable,
   gamesTable,
   gameParticipantsTable,
+  findPlayerPostsTable,
+  venuesTable,
   PASS_DURATIONS_SECONDS,
   type User,
   type Pass,
@@ -24,6 +26,8 @@ import {
   type Subscription,
   type Game,
   type GameParticipant,
+  type FindPlayerPost,
+  type Venue,
   type PassKind,
   type SubscriptionInterval,
   type SubscriptionStatus,
@@ -282,6 +286,94 @@ export async function seedParticipant(
     })
     .returning();
   return row;
+}
+
+/** "YYYY-MM-DD" UTC calendar date of a Date (mirrors the route's derivation). */
+function utcDateString(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Insert a Find Players meetup post for `userId`. Defaults to an active post
+ * scheduled ~1 day out at a Los Angeles coordinate with a coarse locality
+ * label. Cascades on user delete (no extra cleanup tracking needed).
+ */
+export async function seedFindPlayerPost(
+  userId: string,
+  opts: {
+    latitude?: number;
+    longitude?: number;
+    tableNumber?: number;
+    scheduledAt?: Date;
+    locationLabel?: string | null;
+    cancelledAt?: Date | null;
+  } = {},
+): Promise<FindPlayerPost> {
+  const scheduledAt = opts.scheduledAt ?? new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const [row] = await db
+    .insert(findPlayerPostsTable)
+    .values({
+      id: rid(),
+      userId,
+      latitude: opts.latitude ?? 34.0522,
+      longitude: opts.longitude ?? -118.2437,
+      tableNumber: opts.tableNumber ?? 1,
+      scheduledAt,
+      scheduledDateUtc: utcDateString(scheduledAt),
+      locationLabel:
+        opts.locationLabel !== undefined
+          ? opts.locationLabel
+          : "Los Angeles, United States",
+      cancelledAt: opts.cancelledAt ?? null,
+    })
+    .returning();
+  return row;
+}
+
+/**
+ * Insert a verified venue created by admin `createdByUserId`. Defaults to an
+ * active venue. Cascades on user delete (no extra cleanup tracking needed).
+ */
+export async function seedVenue(
+  createdByUserId: string,
+  opts: {
+    name?: string;
+    latitude?: number;
+    longitude?: number;
+    locality?: string | null;
+    address?: string | null;
+    tableCount?: number | null;
+    contact?: string | null;
+    active?: boolean;
+    paidThroughAt?: Date | null;
+  } = {},
+): Promise<Venue> {
+  const [row] = await db
+    .insert(venuesTable)
+    .values({
+      id: rid(),
+      name: opts.name ?? `Test Hall ${rid().slice(0, 6)}`,
+      latitude: opts.latitude ?? 40.7128,
+      longitude: opts.longitude ?? -74.006,
+      locality: opts.locality ?? null,
+      address: opts.address ?? null,
+      tableCount: opts.tableCount ?? null,
+      contact: opts.contact ?? null,
+      active: opts.active ?? true,
+      paidThroughAt: opts.paidThroughAt ?? null,
+      createdByUserId,
+    })
+    .returning();
+  return row;
+}
+
+export async function getVenue(id: string): Promise<Venue | undefined> {
+  const rows = await db
+    .select()
+    .from(venuesTable)
+    .where(eq(venuesTable.id, id))
+    .limit(1);
+  return rows[0];
 }
 
 /**

@@ -83,6 +83,9 @@ import type {
   StatsResult,
   SubscriptionCheckoutInput,
   SubscriptionVerifyResult,
+  VenueInput,
+  VenueList,
+  VenueMutationResult,
   VerifyCheckoutInput,
   VerifyResult
 } from './api.schemas';
@@ -3142,6 +3145,383 @@ export const useCancelFindPlayerPost = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCancelFindPlayerPostMutationOptions(options));
+    }
+
+export const getListVenuesUrl = () => {
+
+
+
+
+  return `/api/venues`
+}
+
+/**
+ * Returns the admin-curated set of ACTIVE verified pool-hall venues for the map and the nearest-hall compass. Venue coordinates are public business locations, so every signed-in caller sees them in full. Signed-out callers receive an empty list (venue features are gated to signed-in users in the UI).
+
+ * @summary List active verified venues (signed-in callers)
+ */
+export const listVenues = async ( options?: RequestInit): Promise<VenueList> => {
+
+  return customFetch<VenueList>(getListVenuesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListVenuesQueryKey = () => {
+    return [
+    `/api/venues`
+    ] as const;
+    }
+
+
+export const getListVenuesQueryOptions = <TData = Awaited<ReturnType<typeof listVenues>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVenues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVenuesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVenues>>> = ({ signal }) => listVenues({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVenues>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListVenuesQueryResult = NonNullable<Awaited<ReturnType<typeof listVenues>>>
+export type ListVenuesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List active verified venues (signed-in callers)
+ */
+
+export function useListVenues<TData = Awaited<ReturnType<typeof listVenues>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVenues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListVenuesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListAdminVenuesUrl = () => {
+
+
+
+
+  return `/api/admin/venues`
+}
+
+/**
+ * Admin-only. Returns every verified venue (active and inactive), newest-first, for the admin management panel. 403 for non-admins.
+
+ * @summary List ALL verified venues incl. inactive (admin only)
+ */
+export const listAdminVenues = async ( options?: RequestInit): Promise<VenueList> => {
+
+  return customFetch<VenueList>(getListAdminVenuesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminVenuesQueryKey = () => {
+    return [
+    `/api/admin/venues`
+    ] as const;
+    }
+
+
+export const getListAdminVenuesQueryOptions = <TData = Awaited<ReturnType<typeof listAdminVenues>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminVenues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminVenuesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminVenues>>> = ({ signal }) => listAdminVenues({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminVenues>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminVenuesQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminVenues>>>
+export type ListAdminVenuesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List ALL verified venues incl. inactive (admin only)
+ */
+
+export function useListAdminVenues<TData = Awaited<ReturnType<typeof listAdminVenues>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminVenues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminVenuesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateVenueUrl = () => {
+
+
+
+
+  return `/api/admin/venues`
+}
+
+/**
+ * Admin-only. Adds a verified venue. 403 for non-admins.
+
+ * @summary Create a verified venue (admin only)
+ */
+export const createVenue = async (venueInput: VenueInput, options?: RequestInit): Promise<VenueMutationResult> => {
+
+  return customFetch<VenueMutationResult>(getCreateVenueUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      venueInput,)
+  }
+);}
+
+
+
+
+export const getCreateVenueMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVenue>>, TError,{data: BodyType<VenueInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createVenue>>, TError,{data: BodyType<VenueInput>}, TContext> => {
+
+const mutationKey = ['createVenue'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createVenue>>, {data: BodyType<VenueInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createVenue(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateVenueMutationResult = NonNullable<Awaited<ReturnType<typeof createVenue>>>
+    export type CreateVenueMutationBody = BodyType<VenueInput>
+    export type CreateVenueMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a verified venue (admin only)
+ */
+export const useCreateVenue = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVenue>>, TError,{data: BodyType<VenueInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createVenue>>,
+        TError,
+        {data: BodyType<VenueInput>},
+        TContext
+      > => {
+      return useMutation(getCreateVenueMutationOptions(options));
+    }
+
+export const getUpdateVenueUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/venues/${id}`
+}
+
+/**
+ * Admin-only. Replaces a venue's editable fields. 403 for non-admins.
+
+ * @summary Update a verified venue (admin only)
+ */
+export const updateVenue = async (id: string,
+    venueInput: VenueInput, options?: RequestInit): Promise<VenueMutationResult> => {
+
+  return customFetch<VenueMutationResult>(getUpdateVenueUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      venueInput,)
+  }
+);}
+
+
+
+
+export const getUpdateVenueMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVenue>>, TError,{id: string;data: BodyType<VenueInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateVenue>>, TError,{id: string;data: BodyType<VenueInput>}, TContext> => {
+
+const mutationKey = ['updateVenue'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateVenue>>, {id: string;data: BodyType<VenueInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateVenue(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateVenueMutationResult = NonNullable<Awaited<ReturnType<typeof updateVenue>>>
+    export type UpdateVenueMutationBody = BodyType<VenueInput>
+    export type UpdateVenueMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a verified venue (admin only)
+ */
+export const useUpdateVenue = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVenue>>, TError,{id: string;data: BodyType<VenueInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateVenue>>,
+        TError,
+        {id: string;data: BodyType<VenueInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateVenueMutationOptions(options));
+    }
+
+export const getDeleteVenueUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/venues/${id}`
+}
+
+/**
+ * Admin-only. Removes a venue permanently. 403 for non-admins.
+
+ * @summary Delete a verified venue (admin only)
+ */
+export const deleteVenue = async (id: string, options?: RequestInit): Promise<VenueMutationResult> => {
+
+  return customFetch<VenueMutationResult>(getDeleteVenueUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteVenueMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteVenue>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteVenue>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteVenue'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteVenue>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteVenue(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteVenueMutationResult = NonNullable<Awaited<ReturnType<typeof deleteVenue>>>
+
+    export type DeleteVenueMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a verified venue (admin only)
+ */
+export const useDeleteVenue = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteVenue>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteVenue>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteVenueMutationOptions(options));
     }
 
 export const getListAdminSalesUrl = (params?: ListAdminSalesParams,) => {

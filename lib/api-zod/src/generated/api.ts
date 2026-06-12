@@ -994,6 +994,7 @@ export const ListFindPlayerPostsQueryParams = zod.object({
 export const ListFindPlayerPostsResponse = zod.object({
   "signedIn": zod.boolean(),
   "canCreate": zod.boolean(),
+  "preciseLocationsVisible": zod.boolean(),
   "activePostCount": zod.number(),
   "maxActivePosts": zod.number(),
   "posts": zod.array(zod.object({
@@ -1078,6 +1079,187 @@ export const CancelFindPlayerPostResponse = zod.object({
   "cancelled": zod.boolean(),
   "isOwn": zod.boolean(),
   "locationLabel": zod.string().nullish()
+}).optional()
+})
+
+
+/**
+ * Returns the admin-curated set of ACTIVE verified pool-hall venues for the map and the nearest-hall compass. Venue coordinates are public business locations, so every signed-in caller sees them in full. Signed-out callers receive an empty list (venue features are gated to signed-in users in the UI).
+
+ * @summary List active verified venues (signed-in callers)
+ */
+export const ListVenuesResponse = zod.object({
+  "venues": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "latitude": zod.number(),
+  "longitude": zod.number(),
+  "locality": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "tableCount": zod.number().nullish(),
+  "contact": zod.string().nullish(),
+  "active": zod.boolean(),
+  "paidThroughAt": zod.coerce.date().nullish()
+}))
+})
+
+
+/**
+ * Admin-only. Returns every verified venue (active and inactive), newest-first, for the admin management panel. 403 for non-admins.
+
+ * @summary List ALL verified venues incl. inactive (admin only)
+ */
+export const ListAdminVenuesResponse = zod.object({
+  "venues": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "latitude": zod.number(),
+  "longitude": zod.number(),
+  "locality": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "tableCount": zod.number().nullish(),
+  "contact": zod.string().nullish(),
+  "active": zod.boolean(),
+  "paidThroughAt": zod.coerce.date().nullish()
+}))
+})
+
+
+/**
+ * Admin-only. Adds a verified venue. 403 for non-admins.
+
+ * @summary Create a verified venue (admin only)
+ */
+export const createVenueBodyNameMax = 200;
+
+export const createVenueBodyLatitudeMin = -90;
+export const createVenueBodyLatitudeMax = 90;
+
+export const createVenueBodyLongitudeMin = -180;
+export const createVenueBodyLongitudeMax = 180;
+
+export const createVenueBodyLocalityMax = 200;
+
+export const createVenueBodyAddressMax = 500;
+
+export const createVenueBodyTableCountMin = 0;
+export const createVenueBodyTableCountMax = 9999;
+
+export const createVenueBodyContactMax = 200;
+
+
+
+export const CreateVenueBody = zod.object({
+  "name": zod.string().min(1).max(createVenueBodyNameMax),
+  "latitude": zod.number().min(createVenueBodyLatitudeMin).max(createVenueBodyLatitudeMax),
+  "longitude": zod.number().min(createVenueBodyLongitudeMin).max(createVenueBodyLongitudeMax),
+  "locality": zod.string().max(createVenueBodyLocalityMax).nullish(),
+  "address": zod.string().max(createVenueBodyAddressMax).nullish(),
+  "tableCount": zod.number().min(createVenueBodyTableCountMin).max(createVenueBodyTableCountMax).nullish(),
+  "contact": zod.string().max(createVenueBodyContactMax).nullish(),
+  "active": zod.boolean().optional(),
+  "paidThroughAt": zod.coerce.date().nullish()
+})
+
+export const CreateVenueResponse = zod.object({
+  "success": zod.boolean(),
+  "reason": zod.string().optional(),
+  "venue": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "latitude": zod.number(),
+  "longitude": zod.number(),
+  "locality": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "tableCount": zod.number().nullish(),
+  "contact": zod.string().nullish(),
+  "active": zod.boolean(),
+  "paidThroughAt": zod.coerce.date().nullish()
+}).optional()
+})
+
+
+/**
+ * Admin-only. Replaces a venue's editable fields. 403 for non-admins.
+
+ * @summary Update a verified venue (admin only)
+ */
+export const UpdateVenueParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateVenueBodyNameMax = 200;
+
+export const updateVenueBodyLatitudeMin = -90;
+export const updateVenueBodyLatitudeMax = 90;
+
+export const updateVenueBodyLongitudeMin = -180;
+export const updateVenueBodyLongitudeMax = 180;
+
+export const updateVenueBodyLocalityMax = 200;
+
+export const updateVenueBodyAddressMax = 500;
+
+export const updateVenueBodyTableCountMin = 0;
+export const updateVenueBodyTableCountMax = 9999;
+
+export const updateVenueBodyContactMax = 200;
+
+
+
+export const UpdateVenueBody = zod.object({
+  "name": zod.string().min(1).max(updateVenueBodyNameMax),
+  "latitude": zod.number().min(updateVenueBodyLatitudeMin).max(updateVenueBodyLatitudeMax),
+  "longitude": zod.number().min(updateVenueBodyLongitudeMin).max(updateVenueBodyLongitudeMax),
+  "locality": zod.string().max(updateVenueBodyLocalityMax).nullish(),
+  "address": zod.string().max(updateVenueBodyAddressMax).nullish(),
+  "tableCount": zod.number().min(updateVenueBodyTableCountMin).max(updateVenueBodyTableCountMax).nullish(),
+  "contact": zod.string().max(updateVenueBodyContactMax).nullish(),
+  "active": zod.boolean().optional(),
+  "paidThroughAt": zod.coerce.date().nullish()
+})
+
+export const UpdateVenueResponse = zod.object({
+  "success": zod.boolean(),
+  "reason": zod.string().optional(),
+  "venue": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "latitude": zod.number(),
+  "longitude": zod.number(),
+  "locality": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "tableCount": zod.number().nullish(),
+  "contact": zod.string().nullish(),
+  "active": zod.boolean(),
+  "paidThroughAt": zod.coerce.date().nullish()
+}).optional()
+})
+
+
+/**
+ * Admin-only. Removes a venue permanently. 403 for non-admins.
+
+ * @summary Delete a verified venue (admin only)
+ */
+export const DeleteVenueParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteVenueResponse = zod.object({
+  "success": zod.boolean(),
+  "reason": zod.string().optional(),
+  "venue": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "latitude": zod.number(),
+  "longitude": zod.number(),
+  "locality": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "tableCount": zod.number().nullish(),
+  "contact": zod.string().nullish(),
+  "active": zod.boolean(),
+  "paidThroughAt": zod.coerce.date().nullish()
 }).optional()
 })
 

@@ -67,13 +67,23 @@ async function reverseGeocode(lat: number, lon: number): Promise<string | null> 
  * Shape a DB row into the API contract. Cancelled posts hide their place and
  * time — only the "Cancelled" badge and (for the owner) the card remain until
  * the original time passes and the row is purged.
+ *
+ * `canSeeExact` gates PRECISE coordinates: a meetup post publishes the host's
+ * real-world location, so exact lat/lng is disclosed only to paid (tier ===
+ * 'pass') callers and to the post's own owner. Free/no-pass callers get null
+ * lat/lng for posts they don't own and rely on the coarse `locationLabel`
+ * (city-level reverse-geocode) instead. Cancelled posts hide coordinates from
+ * everyone, owner included.
  */
 function toPostResponse(
   row: PostRow,
   screenName: string,
   callerUserId: string,
+  canSeeExact: boolean,
 ) {
   const cancelled = row.cancelledAt != null;
+  const isOwn = row.userId === callerUserId;
+  const showExact = !cancelled && (isOwn || canSeeExact);
   return {
     id: row.id,
     // Cancelled posts hide the host's identity (along with place/time below) —
@@ -81,12 +91,12 @@ function toPostResponse(
     displayName: cancelled ? "Open Table" : `${screenName}, Table #${row.tableNumber}`,
     userName: cancelled ? "Open Table" : screenName,
     tableNumber: row.tableNumber,
-    latitude: cancelled ? null : row.latitude,
-    longitude: cancelled ? null : row.longitude,
+    latitude: showExact ? row.latitude : null,
+    longitude: showExact ? row.longitude : null,
     locationLabel: cancelled ? null : (row.locationLabel ?? null),
     scheduledAt: cancelled ? null : row.scheduledAt,
     cancelled,
-    isOwn: row.userId === callerUserId,
+    isOwn,
   };
 }
 
@@ -157,6 +167,7 @@ router.get("/find-players/posts", async (req, res): Promise<void> => {
       ListFindPlayerPostsResponse.parse({
         signedIn: false,
         canCreate: false,
+        preciseLocationsVisible: false,
         activePostCount: 0,
         maxActivePosts: MAX_ACTIVE_POSTS,
         posts: [],
@@ -172,6 +183,9 @@ router.get("/find-players/posts", async (req, res): Promise<void> => {
 
   const entitlement = await computeEntitlement(user);
   const canCreate = entitlement.tier === "pass";
+  // Paid callers see exact coordinates for every post; free/no-pass callers see
+  // exact coords only for their OWN posts (handled per-row in toPostResponse).
+  const canSeeExact = entitlement.tier === "pass";
 
   // A post is listable from the active-window boundary (previous UTC day, for
   // timezone grace) onward — including cancelled-but-not-yet-expired posts
@@ -203,9 +217,10 @@ router.get("/find-players/posts", async (req, res): Promise<void> => {
     ListFindPlayerPostsResponse.parse({
       signedIn: true,
       canCreate,
+      preciseLocationsVisible: canSeeExact,
       activePostCount,
       maxActivePosts: MAX_ACTIVE_POSTS,
-      posts: rows.map((r) => toPostResponse(r.post, r.screenName, user.id)),
+      posts: rows.map((r) => toPostResponse(r.post, r.screenName, user.id, canSeeExact)),
       page: all ? 1 : page,
       totalPages,
       total,
@@ -315,7 +330,7 @@ router.post("/find-players/posts", async (req, res): Promise<void> => {
     res.json(
       CreateFindPlayerPostResponse.parse({
         success: true,
-        post: toPostResponse(created, user.screenName, user.id),
+        post: toPostResponse(created, user.screenName, user.id, true),
       }),
     );
   } catch (err) {
@@ -371,7 +386,7 @@ router.post("/find-players/posts/cancel", async (req, res): Promise<void> => {
   res.json(
     CancelFindPlayerPostResponse.parse({
       success: true,
-      post: toPostResponse(updated, user.screenName, user.id),
+      post: toPostResponse(updated, user.screenName, user.id, true),
     }),
   );
 });

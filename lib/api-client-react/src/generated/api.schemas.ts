@@ -1133,6 +1133,7 @@ export interface FindPlayerPost {
 export interface FindPlayerPostsResult {
   signedIn: boolean;
   canCreate: boolean;
+  preciseLocationsVisible: boolean;
   activePostCount: number;
   maxActivePosts: number;
   posts: FindPlayerPost[];
@@ -1174,6 +1175,76 @@ export interface CancelFindPlayerPostResult {
   success: boolean;
   reason?: string;
   post?: FindPlayerPost;
+}
+
+export interface Venue {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  /** @nullable */
+  locality?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  tableCount?: number | null;
+  /** @nullable */
+  contact?: string | null;
+  active: boolean;
+  /** @nullable */
+  paidThroughAt?: string | null;
+}
+
+export interface VenueInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  name: string;
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  latitude: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  longitude: number;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  locality?: string | null;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  address?: string | null;
+  /**
+     * @minimum 0
+     * @maximum 9999
+     * @nullable
+     */
+  tableCount?: number | null;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  contact?: string | null;
+  active?: boolean;
+  /** @nullable */
+  paidThroughAt?: string | null;
+}
+
+export interface VenueList {
+  venues: Venue[];
+}
+
+export interface VenueMutationResult {
+  success: boolean;
+  reason?: string;
+  venue?: Venue;
 }
 
 export type GetGameStateByCodeParams = {

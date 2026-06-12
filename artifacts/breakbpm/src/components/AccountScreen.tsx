@@ -27,6 +27,7 @@ import Navbar from "./Navbar";
 import GameHistoryCard, { fmtDate } from "./GameHistoryCard";
 import LuckyBreakReveal from "./LuckyBreakReveal";
 import AdminSalesPanel from "./AdminSalesPanel";
+import AdminVenuesPanel from "./AdminVenuesPanel";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // The rack tumbles for at least this long so a seeded Lucky Break draw always
@@ -691,6 +692,9 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
 
         {/* Admin sales/revenue ledger — gated on isAdmin (endpoint 403s too). */}
         {isAdmin && <AdminSalesPanel />}
+
+        {/* Admin verified-venues manager — gated on isAdmin (endpoint 403s too). */}
+        {isAdmin && <AdminVenuesPanel />}
 
         {/* Redeem a Code panel — handles both Lucky Break roll codes (animated
             reveal) and plain gifted Day/Year/Lifetime codes (plain message). */}

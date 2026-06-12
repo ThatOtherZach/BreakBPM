@@ -2425,6 +2425,265 @@ html, #root {
 }
 .fpp-page-label { font-size: 12px; }
 
+/* ===== Verified venue pins (8-ball) ==========================================
+   Real 8-ball glyph (.hud-chip.hud-chip-eight) dropped onto the map as a
+   divIcon. Verified halls layer a small ✓ badge on the top-right of the ball. */
+.fpp-venue-pin {
+  position: relative;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.55));
+}
+.fpp-venue-pin .hud-chip {
+  width: 26px;
+  height: 26px;
+}
+.fpp-venue-pin--verified .hud-chip {
+  width: 28px;
+  height: 28px;
+}
+.fpp-verified-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: bold;
+  color: #0a3;
+  background: #fff;
+  border: 1px solid #0a3;
+  border-radius: 50%;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+}
+/* When the badge appears inline (popups, compass readout), un-position it. */
+.fpp-popup-name .fpp-verified-badge,
+.fpp-compass-venue .fpp-verified-badge {
+  position: static;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+/* ===== OSM live-layer status + attribution =================================== */
+.fpp-map-status {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 500;
+  max-width: 70%;
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  line-height: 1.2;
+  color: #f4f4dc;
+  background: rgba(4, 36, 20, 0.82);
+  border: 1px solid #0a4322;
+  padding: 3px 7px;
+  pointer-events: none;
+}
+.fpp-attribution {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  z-index: 500;
+  font-size: 10px;
+  color: #234;
+  background: rgba(255, 255, 255, 0.75);
+  padding: 0 4px;
+  border-radius: 2px;
+  margin: 0;
+}
+.fpp-attribution-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ===== Public-post disclosure + acknowledgment =============================== */
+.fpp-disclose {
+  font-size: 12px;
+  color: #444;
+  background: #fff7d6;
+  border: 1px solid #e3cf7a;
+  padding: 7px 9px;
+  margin: 8px 0;
+}
+.fpp-ack {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 12px;
+  margin: 8px 0;
+  cursor: pointer;
+}
+.fpp-ack input { margin-top: 2px; flex-shrink: 0; }
+
+/* ===== Coarse-location note + upsell ========================================= */
+.fpp-coarse-note {
+  font-style: italic;
+}
+.fpp-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: #ffe98a;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.fpp-upsell-btn {
+  font-family: 'VT323', monospace;
+  letter-spacing: 0.5px;
+}
+
+/* ===== Nearest-hall compass =================================================
+   Full-bleed overlay (replaces the map view while open). A rotating needle
+   carries an 8-ball that aims at the nearest VENUE. Live device compass when
+   available, north-up static bearing otherwise. */
+.fpp-compass {
+  border: 3px outset #7a4a22;
+  background-color: #0f5a2e;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.10) 0 2px, transparent 2px 4px);
+  box-shadow: inset 0 0 0 2px #0a4322, inset 0 2px 6px rgba(0, 0, 0, 0.35);
+  padding: 12px;
+  margin: 12px 0;
+}
+.fpp-compass-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.fpp-compass-title {
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  letter-spacing: 0.5px;
+  color: #f4f4dc;
+  text-shadow: 1px 1px 0 #042414;
+}
+.fpp-compass-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 4px 4px;
+}
+.fpp-compass-dial {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 42%, #14693a, #0a4322 72%);
+  border: 4px solid #042414;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.fpp-compass-n {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  color: #ffe98a;
+  text-shadow: 1px 1px 0 #042414;
+}
+.fpp-compass-needle {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.18s ease-out;
+  transform-origin: 50% 50%;
+}
+.fpp-compass-arrow {
+  width: 0;
+  height: 0;
+  margin-top: 18px;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-bottom: 26px solid #ff5a5a;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+}
+.fpp-compass-ball {
+  width: 34px !important;
+  height: 34px !important;
+  margin-top: 4px;
+}
+.fpp-compass-readout {
+  text-align: center;
+}
+.fpp-compass-venue {
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  color: #f4f4dc;
+  text-shadow: 1px 1px 0 #042414;
+}
+.fpp-compass-dist {
+  font-family: 'VT323', monospace;
+  font-size: 28px;
+  color: #ffe98a;
+  text-shadow: 1px 1px 0 #042414;
+}
+.fpp-compass-mode {
+  font-size: 12px;
+  color: #b9e6c4;
+  text-align: center;
+  margin: 0;
+}
+
+/* ===== Admin verified-venues panel ========================================== */
+.avp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: #333;
+}
+.avp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.avp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid #0002;
+  background: #fafafa;
+}
+.avp-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.avp-row-name {
+  font-size: 13px;
+  font-weight: bold;
+  color: #222;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.avp-row-meta {
+  font-size: 11px;
+  color: #666;
+  font-family: 'Courier New', monospace;
+}
+.avp-row-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 /* ===== Lucky Break reveal =====================================================
    The "rolling the rack" overlay. Reuses .hud-chip ball art for both the
    tumbling rack and the final result ball, with a scaled-up result chip. */
