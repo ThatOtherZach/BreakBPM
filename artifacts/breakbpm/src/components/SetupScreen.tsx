@@ -823,8 +823,8 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                   </button>
                 </div>
               </div>
-              {/* On/Off: the Rule Set radios show for both auto and manual play. */}
-              {(teamMode === 'auto' || teamMode === 'manual') && (
+              {/* On/Off: the Rule Set radios show for auto play only. */}
+              {teamMode === 'auto' && (
                 <div style={{ marginTop: 6 }}>
                   <div
                     role="radiogroup"
