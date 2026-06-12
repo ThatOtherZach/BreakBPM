@@ -165,7 +165,7 @@ export default function StatsHero({
         {screenName && isPersonal && (
           <div className="stats-hero-header">
             <div className="stats-hero-player">
-              <div className="stats-hero-name-row" style={{ justifyContent: "center", textAlign: "center" }}>
+              <div className="stats-hero-name-row">
                 <span className="stats-hero-name text-[28px]">
                   <PlayerName name={screenName} admin={adminName ?? false} />
                 </span>
