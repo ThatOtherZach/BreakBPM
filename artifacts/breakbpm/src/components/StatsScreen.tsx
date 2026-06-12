@@ -295,7 +295,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     {refreshing ? "↻ Refreshing…" : "↻ Refresh"}
                   </button>
                 )}
-                {isAuthenticated && (
+                {isAuthenticated && isPersonal && (
                   <>
                     <button
                       className="btn"
