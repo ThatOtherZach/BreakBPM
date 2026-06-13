@@ -2633,6 +2633,12 @@ html, #root {
   text-align: center;
   margin: 0;
 }
+.fpp-compass .fpp-hint {
+  color: #e8f8ec;
+}
+.fpp-compass .fpp-error {
+  color: #ff9a9a;
+}
 
 /* ===== Admin verified-venues panel ========================================== */
 .avp-field {
