@@ -33,4 +33,5 @@
 - [DB auto-suspend & compute cost](db-autosuspend-compute-cost.md) — DB bills compute-time + auto-suspends idle; no DB-touching setInterval/cron, finalize stale games lazily on access, tier/idle-backoff polls.
 - [Orval nullable-enum fields](orval-nullable-enum-fields.md) — `type:[string,null]` + string-only `enum` → orval emits zod `.enum().nullish()` + named union; details in file.
 - [Leaflet marker position](leaflet-marker-position.md) — custom Leaflet divIcon classes (.fpp-venue-pin) must stay position:absolute; a `relative` ties specificity & wins source-order, drifting pins off the tiles.
+- [Venue pin placement & drift](venue-pin-placement.md) — pins use stored lat/lng; drift can be CSS OR bad coords. Admins geocode the street address (Nominatim /search; name/name+city returns []).
 - [Overpass venue proxy](overpass-venue-proxy.md) — OSM billiards-venue fetch must be server-side (browser union query gets WAF 406); single-clause + mirror fallback + 24h/7d cache. Mirrors are individually flaky.

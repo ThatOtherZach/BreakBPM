@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
@@ -46,6 +46,19 @@ function PinPicker({
   return <Marker position={position} icon={PIN} />;
 }
 
+/** Pans/zooms the map to a target whenever `tick` changes (e.g. after a
+ * geocode or when an existing venue is opened for editing). */
+function Recenter({ at, tick }: { at: [number, number] | null; tick: number }) {
+  const map = useMap();
+  useEffect(() => {
+    if (at) map.setView(at, 15);
+    // Intentionally keyed on `tick` only — we don't want to fight the user
+    // while they nudge lat/lng by hand.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tick]);
+  return null;
+}
+
 /**
  * Admin-only panel to manage verified venues (the paid, always-on pins on the
  * Find Players map). Add/edit via a pin-drop map + form, toggle active, set a
@@ -75,6 +88,13 @@ export default function AdminVenuesPanel() {
   const [paidThrough, setPaidThrough] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
+  const [geoNote, setGeoNote] = useState("");
+  // Bumped to ask <Recenter> to pan the map (geocode result / open-for-edit).
+  const [recenterTick, setRecenterTick] = useState(0);
+  // Monotonic id so a slow geocode can't overwrite coords after the admin has
+  // moved on (started editing another venue, reset, or changed the address).
+  const geoReqIdRef = useRef(0);
 
   // Verified-venue list pagination (5 per page).
   const VENUES_PER_PAGE = 5;
@@ -120,6 +140,8 @@ export default function AdminVenuesPanel() {
     setActive(true);
     setPaidThrough("");
     setError("");
+    setGeoNote("");
+    geoReqIdRef.current++;
   };
 
   const startEdit = (v: Venue) => {
@@ -135,6 +157,9 @@ export default function AdminVenuesPanel() {
     setActive(v.active);
     setPaidThrough(isoToDateInput(v.paidThroughAt));
     setError("");
+    setGeoNote("");
+    setRecenterTick((t) => t + 1);
+    geoReqIdRef.current++;
   };
 
   const buildInput = (): VenueInput | null => {
@@ -207,6 +232,52 @@ export default function AdminVenuesPanel() {
     }
   };
 
+  // Forward-geocode the typed address into accurate coordinates. The address
+  // (plus locality for disambiguation) is far more reliable than a hand-typed
+  // or roughly clicked lat/lng, which was leaving pins drifting off the real
+  // hall. We fill the lat/lng inputs and recenter the map so the admin can
+  // confirm the pin before saving. Mirrors the client-side Nominatim usage in
+  // FindPlayersScreen; the saved coords are still range-validated server-side.
+  const locateFromAddress = async () => {
+    const addr = address.trim();
+    if (!addr) {
+      setGeoNote("Enter an address first, then tap Locate.");
+      return;
+    }
+    const query = [addr, locality.trim()].filter(Boolean).join(", ");
+    const reqId = ++geoReqIdRef.current;
+    setGeocoding(true);
+    setGeoNote("");
+    try {
+      const r = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+          query,
+        )}&format=json&limit=1`,
+        { headers: { "User-Agent": "BreakBPM/1.0" } },
+      );
+      const data: Array<{ lat?: string; lon?: string }> = await r.json();
+      // A newer locate/edit/reset started while we were awaiting — drop this.
+      if (geoReqIdRef.current !== reqId) return;
+      const hit = data[0];
+      const la = hit ? Number(hit.lat) : NaN;
+      const lo = hit ? Number(hit.lon) : NaN;
+      if (!hit || !Number.isFinite(la) || !Number.isFinite(lo)) {
+        setGeoNote("Couldn't find that address — drop the pin manually.");
+        return;
+      }
+      setLat(la.toFixed(6));
+      setLng(lo.toFixed(6));
+      setRecenterTick((t) => t + 1);
+      setGeoNote("📍 Located — check the pin, then save.");
+    } catch {
+      if (geoReqIdRef.current === reqId) {
+        setGeoNote("Geocoding failed — try again or drop the pin manually.");
+      }
+    } finally {
+      if (geoReqIdRef.current === reqId) setGeocoding(false);
+    }
+  };
+
   const remove = async (id: string) => {
     setBusy(true);
     setError("");
@@ -241,7 +312,8 @@ export default function AdminVenuesPanel() {
       >
         <p style={{ fontSize: 12, color: "#444", margin: 0 }}>
           Verified halls show as ⭐ 8-ball pins for every signed-in player, above
-          the free OpenStreetMap layer. Click the map to drop the pin.
+          the free OpenStreetMap layer. Enter the address and tap “Locate from
+          address” for an accurate pin, or click the map to drop it by hand.
         </p>
 
         <div className="fpp-map fpp-map--form">
@@ -261,6 +333,7 @@ export default function AdminVenuesPanel() {
                 setLng(lo.toFixed(6));
               }}
             />
+            <Recenter at={position} tick={recenterTick} />
           </MapContainer>
         </div>
 
@@ -306,7 +379,7 @@ export default function AdminVenuesPanel() {
             />
           </label>
           <label className="avp-field">
-            Address (optional)
+            Address (recommended — used to place the pin)
             <input
               className="input"
               value={address}
@@ -315,6 +388,21 @@ export default function AdminVenuesPanel() {
               placeholder="123 Main St"
             />
           </label>
+          <div
+            style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}
+          >
+            <button
+              type="button"
+              className="btn"
+              onClick={locateFromAddress}
+              disabled={geocoding || busy}
+            >
+              {geocoding ? "Locating…" : "📍 Locate from address"}
+            </button>
+            {geoNote && (
+              <span style={{ fontSize: 11, color: "#444" }}>{geoNote}</span>
+            )}
+          </div>
           <div style={{ display: "flex", gap: 8 }}>
             <label className="avp-field" style={{ flex: 1 }}>
               Tables
