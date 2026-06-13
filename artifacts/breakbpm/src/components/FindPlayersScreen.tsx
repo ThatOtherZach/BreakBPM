@@ -681,8 +681,8 @@ export default function FindPlayersScreen({
             <SignedIn>
 
               {/* ── List / Map toggle (single button) ──
-                  Hidden while the Post-a-Meetup form or compass is open. */}
-              {!formOpen && !compassOpen && (
+                  Hidden while the Post-a-Meetup form is open. */}
+              {!formOpen && (
               <div className="fpp-toggle">
                 <button
                   className="btn btn-primary fpp-toggle-btn"
@@ -703,8 +703,8 @@ export default function FindPlayersScreen({
                   📅 Today
                 </button>
                 <button
-                  className="btn fpp-toggle-btn"
-                  onClick={() => { setCompassOpen(true); setMapView(false); }}
+                  className={`btn fpp-toggle-btn${compassOpen ? " btn-primary" : ""}`}
+                  onClick={() => { setCompassOpen((v) => !v); setMapView(false); }}
                 >
                   🧭 Nearest Hall
                 </button>
