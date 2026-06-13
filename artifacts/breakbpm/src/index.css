@@ -2470,7 +2470,7 @@ html, #root {
 .fpp-map-status {
   position: absolute;
   top: 6px;
-  left: 6px;
+  right: 6px;
   z-index: 500;
   max-width: 70%;
   font-family: 'VT323', monospace;
