@@ -433,6 +433,9 @@ export default function FindPlayersScreen({
       setNearMeOnly(false);
       return;
     }
+    // Enabling Near Me is a view swap — leave the map/compass views.
+    setMapView(false);
+    setCompassOpen(false);
     if (userCoords) {
       setNearMeOnly(true);
       return;
@@ -686,7 +689,7 @@ export default function FindPlayersScreen({
               <div className="fpp-toggle">
                 <button
                   className="btn btn-primary fpp-toggle-btn"
-                  onClick={() => { setMapView((v) => { if (!v) invalidate(); return !v; }); setTodayOnly(false); setNext30Only(false); setNearMeOnly(false); }}
+                  onClick={() => { setMapView((v) => { if (!v) invalidate(); return !v; }); setTodayOnly(false); setNext30Only(false); setNearMeOnly(false); setCompassOpen(false); }}
                 >
                   {mapView ? "📋 List View" : "🗺️ Map View"}
                 </button>
@@ -704,7 +707,7 @@ export default function FindPlayersScreen({
                 </button>
                 <button
                   className={`btn fpp-toggle-btn${compassOpen ? " btn-primary" : ""}`}
-                  onClick={() => { setCompassOpen((v) => !v); setMapView(false); }}
+                  onClick={() => { setCompassOpen((v) => !v); setMapView(false); setNearMeOnly(false); }}
                 >
                   🧭 Nearest Hall
                 </button>
