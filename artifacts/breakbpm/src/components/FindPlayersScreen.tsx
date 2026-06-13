@@ -761,7 +761,9 @@ export default function FindPlayersScreen({
                     <FitBounds
                       positions={mappable.map((p) => [p.latitude as number, p.longitude as number])}
                     />
-                    {verifiedVenues.map((v) => (
+                    {verifiedVenues.map((v) => {
+                      const websiteUrl = venueWebsiteUrl(v.contact);
+                      return (
                       <Marker
                         key={v.id}
                         position={[v.latitude, v.longitude]}
@@ -789,11 +791,22 @@ export default function FindPlayersScreen({
                               >
                                 🗺️ Maps
                               </a>
+                              {websiteUrl && (
+                                <a
+                                  className="btn"
+                                  href={websiteUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  🌐 Website
+                                </a>
+                              )}
                             </div>
                           </div>
                         </Popup>
                       </Marker>
-                    ))}
+                      );
+                    })}
                     <OsmVenueLayer verifiedVenues={verifiedVenues} onStatus={setOsmStatus} />
                     {mappable.map((post) => (
                       <Marker
@@ -996,6 +1009,20 @@ function PostCard({
   );
 }
 
+/**
+ * Extracts a website URL from a venue's free-form contact line, when present.
+ * The contact field can hold a phone, email, or URL — only return a link for
+ * things that look like a web address (never phones or emails).
+ */
+function venueWebsiteUrl(contact?: string | null): string | null {
+  if (!contact) return null;
+  const s = contact.trim();
+  if (!s || s.includes("@")) return null;
+  if (/^https?:\/\//i.test(s)) return s;
+  if (/^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(s)) return `https://${s}`;
+  return null;
+}
+
 /** Sponsored/verified pool hall row shown in the Near Me list. */
 function VenueCard({
   venue,
@@ -1008,6 +1035,7 @@ function VenueCard({
     distanceKm < 1
       ? `${Math.round(distanceKm * 1000)} m`
       : `${distanceKm.toFixed(distanceKm < 10 ? 1 : 0)} km`;
+  const websiteUrl = venueWebsiteUrl(venue.contact);
   return (
     <div className="fpp-card fpp-card--venue">
       <div className="fpp-card-head">
@@ -1034,6 +1062,16 @@ function VenueCard({
         >
           🗺️ Open in Maps
         </a>
+        {websiteUrl && (
+          <a
+            className="btn"
+            href={websiteUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            🌐 Website
+          </a>
+        )}
       </div>
     </div>
   );
