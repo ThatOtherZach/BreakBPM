@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
@@ -73,6 +73,19 @@ export default function AdminVenuesPanel() {
   const [paidThrough, setPaidThrough] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // Verified-venue list pagination (5 per page).
+  const VENUES_PER_PAGE = 5;
+  const [venuePage, setVenuePage] = useState(1);
+  const venueTotalPages = Math.max(1, Math.ceil(venues.length / VENUES_PER_PAGE));
+  // Clamp the page when the list shrinks (e.g. after a delete).
+  useEffect(() => {
+    if (venuePage > venueTotalPages) setVenuePage(venueTotalPages);
+  }, [venuePage, venueTotalPages]);
+  const pagedVenues = venues.slice(
+    (venuePage - 1) * VENUES_PER_PAGE,
+    venuePage * VENUES_PER_PAGE,
+  );
 
   const center = useMemo<[number, number]>(() => {
     const la = Number(lat);
@@ -364,7 +377,7 @@ export default function AdminVenuesPanel() {
             </p>
           ) : (
             <ul className="avp-list">
-              {venues.map((v) => (
+              {pagedVenues.map((v) => (
                 <li key={v.id} className="avp-row">
                   <div className="avp-row-main">
                     <span className="avp-row-name">
@@ -393,6 +406,27 @@ export default function AdminVenuesPanel() {
                 </li>
               ))}
             </ul>
+          )}
+          {venueTotalPages > 1 && (
+            <div className="fpp-pager">
+              <button
+                className="btn"
+                disabled={venuePage <= 1}
+                onClick={() => setVenuePage((p) => Math.max(1, p - 1))}
+              >
+                ← Prev
+              </button>
+              <span className="fpp-page-label">
+                Page {venuePage} / {venueTotalPages}
+              </span>
+              <button
+                className="btn"
+                disabled={venuePage >= venueTotalPages}
+                onClick={() => setVenuePage((p) => Math.min(venueTotalPages, p + 1))}
+              >
+                Next →
+              </button>
+            </div>
           )}
         </div>
       </div>
