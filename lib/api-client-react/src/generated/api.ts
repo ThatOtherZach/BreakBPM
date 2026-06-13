@@ -72,6 +72,7 @@ import type {
   PublicProfileResult,
   RedeemResult,
   RemoveInviteResult,
+  RepairVenueCoordinatesResult,
   ResolveMentionParams,
   ResolveShareCodeInput,
   ResolveShareCodeResult,
@@ -3464,6 +3465,78 @@ export const useCreateVenue = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateVenueMutationOptions(options));
+    }
+
+export const getRepairVenueCoordinatesUrl = () => {
+
+
+
+
+  return `/api/admin/venues/repair-coordinates`
+}
+
+/**
+ * Admin-only. For every verified venue with a saved address, re-derives the map coordinates from that address (the address is authoritative) and updates the pin when it has drifted. Venues with no address, or whose address can't be geocoded, keep their existing coordinates and are reported as `failed`. 403 for non-admins.
+
+ * @summary Re-place every venue pin from its saved address (admin only)
+ */
+export const repairVenueCoordinates = async ( options?: RequestInit): Promise<RepairVenueCoordinatesResult> => {
+
+  return customFetch<RepairVenueCoordinatesResult>(getRepairVenueCoordinatesUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRepairVenueCoordinatesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof repairVenueCoordinates>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof repairVenueCoordinates>>, TError,void, TContext> => {
+
+const mutationKey = ['repairVenueCoordinates'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof repairVenueCoordinates>>, void> = () => {
+
+
+          return  repairVenueCoordinates(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RepairVenueCoordinatesMutationResult = NonNullable<Awaited<ReturnType<typeof repairVenueCoordinates>>>
+
+    export type RepairVenueCoordinatesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Re-place every venue pin from its saved address (admin only)
+ */
+export const useRepairVenueCoordinates = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof repairVenueCoordinates>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof repairVenueCoordinates>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRepairVenueCoordinatesMutationOptions(options));
     }
 
 export const getUpdateVenueUrl = (id: string,) => {

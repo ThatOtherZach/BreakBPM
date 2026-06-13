@@ -5,6 +5,7 @@ import request from "supertest";
 // Mutable test state shared with the module mocks (see admin-codes.test.ts).
 const mocks = vi.hoisted(() => ({
   currentUser: null as { id: string } | null,
+  geocodeAddress: vi.fn(),
 }));
 
 // Stub auth: the venue handlers only call getOrCreateUser. Return whichever
@@ -14,6 +15,13 @@ vi.mock("../lib/auth", () => ({
   getOrCreateUser: vi.fn(async () => mocks.currentUser),
   needsOnboarding: vi.fn(() => false),
 }));
+
+// Stub the network geocoder only — keep the real haversineMeters so the repair
+// route's drift math is exercised for real. Each test sets the resolved value.
+vi.mock("../lib/geocode", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../lib/geocode")>();
+  return { ...actual, geocodeAddress: mocks.geocodeAddress };
+});
 
 import venuesRouter from "./venues";
 import { createUser, seedVenue, getVenue, cleanup } from "../test/factories";
@@ -231,5 +239,169 @@ describe("DELETE /admin/venues/:id — delete", () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(false);
     expect(res.body.reason).toBe("not_found");
+  });
+});
+
+describe("address is authoritative on create/update", () => {
+  it("create geocodes the address and stores those coords, not the submitted lat/lng", async () => {
+    const admin = await createUser({ email: ADMIN_EMAIL });
+    mocks.currentUser = admin;
+    mocks.geocodeAddress.mockResolvedValue({ lat: 43.6532, lng: -79.3832 });
+
+    const res = await request(app).post("/api/admin/venues").send({
+      name: "Address Hall",
+      latitude: 1,
+      longitude: 2,
+      address: "100 Front St, Toronto",
+    });
+
+    expect(res.status).toBe(200);
+    expect(mocks.geocodeAddress).toHaveBeenCalledTimes(1);
+    const row = (await getVenue(res.body.venue.id))!;
+    expect(row.latitude).toBeCloseTo(43.6532, 4);
+    expect(row.longitude).toBeCloseTo(-79.3832, 4);
+  });
+
+  it("create keeps the submitted coords when the address can't be geocoded", async () => {
+    const admin = await createUser({ email: ADMIN_EMAIL });
+    mocks.currentUser = admin;
+    mocks.geocodeAddress.mockResolvedValue(null);
+
+    const res = await request(app).post("/api/admin/venues").send({
+      name: "Unknown Address Hall",
+      latitude: 12.34,
+      longitude: 56.78,
+      address: "Somewhere unfindable",
+    });
+
+    expect(res.status).toBe(200);
+    const row = (await getVenue(res.body.venue.id))!;
+    expect(row.latitude).toBeCloseTo(12.34, 4);
+    expect(row.longitude).toBeCloseTo(56.78, 4);
+  });
+
+  it("create does NOT geocode when no address is provided", async () => {
+    const admin = await createUser({ email: ADMIN_EMAIL });
+    mocks.currentUser = admin;
+
+    const res = await request(app).post("/api/admin/venues").send({
+      name: "No Address Hall",
+      latitude: 9.87,
+      longitude: 6.54,
+    });
+
+    expect(res.status).toBe(200);
+    expect(mocks.geocodeAddress).not.toHaveBeenCalled();
+    const row = (await getVenue(res.body.venue.id))!;
+    expect(row.latitude).toBeCloseTo(9.87, 4);
+    expect(row.longitude).toBeCloseTo(6.54, 4);
+  });
+
+  it("update re-geocodes the address and overrides the submitted lat/lng", async () => {
+    const admin = await createUser({ email: ADMIN_EMAIL });
+    const venue = await seedVenue(admin.id, { name: "Drifted", latitude: 0, longitude: 0 });
+    mocks.currentUser = admin;
+    mocks.geocodeAddress.mockResolvedValue({ lat: 49.2827, lng: -123.1207 });
+
+    const res = await request(app).patch(`/api/admin/venues/${venue.id}`).send({
+      name: "Drifted",
+      latitude: 0,
+      longitude: 0,
+      address: "Vancouver",
+    });
+
+    expect(res.status).toBe(200);
+    const row = (await getVenue(venue.id))!;
+    expect(row.latitude).toBeCloseTo(49.2827, 4);
+    expect(row.longitude).toBeCloseTo(-123.1207, 4);
+  });
+});
+
+describe("POST /admin/venues/repair-coordinates", () => {
+  it("403s a signed-in non-admin", async () => {
+    const user = await createUser({ email: "not-admin@breakbpm.test" });
+    mocks.currentUser = user;
+    const res = await request(app).post("/api/admin/venues/repair-coordinates");
+    expect(res.status).toBe(403);
+  });
+
+  it("401s a signed-out caller", async () => {
+    mocks.currentUser = null;
+    const res = await request(app).post("/api/admin/venues/repair-coordinates");
+    expect(res.status).toBe(401);
+  });
+
+  it("moves a drifted pin, keeps a correct one, and reports no-address/geocode-fail as failed", async () => {
+    const admin = await createUser({ email: ADMIN_EMAIL });
+    mocks.currentUser = admin;
+
+    // Drifted: stored far from where its address geocodes.
+    const drifted = await seedVenue(admin.id, {
+      name: "Drifted Hall",
+      latitude: 0,
+      longitude: 0,
+      address: "Toronto",
+    });
+    // Correct: stored coords already match the geocode result.
+    const correct = await seedVenue(admin.id, {
+      name: "Correct Hall",
+      latitude: 45.5019,
+      longitude: -73.5674,
+      address: "Montreal",
+    });
+    // No address: must be left untouched and reported as failed.
+    const noAddr = await seedVenue(admin.id, {
+      name: "No Address Hall",
+      latitude: 10,
+      longitude: 20,
+      address: null,
+    });
+    // Unfindable address: geocode returns null → keep coords, report failed.
+    const unfindable = await seedVenue(admin.id, {
+      name: "Unfindable Hall",
+      latitude: 30,
+      longitude: 40,
+      address: "nowhere at all",
+    });
+
+    mocks.geocodeAddress.mockImplementation(async (address: string) => {
+      if (address === "Toronto") return { lat: 43.6532, lng: -79.3832 };
+      if (address === "Montreal") return { lat: 45.5019, lng: -73.5674 };
+      return null;
+    });
+
+    const res = await request(app).post("/api/admin/venues/repair-coordinates");
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.total).toBe(4);
+    expect(res.body.updated).toBe(1);
+    expect(res.body.unchanged).toBe(1);
+    expect(res.body.failed).toBe(2);
+
+    // The drifted pin actually moved to the geocoded point.
+    const driftedRow = (await getVenue(drifted.id))!;
+    expect(driftedRow.latitude).toBeCloseTo(43.6532, 4);
+    expect(driftedRow.longitude).toBeCloseTo(-79.3832, 4);
+
+    // The correct pin stayed put.
+    const correctRow = (await getVenue(correct.id))!;
+    expect(correctRow.latitude).toBeCloseTo(45.5019, 4);
+    expect(correctRow.longitude).toBeCloseTo(-73.5674, 4);
+
+    // The no-address and unfindable pins were NOT overwritten.
+    const noAddrRow = (await getVenue(noAddr.id))!;
+    expect(noAddrRow.latitude).toBeCloseTo(10, 4);
+    expect(noAddrRow.longitude).toBeCloseTo(20, 4);
+    const unfindableRow = (await getVenue(unfindable.id))!;
+    expect(unfindableRow.latitude).toBeCloseTo(30, 4);
+    expect(unfindableRow.longitude).toBeCloseTo(40, 4);
+
+    const byId = new Map(
+      res.body.items.map((i: { id: string; status: string }) => [i.id, i.status]),
+    );
+    expect(byId.get(drifted.id)).toBe("updated");
+    expect(byId.get(correct.id)).toBe("unchanged");
+    expect(byId.get(noAddr.id)).toBe("failed");
+    expect(byId.get(unfindable.id)).toBe("failed");
   });
 });

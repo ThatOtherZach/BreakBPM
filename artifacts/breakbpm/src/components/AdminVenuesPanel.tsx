@@ -8,6 +8,7 @@ import {
   useCreateVenue,
   useUpdateVenue,
   useDeleteVenue,
+  useRepairVenueCoordinates,
   getListAdminVenuesQueryKey,
   getListVenuesQueryKey,
 } from "@workspace/api-client-react";
@@ -74,6 +75,7 @@ export default function AdminVenuesPanel() {
   const createVenue = useCreateVenue();
   const updateVenue = useUpdateVenue();
   const deleteVenue = useDeleteVenue();
+  const repairVenues = useRepairVenueCoordinates();
 
   const [editId, setEditId] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -90,6 +92,8 @@ export default function AdminVenuesPanel() {
   const [busy, setBusy] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
   const [geoNote, setGeoNote] = useState("");
+  const [repairing, setRepairing] = useState(false);
+  const [repairNote, setRepairNote] = useState("");
   // Bumped to ask <Recenter> to pan the map (geocode result / open-for-edit).
   const [recenterTick, setRecenterTick] = useState(0);
   // Monotonic id so a slow geocode can't overwrite coords after the admin has
@@ -296,6 +300,30 @@ export default function AdminVenuesPanel() {
     }
   };
 
+  // Bulk-repair: re-place every existing pin from its saved address. Fixes pins
+  // that were entered with a hand-typed/clicked lat/lng that never matched the
+  // real hall. Venues with no address (or one that can't be geocoded) keep their
+  // current coordinates and are reported as "couldn't locate".
+  const fixAllPins = async () => {
+    setRepairNote("");
+    setRepairing(true);
+    try {
+      const res = await repairVenues.mutateAsync();
+      if (!res.success) {
+        setRepairNote("Couldn't repair pins — try again.");
+        return;
+      }
+      const bits = [`updated ${res.updated}`, `already correct ${res.unchanged}`];
+      if (res.failed > 0) bits.push(`couldn't locate ${res.failed}`);
+      setRepairNote(`✅ Done — ${bits.join(", ")}.`);
+      invalidate();
+    } catch {
+      setRepairNote("Repair failed — try again.");
+    } finally {
+      setRepairing(false);
+    }
+  };
+
   return (
     <div className="panel">
       <div className="panel-header">
@@ -479,6 +507,32 @@ export default function AdminVenuesPanel() {
         </div>
 
         <div style={{ borderTop: "1px solid #0002", paddingTop: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              flexWrap: "wrap",
+              marginBottom: 8,
+            }}
+          >
+            <button
+              type="button"
+              className="btn"
+              onClick={fixAllPins}
+              disabled={repairing || busy || venues.length === 0}
+              title="Re-place every saved pin from its address"
+            >
+              {repairing ? "Fixing pins…" : "🔧 Fix all pins from addresses"}
+            </button>
+            {repairNote ? (
+              <span style={{ fontSize: 11, color: "#444" }}>{repairNote}</span>
+            ) : (
+              <span style={{ fontSize: 11, color: "#777" }}>
+                Re-places each pin from its saved address (can take a minute).
+              </span>
+            )}
+          </div>
           {list.isLoading ? (
             <p style={{ fontSize: 12, color: "#444", margin: 0 }}>Loading…</p>
           ) : venues.length === 0 ? (

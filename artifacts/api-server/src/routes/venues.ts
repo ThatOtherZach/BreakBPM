@@ -13,15 +13,44 @@ import {
   UpdateVenueResponse,
   DeleteVenueParams,
   DeleteVenueResponse,
+  RepairVenueCoordinatesResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser } from "../lib/auth";
 import { isAdminEmail } from "../lib/config";
 import { newId } from "../lib/ids";
 import { fetchOsmVenuesForBBox } from "../lib/osmVenues";
+import { geocodeAddress, haversineMeters } from "../lib/geocode";
 
 const router: IRouter = Router();
 
 type VenueRow = typeof venuesTable.$inferSelect;
+
+// Nominatim asks for ~1 request/sec; space the bulk repair calls accordingly.
+// Tests mock the geocoder, so skip the wait there to keep them fast.
+const REPAIR_THROTTLE_MS = process.env.NODE_ENV === "test" ? 0 : 1100;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Coordinates for a venue write. The address is authoritative: when one is
+ * provided we geocode it and use the result, so a hand-typed or roughly-clicked
+ * lat/lng can never leave the pin drifting off the real hall. We fall back to
+ * the submitted coordinates only when there is no address or the address can't
+ * be geocoded — so manual placement still works and a geocoder outage never
+ * blocks a save.
+ */
+async function resolveVenueCoords(b: {
+  address?: string | null;
+  locality?: string | null;
+  latitude: number;
+  longitude: number;
+}): Promise<{ lat: number; lng: number }> {
+  const addr = (b.address ?? "").trim();
+  if (addr) {
+    const geo = await geocodeAddress(addr, b.locality);
+    if (geo) return geo;
+  }
+  return { lat: b.latitude, lng: b.longitude };
+}
 
 /** Shape a DB row into the public Venue contract (drops audit-only columns). */
 function toVenueResponse(row: VenueRow) {
@@ -133,14 +162,15 @@ router.post("/admin/venues", async (req, res): Promise<void> => {
     return;
   }
   const b = parsed.data;
+  const coords = await resolveVenueCoords(b);
 
   const [row] = await db
     .insert(venuesTable)
     .values({
       id: newId(),
       name: b.name,
-      latitude: b.latitude,
-      longitude: b.longitude,
+      latitude: coords.lat,
+      longitude: coords.lng,
       locality: b.locality ?? null,
       address: b.address ?? null,
       tableCount: b.tableCount ?? null,
@@ -155,6 +185,100 @@ router.post("/admin/venues", async (req, res): Promise<void> => {
   req.log.info({ userId: user.id, venueId: row.id }, "Venue created");
   res.json(CreateVenueResponse.parse({ success: true, venue: toVenueResponse(row) }));
 });
+
+/**
+ * POST /admin/venues/repair-coordinates — re-derive every venue's coordinates
+ * from its saved address (the address is authoritative) and update any pin that
+ * has drifted. Admin-only (403 for everyone else). Venues with no address, or
+ * whose address can't be geocoded, KEEP their existing coordinates and are
+ * reported as `failed` so the admin can fix those by hand — we never overwrite a
+ * pin with a wrong/guessed point. Geocoder calls are throttled to respect
+ * Nominatim's ~1 req/sec policy, so a large set can take a little while.
+ */
+router.post(
+  "/admin/venues/repair-coordinates",
+  async (req, res): Promise<void> => {
+    const user = await getOrCreateUser(req);
+    if (!user) {
+      res.status(401).json({ error: "Sign in to manage venues" });
+      return;
+    }
+    if (!isAdminEmail(user.email)) {
+      res.status(403).json({ error: "Admins only" });
+      return;
+    }
+
+    const rows = await db
+      .select()
+      .from(venuesTable)
+      .orderBy(desc(venuesTable.createdAt));
+
+    const items: Array<{
+      id: string;
+      name: string;
+      status: "updated" | "unchanged" | "failed";
+      distanceMeters: number | null;
+    }> = [];
+    let updated = 0;
+    let unchanged = 0;
+    let failed = 0;
+    let madeNetworkCall = false;
+
+    for (const row of rows) {
+      const addr = (row.address ?? "").trim();
+      if (!addr) {
+        failed++;
+        items.push({ id: row.id, name: row.name, status: "failed", distanceMeters: null });
+        continue;
+      }
+
+      // Space out the real network calls (no wait before the first one).
+      if (madeNetworkCall) await sleep(REPAIR_THROTTLE_MS);
+      madeNetworkCall = true;
+
+      const geo = await geocodeAddress(addr, row.locality);
+      if (!geo) {
+        failed++;
+        items.push({ id: row.id, name: row.name, status: "failed", distanceMeters: null });
+        continue;
+      }
+
+      const dist = haversineMeters(row.latitude, row.longitude, geo.lat, geo.lng);
+      if (dist < 1) {
+        unchanged++;
+        items.push({ id: row.id, name: row.name, status: "unchanged", distanceMeters: 0 });
+        continue;
+      }
+
+      await db
+        .update(venuesTable)
+        .set({ latitude: geo.lat, longitude: geo.lng, updatedAt: new Date() })
+        .where(eq(venuesTable.id, row.id));
+      updated++;
+      items.push({
+        id: row.id,
+        name: row.name,
+        status: "updated",
+        distanceMeters: Math.round(dist),
+      });
+    }
+
+    req.log.info(
+      { userId: user.id, total: rows.length, updated, unchanged, failed },
+      "Venue coordinates repaired",
+    );
+    res.json(
+      RepairVenueCoordinatesResponse.parse({
+        success: true,
+        total: rows.length,
+        updated,
+        unchanged,
+        failed,
+        items,
+      }),
+    );
+  },
+);
 
 /**
  * PATCH /admin/venues/:id — replace a venue's editable fields. Admin-only
@@ -183,13 +307,14 @@ router.patch("/admin/venues/:id", async (req, res): Promise<void> => {
     return;
   }
   const b = parsed.data;
+  const coords = await resolveVenueCoords(b);
 
   const [row] = await db
     .update(venuesTable)
     .set({
       name: b.name,
-      latitude: b.latitude,
-      longitude: b.longitude,
+      latitude: coords.lat,
+      longitude: coords.lng,
       locality: b.locality ?? null,
       address: b.address ?? null,
       tableCount: b.tableCount ?? null,

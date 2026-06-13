@@ -1307,6 +1307,33 @@ export interface VenueMutationResult {
   venue?: Venue;
 }
 
+export type RepairVenueCoordinatesItemStatus = typeof RepairVenueCoordinatesItemStatus[keyof typeof RepairVenueCoordinatesItemStatus];
+
+
+export const RepairVenueCoordinatesItemStatus = {
+  updated: 'updated',
+  unchanged: 'unchanged',
+  failed: 'failed',
+} as const;
+
+export interface RepairVenueCoordinatesItem {
+  id: string;
+  name: string;
+  status: RepairVenueCoordinatesItemStatus;
+  /** @nullable */
+  distanceMeters?: number | null;
+}
+
+export interface RepairVenueCoordinatesResult {
+  success: boolean;
+  reason?: string;
+  total: number;
+  updated: number;
+  unchanged: number;
+  failed: number;
+  items: RepairVenueCoordinatesItem[];
+}
+
 export type GetGameStateByCodeParams = {
 /**
  * @minLength 5

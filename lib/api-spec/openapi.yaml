@@ -925,6 +925,25 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/VenueMutationResult" }
 
+  /admin/venues/repair-coordinates:
+    post:
+      operationId: repairVenueCoordinates
+      tags: [venues]
+      summary: Re-place every venue pin from its saved address (admin only)
+      description: >
+        Admin-only. For every verified venue with a saved address, re-derives the
+        map coordinates from that address (the address is authoritative) and
+        updates the pin when it has drifted. Venues with no address, or whose
+        address can't be geocoded, keep their existing coordinates and are
+        reported as `failed`. 403 for non-admins.
+      responses:
+        "200":
+          description: Repair summary
+          content:
+            application/json:
+              schema:
+                { $ref: "#/components/schemas/RepairVenueCoordinatesResult" }
+
   /admin/venues/{id}:
     patch:
       operationId: updateVenue
@@ -2299,3 +2318,31 @@ components:
         # Set on failure: "not_signed_in" | "not_admin" | "not_found".
         reason: { type: string }
         venue: { $ref: "#/components/schemas/Venue" }
+
+    RepairVenueCoordinatesItem:
+      type: object
+      required: [id, name, status]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        # updated: pin moved to the geocoded address.
+        # unchanged: address geocoded to (effectively) the same spot.
+        # failed: no address, or the address couldn't be geocoded (kept as-is).
+        status: { type: string, enum: [updated, unchanged, failed] }
+        # How far the pin moved, in metres (null when it couldn't be geocoded).
+        distanceMeters: { type: ["number", "null"] }
+
+    RepairVenueCoordinatesResult:
+      type: object
+      required: [success, total, updated, unchanged, failed, items]
+      properties:
+        success: { type: boolean }
+        # Set on failure: "not_signed_in" | "not_admin".
+        reason: { type: string }
+        total: { type: integer }
+        updated: { type: integer }
+        unchanged: { type: integer }
+        failed: { type: integer }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/RepairVenueCoordinatesItem" }

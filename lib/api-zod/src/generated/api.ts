@@ -1224,6 +1224,27 @@ export const CreateVenueResponse = zod.object({
 
 
 /**
+ * Admin-only. For every verified venue with a saved address, re-derives the map coordinates from that address (the address is authoritative) and updates the pin when it has drifted. Venues with no address, or whose address can't be geocoded, keep their existing coordinates and are reported as `failed`. 403 for non-admins.
+
+ * @summary Re-place every venue pin from its saved address (admin only)
+ */
+export const RepairVenueCoordinatesResponse = zod.object({
+  "success": zod.boolean(),
+  "reason": zod.string().optional(),
+  "total": zod.number(),
+  "updated": zod.number(),
+  "unchanged": zod.number(),
+  "failed": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "status": zod.enum(['updated', 'unchanged', 'failed']),
+  "distanceMeters": zod.number().nullish()
+}))
+})
+
+
+/**
  * Admin-only. Replaces a venue's editable fields. 403 for non-admins.
 
  * @summary Update a verified venue (admin only)
