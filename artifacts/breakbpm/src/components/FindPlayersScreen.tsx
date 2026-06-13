@@ -62,7 +62,7 @@ const venueIcon = L.divIcon({
 const verifiedVenueIcon = L.divIcon({
   html:
     '<span class="hud-chip hud-chip-eight" data-number="8"></span>' +
-    '<span class="fpp-verified-badge">✓</span>',
+    '<span class="fpp-verified-badge">⭐</span>',
   className: "fpp-venue-pin fpp-venue-pin--verified",
   iconSize: [30, 30],
   iconAnchor: [15, 15],
@@ -766,7 +766,7 @@ export default function FindPlayersScreen({
                               <div className="fpp-popup-when">{v.tableCount} tables</div>
                             )}
                             <div className="fpp-popup-coords fpp-popup-verified">
-                              ✓ Verified hall
+                              ⭐ Verified hall
                             </div>
                             <div className="fpp-popup-actions">
                               <a

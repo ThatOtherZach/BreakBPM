@@ -251,7 +251,7 @@ export default function NearestHallCompass({
             <div className="fpp-compass-venue">
               {nearest.verified && (
                 <span className="fpp-verified-badge" title="Verified hall">
-                  ✓
+                  ⭐
                 </span>
               )}
               {nearest.name}

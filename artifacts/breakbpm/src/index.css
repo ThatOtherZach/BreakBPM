@@ -2427,7 +2427,7 @@ html, #root {
 
 /* ===== Verified venue pins (8-ball) ==========================================
    Real 8-ball glyph (.hud-chip.hud-chip-eight) dropped onto the map as a
-   divIcon. Verified halls layer a small ✓ badge on the top-right of the ball. */
+   divIcon. Verified halls layer a small ⭐ badge on the top-right of the ball. */
 .fpp-venue-pin {
   position: relative;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.55));
@@ -2452,9 +2452,9 @@ html, #root {
   font-size: 10px;
   line-height: 1;
   font-weight: bold;
-  color: #0a3;
+  color: #b8860b;
   background: #fff;
-  border: 1px solid #0a3;
+  border: 1px solid #d9a300;
   border-radius: 50%;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
 }

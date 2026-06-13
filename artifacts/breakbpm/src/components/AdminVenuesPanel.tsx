@@ -220,7 +220,7 @@ export default function AdminVenuesPanel() {
         style={{ display: "flex", flexDirection: "column", gap: 10 }}
       >
         <p style={{ fontSize: 12, color: "#444", margin: 0 }}>
-          Verified halls show as ✓ 8-ball pins for every signed-in player, above
+          Verified halls show as ⭐ 8-ball pins for every signed-in player, above
           the free OpenStreetMap layer. Click the map to drop the pin.
         </p>
 
