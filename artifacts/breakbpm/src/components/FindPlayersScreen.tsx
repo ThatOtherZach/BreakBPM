@@ -691,10 +691,10 @@ export default function FindPlayersScreen({
                   {mapView ? "📋 List View" : "🗺️ Map View"}
                 </button>
                 <button
-                  className="btn fpp-toggle-btn"
-                  onClick={() => { setCompassOpen(true); setMapView(false); }}
+                  className={`btn fpp-toggle-btn${next30Only ? " btn-primary" : ""}`}
+                  onClick={() => { setNext30Only((v) => !v); setTodayOnly(false); }}
                 >
-                  🧭 Nearest Hall
+                  🗓️ 30 Days
                 </button>
                 <button
                   className={`btn fpp-toggle-btn${todayOnly ? " btn-primary" : ""}`}
@@ -703,10 +703,10 @@ export default function FindPlayersScreen({
                   📅 Today
                 </button>
                 <button
-                  className={`btn fpp-toggle-btn${next30Only ? " btn-primary" : ""}`}
-                  onClick={() => { setNext30Only((v) => !v); setTodayOnly(false); }}
+                  className="btn fpp-toggle-btn"
+                  onClick={() => { setCompassOpen(true); setMapView(false); }}
                 >
-                  🗓️ 30 Days
+                  🧭 Nearest Hall
                 </button>
                 <button
                   className={`btn fpp-toggle-btn${nearMeOnly ? " btn-primary" : ""}`}
