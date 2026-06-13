@@ -824,13 +824,17 @@ export default function FindPlayersScreen({
                     <div className="fpp-map-status">{osmStatusMessage(osmStatus)}</div>
                   )}
                 </div>
-                <p className="fpp-attribution">
-                  <span className="fpp-attribution-key">
-                    <span className="cue-ball-icon" /> meetup ·{" "}
+                <div className="fpp-legend">
+                  <span className="fpp-legend-item">
+                    <span className="cue-ball-icon" /> meetup
+                  </span>
+                  <span className="fpp-legend-item">
                     <span className="hud-chip hud-chip-eight" data-number="8" /> pool hall
                   </span>
-                  Venue data © OpenStreetMap contributors
-                </p>
+                  <span className="fpp-legend-attr">
+                    Venue data © OpenStreetMap contributors
+                  </span>
+                </div>
                 </>
               ) : posts.length === 0 ? (
                 <p className="fpp-empty">
