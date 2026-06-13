@@ -2441,7 +2441,11 @@ html, #root {
    Real 8-ball glyph (.hud-chip.hud-chip-eight) dropped onto the map as a
    divIcon. Verified halls layer a small ⭐ badge on the top-right of the ball. */
 .fpp-venue-pin {
-  position: relative;
+  /* Leaflet positions marker icons with position:absolute. Match it here — a
+     `relative` ties on specificity with leaflet.css and wins by source order,
+     which knocks every venue pin out of alignment with the map tiles. The
+     drop-shadow filter still establishes a containing block for the badge. */
+  position: absolute;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.55));
 }
 .fpp-venue-pin .hud-chip {
