@@ -176,10 +176,9 @@ export default function NearestHallCompass({
           ✕ Close
         </button>
       </div>
-
       {phase === "idle" && (
         <div className="fpp-compass-body">
-          <p className="fpp-hint">
+          <p className="fpp-hint text-[#fff] border-t-[#fff] border-r-[#fff] border-b-[#fff] border-l-[#fff]">
             Point your phone and we'll aim an 8-ball at the closest pool hall.
             We'll ask for your location and compass.
           </p>
@@ -188,7 +187,6 @@ export default function NearestHallCompass({
           </button>
         </div>
       )}
-
       {phase === "locating" && (
         <p className="fpp-hint fpp-compass-body">📍 Getting your location…</p>
       )}
@@ -227,7 +225,6 @@ export default function NearestHallCompass({
           </button>
         </div>
       )}
-
       {phase === "ready" && nearest && (
         <div className="fpp-compass-body">
           <div
