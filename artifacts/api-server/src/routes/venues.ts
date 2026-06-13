@@ -3,6 +3,8 @@ import { desc, eq } from "drizzle-orm";
 import { db, venuesTable } from "@workspace/db";
 import {
   ListVenuesResponse,
+  ListOsmVenuesQueryParams,
+  ListOsmVenuesResponse,
   ListAdminVenuesResponse,
   CreateVenueBody,
   CreateVenueResponse,
@@ -15,6 +17,7 @@ import {
 import { getOrCreateUser } from "../lib/auth";
 import { isAdminEmail } from "../lib/config";
 import { newId } from "../lib/ids";
+import { fetchOsmVenuesForBBox } from "../lib/osmVenues";
 
 const router: IRouter = Router();
 
@@ -57,6 +60,31 @@ router.get("/venues", async (req, res): Promise<void> => {
     .orderBy(desc(venuesTable.createdAt));
 
   res.json(ListVenuesResponse.parse({ venues: rows.map(toVenueResponse) }));
+});
+
+/**
+ * GET /venues/osm — live OpenStreetMap billiards venues for a viewport, proxied
+ * + cached server-side (see lib/osmVenues.ts for why the browser can't do this
+ * itself). Signed-in only: we don't run outbound Overpass queries for anonymous
+ * callers, so this never becomes an open relay. Always 200 for signed-in callers
+ * (the body's `status` carries ok / too_broad / error); 401 for signed-out.
+ */
+router.get("/venues/osm", async (req, res): Promise<void> => {
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Sign in to load venues" });
+    return;
+  }
+
+  const parsed = ListOsmVenuesQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { south, west, north, east } = parsed.data;
+
+  const result = await fetchOsmVenuesForBBox({ south, west, north, east });
+  res.json(ListOsmVenuesResponse.parse(result));
 });
 
 /**

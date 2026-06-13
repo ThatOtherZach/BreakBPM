@@ -62,9 +62,11 @@ import type {
   LeaveGameResult,
   ListAdminSalesParams,
   ListFindPlayerPostsParams,
+  ListOsmVenuesParams,
   MeResponse,
   MentionResolveResult,
   MyGiftCodesResult,
+  OsmVenueList,
   PassCheckoutInput,
   PlanCatalog,
   PublicProfileResult,
@@ -3214,6 +3216,92 @@ export function useListVenues<TData = Awaited<ReturnType<typeof listVenues>>, TE
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListVenuesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListOsmVenuesUrl = (params: ListOsmVenuesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/venues/osm?${stringifiedParams}` : `/api/venues/osm`
+}
+
+/**
+ * Server-side proxy + cache for OpenStreetMap (Overpass) billiards venues inside a bounding box, used by the map's OSM layer and the nearest-hall compass. The browser cannot query Overpass politely or reliably itself (it can't set a contact User-Agent, has no shared cache, and Overpass's WAF rejects the multi-clause union query from residential IPs), so the API does it instead: it runs single-clause queries across mirrors, caches results for ~24h keyed by a snapped bbox, and degrades gracefully. Signed-in only (not an open Overpass relay). An over-broad bbox returns status `too_broad`; an upstream failure returns `error` (with the last good cached venues when available, flagged `stale`).
+
+ * @summary Live OpenStreetMap billiards venues for a viewport (signed-in)
+ */
+export const listOsmVenues = async (params: ListOsmVenuesParams, options?: RequestInit): Promise<OsmVenueList> => {
+
+  return customFetch<OsmVenueList>(getListOsmVenuesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListOsmVenuesQueryKey = (params?: ListOsmVenuesParams,) => {
+    return [
+    `/api/venues/osm`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListOsmVenuesQueryOptions = <TData = Awaited<ReturnType<typeof listOsmVenues>>, TError = ErrorType<unknown>>(params: ListOsmVenuesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOsmVenues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListOsmVenuesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOsmVenues>>> = ({ signal }) => listOsmVenues(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOsmVenues>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListOsmVenuesQueryResult = NonNullable<Awaited<ReturnType<typeof listOsmVenues>>>
+export type ListOsmVenuesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Live OpenStreetMap billiards venues for a viewport (signed-in)
+ */
+
+export function useListOsmVenues<TData = Awaited<ReturnType<typeof listOsmVenues>>, TError = ErrorType<unknown>>(
+ params: ListOsmVenuesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOsmVenues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListOsmVenuesQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

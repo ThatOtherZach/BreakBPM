@@ -1105,6 +1105,46 @@ export const ListVenuesResponse = zod.object({
 
 
 /**
+ * Server-side proxy + cache for OpenStreetMap (Overpass) billiards venues inside a bounding box, used by the map's OSM layer and the nearest-hall compass. The browser cannot query Overpass politely or reliably itself (it can't set a contact User-Agent, has no shared cache, and Overpass's WAF rejects the multi-clause union query from residential IPs), so the API does it instead: it runs single-clause queries across mirrors, caches results for ~24h keyed by a snapped bbox, and degrades gracefully. Signed-in only (not an open Overpass relay). An over-broad bbox returns status `too_broad`; an upstream failure returns `error` (with the last good cached venues when available, flagged `stale`).
+
+ * @summary Live OpenStreetMap billiards venues for a viewport (signed-in)
+ */
+export const listOsmVenuesQuerySouthMin = -90;
+export const listOsmVenuesQuerySouthMax = 90;
+
+export const listOsmVenuesQueryWestMin = -180;
+export const listOsmVenuesQueryWestMax = 180;
+
+export const listOsmVenuesQueryNorthMin = -90;
+export const listOsmVenuesQueryNorthMax = 90;
+
+export const listOsmVenuesQueryEastMin = -180;
+export const listOsmVenuesQueryEastMax = 180;
+
+
+
+export const ListOsmVenuesQueryParams = zod.object({
+  "south": zod.coerce.number().min(listOsmVenuesQuerySouthMin).max(listOsmVenuesQuerySouthMax),
+  "west": zod.coerce.number().min(listOsmVenuesQueryWestMin).max(listOsmVenuesQueryWestMax),
+  "north": zod.coerce.number().min(listOsmVenuesQueryNorthMin).max(listOsmVenuesQueryNorthMax),
+  "east": zod.coerce.number().min(listOsmVenuesQueryEastMin).max(listOsmVenuesQueryEastMax)
+})
+
+export const ListOsmVenuesResponse = zod.object({
+  "status": zod.enum(['ok', 'too_broad', 'error']),
+  "venues": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "latitude": zod.number(),
+  "longitude": zod.number(),
+  "tableCount": zod.number().nullish(),
+  "source": zod.enum(['osm'])
+})),
+  "stale": zod.boolean().optional()
+})
+
+
+/**
  * Admin-only. Returns every verified venue (active and inactive), newest-first, for the admin management panel. 403 for non-admins.
 
  * @summary List ALL verified venues incl. inactive (admin only)

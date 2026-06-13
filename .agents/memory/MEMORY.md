@@ -31,3 +31,4 @@
 - [Runtime-configurable client values](runtime-client-config.md) — swap a client-visible value at runtime via api-server GET /config (reads env per-request), NOT a VITE_ build-time var; needs api-server restart.
 - [bg-clip:text animation needs inline](bgclip-text-animation-needs-inline.md) — animated rainbow text (background-position + background-clip:text) sits static on a flex/grid box; apply it to an inline/inline-block element.
 - [DB auto-suspend & compute cost](db-autosuspend-compute-cost.md) — DB bills compute-time + auto-suspends idle; no DB-touching setInterval/cron, finalize stale games lazily on access, tier/idle-backoff polls.
+- [Overpass venue proxy](overpass-venue-proxy.md) — OSM billiards-venue fetch must be server-side (browser union query gets WAF 406); single-clause + mirror fallback + 24h/7d cache. Mirrors are individually flaky.

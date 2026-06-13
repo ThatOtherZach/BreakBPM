@@ -852,6 +852,47 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/VenueList" }
 
+  /venues/osm:
+    get:
+      operationId: listOsmVenues
+      tags: [venues]
+      summary: Live OpenStreetMap billiards venues for a viewport (signed-in)
+      description: >
+        Server-side proxy + cache for OpenStreetMap (Overpass) billiards venues
+        inside a bounding box, used by the map's OSM layer and the nearest-hall
+        compass. The browser cannot query Overpass politely or reliably itself
+        (it can't set a contact User-Agent, has no shared cache, and Overpass's
+        WAF rejects the multi-clause union query from residential IPs), so the
+        API does it instead: it runs single-clause queries across mirrors,
+        caches results for ~24h keyed by a snapped bbox, and degrades
+        gracefully. Signed-in only (not an open Overpass relay). An over-broad
+        bbox returns status `too_broad`. On total upstream failure it returns a
+        recent cached result flagged `stale` when one exists, otherwise status
+        `error`.
+      parameters:
+        - name: south
+          in: query
+          required: true
+          schema: { type: number, minimum: -90, maximum: 90 }
+        - name: west
+          in: query
+          required: true
+          schema: { type: number, minimum: -180, maximum: 180 }
+        - name: north
+          in: query
+          required: true
+          schema: { type: number, minimum: -90, maximum: 90 }
+        - name: east
+          in: query
+          required: true
+          schema: { type: number, minimum: -180, maximum: 180 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OsmVenueList" }
+
   /admin/venues:
     get:
       operationId: listAdminVenues
@@ -2213,6 +2254,34 @@ components:
         venues:
           type: array
           items: { $ref: "#/components/schemas/Venue" }
+
+    OsmVenue:
+      type: object
+      required: [id, name, latitude, longitude, source]
+      properties:
+        # Namespaced id e.g. "osm:node/123" so it never collides with verified
+        # venue ids when the two sets are merged on the map.
+        id: { type: string }
+        name: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        # OSM rarely tags table counts; null unless a `tables` tag is present.
+        tableCount: { type: ["integer", "null"] }
+        source: { type: string, enum: [osm] }
+
+    OsmVenueList:
+      type: object
+      required: [status, venues]
+      properties:
+        # ok: a fresh/cached result. too_broad: the bbox was wider than the
+        # server will query (zoom in). error: upstream Overpass was unreachable.
+        status: { type: string, enum: [ok, too_broad, error] }
+        venues:
+          type: array
+          items: { $ref: "#/components/schemas/OsmVenue" }
+        # True when `venues` were served from the stale-if-error cache because
+        # every live upstream failed.
+        stale: { type: boolean }
 
     VenueMutationResult:
       type: object

@@ -1241,6 +1241,38 @@ export interface VenueList {
   venues: Venue[];
 }
 
+export type OsmVenueSource = typeof OsmVenueSource[keyof typeof OsmVenueSource];
+
+
+export const OsmVenueSource = {
+  osm: 'osm',
+} as const;
+
+export interface OsmVenue {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  /** @nullable */
+  tableCount?: number | null;
+  source: OsmVenueSource;
+}
+
+export type OsmVenueListStatus = typeof OsmVenueListStatus[keyof typeof OsmVenueListStatus];
+
+
+export const OsmVenueListStatus = {
+  ok: 'ok',
+  too_broad: 'too_broad',
+  error: 'error',
+} as const;
+
+export interface OsmVenueList {
+  status: OsmVenueListStatus;
+  venues: OsmVenue[];
+  stale?: boolean;
+}
+
 export interface VenueMutationResult {
   success: boolean;
   reason?: string;
@@ -1356,6 +1388,29 @@ page?: number;
 
  */
 all?: boolean;
+};
+
+export type ListOsmVenuesParams = {
+/**
+ * @minimum -90
+ * @maximum 90
+ */
+south: number;
+/**
+ * @minimum -180
+ * @maximum 180
+ */
+west: number;
+/**
+ * @minimum -90
+ * @maximum 90
+ */
+north: number;
+/**
+ * @minimum -180
+ * @maximum 180
+ */
+east: number;
 };
 
 export type ListAdminSalesParams = {
