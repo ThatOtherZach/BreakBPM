@@ -362,10 +362,10 @@ export default function FindPlayersScreen({
   );
 
   // Verified venues (admin listings). Fetched whenever a venue surface is
-  // visible — the map layer or the nearest-hall compass.
+  // visible — the map layer, the nearest-hall compass, or the Near Me list.
   const venuesQuery = useListVenues({
     query: {
-      enabled: mapView || compassOpen,
+      enabled: mapView || compassOpen || nearMeOnly,
       queryKey: getListVenuesQueryKey(),
     },
   });
@@ -555,6 +555,18 @@ export default function FindPlayersScreen({
     (p) => p.latitude != null && p.longitude != null,
   );
   const mappable = filterPosts(allMappable);
+  // Sponsored/verified halls near the user — surfaced in the Near Me list.
+  // Venue coordinates are intentionally exact for any signed-in user.
+  const nearbyVenues = useMemo(() => {
+    if (!nearMeOnly || !userCoords) return [];
+    return verifiedVenues
+      .map((venue) => ({
+        venue,
+        distanceKm: haversineKm(userCoords, [venue.latitude, venue.longitude]),
+      }))
+      .filter((x) => x.distanceKm <= NEAR_RADIUS_KM)
+      .sort((a, b) => a.distanceKm - b.distanceKm);
+  }, [nearMeOnly, userCoords, verifiedVenues]);
 
   return (
     <div className="app-window app-window--page">
@@ -836,30 +848,51 @@ export default function FindPlayersScreen({
                   </span>
                 </div>
                 </>
-              ) : posts.length === 0 ? (
-                <p className="fpp-empty">
-                  {nearMeOnly
-                    ? `No games within ${NEAR_RADIUS_KM}km of you.`
-                    : todayOnly
-                      ? "Nothing today — try 30 Days."
-                      : next30Only
-                        ? "Nothing in the next 30 days."
-                        : "No games posted yet. Be the first!"}
-                </p>
               ) : (
-                <div className="fpp-list">
-                  {posts.map((post, i) => (
-                    <PostCard
-                      key={post.id}
-                      post={post}
-                      rank={i + 1}
-                      onCancel={cancel}
-                      pending={cancelPost.isPending}
-                      preciseLocationsVisible={preciseLocationsVisible}
-                      onUpsell={onPasses}
-                    />
-                  ))}
-                </div>
+                <>
+                  {nearMeOnly && nearbyVenues.length > 0 && (
+                    <div className="fpp-list fpp-venue-list">
+                      <p className="fpp-venue-list-head">
+                        ⭐ Sponsored halls near you
+                      </p>
+                      {nearbyVenues.map(({ venue, distanceKm }) => (
+                        <VenueCard
+                          key={venue.id}
+                          venue={venue}
+                          distanceKm={distanceKm}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {posts.length === 0 ? (
+                    (!nearMeOnly ||
+                      (nearbyVenues.length === 0 && !venuesQuery.isLoading)) && (
+                      <p className="fpp-empty">
+                        {nearMeOnly
+                          ? `No games within ${NEAR_RADIUS_KM}km of you.`
+                          : todayOnly
+                            ? "Nothing today — try 30 Days."
+                            : next30Only
+                              ? "Nothing in the next 30 days."
+                              : "No games posted yet. Be the first!"}
+                      </p>
+                    )
+                  ) : (
+                    <div className="fpp-list">
+                      {posts.map((post, i) => (
+                        <PostCard
+                          key={post.id}
+                          post={post}
+                          rank={i + 1}
+                          onCancel={cancel}
+                          pending={cancelPost.isPending}
+                          preciseLocationsVisible={preciseLocationsVisible}
+                          onUpsell={onPasses}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
 
               {/* ── Pagination ── */}
@@ -959,6 +992,49 @@ function PostCard({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Sponsored/verified pool hall row shown in the Near Me list. */
+function VenueCard({
+  venue,
+  distanceKm,
+}: {
+  venue: Venue;
+  distanceKm: number;
+}) {
+  const distLabel =
+    distanceKm < 1
+      ? `${Math.round(distanceKm * 1000)} m`
+      : `${distanceKm.toFixed(distanceKm < 10 ? 1 : 0)} km`;
+  return (
+    <div className="fpp-card fpp-card--venue">
+      <div className="fpp-card-head">
+        <span className="fpp-card-name">⭐ {venue.name}</span>
+        <span className="fpp-card-rank">
+          <span
+            className="hud-chip hud-chip-eight"
+            data-number="8"
+            aria-hidden="true"
+          />
+        </span>
+      </div>
+      <div className="fpp-card-when">{distLabel} away</div>
+      {venue.locality && <div className="fpp-card-loc">📍 {venue.locality}</div>}
+      {venue.tableCount != null && (
+        <div className="fpp-card-loc">🎱 {venue.tableCount} tables</div>
+      )}
+      <div className="fpp-card-actions">
+        <a
+          className="btn"
+          href={`https://www.google.com/maps?q=${venue.latitude},${venue.longitude}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          🗺️ Open in Maps
+        </a>
+      </div>
     </div>
   );
 }
