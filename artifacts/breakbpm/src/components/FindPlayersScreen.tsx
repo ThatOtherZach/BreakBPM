@@ -589,6 +589,10 @@ export default function FindPlayersScreen({
                   <FlyTo position={position} flyKey={flyKey} />
                 </MapContainer>
               </div>
+              <p className="fpp-disclose">
+                ⚠️ Your exact pin is shared publicly with pass holders. Pick a
+                public spot — a pool hall, not your home.
+              </p>
               <div className="fpp-form-row fpp-form-row--compact">
                 <label className="fpp-label fpp-label--row">Location</label>
                 <button className="btn fpp-locate-btn" type="button" onClick={locateMe}>
@@ -598,10 +602,6 @@ export default function FindPlayersScreen({
                   {locationPreview ?? (position ? "Locating…" : "Or tap the map")}
                 </span>
               </div>
-              <p className="fpp-disclose">
-                ⚠️ Your exact pin is shared publicly with pass holders. Pick a
-                public spot — a pool hall, not your home.
-              </p>
               <div className="fpp-form-row fpp-form-row--compact">
                 <label className="fpp-label fpp-label--row">
                   Table #
