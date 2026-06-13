@@ -5,6 +5,7 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { VenuePaymentType } from './venuePaymentType';
 
 export interface Venue {
   id: string;
@@ -19,6 +20,8 @@ export interface Venue {
   tableCount?: number | null;
   /** @nullable */
   contact?: string | null;
+  /** @nullable */
+  paymentType?: VenuePaymentType;
   active: boolean;
   /** @nullable */
   paidThroughAt?: Date | null;

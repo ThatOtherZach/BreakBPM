@@ -1177,6 +1177,18 @@ export interface CancelFindPlayerPostResult {
   post?: FindPlayerPost;
 }
 
+/**
+ * @nullable
+ */
+export type VenuePaymentType = typeof VenuePaymentType[keyof typeof VenuePaymentType] | null;
+
+
+export const VenuePaymentType = {
+  free: 'free',
+  per_game: 'per_game',
+  hourly: 'hourly',
+} as const;
+
 export interface Venue {
   id: string;
   name: string;
@@ -1190,10 +1202,24 @@ export interface Venue {
   tableCount?: number | null;
   /** @nullable */
   contact?: string | null;
+  /** @nullable */
+  paymentType?: VenuePaymentType;
   active: boolean;
   /** @nullable */
   paidThroughAt?: string | null;
 }
+
+/**
+ * @nullable
+ */
+export type VenueInputPaymentType = typeof VenueInputPaymentType[keyof typeof VenueInputPaymentType] | null;
+
+
+export const VenueInputPaymentType = {
+  free: 'free',
+  per_game: 'per_game',
+  hourly: 'hourly',
+} as const;
 
 export interface VenueInput {
   /**
@@ -1232,6 +1258,8 @@ export interface VenueInput {
      * @nullable
      */
   contact?: string | null;
+  /** @nullable */
+  paymentType?: VenueInputPaymentType;
   active?: boolean;
   /** @nullable */
   paidThroughAt?: string | null;

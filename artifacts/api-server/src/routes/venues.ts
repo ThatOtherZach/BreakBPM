@@ -34,6 +34,7 @@ function toVenueResponse(row: VenueRow) {
     address: row.address,
     tableCount: row.tableCount,
     contact: row.contact,
+    paymentType: row.paymentType,
     active: row.active,
     paidThroughAt: row.paidThroughAt,
   };
@@ -144,6 +145,7 @@ router.post("/admin/venues", async (req, res): Promise<void> => {
       address: b.address ?? null,
       tableCount: b.tableCount ?? null,
       contact: b.contact ?? null,
+      paymentType: b.paymentType ?? null,
       active: b.active ?? true,
       paidThroughAt: b.paidThroughAt ?? null,
       createdByUserId: user.id,
@@ -192,6 +194,7 @@ router.patch("/admin/venues/:id", async (req, res): Promise<void> => {
       address: b.address ?? null,
       tableCount: b.tableCount ?? null,
       contact: b.contact ?? null,
+      paymentType: b.paymentType ?? null,
       active: b.active ?? true,
       paidThroughAt: b.paidThroughAt ?? null,
       updatedAt: new Date(),

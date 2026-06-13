@@ -2226,6 +2226,10 @@ components:
         tableCount: { type: ["integer", "null"] }
         # Optional contact line (phone / handle / URL).
         contact: { type: ["string", "null"] }
+        # How the hall charges players (stable token). Null when unknown.
+        paymentType:
+          type: ["string", "null"]
+          enum: ["free", "per_game", "hourly"]
         # Whether the listing is shown on the public map.
         active: { type: boolean }
         # Informational "paid through" note (no enforcement). UTC instant.
@@ -2242,6 +2246,10 @@ components:
         address: { type: ["string", "null"], maxLength: 500 }
         tableCount: { type: ["integer", "null"], minimum: 0, maximum: 9999 }
         contact: { type: ["string", "null"], maxLength: 200 }
+        # How the hall charges players (stable token). Null/omitted = unknown.
+        paymentType:
+          type: ["string", "null"]
+          enum: ["free", "per_game", "hourly"]
         # Defaults to true on create when omitted.
         active: { type: boolean }
         # Optional "paid through" date as an ISO instant.

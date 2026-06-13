@@ -38,6 +38,14 @@ export const venuesTable = pgTable(
     tableCount: integer("table_count"),
     /** Optional contact line (phone / handle / URL) shown in the popup. */
     contact: text("contact"),
+    /**
+     * How the hall charges players, as a stable token: "free" | "per_game" |
+     * "hourly". Nullable (unknown). Replaces the old convention of baking the
+     * pricing model into the venue name (e.g. "… (Hourly)"). Validated at the
+     * API boundary (OpenAPI enum); stored as plain text so display labels can
+     * change without a data migration.
+     */
+    paymentType: text("payment_type"),
     /** Whether the listing is currently shown on the public map. */
     active: boolean("active").notNull().default(true),
     /** Informational: how long the hall has paid through (no enforcement). */

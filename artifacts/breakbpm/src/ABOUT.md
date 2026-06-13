@@ -58,7 +58,7 @@ Based on the aggression setting, determines when the Shark pockets a ball. It is
 
 ## Play Anywhere, With Anyone
 
-One device keeps score and acts as host for other players to join using a **5-character share code**. 
+One device keeps score and acts as host for other players to join using a **5-character share code**. You can copy the code with the 📋 icon, or click-and-hold to reveal a QR code to scan and join. 
 
 Join with the code (`breakbpm.com/join/CODE`) before the first pocketed ball and you’ll be added to the game as a player. Players that are not signed in will be identified as "Player #".
 

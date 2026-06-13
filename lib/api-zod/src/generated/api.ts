@@ -1098,6 +1098,7 @@ export const ListVenuesResponse = zod.object({
   "address": zod.string().nullish(),
   "tableCount": zod.number().nullish(),
   "contact": zod.string().nullish(),
+  "paymentType": zod.enum(['free', 'per_game', 'hourly']).nullish(),
   "active": zod.boolean(),
   "paidThroughAt": zod.coerce.date().nullish()
 }))
@@ -1105,7 +1106,7 @@ export const ListVenuesResponse = zod.object({
 
 
 /**
- * Server-side proxy + cache for OpenStreetMap (Overpass) billiards venues inside a bounding box, used by the map's OSM layer and the nearest-hall compass. The browser cannot query Overpass politely or reliably itself (it can't set a contact User-Agent, has no shared cache, and Overpass's WAF rejects the multi-clause union query from residential IPs), so the API does it instead: it runs single-clause queries across mirrors, caches results for ~24h keyed by a snapped bbox, and degrades gracefully. Signed-in only (not an open Overpass relay). An over-broad bbox returns status `too_broad`; an upstream failure returns `error` (with the last good cached venues when available, flagged `stale`).
+ * Server-side proxy + cache for OpenStreetMap (Overpass) billiards venues inside a bounding box, used by the map's OSM layer and the nearest-hall compass. The browser cannot query Overpass politely or reliably itself (it can't set a contact User-Agent, has no shared cache, and Overpass's WAF rejects the multi-clause union query from residential IPs), so the API does it instead: it runs single-clause queries across mirrors, caches results for ~24h keyed by a snapped bbox, and degrades gracefully. Signed-in only (not an open Overpass relay). An over-broad bbox returns status `too_broad`. On total upstream failure it returns a recent cached result flagged `stale` when one exists, otherwise status `error`.
 
  * @summary Live OpenStreetMap billiards venues for a viewport (signed-in)
  */
@@ -1159,6 +1160,7 @@ export const ListAdminVenuesResponse = zod.object({
   "address": zod.string().nullish(),
   "tableCount": zod.number().nullish(),
   "contact": zod.string().nullish(),
+  "paymentType": zod.enum(['free', 'per_game', 'hourly']).nullish(),
   "active": zod.boolean(),
   "paidThroughAt": zod.coerce.date().nullish()
 }))
@@ -1197,6 +1199,7 @@ export const CreateVenueBody = zod.object({
   "address": zod.string().max(createVenueBodyAddressMax).nullish(),
   "tableCount": zod.number().min(createVenueBodyTableCountMin).max(createVenueBodyTableCountMax).nullish(),
   "contact": zod.string().max(createVenueBodyContactMax).nullish(),
+  "paymentType": zod.enum(['free', 'per_game', 'hourly']).nullish(),
   "active": zod.boolean().optional(),
   "paidThroughAt": zod.coerce.date().nullish()
 })
@@ -1213,6 +1216,7 @@ export const CreateVenueResponse = zod.object({
   "address": zod.string().nullish(),
   "tableCount": zod.number().nullish(),
   "contact": zod.string().nullish(),
+  "paymentType": zod.enum(['free', 'per_game', 'hourly']).nullish(),
   "active": zod.boolean(),
   "paidThroughAt": zod.coerce.date().nullish()
 }).optional()
@@ -1255,6 +1259,7 @@ export const UpdateVenueBody = zod.object({
   "address": zod.string().max(updateVenueBodyAddressMax).nullish(),
   "tableCount": zod.number().min(updateVenueBodyTableCountMin).max(updateVenueBodyTableCountMax).nullish(),
   "contact": zod.string().max(updateVenueBodyContactMax).nullish(),
+  "paymentType": zod.enum(['free', 'per_game', 'hourly']).nullish(),
   "active": zod.boolean().optional(),
   "paidThroughAt": zod.coerce.date().nullish()
 })
@@ -1271,6 +1276,7 @@ export const UpdateVenueResponse = zod.object({
   "address": zod.string().nullish(),
   "tableCount": zod.number().nullish(),
   "contact": zod.string().nullish(),
+  "paymentType": zod.enum(['free', 'per_game', 'hourly']).nullish(),
   "active": zod.boolean(),
   "paidThroughAt": zod.coerce.date().nullish()
 }).optional()
@@ -1298,6 +1304,7 @@ export const DeleteVenueResponse = zod.object({
   "address": zod.string().nullish(),
   "tableCount": zod.number().nullish(),
   "contact": zod.string().nullish(),
+  "paymentType": zod.enum(['free', 'per_game', 'hourly']).nullish(),
   "active": zod.boolean(),
   "paidThroughAt": zod.coerce.date().nullish()
 }).optional()

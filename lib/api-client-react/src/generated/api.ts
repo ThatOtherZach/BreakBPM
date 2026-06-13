@@ -3244,7 +3244,7 @@ export const getListOsmVenuesUrl = (params: ListOsmVenuesParams,) => {
 }
 
 /**
- * Server-side proxy + cache for OpenStreetMap (Overpass) billiards venues inside a bounding box, used by the map's OSM layer and the nearest-hall compass. The browser cannot query Overpass politely or reliably itself (it can't set a contact User-Agent, has no shared cache, and Overpass's WAF rejects the multi-clause union query from residential IPs), so the API does it instead: it runs single-clause queries across mirrors, caches results for ~24h keyed by a snapped bbox, and degrades gracefully. Signed-in only (not an open Overpass relay). An over-broad bbox returns status `too_broad`; an upstream failure returns `error` (with the last good cached venues when available, flagged `stale`).
+ * Server-side proxy + cache for OpenStreetMap (Overpass) billiards venues inside a bounding box, used by the map's OSM layer and the nearest-hall compass. The browser cannot query Overpass politely or reliably itself (it can't set a contact User-Agent, has no shared cache, and Overpass's WAF rejects the multi-clause union query from residential IPs), so the API does it instead: it runs single-clause queries across mirrors, caches results for ~24h keyed by a snapped bbox, and degrades gracefully. Signed-in only (not an open Overpass relay). An over-broad bbox returns status `too_broad`. On total upstream failure it returns a recent cached result flagged `stale` when one exists, otherwise status `error`.
 
  * @summary Live OpenStreetMap billiards venues for a viewport (signed-in)
  */

@@ -31,5 +31,6 @@
 - [Runtime-configurable client values](runtime-client-config.md) — swap a client-visible value at runtime via api-server GET /config (reads env per-request), NOT a VITE_ build-time var; needs api-server restart.
 - [bg-clip:text animation needs inline](bgclip-text-animation-needs-inline.md) — animated rainbow text (background-position + background-clip:text) sits static on a flex/grid box; apply it to an inline/inline-block element.
 - [DB auto-suspend & compute cost](db-autosuspend-compute-cost.md) — DB bills compute-time + auto-suspends idle; no DB-touching setInterval/cron, finalize stale games lazily on access, tier/idle-backoff polls.
+- [Orval nullable-enum fields](orval-nullable-enum-fields.md) — `type:[string,null]` + string-only `enum` → orval emits zod `.enum().nullish()` + named union; details in file.
 - [Leaflet marker position](leaflet-marker-position.md) — custom Leaflet divIcon classes (.fpp-venue-pin) must stay position:absolute; a `relative` ties specificity & wins source-order, drifting pins off the tiles.
 - [Overpass venue proxy](overpass-venue-proxy.md) — OSM billiards-venue fetch must be server-side (browser union query gets WAF 406); single-clause + mirror fallback + 24h/7d cache. Mirrors are individually flaky.

@@ -25,6 +25,7 @@ import { SignedIn, SignedOut } from "../lib/authClient";
 import { SOLIDS } from "../lib/gameLogic";
 import { haversineKm } from "../lib/geo";
 import { fetchOsmVenues, MIN_VENUE_ZOOM, type OsmVenue } from "../lib/osmVenues";
+import { venuePaymentBadge } from "../lib/venuePaymentType";
 import NearestHallCompass from "./NearestHallCompass";
 
 /** Pool-ball colors, mirrored from the game HUD, for the rank chips. */
@@ -763,6 +764,7 @@ export default function FindPlayersScreen({
                     />
                     {verifiedVenues.map((v) => {
                       const websiteUrl = venueWebsiteUrl(v.contact);
+                      const pay = venuePaymentBadge(v.paymentType);
                       return (
                       <Marker
                         key={v.id}
@@ -778,6 +780,13 @@ export default function FindPlayersScreen({
                             )}
                             {v.tableCount != null && (
                               <div className="fpp-popup-when">{v.tableCount} tables</div>
+                            )}
+                            {pay && (
+                              <div className="fpp-popup-pay">
+                                <span className="fpp-pay-badge fpp-pay-badge--light">
+                                  {pay.icon} {pay.label}
+                                </span>
+                              </div>
                             )}
                             <div className="fpp-popup-coords fpp-popup-verified">
                               ⭐ Verified hall
@@ -1036,6 +1045,7 @@ function VenueCard({
       ? `${Math.round(distanceKm * 1000)} m`
       : `${distanceKm.toFixed(distanceKm < 10 ? 1 : 0)} km`;
   const websiteUrl = venueWebsiteUrl(venue.contact);
+  const pay = venuePaymentBadge(venue.paymentType);
   return (
     <div className="fpp-card fpp-card--venue">
       <div className="fpp-card-head">
@@ -1052,6 +1062,13 @@ function VenueCard({
       {venue.locality && <div className="fpp-card-loc">📍 {venue.locality}</div>}
       {venue.tableCount != null && (
         <div className="fpp-card-loc">🎱 {venue.tableCount} tables</div>
+      )}
+      {pay && (
+        <div className="fpp-card-pay">
+          <span className="fpp-pay-badge">
+            {pay.icon} {pay.label}
+          </span>
+        </div>
       )}
       <div className="fpp-card-actions">
         <a

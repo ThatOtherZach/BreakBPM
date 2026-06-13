@@ -12,6 +12,7 @@ import {
   getListVenuesQueryKey,
 } from "@workspace/api-client-react";
 import type { Venue, VenueInput } from "@workspace/api-client-react";
+import { VENUE_PAYMENT_TYPES, venuePaymentLabel } from "../lib/venuePaymentType";
 
 const PIN = L.divIcon({
   html: '<span class="hud-chip hud-chip-eight" data-number="8"></span>',
@@ -69,6 +70,7 @@ export default function AdminVenuesPanel() {
   const [address, setAddress] = useState("");
   const [tableCount, setTableCount] = useState("");
   const [contact, setContact] = useState("");
+  const [paymentType, setPaymentType] = useState("");
   const [active, setActive] = useState(true);
   const [paidThrough, setPaidThrough] = useState("");
   const [error, setError] = useState("");
@@ -114,6 +116,7 @@ export default function AdminVenuesPanel() {
     setAddress("");
     setTableCount("");
     setContact("");
+    setPaymentType("");
     setActive(true);
     setPaidThrough("");
     setError("");
@@ -128,6 +131,7 @@ export default function AdminVenuesPanel() {
     setAddress(v.address ?? "");
     setTableCount(v.tableCount != null ? String(v.tableCount) : "");
     setContact(v.contact ?? "");
+    setPaymentType(v.paymentType ?? "");
     setActive(v.active);
     setPaidThrough(isoToDateInput(v.paidThroughAt));
     setError("");
@@ -166,6 +170,9 @@ export default function AdminVenuesPanel() {
       address: address.trim() || null,
       tableCount: tables,
       contact: contact.trim() || null,
+      paymentType: paymentType
+        ? (paymentType as VenueInput["paymentType"])
+        : null,
       active,
       paidThroughAt: paidThrough
         ? new Date(`${paidThrough}T00:00:00`).toISOString()
@@ -340,6 +347,21 @@ export default function AdminVenuesPanel() {
               onChange={(e) => setContact(e.target.value)}
               placeholder="Phone, website, or email"
             />
+          </label>
+          <label className="avp-field">
+            Payment type
+            <select
+              className="input"
+              value={paymentType}
+              onChange={(e) => setPaymentType(e.target.value)}
+            >
+              <option value="">— None —</option>
+              {VENUE_PAYMENT_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {venuePaymentLabel(t)}
+                </option>
+              ))}
+            </select>
           </label>
           <label
             style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}
