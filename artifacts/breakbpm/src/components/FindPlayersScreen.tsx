@@ -722,7 +722,7 @@ export default function FindPlayersScreen({
               )}
 
               {!preciseLocationsVisible && !compassOpen && !mapView && (
-                <p className="fpp-hint fpp-coarse-note">
+                <p className="fpp-hint fpp-coarse-note text-[#ffffff] border-t-[#ffffff] border-r-[#ffffff] border-b-[#ffffff] border-l-[#ffffff]">
                   📍 Showing approximate areas only.{" "}
                   <button className="fpp-link" onClick={onPasses}>
                     Get a pass
