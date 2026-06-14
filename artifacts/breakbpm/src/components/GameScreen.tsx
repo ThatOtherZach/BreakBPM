@@ -46,6 +46,11 @@ interface Props {
    * end screen can re-enable the button for a retry.
    */
   onRematch: (cfg: RematchConfig) => Promise<void>;
+  /**
+   * Whether the current viewer is signed in. Rematch is only offered to
+   * logged-in players; signed-out players get a fresh New Game only.
+   */
+  isAuthenticated: boolean;
   onAbout: () => void;
   onAccount: () => void;
   onStats: () => void;
@@ -80,7 +85,7 @@ function ballClass(ball: number, legal: number[], sunk: number[], _gameType: str
   return base;
 }
 
-export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, initialPausedDuration = 0, onNewGame, onRematch, onAbout, onAccount, onStats, onFindPlayers, onSignIn }: Props) {
+export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, initialPausedDuration = 0, onNewGame, onRematch, isAuthenticated, onAbout, onAccount, onStats, onFindPlayers, onSignIn }: Props) {
   const saveGame = useSaveGame();
   const recordActivity = useRecordGameActivity();
   const me = useGetMe();
@@ -1100,20 +1105,23 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
         {/* Win screen action buttons. During the brief undo window the only
             action is a full-width Undo (with a countdown); once it elapses the
-            game is saved and the buttons swap to New Game + Rematch. Rematch
-            starts a fresh game with the same mode/players/settings. */}
+            game is saved. Signed-in players then get New Game + Rematch (Rematch
+            starts a fresh game with the same mode/players/settings); signed-out
+            players get a full-width New Game only. */}
         {state.phase === 'ended' && (
           endUndoOpen ? (
             <button className="btn btn-big w-full" onClick={handleUndo} style={{ marginTop: 0 }}>
               <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo ({endUndoLeft})
             </button>
-          ) : (
+          ) : isAuthenticated ? (
             <div className="grid-2" style={{ marginTop: 0 }}>
               <button className="btn btn-primary btn-big" onClick={onNewGame} disabled={rematchPending}>▶ New Game</button>
               <button className="btn btn-big" onClick={handleRematch} disabled={rematchPending}>
                 {rematchPending ? 'Starting…' : '🔄 Rematch'}
               </button>
             </div>
+          ) : (
+            <button className="btn btn-primary btn-big w-full" onClick={onNewGame} style={{ marginTop: 0 }}>▶ New Game</button>
           )
         )}
 

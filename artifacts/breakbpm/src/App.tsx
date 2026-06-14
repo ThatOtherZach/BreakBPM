@@ -133,6 +133,7 @@ function RedeemResumer() {
 
 function MainApp() {
   const [, setLocation] = useLocation();
+  const { isAuthenticated } = useAuth();
   // Share-link entry points. Anything with `?code=<X>` (current) or the
   // legacy `?game=<X>` redirects to the canonical `/join/:code` route
   // so recipients always land in the read-only joiner view, regardless
@@ -318,6 +319,7 @@ function MainApp() {
         initialPausedDuration={initialPausedDuration}
         onNewGame={handleNewGame}
         onRematch={handleRematch}
+        isAuthenticated={isAuthenticated}
         onAbout={goAbout}
         onAccount={goAccount}
         onStats={goStats}
