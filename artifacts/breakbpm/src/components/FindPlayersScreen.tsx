@@ -59,16 +59,6 @@ const venueIcon = L.divIcon({
   iconAnchor: [13, 13],
 });
 
-/** 8-ball pin with a Verified badge for an admin-authorized VENUE. */
-const verifiedVenueIcon = L.divIcon({
-  html:
-    '<span class="hud-chip hud-chip-eight" data-number="8"></span>' +
-    '<span class="fpp-verified-badge">⭐</span>',
-  className: "fpp-venue-pin fpp-venue-pin--verified",
-  iconSize: [30, 30],
-  iconAnchor: [15, 15],
-});
-
 /** OSM venue layer loading/feedback state, surfaced over the map. */
 type OsmStatus = "idle" | "loading" | "ok" | "empty" | "zoom-in" | "error";
 
@@ -91,6 +81,9 @@ const DEFAULT_ZOOM = 2;
 
 /** "Near Me" radius in kilometres. */
 const NEAR_RADIUS_KM = 25;
+
+/** Verified halls per page in the list under the Nearest Hall compass. */
+const VERIFIED_PER_PAGE = 5;
 
 /** Trims a stored "City, Country" label down to just the city for display. */
 function cityOf(label: string): string {
@@ -344,6 +337,8 @@ export default function FindPlayersScreen({
   const [geoBusy, setGeoBusy] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [compassOpen, setCompassOpen] = useState(false);
+  // Pagination for the Verified Halls list shown under the compass.
+  const [verifiedPage, setVerifiedPage] = useState(1);
   const [osmStatus, setOsmStatus] = useState<OsmStatus>("idle");
   const [ackPublic, setAckPublic] = useState(false);
 
@@ -362,11 +357,12 @@ export default function FindPlayersScreen({
     },
   );
 
-  // Verified venues (admin listings). Fetched whenever a venue surface is
-  // visible — the map layer, the nearest-hall compass, or the Near Me list.
+  // Verified venues (admin listings). Only the Nearest Hall view needs them now
+  // (the compass needle + the Verified Halls list beneath it). They were pulled
+  // off the map because their saved coordinates are unreliable.
   const venuesQuery = useListVenues({
     query: {
-      enabled: mapView || compassOpen || nearMeOnly,
+      enabled: compassOpen,
       queryKey: getListVenuesQueryKey(),
     },
   });
@@ -556,18 +552,31 @@ export default function FindPlayersScreen({
     (p) => p.latitude != null && p.longitude != null,
   );
   const mappable = filterPosts(allMappable);
-  // Sponsored/verified halls near the user — surfaced in the Near Me list.
-  // Venue coordinates are intentionally exact for any signed-in user.
-  const nearbyVenues = useMemo(() => {
-    if (!nearMeOnly || !userCoords) return [];
-    return verifiedVenues
-      .map((venue) => ({
-        venue,
-        distanceKm: haversineKm(userCoords, [venue.latitude, venue.longitude]),
-      }))
-      .filter((x) => x.distanceKm <= NEAR_RADIUS_KM)
-      .sort((a, b) => a.distanceKm - b.distanceKm);
-  }, [nearMeOnly, userCoords, verifiedVenues]);
+  // All verified halls for the list shown under the Nearest Hall compass.
+  // Newest-first by default (the API already returns them ORDER BY created_at
+  // DESC); once we know the user's location, sort nearest-first and stamp a
+  // distance on each. Venue coords are intentionally exact for signed-in users.
+  const verifiedSorted = useMemo(() => {
+    const rows = verifiedVenues.map((venue) => ({
+      venue,
+      distanceKm: userCoords
+        ? haversineKm(userCoords, [venue.latitude, venue.longitude])
+        : null,
+    }));
+    if (userCoords) {
+      rows.sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));
+    }
+    return rows;
+  }, [userCoords, verifiedVenues]);
+  const verifiedTotalPages = Math.max(
+    1,
+    Math.ceil(verifiedSorted.length / VERIFIED_PER_PAGE),
+  );
+  const verifiedPageClamped = Math.min(verifiedPage, verifiedTotalPages);
+  const verifiedSlice = verifiedSorted.slice(
+    (verifiedPageClamped - 1) * VERIFIED_PER_PAGE,
+    verifiedPageClamped * VERIFIED_PER_PAGE,
+  );
 
   return (
     <div className="app-window app-window--page">
@@ -720,7 +729,7 @@ export default function FindPlayersScreen({
                 </button>
                 <button
                   className={`btn fpp-toggle-btn${compassOpen ? " btn-primary" : ""}`}
-                  onClick={() => { setCompassOpen((v) => !v); setMapView(false); setNearMeOnly(false); }}
+                  onClick={() => { setCompassOpen((v) => !v); setMapView(false); setNearMeOnly(false); setVerifiedPage(1); }}
                 >
                   🧭 Nearest Hall
                 </button>
@@ -745,10 +754,60 @@ export default function FindPlayersScreen({
               )}
 
               {compassOpen ? (
-                <NearestHallCompass
-                  verifiedVenues={verifiedVenues}
-                  onExit={() => setCompassOpen(false)}
-                />
+                <>
+                  <NearestHallCompass
+                    verifiedVenues={verifiedVenues}
+                    onExit={() => setCompassOpen(false)}
+                    onLocate={(c) => setUserCoords(c)}
+                  />
+                  <div className="fpp-list fpp-venue-list">
+                    <p className="fpp-venue-list-head">⭐ Verified Halls</p>
+                    {venuesQuery.isLoading ? (
+                      <p className="fpp-hint">Loading…</p>
+                    ) : verifiedSorted.length === 0 ? (
+                      <p className="fpp-empty">No verified halls yet.</p>
+                    ) : (
+                      <>
+                        {!userCoords && (
+                          <p className="fpp-hint">
+                            Showing newest first — tap “Find the nearest hall”
+                            above to sort by distance.
+                          </p>
+                        )}
+                        {verifiedSlice.map(({ venue, distanceKm }) => (
+                          <VenueCard
+                            key={venue.id}
+                            venue={venue}
+                            distanceKm={distanceKm}
+                          />
+                        ))}
+                        {verifiedTotalPages > 1 && (
+                          <div className="fpp-pager">
+                            <button
+                              className="btn"
+                              disabled={verifiedPageClamped <= 1}
+                              onClick={() =>
+                                setVerifiedPage((p) => Math.max(1, p - 1))
+                              }
+                            >
+                              ← Prev
+                            </button>
+                            <span className="fpp-page-label">
+                              Page {verifiedPageClamped} / {verifiedTotalPages}
+                            </span>
+                            <button
+                              className="btn"
+                              disabled={verifiedPageClamped >= verifiedTotalPages}
+                              onClick={() => setVerifiedPage((p) => p + 1)}
+                            >
+                              Next →
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </>
               ) : list.isLoading ? (
                 <p className="fpp-hint">Loading…</p>
               ) : mapView ? (
@@ -762,61 +821,14 @@ export default function FindPlayersScreen({
                     <FitBounds
                       positions={mappable.map((p) => [p.latitude as number, p.longitude as number])}
                     />
-                    {verifiedVenues.map((v) => {
-                      const websiteUrl = venueWebsiteUrl(v.contact);
-                      const pay = venuePaymentBadge(v.paymentType);
-                      return (
-                      <Marker
-                        key={v.id}
-                        position={[v.latitude, v.longitude]}
-                        icon={verifiedVenueIcon}
-                        zIndexOffset={1000}
-                      >
-                        <Popup>
-                          <div className="fpp-popup">
-                            <div className="fpp-popup-name">🎱 {v.name}</div>
-                            {v.locality && (
-                              <div className="fpp-popup-coords">📍 {v.locality}</div>
-                            )}
-                            {v.tableCount != null && (
-                              <div className="fpp-popup-when">{v.tableCount} tables</div>
-                            )}
-                            {pay && (
-                              <div className="fpp-popup-pay">
-                                <span className="fpp-pay-badge fpp-pay-badge--light">
-                                  {pay.icon} {pay.label}
-                                </span>
-                              </div>
-                            )}
-                            <div className="fpp-popup-coords fpp-popup-verified">
-                              ⭐ Verified hall
-                            </div>
-                            <div className="fpp-popup-actions">
-                              <a
-                                className="btn"
-                                href={`https://www.google.com/maps?q=${v.latitude},${v.longitude}`}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                🗺️ Maps
-                              </a>
-                              {websiteUrl && (
-                                <a
-                                  className="btn"
-                                  href={websiteUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  🌐 Website
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        </Popup>
-                      </Marker>
-                      );
-                    })}
-                    <OsmVenueLayer verifiedVenues={verifiedVenues} onStatus={setOsmStatus} />
+                    {/* Verified halls were moved off the map into the list under
+                        the Nearest Hall compass (their saved coordinates are
+                        unreliable). The map keeps player meetup pins + the OSM
+                        "other pool halls" layer. Pass [] so the OSM layer never
+                        dedupes against verified venues — with no star pins on the
+                        map there's nothing to collide with, and cached venue data
+                        must not silently hide nearby OSM halls. */}
+                    <OsmVenueLayer verifiedVenues={[]} onStatus={setOsmStatus} />
                     {mappable.map((post) => (
                       <Marker
                         key={post.id}
@@ -872,33 +884,16 @@ export default function FindPlayersScreen({
                 </>
               ) : (
                 <>
-                  {nearMeOnly && nearbyVenues.length > 0 && (
-                    <div className="fpp-list fpp-venue-list">
-                      <p className="fpp-venue-list-head">
-                        ⭐ Sponsored halls near you
-                      </p>
-                      {nearbyVenues.map(({ venue, distanceKm }) => (
-                        <VenueCard
-                          key={venue.id}
-                          venue={venue}
-                          distanceKm={distanceKm}
-                        />
-                      ))}
-                    </div>
-                  )}
                   {posts.length === 0 ? (
-                    (!nearMeOnly ||
-                      (nearbyVenues.length === 0 && !venuesQuery.isLoading)) && (
-                      <p className="fpp-empty">
-                        {nearMeOnly
-                          ? `No games within ${NEAR_RADIUS_KM}km of you.`
-                          : todayOnly
-                            ? "Nothing today — try 30 Days."
-                            : next30Only
-                              ? "Nothing in the next 30 days."
-                              : "No games posted yet. Be the first!"}
-                      </p>
-                    )
+                    <p className="fpp-empty">
+                      {nearMeOnly
+                        ? `No games within ${NEAR_RADIUS_KM}km of you.`
+                        : todayOnly
+                          ? "Nothing today — try 30 Days."
+                          : next30Only
+                            ? "Nothing in the next 30 days."
+                            : "No games posted yet. Be the first!"}
+                    </p>
                   ) : (
                     <div className="fpp-list">
                       {posts.map((post, i) => (
@@ -918,7 +913,7 @@ export default function FindPlayersScreen({
               )}
 
               {/* ── Pagination ── */}
-              {!mapView && totalPages > 1 && (
+              {!mapView && !compassOpen && totalPages > 1 && (
                 <div className="fpp-pager">
                   <button className="btn" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                     ← Prev
@@ -1032,18 +1027,21 @@ function venueWebsiteUrl(contact?: string | null): string | null {
   return null;
 }
 
-/** Sponsored/verified pool hall row shown in the Near Me list. */
+/** Verified pool-hall card shown in the list under the Nearest Hall compass.
+ *  `distanceKm` is null until the user's location is known (newest-first mode). */
 function VenueCard({
   venue,
   distanceKm,
 }: {
   venue: Venue;
-  distanceKm: number;
+  distanceKm: number | null;
 }) {
   const distLabel =
-    distanceKm < 1
-      ? `${Math.round(distanceKm * 1000)} m`
-      : `${distanceKm.toFixed(distanceKm < 10 ? 1 : 0)} km`;
+    distanceKm == null
+      ? null
+      : distanceKm < 1
+        ? `${Math.round(distanceKm * 1000)} m`
+        : `${distanceKm.toFixed(distanceKm < 10 ? 1 : 0)} km`;
   const websiteUrl = venueWebsiteUrl(venue.contact);
   const pay = venuePaymentBadge(venue.paymentType);
   return (
@@ -1058,7 +1056,7 @@ function VenueCard({
           />
         </span>
       </div>
-      <div className="fpp-card-when">{distLabel} away</div>
+      {distLabel && <div className="fpp-card-when">{distLabel} away</div>}
       {venue.locality && <div className="fpp-card-loc">📍 {venue.locality}</div>}
       {venue.tableCount != null && (
         <div className="fpp-card-loc">🎱 {venue.tableCount} tables</div>

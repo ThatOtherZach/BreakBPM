@@ -45,9 +45,13 @@ type OrientEvent = DeviceOrientationEvent & { webkitCompassHeading?: number };
 export default function NearestHallCompass({
   verifiedVenues,
   onExit,
+  onLocate,
 }: {
   verifiedVenues: Venue[];
   onExit: () => void;
+  /** Fired with the user's coordinates once geolocation succeeds, so the parent
+   *  can sort its Verified Halls list nearest-first. */
+  onLocate?: (coords: LatLng) => void;
 }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [user, setUser] = useState<LatLng | null>(null);
@@ -136,6 +140,7 @@ export default function NearestHallCompass({
       async (pos) => {
         const origin: LatLng = [pos.coords.latitude, pos.coords.longitude];
         setUser(origin);
+        onLocate?.(origin);
         setPhase("loading");
         const res = await fetchOsmVenues({
           south: origin[0] - SEARCH_HALF_DEG,
@@ -156,7 +161,7 @@ export default function NearestHallCompass({
       () => setPhase("geo-denied"),
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 60_000 },
     );
-  }, [computeNearest, startHeadingUpdates]);
+  }, [computeNearest, startHeadingUpdates, onLocate]);
 
   const distanceLabel = (km: number): string =>
     km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(km < 10 ? 1 : 0)} km`;
