@@ -35,3 +35,4 @@
 - [Leaflet marker position](leaflet-marker-position.md) — custom Leaflet divIcon classes (.fpp-venue-pin) must stay position:absolute; a `relative` ties specificity & wins source-order, drifting pins off the tiles.
 - [Venue pin placement & drift](venue-pin-placement.md) — saved address is authoritative for venue coords (server geocodes on save + admin bulk-repair endpoint); NEVER overwrite coords on geocode failure; drift can be CSS OR bad data.
 - [Overpass venue proxy](overpass-venue-proxy.md) — OSM billiards-venue fetch must be server-side (browser union query gets WAF 406); single-clause + mirror fallback + 24h/7d cache. Mirrors are individually flaky.
+- [Venue list vs compass coupling](venue-list-vs-compass-coupling.md) — GET /venues serves a paginated list AND the nearest-hall compass (needs ALL venues via ?all=true); paginating the compass silently breaks "nearest".

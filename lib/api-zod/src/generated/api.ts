@@ -1084,10 +1084,23 @@ export const CancelFindPlayerPostResponse = zod.object({
 
 
 /**
- * Returns the admin-curated set of ACTIVE verified pool-hall venues for the map and the nearest-hall compass. Venue coordinates are public business locations, so every signed-in caller sees them in full. Signed-out callers receive an empty list (venue features are gated to signed-in users in the UI).
+ * Returns a page of the admin-curated set of ACTIVE verified pool-hall venues for the nearest-hall compass list, newest-first, with the total count and total page count so the client can paginate server-side as the directory grows. Venue coordinates are public business locations, so every signed-in caller sees them in full. Signed-out callers receive an empty page (venue features are gated to signed-in users in the UI).
 
- * @summary List active verified venues (signed-in callers)
+ * @summary List active verified venues (signed-in callers, paginated)
  */
+export const listVenuesQueryPageDefault = 1;
+
+export const listVenuesQueryLimitDefault = 5;
+export const listVenuesQueryLimitMax = 50;
+
+export const listVenuesQueryAllDefault = false;
+
+export const ListVenuesQueryParams = zod.object({
+  "page": zod.coerce.number().min(1).default(listVenuesQueryPageDefault),
+  "limit": zod.coerce.number().min(1).max(listVenuesQueryLimitMax).default(listVenuesQueryLimitDefault).describe('Page size (verified halls per page).'),
+  "all": zod.coerce.boolean().default(listVenuesQueryAllDefault).describe('When true, returns ALL active venues in one page (newest-first), ignoring page\/limit. Used by the nearest-hall compass, which must consider every verified hall to point at the globally closest one.\n')
+})
+
 export const ListVenuesResponse = zod.object({
   "venues": zod.array(zod.object({
   "id": zod.string(),
@@ -1101,7 +1114,10 @@ export const ListVenuesResponse = zod.object({
   "paymentType": zod.enum(['free', 'per_game', 'hourly']).nullish(),
   "active": zod.boolean(),
   "paidThroughAt": zod.coerce.date().nullish()
-}))
+})),
+  "page": zod.number(),
+  "totalPages": zod.number(),
+  "total": zod.number()
 })
 
 

@@ -838,19 +838,38 @@ paths:
     get:
       operationId: listVenues
       tags: [venues]
-      summary: List active verified venues (signed-in callers)
+      summary: List active verified venues (signed-in callers, paginated)
       description: >
-        Returns the admin-curated set of ACTIVE verified pool-hall venues for
-        the map and the nearest-hall compass. Venue coordinates are public
-        business locations, so every signed-in caller sees them in full.
-        Signed-out callers receive an empty list (venue features are gated to
-        signed-in users in the UI).
+        Returns a page of the admin-curated set of ACTIVE verified pool-hall
+        venues for the nearest-hall compass list, newest-first, with the total
+        count and total page count so the client can paginate server-side as the
+        directory grows. Venue coordinates are public business locations, so
+        every signed-in caller sees them in full. Signed-out callers receive an
+        empty page (venue features are gated to signed-in users in the UI).
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          required: false
+          description: Page size (verified halls per page).
+          schema: { type: integer, minimum: 1, maximum: 50, default: 5 }
+        - name: all
+          in: query
+          required: false
+          description: >
+            When true, returns ALL active venues in one page (newest-first),
+            ignoring page/limit. Used by the nearest-hall compass, which must
+            consider every verified hall to point at the globally closest one.
+          schema: { type: boolean, default: false }
       responses:
         "200":
           description: OK
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/VenueList" }
+              schema: { $ref: "#/components/schemas/VenuePage" }
 
   /venues/osm:
     get:
@@ -2281,6 +2300,20 @@ components:
         venues:
           type: array
           items: { $ref: "#/components/schemas/Venue" }
+
+    VenuePage:
+      type: object
+      required: [venues, page, totalPages, total]
+      properties:
+        venues:
+          type: array
+          items: { $ref: "#/components/schemas/Venue" }
+        # Current page number (1-based).
+        page: { type: integer }
+        # Total number of pages across all active venues.
+        totalPages: { type: integer }
+        # Total number of active venues (across all pages).
+        total: { type: integer }
 
     OsmVenue:
       type: object

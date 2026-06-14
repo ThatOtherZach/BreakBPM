@@ -63,6 +63,7 @@ import type {
   ListAdminSalesParams,
   ListFindPlayerPostsParams,
   ListOsmVenuesParams,
+  ListVenuesParams,
   MeResponse,
   MentionResolveResult,
   MyGiftCodesResult,
@@ -89,6 +90,7 @@ import type {
   VenueInput,
   VenueList,
   VenueMutationResult,
+  VenuePage,
   VerifyCheckoutInput,
   VerifyResult
 } from './api.schemas';
@@ -3150,22 +3152,29 @@ export const useCancelFindPlayerPost = <TError = ErrorType<unknown>,
       return useMutation(getCancelFindPlayerPostMutationOptions(options));
     }
 
-export const getListVenuesUrl = () => {
+export const getListVenuesUrl = (params?: ListVenuesParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/venues`
+  return stringifiedParams.length > 0 ? `/api/venues?${stringifiedParams}` : `/api/venues`
 }
 
 /**
- * Returns the admin-curated set of ACTIVE verified pool-hall venues for the map and the nearest-hall compass. Venue coordinates are public business locations, so every signed-in caller sees them in full. Signed-out callers receive an empty list (venue features are gated to signed-in users in the UI).
+ * Returns a page of the admin-curated set of ACTIVE verified pool-hall venues for the nearest-hall compass list, newest-first, with the total count and total page count so the client can paginate server-side as the directory grows. Venue coordinates are public business locations, so every signed-in caller sees them in full. Signed-out callers receive an empty page (venue features are gated to signed-in users in the UI).
 
- * @summary List active verified venues (signed-in callers)
+ * @summary List active verified venues (signed-in callers, paginated)
  */
-export const listVenues = async ( options?: RequestInit): Promise<VenueList> => {
+export const listVenues = async (params?: ListVenuesParams, options?: RequestInit): Promise<VenuePage> => {
 
-  return customFetch<VenueList>(getListVenuesUrl(),
+  return customFetch<VenuePage>(getListVenuesUrl(params),
   {
     ...options,
     method: 'GET'
@@ -3178,23 +3187,23 @@ export const listVenues = async ( options?: RequestInit): Promise<VenueList> => 
 
 
 
-export const getListVenuesQueryKey = () => {
+export const getListVenuesQueryKey = (params?: ListVenuesParams,) => {
     return [
-    `/api/venues`
+    `/api/venues`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListVenuesQueryOptions = <TData = Awaited<ReturnType<typeof listVenues>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVenues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListVenuesQueryOptions = <TData = Awaited<ReturnType<typeof listVenues>>, TError = ErrorType<unknown>>(params?: ListVenuesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVenues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListVenuesQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListVenuesQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVenues>>> = ({ signal }) => listVenues({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVenues>>> = ({ signal }) => listVenues(params, { signal, ...requestOptions });
 
 
 
@@ -3208,15 +3217,15 @@ export type ListVenuesQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List active verified venues (signed-in callers)
+ * @summary List active verified venues (signed-in callers, paginated)
  */
 
 export function useListVenues<TData = Awaited<ReturnType<typeof listVenues>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVenues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: ListVenuesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVenues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListVenuesQueryOptions(options)
+  const queryOptions = getListVenuesQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

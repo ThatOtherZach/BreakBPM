@@ -360,13 +360,36 @@ export default function FindPlayersScreen({
   // Verified venues (admin listings). Only the Nearest Hall view needs them now
   // (the compass needle + the Verified Halls list beneath it). They were pulled
   // off the map because their saved coordinates are unreliable.
-  const venuesQuery = useListVenues({
-    query: {
-      enabled: compassOpen,
-      queryKey: getListVenuesQueryKey(),
+  //
+  // The list is paginated server-side: we fetch one page at a time (newest-first)
+  // so the payload stays small as the directory grows, and Prev/Next drive the
+  // server `page`.
+  const venuesQuery = useListVenues(
+    { page: verifiedPage, limit: VERIFIED_PER_PAGE },
+    {
+      query: {
+        enabled: compassOpen,
+        queryKey: getListVenuesQueryKey({ page: verifiedPage, limit: VERIFIED_PER_PAGE }),
+      },
     },
-  });
-  const verifiedVenues = venuesQuery.data?.venues ?? [];
+  );
+  const pageVenues = venuesQuery.data?.venues ?? [];
+  const verifiedTotalPages = venuesQuery.data?.totalPages ?? 0;
+  const verifiedTotal = venuesQuery.data?.total ?? 0;
+
+  // The compass must consider EVERY verified hall to point at the globally
+  // closest one, so it uses a separate unpaginated (`all`) query rather than the
+  // current list page.
+  const allVenuesQuery = useListVenues(
+    { all: true },
+    {
+      query: {
+        enabled: compassOpen,
+        queryKey: getListVenuesQueryKey({ all: true }),
+      },
+    },
+  );
+  const allVerifiedVenues = allVenuesQuery.data?.venues ?? [];
 
   const createPost = useCreateFindPlayerPost();
   const cancelPost = useCancelFindPlayerPost();
@@ -552,12 +575,14 @@ export default function FindPlayersScreen({
     (p) => p.latitude != null && p.longitude != null,
   );
   const mappable = filterPosts(allMappable);
-  // All verified halls for the list shown under the Nearest Hall compass.
-  // Newest-first by default (the API already returns them ORDER BY created_at
-  // DESC); once we know the user's location, sort nearest-first and stamp a
-  // distance on each. Venue coords are intentionally exact for signed-in users.
+  // The current page of verified halls for the list under the Nearest Hall
+  // compass. The server paginates newest-first (ORDER BY created_at DESC); once
+  // we know the user's location we sort the *loaded page* nearest-first and
+  // stamp a distance on each. Venue coords are intentionally exact for signed-in
+  // users. (Nearest-first ordering is page-local — it reorders the rows the
+  // server returned for this page, not the whole directory.)
   const verifiedSorted = useMemo(() => {
-    const rows = verifiedVenues.map((venue) => ({
+    const rows = pageVenues.map((venue) => ({
       venue,
       distanceKm: userCoords
         ? haversineKm(userCoords, [venue.latitude, venue.longitude])
@@ -567,16 +592,7 @@ export default function FindPlayersScreen({
       rows.sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));
     }
     return rows;
-  }, [userCoords, verifiedVenues]);
-  const verifiedTotalPages = Math.max(
-    1,
-    Math.ceil(verifiedSorted.length / VERIFIED_PER_PAGE),
-  );
-  const verifiedPageClamped = Math.min(verifiedPage, verifiedTotalPages);
-  const verifiedSlice = verifiedSorted.slice(
-    (verifiedPageClamped - 1) * VERIFIED_PER_PAGE,
-    verifiedPageClamped * VERIFIED_PER_PAGE,
-  );
+  }, [userCoords, pageVenues]);
 
   return (
     <div className="app-window app-window--page">
@@ -756,7 +772,7 @@ export default function FindPlayersScreen({
               {compassOpen ? (
                 <>
                   <NearestHallCompass
-                    verifiedVenues={verifiedVenues}
+                    verifiedVenues={allVerifiedVenues}
                     onLocate={(c) => setUserCoords(c)}
                   />
                   <div className="fpp-list fpp-venue-list">
@@ -771,7 +787,7 @@ export default function FindPlayersScreen({
                     </div>
                     {venuesQuery.isLoading ? (
                       <p className="fpp-hint">Loading…</p>
-                    ) : verifiedSorted.length === 0 ? (
+                    ) : verifiedTotal === 0 ? (
                       <p className="fpp-empty">No verified halls yet.</p>
                     ) : (
                       <>
@@ -781,7 +797,7 @@ export default function FindPlayersScreen({
                             above to sort by distance.
                           </p>
                         )}
-                        {verifiedSlice.map(({ venue, distanceKm }) => (
+                        {verifiedSorted.map(({ venue, distanceKm }) => (
                           <VenueCard
                             key={venue.id}
                             venue={venue}
@@ -792,7 +808,7 @@ export default function FindPlayersScreen({
                           <div className="fpp-pager">
                             <button
                               className="btn"
-                              disabled={verifiedPageClamped <= 1}
+                              disabled={verifiedPage <= 1}
                               onClick={() =>
                                 setVerifiedPage((p) => Math.max(1, p - 1))
                               }
@@ -800,11 +816,11 @@ export default function FindPlayersScreen({
                               ← Prev
                             </button>
                             <span className="fpp-page-label">
-                              Page {verifiedPageClamped} / {verifiedTotalPages}
+                              Page {verifiedPage} / {verifiedTotalPages}
                             </span>
                             <button
                               className="btn"
-                              disabled={verifiedPageClamped >= verifiedTotalPages}
+                              disabled={verifiedPage >= verifiedTotalPages}
                               onClick={() => setVerifiedPage((p) => p + 1)}
                             >
                               Next →

@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { desc, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 import { db, venuesTable } from "@workspace/db";
 import {
+  ListVenuesQueryParams,
   ListVenuesResponse,
   ListOsmVenuesQueryParams,
   ListOsmVenuesResponse,
@@ -70,26 +71,59 @@ function toVenueResponse(row: VenueRow) {
 }
 
 /**
- * GET /venues — the admin-curated set of ACTIVE verified pool-hall venues for
- * the map and the nearest-hall compass. Venue coordinates are public business
- * locations (unlike meetup posts, which expose a person), so every signed-in
- * caller gets them in full. Signed-out callers get an empty list — venue
- * features are gated to signed-in users in the UI.
+ * GET /venues — a page of the admin-curated set of ACTIVE verified pool-hall
+ * venues for the nearest-hall compass list, newest-first. Pagination is
+ * server-side (page/limit) so the payload stays small as the directory grows;
+ * the response carries the total count and total page count so the client can
+ * drive Prev/Next. Venue coordinates are public business locations (unlike
+ * meetup posts, which expose a person), so every signed-in caller gets them in
+ * full. Signed-out callers get an empty page — venue features are gated to
+ * signed-in users in the UI.
  */
 router.get("/venues", async (req, res): Promise<void> => {
+  const parsed = ListVenuesQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { page, limit, all } = parsed.data;
+
   const user = await getOrCreateUser(req);
   if (!user) {
-    res.json(ListVenuesResponse.parse({ venues: [] }));
+    res.json(
+      ListVenuesResponse.parse({ venues: [], page: 1, totalPages: 0, total: 0 }),
+    );
     return;
   }
 
-  const rows = await db
+  const activeFilter = eq(venuesTable.active, true);
+
+  const [{ n: total } = { n: 0 }] = await db
+    .select({ n: count() })
+    .from(venuesTable)
+    .where(activeFilter);
+
+  // `all=true` (the nearest-hall compass) returns every active venue in one
+  // page; otherwise the list is paginated `limit`/page, newest-first.
+  const totalPages = all ? (total > 0 ? 1 : 0) : Math.ceil(total / limit);
+  const baseQuery = db
     .select()
     .from(venuesTable)
-    .where(eq(venuesTable.active, true))
-    .orderBy(desc(venuesTable.createdAt));
+    .where(activeFilter)
+    .orderBy(desc(venuesTable.createdAt))
+    .$dynamic();
+  const rows = all
+    ? await baseQuery
+    : await baseQuery.limit(limit).offset((page - 1) * limit);
 
-  res.json(ListVenuesResponse.parse({ venues: rows.map(toVenueResponse) }));
+  res.json(
+    ListVenuesResponse.parse({
+      venues: rows.map(toVenueResponse),
+      page: all ? 1 : page,
+      totalPages,
+      total,
+    }),
+  );
 });
 
 /**

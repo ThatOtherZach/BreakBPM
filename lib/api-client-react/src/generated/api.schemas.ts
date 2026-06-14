@@ -1269,6 +1269,13 @@ export interface VenueList {
   venues: Venue[];
 }
 
+export interface VenuePage {
+  venues: Venue[];
+  page: number;
+  totalPages: number;
+  total: number;
+}
+
 export type OsmVenueSource = typeof OsmVenueSource[keyof typeof OsmVenueSource];
 
 
@@ -1440,6 +1447,24 @@ export type ListFindPlayerPostsParams = {
 page?: number;
 /**
  * When true, returns ALL active posts in one page (unpaginated), soonest-first. Used by the map view, which must plot every active post globally rather than just the current list page.
+
+ */
+all?: boolean;
+};
+
+export type ListVenuesParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Page size (verified halls per page).
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+/**
+ * When true, returns ALL active venues in one page (newest-first), ignoring page/limit. Used by the nearest-hall compass, which must consider every verified hall to point at the globally closest one.
 
  */
 all?: boolean;
