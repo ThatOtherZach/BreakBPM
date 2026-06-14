@@ -28,7 +28,7 @@ export const PASS_PRICES_CENTS: Record<PassKind, number> = {
 };
 
 /**
- * Lucky Break — a single $5.99 "roll the rack" unlock sold via redeem codes
+ * Lucky Break — a single $4.99 "roll the rack" unlock sold via redeem codes
  * (no in-app card checkout). Every roll grants at least a Monthly pass; a
  * fixed, disclosed share of rolls upgrade to Lifetime. The odds and entropy
  * recipe live in the pure engine (`luckyBreak.ts`); the price lives here with
