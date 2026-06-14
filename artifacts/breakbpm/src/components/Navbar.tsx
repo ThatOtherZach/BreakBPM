@@ -27,6 +27,11 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlay
 
   return (
     <>
+      {/* Always-present anchors for crawler discovery — visually hidden, not interactive */}
+      <div style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
+        <a href="/about">About BreakBPM</a>
+        <a href="/legal">Legal</a>
+      </div>
       <div className="navbar">
         <div className="navbar-left">
           {onBack ? (

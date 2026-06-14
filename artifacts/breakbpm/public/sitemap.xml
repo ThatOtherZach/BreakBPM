@@ -11,13 +11,8 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://breakbpm.com/passes</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://breakbpm.com/account</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
+    <loc>https://breakbpm.com/legal</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
   </url>
 </urlset>

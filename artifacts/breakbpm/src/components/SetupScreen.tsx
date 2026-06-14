@@ -1124,7 +1124,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
       {/* Status bar */}
       <div className="statusbar">
         <div className="statusbar-item" style={{ flex: 1 }}>READY</div>
-        <button type="button" className="statusbar-item statusbar-link" onClick={onLegal}>LEGAL</button>
+        <a href="/legal" className="statusbar-item statusbar-link" onClick={(e) => { e.preventDefault(); onLegal(); }}>LEGAL</a>
         <div className="statusbar-item"><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v{APP_VERSION}</a></div>
       </div>
     </div>

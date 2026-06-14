@@ -52,6 +52,7 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
 
       <div className="statusbar">
         <span><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v{APP_VERSION}</a> - Saym Services Inc.</span>
+        <a href="/legal" style={{ color: 'inherit', textDecoration: 'underline', marginLeft: 12 }}>Legal</a>
       </div>
     </div>
   );
