@@ -2338,10 +2338,21 @@ html, #root {
 .fpp-venue-list { margin-bottom: 10px; }
 .fpp-venue-list-head {
   margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   font-family: 'VT323', monospace;
   font-size: 16px;
   letter-spacing: 0.5px;
   color: #ffd966;
+}
+.fpp-get-listed {
+  flex-shrink: 0;
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  padding: 2px 10px;
 }
 .fpp-card--venue {
   border-color: #d9a300;

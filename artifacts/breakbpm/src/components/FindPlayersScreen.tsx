@@ -760,7 +760,15 @@ export default function FindPlayersScreen({
                     onLocate={(c) => setUserCoords(c)}
                   />
                   <div className="fpp-list fpp-venue-list">
-                    <p className="fpp-venue-list-head">⭐ Verified Halls</p>
+                    <div className="fpp-venue-list-head">
+                      <span>⭐ Verified Halls</span>
+                      <a
+                        className="btn fpp-get-listed"
+                        href="mailto:contact@saymservices.com?subject=Verified%20Pool%20Hall%20Request"
+                      >
+                        Get Listed
+                      </a>
+                    </div>
                     {venuesQuery.isLoading ? (
                       <p className="fpp-hint">Loading…</p>
                     ) : verifiedSorted.length === 0 ? (
