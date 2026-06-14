@@ -1,6 +1,6 @@
 # Data Policy
 
-_Last updated: June 7, 2026_
+_Last updated: June 14, 2026_
 
 This Data Policy explains what information BreakBPM ("the Service"), operated by
 **Saym Services Inc.** ("we", "us", "our"), collects, how we use it, who we
@@ -63,9 +63,12 @@ Some information is public or shared with other users by design:
   name, including through a chrome-free streaming/OBS overlay.
 - **Public profile:** your cumulative statistics and recent game history are
   viewable by others.
-- **Find Players:** if you create a post, your screen name, an **approximate
-  location** (coordinates plus a city/country label) and your scheduled time are
-  shown to other signed-in users on a map and list.
+- **Find Players:** if you create a post, your screen name, your scheduled time,
+  and your location are shown to other signed-in users on a map and list. **Exact
+  coordinates** are shown only to you (the post's owner) and to users who hold a
+  paid pass; **all other signed-in users see only an approximate, city-level
+  label** (for example, "Los Angeles, United States"), not your precise
+  coordinates.
 - **Global statistics:** we show aggregated, anonymized statistics across all
   players (for example, a global average BPM).
 

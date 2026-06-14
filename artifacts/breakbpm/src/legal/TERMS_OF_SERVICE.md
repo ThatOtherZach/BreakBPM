@@ -1,6 +1,6 @@
 # Terms of Service
 
-_Last updated: June 7, 2026_
+_Last updated: June 14, 2026_
 
 Welcome to BreakBPM ("the Service"), a billiards scoring app operated by
 **Saym Services Inc.** ("we", "us", "our"). These Terms of Service ("Terms")
@@ -67,8 +67,10 @@ these features you consent to that visibility:
   streaming/OBS overlay.
 - Your **public profile** displays your cumulative statistics and recent game
   history.
-- If you post to **Find Players**, your screen name, an **approximate location**,
-  and your scheduled time are shown to other signed-in users.
+- If you post to **Find Players**, your screen name, your scheduled time, and
+  your location are shown to other signed-in users. Your **exact coordinates** are
+  shown only to you and to users who hold a paid pass; everyone else sees only an
+  **approximate, city-level label**.
 
 Do not share information through these features that you do not want to be
 public.
