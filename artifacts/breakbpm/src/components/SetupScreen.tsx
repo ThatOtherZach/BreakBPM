@@ -1051,13 +1051,15 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
           onClick={handleStart}
           disabled={startGame.isPending}
         >
-          <span className="cue-ball-icon" aria-hidden="true" style={{ marginRight: 6, verticalAlign: 'middle' }} />
-          {startGame.isPending ? 'STARTING…' : isPractice ? 'START PRACTICE' : 'BREAK!'}
-          {isSignedOut && !startGame.isPending && (
-            <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>
-              You're not signed in, no data will be saved :(
-            </span>
-          )}
+          <span className="cue-ball-icon" aria-hidden="true" style={{ marginRight: 6 }} />
+          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {startGame.isPending ? 'STARTING…' : isPractice ? 'START PRACTICE' : 'BREAK!'}
+            {isSignedOut && !startGame.isPending && (
+              <span style={{ fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>
+                You're not signed in, no data will be saved :(
+              </span>
+            )}
+          </span>
         </button>
 
         <hr className="sep" />
