@@ -670,7 +670,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                 <button
                   key={n}
                   className={`btn ${playerCount === n ? 'selected' : ''}`}
-                  style={{ flex: 1, fontSize: 13, fontWeight: 'bold', minHeight: 44 }}
+                  style={{ flex: 1, fontSize: 13, fontWeight: 'bold', minHeight: 44, flexDirection: 'column' }}
                   onClick={() => setPlayerCount(n)}
                 >
                   {n === 1 ? 'Shark Mode' : n === 2 ? 'Singles' : 'Doubles'}
