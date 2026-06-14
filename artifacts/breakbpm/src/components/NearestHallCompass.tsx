@@ -44,11 +44,9 @@ type OrientEvent = DeviceOrientationEvent & { webkitCompassHeading?: number };
 
 export default function NearestHallCompass({
   verifiedVenues,
-  onExit,
   onLocate,
 }: {
   verifiedVenues: Venue[];
-  onExit: () => void;
   /** Fired with the user's coordinates once geolocation succeeds, so the parent
    *  can sort its Verified Halls list nearest-first. */
   onLocate?: (coords: LatLng) => void;
@@ -177,9 +175,6 @@ export default function NearestHallCompass({
     <div className="fpp-compass">
       <div className="fpp-compass-head">
         <span className="fpp-compass-title">🎱 NEAREST HALL</span>
-        <button className="btn fpp-compass-exit" onClick={onExit}>
-          ✕ Close
-        </button>
       </div>
       {phase === "idle" && (
         <div className="fpp-compass-body">

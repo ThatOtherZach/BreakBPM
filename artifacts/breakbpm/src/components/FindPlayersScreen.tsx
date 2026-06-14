@@ -757,7 +757,6 @@ export default function FindPlayersScreen({
                 <>
                   <NearestHallCompass
                     verifiedVenues={verifiedVenues}
-                    onExit={() => setCompassOpen(false)}
                     onLocate={(c) => setUserCoords(c)}
                   />
                   <div className="fpp-list fpp-venue-list">
