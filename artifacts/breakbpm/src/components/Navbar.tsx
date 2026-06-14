@@ -66,11 +66,13 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlay
 
       {open && showHamburger && (
         <div className="navbar-menu">
-          {onStats && !at('/stats') && (
-            <button className="navbar-menu-item" onClick={() => { setOpen(false); onStats(); }}>
-              <span style={{ textDecoration: 'underline' }}>S</span>tats
-            </button>
-          )}
+          <SignedIn>
+            {onStats && !at('/stats') && (
+              <button className="navbar-menu-item" onClick={() => { setOpen(false); onStats(); }}>
+                <span style={{ textDecoration: 'underline' }}>S</span>tats
+              </button>
+            )}
+          </SignedIn>
           {onAbout && !at('/about') && (
             <button className="navbar-menu-item" onClick={() => { setOpen(false); onAbout(); }}>
               <span style={{ textDecoration: 'underline' }}>A</span>bout
