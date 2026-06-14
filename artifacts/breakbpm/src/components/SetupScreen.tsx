@@ -29,6 +29,9 @@ const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
 ];
 
 const DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
+// Names shown in the locked, signed-out setup. Slot 1 is tagged "(Host)" to
+// pretrain the convention that Player 1 is the device that keeps score.
+const SIGNED_OUT_NAMES = ['Player 1 (Host)', 'Player 2', 'Player 3', 'Player 4'];
 const PLAYER_BALL_COLORS = ['#FDD307', '#1F4E9E', '#C3342B', '#5B247A'];
 
 // Sublabel under "Automatic Team Assignment" — describes when groups lock,
@@ -450,7 +453,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
       // pinned to its "Player N" default, ignoring any stale state in
       // `names[]` (e.g. typed while signed in, then signed out without remount).
       if (isSignedOut) {
-        const p: Player = { id: i, name: DEFAULT_NAMES[i] };
+        const p: Player = { id: i, name: SIGNED_OUT_NAMES[i] };
         if (gameType === '8ball' && !isShark && teamMode === 'manual' && manualTeams[i]) {
           p.team = manualTeams[i] as 'solids' | 'stripes';
         }
@@ -696,7 +699,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
               const slotDisplayName = isLockedSlot
                 ? lockedPlayer1Name!
                 : isSignedOut
-                  ? DEFAULT_NAMES[i]
+                  ? SIGNED_OUT_NAMES[i]
                   : (names[i] || DEFAULT_NAMES[i]);
               return (
                 <div key={i} className="player-row">
@@ -744,7 +747,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                       isLockedSlot
                         ? (canMention ? `@${lockedPlayer1Name}` : lockedPlayer1Name)
                         : isSignedOut
-                          ? DEFAULT_NAMES[i]
+                          ? SIGNED_OUT_NAMES[i]
                           : names[i]
                     }
                     onChange={e => setName(i, e.target.value)}
