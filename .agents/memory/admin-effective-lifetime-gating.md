@@ -24,3 +24,12 @@ landed, denying admins a perk they should have.
 `computeEntitlement` on both the server gate and the client gate. Grep for
 `isLifetime` and `getActivePasses` when auditing — direct pass checks are the
 smell.
+
+**Known exception (by design, today):** `hostSpectatingEnabled()` in
+`routes/games.ts` checks RAW `getActivePasses()`/`getActiveSubscription()`, NOT
+`computeEntitlement`. It gates the "paid host" spectator role AND backs
+`pendingInviteCap()`. So an admin with NO real pass/subscription is treated as a
+*free* host there: their live games aren't spectatable via the official role and
+they get the free pending-invite cap (3, not 6). Real pass/sub removes it. If you
+ever want admins fully covered for spectating/invite-caps, route those two
+through the entitlement too.
