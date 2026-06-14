@@ -5,6 +5,29 @@ All notable changes to BreakBPM will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-06-14
+
+### Added
+- **Find Players & venue map** — signed-in users can post that they're looking to play, with a scheduled time and location, shown to others on a map and list. A curated billiards-venue map (verified pins geocoded server-side from each venue's address) and a nearest-hall compass help you find a table. Precise meetup coordinates are entitlement-gated: exact location for the post's owner and paid users, a coarse locality label for everyone else.
+- **OBS streaming overlay** — append `?obs=1` to any `/watch/:name` link for a chrome-free, transparent live HUD designed for OBS Browser Sources, with optional `&log=1` shot log and `&scale=<n>` sizing. Collapses to a themed `:(` face whenever there's nothing live to show.
+- **@Mention to link players** — a paid host can type `@username` into another player's slot to link a registered friend without a join code. The friend gets an opt-in invite on their account after the game finishes: Accept to count it toward their stats/history, or Delete to ignore it.
+- **Lucky Break (provably-fair roll)** — a $4.99 "roll the rack" unlock sold via redeem code. Every roll is a guaranteed win — at minimum a 30-day Monthly Pass, with a disclosed chance (default 20%, server-configurable) of a Lifetime Pass. Redeeming plays a retro "rolling the rack" reveal. The seeded draw is selected (not biased) by global shot activity, so the odds never move based on how anyone plays.
+- **Crypto checkout** — pay by cryptocurrency (Base USDC / native ETH) for one-time passes and Lucky Break. Built and gated behind an env flag (currently off).
+- **Rematch** — the end-of-game screen offers a one-tap Rematch that immediately starts a fresh game reusing the same mode/players/settings with a new share code, skipping setup.
+- **Chaos ("No Rules") mode** — a free-for-all variant with no rule enforcement. Win one within your last 10 completed games and your AVG-BPM number animates through a rainbow on your stats page and public profile.
+- **Global leaderboard** — ranks players by pace.
+- **Public player profiles** — `/watch/:name` shows a player's stats hero and recent history.
+- **Redeem share links** — any redeem code can be shared as a QR-friendly `/redeem/:code` link that stashes the code (surviving the sign-up/sign-in redirect) and auto-applies it once signed in.
+- **Delete my data** — remove a game from your history: fully deleted if you were the only registered player, otherwise your name is anonymized so other players keep their record.
+- **Admin tools** — allowlisted admins (via `BREAKBPM_ADMIN_EMAILS`) can mint pass-granting redeem codes (pick the tier and a max-uses cap or unlimited), manage venues, and view a CAD sales report. Admins are treated as Lifetime-pass holders for every Lifetime perk.
+- **Legal pages** — added in-app Terms of Service and Data Policy alongside the existing Subscription & Billing Terms and Cancellation & Refund Policy.
+- **PERMISSIONS.md** — a repo-root reference documenting the full tier / entitlement / feature-access model.
+
+### Changed
+- **Pricing** — Yearly subscription lowered to $14.99/yr (from $24.99), and Lifetime lowered to $24.99 (from $49.99). Day ($1.99) and Monthly ($4.99/mo) unchanged.
+- **Redeem codes are now the active paid path** (Lucky Break codes plus admin-minted comp codes). Card checkout via Stripe is fully built but gated behind the `BREAKBPM_CARD_PAYMENTS_ENABLED` env flag and currently off; subscription *cancellation* always stays available.
+- **Sales ledger reports CAD** — every completed sale freezes a USD→CAD conversion (Bank of Canada rate) at sale time for Canadian tax reporting, while all pricing remains USD.
+
 ## [0.7.0] - 2026-06-03
 
 ### Added
@@ -114,6 +137,7 @@ Major rewrite migrating from a single `index.html` file to a full React + Vite +
 - Multiplayer via link (async state sharing)
 - Shot logging and undo
 
+[0.9.0]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.7.0...v0.9.0
 [0.7.0]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.5.0...v0.5.1

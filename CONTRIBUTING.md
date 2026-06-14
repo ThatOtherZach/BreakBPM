@@ -41,14 +41,17 @@ Never use `outline` to simulate a button border. If you need a "default" button 
 2. Start dev server: `pnpm --filter @workspace/breakbpm run dev`
 3. Edit source files in `artifacts/breakbpm/src/`
 4. Test thoroughly at mobile width:
-   - New game flow (8-ball, 9-ball, practice)
+   - New game flow (8-ball, 9-ball, practice, Shark, Chaos/No-Rules)
    - Team assignment (auto + manual with per-player dropdowns)
    - Ball selector — only legal balls should appear
    - BPM and timer (pause in practice, auto-runs in game modes)
    - Share code — state must survive a full page reload; join/spectate work
    - Win conditions (8-ball group clearance, Golden Break, Foul-on-8, 9-ball)
-   - Undo functionality
-   - Stats page renders for each tier (anonymous, signed-in, pass holder)
+   - Undo functionality; Rematch from the win screen reuses mode/players/settings
+   - Stats page + leaderboard render for each tier (anonymous, signed-in, pass holder)
+   - OBS overlay (`/watch/:name?obs=1`) renders chrome-free and stays live
+   - Redeem a code (incl. the Lucky Break "rolling the rack" reveal) and `/redeem/:code` links
+   - Find Players post + venue map + nearest-hall compass
    - About page — markdown renders, scrollbar themed
 5. Run `pnpm run typecheck` (the canonical check) before delivering.
 6. Update `CHANGELOG.md` when adding features.
@@ -80,7 +83,9 @@ The project has gone through major evolutions:
 4. Full Windows 98 retro theme (still `index.html`)
 5. React + Vite + TypeScript monorepo migration
 6. Accounts, game history, passes, per-player BPM
-7. **Statistics page, live join & spectate, recurring subscriptions — current state (v0.7)**
+7. Statistics page, live join & spectate, recurring subscriptions (v0.7)
+8. Tiered entitlements + admin code minting, Lucky Break provably-fair roll, redeem share links, crypto + Stripe checkout (flag-gated), CAD sales ledger
+9. **Find Players + venue map, OBS overlay, @mention invites, Rematch, Chaos mode + rainbow flourish, leaderboard, public profiles, delete-my-data — current state (v0.9)**
 
 **Key things to know:**
 
@@ -88,6 +93,8 @@ The project has gone through major evolutions:
 - The CSS design system is entirely in `index.css` — variables, button states, inputs, scrollbars, layout.
 - The `AboutScreen` renders `src/ABOUT.md`, which is bundled at build time (imported as `?raw`) — edit that file to change About-page copy.
 - The API is contract-first: edit `lib/api-spec/openapi.yaml`, then run `pnpm --filter @workspace/api-spec run codegen`. Never hand-write API types.
+- Access control is tier-based. `entitlement.ts` resolves a caller into `public` / `account` / `pass`. Gate "paid host" features on `tier === 'pass'`, and Lifetime-only perks on the entitlement (`entitlement.isAdmin || entitlement.activePass?.isLifetime`), never on raw passes. See [PERMISSIONS.md](./PERMISSIONS.md) for the full feature-access model.
+- No background timers touch the DB. The Postgres instance auto-suspends when idle, so stale in-progress games are finalized **lazily** on the next read/write (or when a spectator views the specific game) — there is no heartbeat/cron sweep. Don't add fixed-interval DB polling.
 - Icons live in `public/` and are referenced as `/icon-name.png`.
 - The `pnpm-workspace` skill in `.local/skills/` describes the full monorepo structure and TypeScript setup.
 
