@@ -1055,7 +1055,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
           <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <span>
               <span className="cue-ball-icon" aria-hidden="true" style={{ marginRight: 6 }} />
-              {startGame.isPending ? 'STARTING…' : isPractice ? 'START PRACTICE' : 'BREAK!'}
+              {startGame.isPending ? 'STARTING…' : 'BREAK!'}
             </span>
             {isSignedOut && !startGame.isPending && (
               <span style={{ fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>
