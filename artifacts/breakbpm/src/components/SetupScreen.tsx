@@ -682,7 +682,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
 
         {/* Player names — hidden in Shark Mode (solo) and in Practice when
             already signed in (name is locked, no need to show it). */}
-        {!isShark && !(isPractice && lockedPlayer1Name !== null) && (<div>
+        {!isShark && !(isPractice && (lockedPlayer1Name !== null || isSignedOut)) && (<div>
           <div className="menu-section-label">▶ {isPractice ? 'YOUR NAME' : 'PLAYERS'}</div>
           {count >= 2 && (
             <div style={{ fontSize: 11, color: '#444', margin: '-2px 0 4px' }}>Select who breaks</div>
