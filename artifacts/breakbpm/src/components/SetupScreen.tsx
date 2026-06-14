@@ -674,6 +674,9 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                   onClick={() => setPlayerCount(n)}
                 >
                   {n === 1 ? 'Shark Mode' : n === 2 ? 'Singles' : 'Doubles'}
+                  <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>
+                    {n === 1 ? 'Solo Play' : n === 2 ? 'You + 1' : 'Group Play'}
+                  </span>
                 </button>
               ))}
             </div>
