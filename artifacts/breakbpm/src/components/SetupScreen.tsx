@@ -1055,7 +1055,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
           {startGame.isPending ? 'STARTING…' : isPractice ? 'START PRACTICE' : 'BREAK!'}
           {isSignedOut && !startGame.isPending && (
             <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>
-              You're not signed in, no data will be saved
+              You're not signed in, no data will be saved :(
             </span>
           )}
         </button>
