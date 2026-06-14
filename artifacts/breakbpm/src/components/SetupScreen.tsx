@@ -1050,6 +1050,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
           className="btn btn-primary btn-big btn-full"
           onClick={handleStart}
           disabled={startGame.isPending}
+          style={{ padding: '8px 15px' }}
         >
           <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <span>
