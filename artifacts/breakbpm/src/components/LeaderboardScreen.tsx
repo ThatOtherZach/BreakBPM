@@ -149,9 +149,7 @@ export function LeaderboardWidget() {
           className="btn w-full"
           style={{ marginTop: 6 }}
           onClick={() => setLocation("/leaderboard")}
-        >
-          Everyone Else →
-        </button>
+        >Everyone →</button>
       </div>
     </div>
   );
