@@ -131,11 +131,16 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
   // to link them (no join code). Used to surface the inline hint; the server
   // re-validates eligibility, so this is presentation only.
   const canMention = me.data?.entitlement?.tier === 'pass';
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   // Signed-in users always play as themselves in slot 1 — their screen
   // name is prefilled and the input is locked so they can't masquerade
   // as someone else (which would also pollute their own BPM history).
   const lockedPlayer1Name = user?.screenName ?? null;
+  // Signed-out (anonymous) users can't set custom names at all — every slot
+  // is locked to its "Player N" default. Free-text names from anonymous
+  // players don't tie to an account and just add noise, so we nudge them to
+  // sign in instead. Mirrors the signed-in slot-1 lock styling.
+  const isSignedOut = !isAuthenticated;
   // SetupScreen only mounts when localStorage has no in-progress game
   // (App.tsx routes straight to GameScreen otherwise), so this fetch is
   // already the "fallback path" — different device / cleared browser.
@@ -441,6 +446,16 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
     // (shotLog playerName must equal the invite's displayName).
     const mentionPayload: { slotIndex: number; screenName: string }[] = [];
     const players: Player[] = Array.from({ length: count }, (_, i) => {
+      // Signed-out users can't name players or @mention — every slot is
+      // pinned to its "Player N" default, ignoring any stale state in
+      // `names[]` (e.g. typed while signed in, then signed out without remount).
+      if (isSignedOut) {
+        const p: Player = { id: i, name: DEFAULT_NAMES[i] };
+        if (gameType === '8ball' && !isShark && teamMode === 'manual' && manualTeams[i]) {
+          p.team = manualTeams[i] as 'solids' | 'stripes';
+        }
+        return p;
+      }
       const mention = i >= 1 ? mentions[i] : undefined;
       const linkedName = mention?.kind === 'found' ? mention.screenName : null;
       if (linkedName) mentionPayload.push({ slotIndex: i, screenName: linkedName });
@@ -674,6 +689,15 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
               // Slot 1 is locked to the signed-in user so they can't
               // play under someone else's name and skew their stats.
               const isLockedSlot = i === 0 && lockedPlayer1Name !== null;
+              // Signed-out users can't edit any slot — every field is pinned
+              // to its "Player N" default. Both states share the read-only
+              // styling/cursor; only the tooltip and value differ.
+              const isNameLocked = isLockedSlot || isSignedOut;
+              const slotDisplayName = isLockedSlot
+                ? lockedPlayer1Name!
+                : isSignedOut
+                  ? DEFAULT_NAMES[i]
+                  : (names[i] || DEFAULT_NAMES[i]);
               return (
                 <div key={i} className="player-row">
                   {count >= 2 ? (
@@ -683,7 +707,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                     // cue ball — its ::after would paint a stray white dot over it.)
                     (<label
                       className="breaker-opt"
-                      title={`${(isLockedSlot ? lockedPlayer1Name : names[i]) || DEFAULT_NAMES[i]} breaks first`}
+                      title={`${slotDisplayName} breaks first`}
                     >
                       <input
                         type="radio"
@@ -693,7 +717,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                         className="rule-set-radio"
                         // The visible label is aria-hidden ball art, so name the
                         // radio explicitly for screen readers / AT.
-                        aria-label={`${(isLockedSlot ? lockedPlayer1Name : names[i]) || DEFAULT_NAMES[i]} breaks first`}
+                        aria-label={`${slotDisplayName} breaks first`}
                       />
                       {breakerIndex === i ? (
                         <span className="cue-ball-icon cue-ball-icon--chip" aria-hidden="true" />
@@ -716,15 +740,27 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                   )}
                   <input
                     className="input"
-                    value={isLockedSlot ? (canMention ? `@${lockedPlayer1Name}` : lockedPlayer1Name) : names[i]}
+                    value={
+                      isLockedSlot
+                        ? (canMention ? `@${lockedPlayer1Name}` : lockedPlayer1Name)
+                        : isSignedOut
+                          ? DEFAULT_NAMES[i]
+                          : names[i]
+                    }
                     onChange={e => setName(i, e.target.value)}
                     placeholder={DEFAULT_NAMES[i]}
                     maxLength={110}
-                    readOnly={isLockedSlot}
-                    aria-readonly={isLockedSlot || undefined}
-                    title={isLockedSlot ? 'Signed in — name locked to your account' : undefined}
-                    style={
+                    readOnly={isNameLocked}
+                    aria-readonly={isNameLocked || undefined}
+                    title={
                       isLockedSlot
+                        ? 'Signed in — name locked to your account'
+                        : isSignedOut
+                          ? 'Sign in to set player names'
+                          : undefined
+                    }
+                    style={
+                      isNameLocked
                         ? { background: 'var(--silver)', color: '#555', cursor: 'not-allowed' }
                         : undefined
                     }
@@ -759,7 +795,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                     );
                   })()}
                   {/* Live @mention status (non-host slots only). */}
-                  {i >= 1 && !isLockedSlot && (() => {
+                  {i >= 1 && !isNameLocked && (() => {
                     const st = mentions[i];
                     if (!st || st.kind === 'idle') return null;
                     const map: Record<Exclude<MentionState['kind'], 'idle'>, { text: string; color: string }> = {
@@ -782,9 +818,16 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
               );
             })}
           </div>
+          {/* Signed-out users can't name players — nudge them to sign in.
+              Occupies the same spot as the paid-host @USERNAME tip below. */}
+          {isSignedOut && (
+            <div style={{ fontSize: 11, color: '#444', marginTop: 4, paddingLeft: 34 }}>
+              <strong>Sign in</strong> to set player names.
+            </div>
+          )}
           {/* Discoverability hint for paid hosts — links a registered player by
               handle without a join code. Shown only for multiplayer setups. */}
-          {canMention && count >= 2 && !isShark && (
+          {!isSignedOut && canMention && count >= 2 && !isShark && (
             <div style={{ fontSize: 11, color: '#444', marginTop: 4, paddingLeft: 34 }}>
               Tip: <strong>@USERNAME</strong> to add another registered player.
             </div>
