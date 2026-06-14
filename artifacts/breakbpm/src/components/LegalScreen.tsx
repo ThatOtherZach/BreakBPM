@@ -1,12 +1,14 @@
 import Navbar from './Navbar';
 import LegalDisclosure from './LegalDisclosure';
 import { APP_VERSION } from '../lib/version';
+import { usePageMeta, PAGE_META } from '../lib/pageMeta';
 
 interface LegalScreenProps {
   onBack: () => void;
 }
 
 export default function LegalScreen({ onBack }: LegalScreenProps) {
+  usePageMeta(PAGE_META.legal);
   return (
     <div className="app-window about-window">
       <Navbar onBack={onBack} />

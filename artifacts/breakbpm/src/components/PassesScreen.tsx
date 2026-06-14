@@ -15,6 +15,7 @@ import Navbar from "./Navbar";
 import LuckyBreakReveal from "./LuckyBreakReveal";
 import CryptoCheckout from "./CryptoCheckout";
 import { signInPath } from "../lib/authClient";
+import { usePageMeta, PAGE_META } from "../lib/pageMeta";
 
 function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
@@ -40,7 +41,44 @@ const MIN_ROLL_MS = 2200;
 
 type RevealState = "idle" | "rolling" | "result";
 
+/** Static plan summaries shown to all visitors (signed-out and signed-in).
+ *  Kept in sync with the server pricing catalog for display purposes only. */
+const STATIC_PLAN_SUMMARIES = [
+  {
+    id: "day",
+    name: "Day Pass",
+    price: "$1.99",
+    suffix: "",
+    description: "24 hours of full access — stats, history, live spectating.",
+  },
+  {
+    id: "month-sub",
+    name: "Monthly",
+    price: "$2.99",
+    suffix: "/mo",
+    description: "Full access month to month. Cancel anytime.",
+    note: "↻ Renews monthly · cancel anytime",
+  },
+  {
+    id: "year-sub",
+    name: "Yearly",
+    price: "$12.99",
+    suffix: "/yr",
+    description: "Full access for a full year at the best recurring rate.",
+    note: "↻ Renews yearly · cancel anytime",
+  },
+  {
+    id: "lifetime",
+    name: "Lifetime",
+    price: "$24.99",
+    suffix: "",
+    description: "One-time purchase. Pay once, full access forever.",
+  },
+];
+
 export default function PassesScreen({ onBack }: { onBack: () => void }) {
+  usePageMeta(PAGE_META.passes);
+
   const me = useGetMe();
   const plans = useListPlans();
   const passCheckout = useCreatePassCheckout();
@@ -101,29 +139,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!me.data?.signedIn) {
-    return (
-      <div className="app-window app-window--page">
-        <Navbar onBack={onBack} />
-        <div className="app-body">
-          <div className="panel">
-            <div className="panel-header"><span>Sign In Required</span></div>
-            <div className="panel-body">
-              <p style={{ fontSize: 13, marginBottom: 10 }}>
-                Sign in to redeem a Lucky Break code or buy a pass.
-              </p>
-              <button
-                className="btn btn-primary btn-big w-full"
-                onClick={() => { window.location.href = signInPath(); }}
-              >
-                Sign In
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const signedIn = !!me.data?.signedIn;
 
   const busy =
     passCheckout.isPending ||
@@ -135,7 +151,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
   const crypto = plans.data?.crypto;
   const luckyBreak = plans.data?.luckyBreak;
   const hasAccess =
-    !!me.data.entitlement.activePass || !!me.data.entitlement.activeSubscription;
+    !!me.data?.entitlement?.activePass || !!me.data?.entitlement?.activeSubscription;
 
   /**
    * One-time pass purchase. Two-step: createCheckout returns an opaqueToken;
@@ -199,74 +215,157 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
       <Navbar onBack={onBack} />
       <div className="app-body">
 
-        {/* Card purchase — turned off behind an env flag while we run on codes
-            only. The endpoints + UI stay intact so this can flip back on. */}
-        {cardPaymentsEnabled && (
-          <div className="panel">
-            <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🎟️</span>Get a Pass</span></div>
-            <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {plans.isLoading && <p style={{ fontSize: 12 }}>Loading plans…</p>}
-              {planList.map((plan) => {
-                const note = recurringNote(plan);
-                return (
-                  <div
-                    key={plan.id}
-                    style={{
-                      border: "1px solid #888",
-                      background: "#fff",
-                      padding: 8,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 4,
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontFamily: "VT323", fontSize: 22, color: "#000080" }}>{plan.name}</span>
-                      <span style={{ fontWeight: "bold" }}>
-                        {formatPrice(plan.priceCents)}
-                        <span style={{ fontWeight: "normal", fontSize: 12 }}>{priceSuffix(plan)}</span>
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 11, color: "#444" }}>{plan.description}</div>
-                    {note && (
-                      <div style={{ fontSize: 10, color: "#006400" }}>↻ {note}</div>
-                    )}
-                    <button
-                      className="btn btn-primary"
-                      disabled={busy}
-                      onClick={() => handlePlanAction(plan)}
-                    >
-                      {plan.kind === "subscription" ? "Subscribe" : "Buy"}
-                    </button>
-                  </div>
-                );
-              })}
-              <p style={{ fontSize: 10, color: "#888", marginTop: 4 }}>
-                Pay securely by card via Stripe. Have a code? Redeem it on your
-                Account page.
-              </p>
-            </div>
+        {/* ── Public pricing section — always visible to all visitors ── */}
+        <div className="panel">
+          <div className="panel-header">
+            <h1 style={{ margin: 0, fontSize: "inherit", fontFamily: "inherit", fontWeight: "inherit", lineHeight: "inherit" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🎟️</span>
+                BreakBPM Passes &amp; Pricing
+              </span>
+            </h1>
           </div>
-        )}
+          <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <p style={{ fontSize: 12, margin: 0 }}>
+              A pass unlocks full stats history, extended windows, live spectating, and all paid features.
+              Free play is always available — sign in to save your stats.
+            </p>
 
-        {/* Self-custody on-chain checkout — behind a server flag, shown only when
-            a receiving wallet is configured. */}
-        {crypto?.enabled && (
-          <CryptoCheckout
-            catalog={crypto}
-            hasAccess={hasAccess}
-            luckyBreak={luckyBreak}
-            onLuckyBreakWin={(result) => {
-              // Mirror the redeem-code roll: tumble the rack for a beat, then
-              // land on the server-decided tier (the draw already happened).
-              setRevealResult(null);
-              setRevealState("rolling");
-              void delay(MIN_ROLL_MS).then(() => {
-                setRevealResult(result);
-                setRevealState("result");
-              });
-            }}
-          />
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {STATIC_PLAN_SUMMARIES.map((plan) => (
+                <div
+                  key={plan.id}
+                  style={{
+                    border: "1px solid #888",
+                    background: "#fff",
+                    padding: 8,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontFamily: "VT323", fontSize: 22, color: "#000080" }}>{plan.name}</span>
+                    <span style={{ fontWeight: "bold" }}>
+                      {plan.price}
+                      <span style={{ fontWeight: "normal", fontSize: 12 }}>{plan.suffix}</span>
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#444" }}>{plan.description}</div>
+                  {plan.note && (
+                    <div style={{ fontSize: 10, color: "#006400" }}>{plan.note}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Lucky Break callout — visible to all */}
+            <div className="notice" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+              <span style={{ fontWeight: "bold", fontSize: 12 }}>🎱 Lucky Break — Roll the Rack</span>
+              <span style={{ fontSize: 11 }}>
+                A $4.99 guaranteed upgrade: win at minimum a 30-day Monthly Pass, with a&nbsp;
+                {luckyBreak?.lifetimeProbability != null
+                  ? `${Math.round(luckyBreak.lifetimeProbability * 100)}%`
+                  : "20%"}{" "}
+                chance of a Lifetime Pass. Redeem via code — provably fair.
+              </span>
+            </div>
+
+            {/* CTA: not signed in */}
+            {!signedIn && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <p style={{ fontSize: 11, color: "#555", margin: 0 }}>
+                  Sign in to redeem a code or purchase a pass.
+                </p>
+                <button
+                  className="btn btn-primary btn-big w-full"
+                  onClick={() => { window.location.href = signInPath(); }}
+                >
+                  Sign In to Get a Pass
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Authenticated purchase panels (signed-in only) ── */}
+        {signedIn && (
+          <>
+            {/* Card purchase — turned off behind an env flag while we run on codes
+                only. The endpoints + UI stay intact so this can flip back on. */}
+            {cardPaymentsEnabled && (
+              <div className="panel">
+                <div className="panel-header">
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>💳</span>
+                    Buy by Card
+                  </span>
+                </div>
+                <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {plans.isLoading && <p style={{ fontSize: 12 }}>Loading plans…</p>}
+                  {planList.map((plan) => {
+                    const note = recurringNote(plan);
+                    return (
+                      <div
+                        key={plan.id}
+                        style={{
+                          border: "1px solid #888",
+                          background: "#fff",
+                          padding: 8,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 4,
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontFamily: "VT323", fontSize: 22, color: "#000080" }}>{plan.name}</span>
+                          <span style={{ fontWeight: "bold" }}>
+                            {formatPrice(plan.priceCents)}
+                            <span style={{ fontWeight: "normal", fontSize: 12 }}>{priceSuffix(plan)}</span>
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "#444" }}>{plan.description}</div>
+                        {note && (
+                          <div style={{ fontSize: 10, color: "#006400" }}>↻ {note}</div>
+                        )}
+                        <button
+                          className="btn btn-primary"
+                          disabled={busy}
+                          onClick={() => handlePlanAction(plan)}
+                        >
+                          {plan.kind === "subscription" ? "Subscribe" : "Buy"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <p style={{ fontSize: 10, color: "#888", marginTop: 4 }}>
+                    Pay securely by card via Stripe. Have a code? Redeem it on your
+                    Account page.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Self-custody on-chain checkout — behind a server flag, shown only when
+                a receiving wallet is configured. */}
+            {crypto?.enabled && (
+              <CryptoCheckout
+                catalog={crypto}
+                hasAccess={hasAccess}
+                luckyBreak={luckyBreak}
+                onLuckyBreakWin={(result) => {
+                  // Mirror the redeem-code roll: tumble the rack for a beat, then
+                  // land on the server-decided tier (the draw already happened).
+                  setRevealResult(null);
+                  setRevealState("rolling");
+                  void delay(MIN_ROLL_MS).then(() => {
+                    setRevealResult(result);
+                    setRevealState("result");
+                  });
+                }}
+              />
+            )}
+          </>
         )}
 
         {msg && (

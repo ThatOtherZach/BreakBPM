@@ -5,6 +5,7 @@ import ballImg from '/eightball_nobg.png';
 import aboutMd from '../ABOUT.md?raw';
 import { APP_VERSION } from '../lib/version';
 import { pickTagline } from '../lib/taglines';
+import { usePageMeta, PAGE_META } from '../lib/pageMeta';
 
 const tagline = pickTagline();
 
@@ -13,6 +14,7 @@ interface AboutScreenProps {
 }
 
 export default function AboutScreen({ onBack }: AboutScreenProps) {
+  usePageMeta(PAGE_META.about);
   const html = useMemo(() => marked(aboutMd) as string, []);
 
   return (

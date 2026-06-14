@@ -19,6 +19,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../lib/authClient';
 import { APP_VERSION } from '../lib/version';
 import { pickTagline } from '../lib/taglines';
+import { usePageMeta, PAGE_META } from '../lib/pageMeta';
 
 const tagline = pickTagline();
 
@@ -126,6 +127,7 @@ interface Props {
 }
 
 export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAccount, onStats, onFindPlayers, onSignIn }: Props) {
+  usePageMeta(PAGE_META.home);
   const [, setLocation] = useLocation();
   const startGame = useStartGame();
   const abandonGame = useAbandonGame();
@@ -585,8 +587,8 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
 
         {/* Right: title block */}
         <div className="splash-title-block">
-          <div className="splash-title-main">BREAK<span className="splash-title-accent">BPM</span></div>
-          <div className="splash-title-sub">BILLIARDS SCORE SYSTEM</div>
+          <h1 className="splash-title-main">BREAK<span className="splash-title-accent">BPM</span></h1>
+          <div className="splash-title-sub">BILLIARDS SCORE TRACKER &amp; STATS</div>
           <div className="splash-title-rule" />
           <div className="splash-meta">
             <span>v{APP_VERSION}</span>
@@ -646,7 +648,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
 
         {/* Game type */}
         <div>
-          <div className="menu-section-label">▶ GAME TYPE</div>
+          <h2 className="menu-section-label">▶ GAME TYPE</h2>
           <div className="game-type-grid">
             {GAME_TYPES.map(gt => (
               <button
@@ -686,7 +688,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
         {/* Player names — hidden in Shark Mode (solo) and in Practice when
             already signed in (name is locked, no need to show it). */}
         {!isShark && !(isPractice && (lockedPlayer1Name !== null || isSignedOut)) && (<div>
-          <div className="menu-section-label">▶ {isPractice ? 'YOUR NAME' : 'PLAYERS'}</div>
+          <h2 className="menu-section-label">▶ {isPractice ? 'YOUR NAME' : 'PLAYERS'}</h2>
           {count >= 2 && (
             <div style={{ fontSize: 11, color: '#444', margin: '-2px 0 4px' }}>Select who breaks</div>
           )}
@@ -986,7 +988,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
 
         {isPractice && (
           <div>
-            <div className="menu-section-label">▶ RACK</div>
+            <h2 className="menu-section-label">▶ RACK</h2>
             <div className="flex gap-1">
               <button
                 className={`btn ${practiceRack === '8ball' ? 'selected' : ''}`}
@@ -1014,11 +1016,11 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
 
         {isShark && (
           <div>
-            <div className="menu-section-label">▶ SHARK MODE</div>
+            <h2 className="menu-section-label">▶ SHARK MODE</h2>
             <div className="notice" style={{ marginBottom: 8 }}>
               <span style={{ fontSize: 11 }}>Solo 8-ball with an invisible Shark player. Your first ball locks in solids or stripes; the other group goes to the Shark. Clear your group and sink the 8 ball to win. Misses and/or fouls feed balls to the Shark.</span>
             </div>
-            <div className="menu-section-label" style={{ marginTop: 4 }}>▶ AGGRESSION</div>
+            <h2 className="menu-section-label" style={{ marginTop: 4 }}>▶ AGGRESSION</h2>
             <div className="flex gap-1">
               <button
                 className={`btn ${sharkAggression === 'normal' ? 'selected' : ''}`}
