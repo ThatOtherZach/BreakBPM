@@ -7,25 +7,28 @@ A billiards scoring app that tracks shots, calculates per-player Balls Per Minut
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks + Zod schemas from the OpenAPI spec (run after any spec change)
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
-- Optional env: `BREAKBPM_LUCKY_BREAK_LIFETIME_PROBABILITY` — Lucky Break Lifetime-upgrade odds as a decimal fraction in `[0,1]` (e.g. `0.2` = 20%). Defaults to `0.20`; invalid/out-of-range values log a warning and fall back to the default. Restart the api-server workflow after changing it.
-- Optional env: `BREAKBPM_USD_CAD_FALLBACK_RATE` — USD→CAD rate (e.g. `1.37`) used only when the Bank of Canada FX lookup is unreachable and no last-good rate is cached. Invalid values fall back to a hardcoded default (~1.37). See the sales-ledger FX decision below.
-- Optional env: `BREAKBPM_PROMO_QR_URL` — URL encoded into the splash-art QR easter egg (press-and-hold the splash 8-ball for 3s). Read fresh from the env on every `GET /config` request, so promo links can be swapped at runtime without rebuilding the static frontend. Defaults to `https://breakbpm.com` when unset/blank. Restart the api-server workflow after changing it.
-- Optional env: `BREAKBPM_FREE_PASS_MONTHLY_CAP` — per-reward monthly stock for the landing-page free-pass giveaway (Lucky Break and Day each get their own pool of this size). A non-negative integer; invalid/blank values warn and fall back to the default `15`. A new calendar month is a new pool (stock "resets" on the 1st with no job). Restart the api-server workflow after changing it.
+- Required env: `DATABASE_URL` — Postgres connection string.
+- Optional env (restart the api-server workflow after changing any):
+  - `BREAKBPM_LUCKY_BREAK_LIFETIME_PROBABILITY` — Lucky Break Lifetime odds, decimal `[0,1]` (default `0.20`; invalid → warn + default).
+  - `BREAKBPM_USD_CAD_FALLBACK_RATE` — USD→CAD rate used only when the Bank of Canada FX lookup is unreachable and nothing is cached (default ~1.37).
+  - `BREAKBPM_PROMO_QR_URL` — URL for the splash-art QR easter egg (press-hold the splash 8-ball 3s); read per-request via `GET /config` (default `https://breakbpm.com`).
+  - `BREAKBPM_FREE_PASS_MONTHLY_CAP` — per-reward monthly stock for the free-pass giveaway (Lucky Break + Day each get a pool this size; default `15`; a new month = a new pool).
+  - `BREAKBPM_ADMIN_EMAILS` — comma-separated admin allowlist (effective Lifetime + code minting).
+  - `BREAKBPM_CARD_PAYMENTS_ENABLED` — toggles legacy Stripe card checkout (code default OFF; see Architecture).
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- Frontend: React 19 + Vite 7, Wouter for routing
+- Frontend: React 19 + Vite 7, Wouter routing
 - Auth: Clerk (managed via Replit integration)
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec → React Query hooks + Zod schemas)
+- API codegen: Orval (OpenAPI spec → React Query hooks + Zod schemas)
 - Build: esbuild (CJS bundle)
-- Payments: Stripe (one-time passes + recurring subscriptions, checkout/redeem codes)
+- Payments: crypto (on-chain) for one-time passes + redeem codes. Legacy Stripe card checkout / recurring subscriptions exist in code behind an env flag (currently off).
 
 ## Where things live
 
@@ -34,96 +37,75 @@ artifacts/
   breakbpm/           React frontend
     src/
       App.tsx           App shell — routing, game persistence, auth gating
-      ABOUT.md          About-page copy (imported as ?raw, rendered via marked)
+      ABOUT.md          About-page copy (imported ?raw, rendered via marked)
       lib/
         gameLogic.ts    Pure game engine (8-ball, 9-ball, practice, Shark)
         authClient.tsx  Clerk seam — useAuth(), AuthProvider, SignedIn/Out
-        forfeit.ts      Client-side forfeit/timeout constants (mirror server)
-        taglines.ts     Random splash taglines
-        version.ts      APP_VERSION constant
-        pendingRedeem.ts  localStorage stash (30-min TTL) for a redeem code arriving via /redeem/:code, carried across the sign-up/sign-in redirect
+        pendingRedeem.ts  localStorage stash (30-min TTL) for /redeem/:code across the sign-up redirect
+        landingContent.ts  Shared SEO copy (used by vite prerender + React screen)
+        pageMeta.ts / version.ts / taglines.ts / forfeit.ts
+      legal/            TERMS_OF_SERVICE.md + DATA_POLICY.md (rendered on /legal)
       components/
-        SetupScreen.tsx  Game setup — mode, player count, names, Shark aggression
-        GameScreen.tsx   Active game HUD, shot logging, BPM display
-        StatsScreen.tsx  Tiered shooting stats (retro CRT/PC-98 styling)
-        JoinedGameScreen.tsx  View-only HUD for joiners + spectators (/join/:code); also renders the OBS overlay (?obs=1)
-        WatchByNameScreen.tsx  Spectate by player name (/watch/:name); routes ?obs=1 into overlay mode
-        ObsOverlay.tsx    OBS overlay primitives (transparent body class, scale clamp, `:(` idle face)
-        AccountScreen.tsx  Profile, pass/subscription status, history
-        PassesScreen.tsx   Lucky Break roll + (env-gated) card purchase + redeem
-        LuckyBreakReveal.tsx  "Rolling the rack" reveal overlay (reuses .hud-chip)
-        AboutScreen.tsx    Renders ABOUT.md
-        RedeemScreen.tsx   Auto-applies a code from a /redeem/:code share link (stash → sign-up → redeem + reveal)
-        Navbar.tsx
+        SetupScreen / GameScreen / StatsScreen   Setup, live HUD + shot log, tiered stats
+        JoinedGameScreen / WatchByNameScreen / ObsOverlay   View-only mirror, spectate-by-name, OBS overlay
+        AccountScreen / PassesScreen / LuckyBreakReveal / RedeemScreen   Profile, pricing+redeem, roll reveal
+        AboutScreen / LegalDisclosure / Navbar
   api-server/         Express backend
     src/
       index.ts          Server entry, port binding
-      routes/           games.ts, auth.ts, passes.ts, subscriptions.ts, health.ts, config.ts
+      routes/           games, auth, passes, subscriptions, health, config
       lib/
         auth.ts         Clerk → local user upsert
-        stats.ts        Tiered /stats aggregation (personal vs global)
-        entitlement.ts  Resolves a user's Tier (public/account/pass) from passes + subs
-        subscriptions.ts  Recurring subscription lifecycle
-        luckyBreak.ts   Pure seeded-draw engine (entropy + redemption id → outcome)
-        luckyBreakEntropy.ts  Gathers last-30d global shot data as draw entropy
+        entitlement.ts  Resolves a user's Tier (public/account/pass)
+        stats.ts        Tiered /stats aggregation (mirrors gameLogic.ts)
+        luckyBreak.ts / luckyBreakEntropy.ts   Pure seeded-draw engine + entropy gather
         pricing.ts      Plan catalog, PASS_PRICES_CENTS, LUCKY_BREAK_INFO
-        config.ts       Env flags (cardPaymentsEnabled, default OFF)
-        shareCode.ts    5-char share-code generation + normalization
-        forfeit.ts      Server forfeit/timeout constants
+        config.ts       Env flags (cardPaymentsEnabled default OFF, admin emails)
+        fx.ts           Bank of Canada USD→CAD rate (for the CAD sales ledger)
+        shareCode.ts / forfeit.ts
 
 lib/
   db/src/schema/      Drizzle schema (source of truth for DB shape)
-    users.ts          users table (Clerk ID → screenName, onboarding)
-    games.ts          games table (gameState JSONB, bpm_x10, last_activity_at)
-                      + game_participants (per-player slots, displayName, stats window)
-    passes.ts         passes table (Day/Month/Lifetime one-time entitlements)
-    subscriptions.ts  subscriptions table (Monthly/Yearly recurring entitlements)
-    discountCodes.ts  one-time/limited-use codes (incl. lucky_break code kind)
-    luckyBreak.ts     lucky_break_rolls audit table (seed hash, window, outcome)
-    mentions.ts       game_mentions table (host @-links a user to a slot; opt-in invite)
-  api-spec/openapi.yaml   OpenAPI 3.1 (source of truth for API contract)
-  api-zod/            Generated Zod schemas from spec
-  api-client-react/   Generated React Query hooks from spec
+    users / games (+ game_participants) / passes / subscriptions / discountCodes / luckyBreak / mentions
+    (passes = Day/Month/Year/Lifetime one-time; subscriptions = legacy recurring, sales off but cancel works)
+  api-spec/openapi.yaml   OpenAPI 3.1 (source of truth for the API contract)
+  api-zod/ + api-client-react/   Generated Zod schemas + React Query hooks
 ```
 
 ## Architecture decisions
 
-- **Contract-first API**: OpenAPI spec lives in `lib/api-spec/openapi.yaml`. Codegen produces both the server-side Zod schemas and the client-side React Query hooks. Never hand-write API types — run codegen instead.
-- **Auth seam in one file**: All `@clerk/react` imports are isolated to `authClient.tsx`. The rest of the app calls `useAuth()` from that file. Swapping auth providers means rewriting one file only.
-- **Pure game engine**: `gameLogic.ts` is side-effect-free. `GameScreen.tsx` owns all state mutations and calls into the engine for derivations. This makes the BPM logic and ball tracking unit-testable without rendering.
-- **Dual persistence**: In-progress games are mirrored to `localStorage` (for tab-refresh) and synced to the DB via `/games/activity` (for cross-device resume). Recovery priority: localStorage first, then server prompt.
-- **BPM is per-player**: `calculatePlayerBPM(shotLog, playerName)` anchors at that player's first pocketing entry and measures to their latest. Shark steals use the `🦈 Shark` player name and are excluded from human BPM automatically.
-- **Tiered entitlements**: `entitlement.ts` resolves a caller into one of three `Tier`s — `public` (anonymous), `account` (signed in, no entitlement), `pass` (active pass OR subscription). One-time passes (Day/Month/Lifetime) live in `passes`; recurring plans (Monthly/Yearly) live in `subscriptions` as a separate source. `entitlement.hasActivePass` reflects one-time passes only; gate "paid host" features on `tier === 'pass'`. Buying Lifetime stops any active subscription from renewing (enforced in-tx on every grant path).
-- **Admins (effective Lifetime + code minting)**: Emails in the `BREAKBPM_ADMIN_EMAILS` secret are admins (`isAdminEmail` in `config.ts`). `computeEntitlement` synthesizes an effective **Lifetime** `activePass` for an admin who has no real pass (so `tier:'pass'`, `hasActivePass:true`, `historyVisibleLimit:null`, `activePass.isLifetime:true`), and exposes `entitlement.isAdmin`. A REAL pass always takes precedence over the synthetic one. **Gate every Lifetime-only perk on the entitlement, never on raw `getActivePasses()`** — i.e. `entitlement.isAdmin || entitlement.activePass?.isLifetime` (currently: Day-Pass gifting in `giftCodes.ts`, and custom screen-name editing in `routes/auth.ts` + `AccountScreen.tsx`). Admins also mint pass-granting discount codes from the Account page via `adminCodes.ts` (`POST/GET /passes/admin/codes`, 403 for non-admins): admin picks a tier (day/month/year/lifetime) and a max-uses cap (or unlimited), codes are tagged `issuerKind:'admin'` and never expire. **Code-issuer isolation**: `discount_codes.issuerKind` (`'gift'|'admin'|null`) discriminates sources; all gift-code queries (cooldown/supersede/list) are scoped via `giftScope()` to `issuerKind IS NULL OR 'gift'` so admin codes never collide with the single-active-gift invariant (and vice versa).
-- **Lucky Break (provably-fair roll)**: A `lucky_break` discount-code kind that, on redeem, runs a server-side draw instead of granting a fixed tier. `luckyBreak.ts` is a **pure** engine: it SHA-256-hashes the gathered entropy (last-30d global shot data, via `luckyBreakEntropy.ts`) together with the roll's server-assigned `redemptionId`, maps the hash to `[0,1)`, and returns Lifetime when the value is below the disclosed Lifetime probability else Monthly. The odds are **server-configured and disclosed** — `config.ts` `luckyBreakLifetimeProbability()` reads `BREAKBPM_LUCKY_BREAK_LIFETIME_PROBABILITY` (decimal in `[0,1]`, default `0.20`, invalid values warn + fall back), the call sites pass it into the pure engine (the engine stays env-free), and `pricing.ts` `luckyBreakInfo()` surfaces the *same* value to the client via `/passes/plans` so the disclosed odds can never drift from the rolled odds. Shot data only *seeds* (selects) the deterministic outcome, it cannot shift the threshold. Each roll snapshots its odds (`lifetimeProbabilityBps`) so changing the env var never rewrites history. The whole roll runs in-tx: gather entropy pre-tx → `computeLuckyBreakRoll` → `issuePassTx(month|lifetime)` → Lifetime stops subs → insert the redemption row (`id = redemptionId`) + a `lucky_break_rolls` audit row. The redemption id guarantees one draw per code (no re-roll). Reuse, don't re-implement: Lifetime perks (Day-Pass gifting) already include Lifetime via `giftCodes.ts` `ELIGIBLE_KINDS`.
-- **Card payments behind an env flag**: `config.ts` `cardPaymentsEnabled()` reads `BREAKBPM_CARD_PAYMENTS_ENABLED` (code default **OFF**, but currently set **ON** via env). While off, `/passes/checkout`, `/passes/verify`, `/subscriptions/checkout`, `/subscriptions/verify` reject with `CARD_PAYMENTS_OFF_MESSAGE` (subscription *cancel* stays on so existing subs can still be stopped), and `/passes/plans` reports `cardPaymentsEnabled:false` so the frontend hides the card UI. Endpoints + UI are intact regardless — flip the env var to toggle. Stripe credentials come from the Replit Stripe connector (not env secrets). Restart the api-server workflow after changing the flag.
-- **Landing-page free-pass giveaway (one atomic claim)**: `POST /passes/claim` mints a single-use discount code (`issuerKind:'claim'`), inserts the `free_pass_claims` row, and redeems it all in ONE `db.transaction` (`redeemDiscountCodeForUserTx`, the shared helper extracted from `/passes/redeem`). The reward is drawn **server-side** (never client-chosen) from two monthly pools (`free_pass_claim_pools`, PK `(periodKey, rewardKind)`): `drawFreePassRewardTx` tries the two reward kinds in random order via the atomic guarded `UPDATE ... SET claimed_count = claimed_count + 1 WHERE claimed_count < cap RETURNING claimed_count` (same oversell-proof pattern as the discount-code cap claim); the returned count is the code's sequence label (`LB-JUN26-001` / `D-JUN26-001`, URL-safe). Three authoritative guards stop a double grant: the active-pass pre-check, the atomic pool decrement, and `UNIQUE(user_id)` on `free_pass_claims` (one claim per account, ever — the in-tx race backstop). `GET /passes/claim/status` is public (stock + `open`) with optional auth-only fields (`alreadyClaimed`/`eligible`). Both endpoints have a light in-memory per-IP throttle. **Comp-ledger carve-out**: `valuationForCodeRedemption` books any `issuerKind:'claim'` redemption as a **$0 comp even for the Lucky Break draw** — without this a free Lucky Break would falsely record the $4.99 price as paid revenue.
-- **SEO/LLM landing page (prerendered)**: `/pool-stats-app` is a keyword-heavy marketing page that embeds the free-pass claim CTA. Shared copy lives in `src/lib/landingContent.ts` (dependency-free) and is imported by BOTH `vite.config.ts` (build-time prerender + per-route JSON-LD) and the React screen, so the crawled HTML, on-page text, and FAQPage JSON-LD stay in lockstep. `vite.config.ts` `injectRouteMeta` replaces the home `<script type="application/ld+json">` with the route's own (SoftwareApplication + FAQPage) and injects a prerendered `buildPoolStatsAppBody()` keyword body. Also wired into `pageMeta.ts`, `sitemap.xml`, `llms.txt`, and crawler anchors in `Navbar.tsx`.
-- **Sales ledger in CAD (FX frozen at sale time)**: Every completed sale appends a `sale_events` row (`recordSaleEventTx`) used by the admin sales report (`GET /admin/sales`, CSV + `AdminSalesPanel`). **All pricing is USD** (Stripe `currency=usd`, USDC≈USD, ETH priced off an ETH/USD feed; `PASS_PRICES_CENTS`/`LUCKY_BREAK_PRICE_CENTS`/`SUBSCRIPTION_PRICES_CENTS` are USD cents), but the ledger must report **true CAD** for Canadian tax. So each row freezes a USD→CAD conversion at sale time: `fx.ts` `getUsdToCadRate()` (today, 1h cache) / `getUsdToCadRateForDate(date)` (historical, 7-day trailing window, for backfill) hits the **Bank of Canada** Valet API (`FXUSDCAD`, free, CRA-accepted) and **never throws** — fallback chain is last-good → env `BREAKBPM_USD_CAD_FALLBACK_RATE` → hardcoded ~1.37. Rates are scaled ×1e6 (micros); `convertUsdToCad(usdCents, rateMicros)` is pure. `recordSaleEventTx` takes a required `fx: UsdCadRate`, keeps its `grossCents` input as the **USD source**, converts to CAD, **computes GST/PST on the CAD gross**, and stores both: CAD (`grossCents`/`gstCents`/`pstCents`/`netCents`) **and** audit (`sourceGrossCents`, `sourceCurrency='USD'`, `fxRateMicros`, `fxRateDate`, `fxSource`). **Fetch the rate pre-tx** (network) and pass it in — never fetch inside the tx. All call sites do this: `crypto.ts` (Lucky Break + fixed), `passes.ts` (redeem + verify), `stripeReconcile.ts` (purchase + renewal); the backfill script uses the per-row historical rate. Changing the env fallback never rewrites history (each row snapshots its own rate). Restart the api-server workflow after changing the fallback env.
-- **Tiered stats**: `GET /stats` is gated by tier. Anonymous → global scope, 24h window. Signed-in (no pass) → personal scope, 24h. Pass holders → personal stats with selectable window (24h/30d/365d/all) and a global toggle, plus `refresh=true` to bypass the 1h server cache. Personal stats are recomputed from each game's `shotLog` (the denormalized `games.bpm`/`accuracy` columns are host-centric); the per-player math in `stats.ts` deliberately mirrors `gameLogic.ts` and must be kept in lockstep. The personal core also carries a cosmetic `chaosWinRecent` flag — computed **window-independently** from the caller's 10 most-recent completed games (same approach as the Shark Level win count), true when any of those was a Chaos ("No Rules") game the caller WON (`gameState->>'chaosMode'` present AND `winner === slot displayName`). It drives the rainbow AVG-BPM flourish on the Stats hero, is always false in global scope, and flows through `/games/profile` automatically (that route spreads the same core).
-- **One host, many viewers**: The host device is the canonical scorekeeper. Others get a view-only mirror — either by **joining** an open seat before the break (`/join/:code`, occupies a slot, guests get a `guestToken`) or **spectating** any time (`/watch/:name` resolves a player's live game). Both render `JoinedGameScreen` and poll `/games/state`; neither can score or undo. Spectating requires the host to be a paid tier.
-- **DB-auto-suspend-friendly game closure & polling**: The Postgres instance bills compute-time and suspends when idle, so nothing should touch the DB on a fixed timer or poll harder than needed. There is **no** background sweep timer — stale in-progress games (60-min inactivity for non-practice, hard 60-min cap for any type) are finalized **lazily**: on the owner's next write/read (`sweepStaleGames`, used by start/activity/save/resume/history/profile/resolve/join) **or** when a viewer reads the specific game via the polled spectator paths. Those polled paths (`/games/state`, `/games/watch-resolve`) use `finalizeGameIfStale(row)` (forfeit.ts) to close **only the one row being viewed** (mirrors the SQL `stalePredicate` via the pure `isRowStale`) instead of sweeping all of a user's games every poll; `/games/state` re-reads the row only when it actually closed it. **Tradeoff**: an abandoned hosted game (host never returns) with joiners or pending @mentions can stay open until *someone* views it (its share code or the host's `/watch` page) — it self-heals on any view, and unfinalized games are merely absent from stats/history (all of which filter `endedAt IS NOT NULL`), never corrupt. Poll cadences are tiered to match: the live spectator poll in `JoinedGameScreen` is 2s signed-in / 4s anonymous / 4s OBS (10s hidden tab, stop on game-end); the `/watch/:name` "waiting for a live game" resolve poll uses idle-backoff (4s while a human is present, → 30s after 2min of no interaction, any pointer/key/touch/scroll/focus snaps back to 4s) so an unattended overlay/tab lets the DB suspend while an active watcher still gets a fast pickup. Idle-backoff applies **only** to the pre-live waiting state, never to active spectating.
-- **OBS overlay**: `/watch/:name?obs=1` renders the same live HUD as a chrome-free, transparent overlay for use as an OBS **Browser Source** (no new route, no extra backend — it reuses spectator resolution + polling). The page canvas goes transparent (a `obs-mode` class on `<html>`/`<body>`) so the video shows through behind the themed PC-98 panel; the overlay hugs its content (no navbar/back/status chrome) and stays live via the existing poll. Whenever there is nothing to show — no live game, host without an active paid pass, ended game, or an unresolved name — it collapses to a single themed `:(` face (never an error card or sign-in UI). Optional flags: `&log=1` adds a compact (≤6-line) newest-first shot log; `&scale=<n>` CSS-`transform: scale`s the whole overlay (clamped 0.2–5, default 1) so streamers get crisp resizing instead of OBS-side blur. Overlay primitives live in `ObsOverlay.tsx`; styles are the `.obs-*` / `body.obs-mode` rules in `index.css`. **OBS setup**: add a Browser Source, set the URL to the published `/watch/<name>?obs=1` (append `&log=1`/`&scale=1.5` as desired), leave "Shutdown source when not visible" off so it keeps polling, and size the source to the HUD (the panel is 480px wide at scale 1).
-- **@Mention to link players (opt-in invites)**: A paid, signed-in host can type `@username` into a non-host SetupScreen slot to link a registered player without a join code. `GET /mentions/resolve` debounce-resolves the handle live (returns `eligible`/`found`/`atCap`/`screenName`; self never resolves) and the slot shows an inline badge (`🔗 name`, "Not Found :(", "Invite List Full :(", "Pass Required"). On start, resolved slots are sent as `mentions:[{slotIndex,screenName}]` in `StartGameInput`; the server (best-effort, outside the tx, gated on `entitlement.tier==='pass'`) mints a **pending** `game_mentions` row per recipient (case-insensitive screen-name match, skips self/dupes/over-cap, `onConflict`-safe). Mentions create **nothing** in the recipient's stats/history until they opt in. The recipient sees invites on their Account page (`GET /mentions`, finished games only): **Accept** (`POST /mentions/:id/accept`) creates their real `game_participants` slot (reusing the join flow's slot/displayName/stats-window conventions, `statsStartAt=game.startedAt`, busts stats cache) so the game counts; **Delete** (`DELETE /mentions/:id`) removes a pending invite (never counted) or, for an accepted one, anonymizes the caller's slot via the shared `removeUserFromGameTx` (host copy preserved) + clears their stats cache. Pending-invite cap is recipient-tier-based: `PENDING_INVITE_CAP_FREE=3` / `PENDING_INVITE_CAP_PAID=6`. The shot log attributes correctly because the host's slot name is pinned to the canonical `screenName` (so `shotLog.playerName === displayName`).
-- **Venue coordinates are address-authoritative**: A verified venue's map pin is placed from its saved `address`, not hand-typed/clicked lat/lng. On every create/update, `venues.ts` `resolveVenueCoords()` geocodes a nonblank address server-side (`lib/geocode.ts` `geocodeAddress`, Nominatim `/search`, 8s timeout, range-validated) and stores those coords; the submitted lat/lng are a fallback used only when the address is blank or geocoding fails. Existing drifted pins are repaired in bulk via admin-only `POST /admin/venues/repair-coordinates` (the "Fix all pins from addresses" button in `AdminVenuesPanel`): re-geocode all venues, update when drift ≥1m, throttle ~1.1s between calls (Nominatim ≤1/sec), and report each as `updated`/`unchanged`/`failed`. **Invariant: never overwrite coordinates on geocode failure** — `geocodeAddress` returns `null` on any failure and callers keep the prior coords (real prod addresses that genuinely don't geocode keep their already-correct pins). Production DB is read-only from tooling, so this is deploy-then-admin-clicks-once.
+- **Contract-first API**: the OpenAPI spec drives codegen for both server Zod schemas and client React Query hooks. Never hand-write API types — run codegen.
+- **Auth seam in one file**: all `@clerk/react` imports are isolated to `authClient.tsx`; the app calls `useAuth()` from there. Swapping providers is one file.
+- **Pure game engine**: `gameLogic.ts` is side-effect-free; `GameScreen.tsx` owns all state mutations. Keeps BPM/ball logic unit-testable.
+- **Dual persistence**: in-progress games mirror to `localStorage` (refresh) and sync to the DB via `/games/activity` (cross-device resume). Recovery: localStorage first, then server prompt.
+- **BPM is per-player**: `calculatePlayerBPM(shotLog, playerName)` anchors at that player's first pocket and measures to their latest. Shark steals use the `🦈 Shark` name and are excluded from human BPM.
+- **Tiered entitlements**: `entitlement.ts` resolves a caller to `public` / `account` / `pass`. One-time passes (Day/Month/Year/Lifetime) live in `passes`; legacy recurring plans live in `subscriptions` (both set `tier:'pass'`). `hasActivePass` reflects one-time passes only — gate "paid host" features on `tier === 'pass'`. Buying Lifetime stops any active subscription renewing (in-tx, on every grant path).
+- **Admins (effective Lifetime)**: emails in `BREAKBPM_ADMIN_EMAILS` are admins; `computeEntitlement` synthesizes an effective Lifetime pass (a real pass wins). Gate every Lifetime-only perk on the entitlement (`entitlement.isAdmin || entitlement.activePass?.isLifetime`), never raw `getActivePasses()`. Admins mint pass-granting redeem codes (`issuerKind:'admin'`); `discount_codes.issuerKind` isolates sources so admin/gift codes never collide.
+- **Lucky Break (provably-fair roll)**: a `lucky_break` redeem-code kind that runs a server-side seeded draw on redeem. `luckyBreak.ts` is pure — SHA-256(entropy = last-30d global shot data + server `redemptionId`) → `[0,1)` → Lifetime if below the disclosed probability, else Monthly. Odds are server-configured and disclosed via `/passes/plans`, so displayed odds can't drift from rolled odds; shot data only *seeds* the outcome, it can't shift the threshold. Each roll snapshots its odds; the whole roll is one tx (one draw per code). **Fairness copy must stay in lockstep across PassesScreen, LuckyBreakReveal, ABOUT.md, and this file.**
+- **Payments: crypto-first; card behind an env flag**: purchasing is crypto (on-chain) + redeem codes. `cardPaymentsEnabled()` reads `BREAKBPM_CARD_PAYMENTS_ENABLED` (default OFF). While off, card/subscription checkout+verify reject and `/passes/plans` reports `cardPaymentsEnabled:false` (subscription *cancel* stays on so existing subs can still stop). Endpoints + UI stay intact — flip the env to re-enable. Stripe creds come from the Replit Stripe connector, not env secrets.
+- **Landing free-pass giveaway (one atomic claim)**: `POST /passes/claim` mints + redeems a single-use code in one tx. The reward is drawn server-side from two monthly pools (`free_pass_claim_pools`) via an oversell-proof guarded `UPDATE`. Three guards stop a double grant: the active-pass pre-check, the atomic pool decrement, and `UNIQUE(user_id)` on `free_pass_claims`. `claim`-issued redemptions book as $0 comps in the sales ledger (even a Lucky Break draw).
+- **SEO/LLM landing (prerendered)**: `/pool-stats-app` shares copy from `src/lib/landingContent.ts`, imported by BOTH `vite.config.ts` (build-time prerender + JSON-LD) and the React screen, so crawled HTML, on-page text, and JSON-LD stay in lockstep. Also wired into `pageMeta.ts`, `sitemap.xml`, `llms.txt`, `Navbar.tsx`. **Pricing/offer/payment-method copy is duplicated across many surfaces (PassesScreen, pageMeta, vite.config prerender, index.html JSON-LD, llms.txt, ABOUT.md, legal docs) — change them together and grep the built `dist/` to verify.**
+- **Sales ledger in CAD (FX frozen at sale time)**: every completed sale appends a `sale_events` row (admin report `GET /admin/sales`). Pricing is USD, but the ledger reports CAD for Canadian tax, so each row freezes a pre-tx Bank of Canada USD→CAD rate (`fx.ts`, never throws: last-good → env fallback → ~1.37), taxes the CAD gross, and keeps USD source + rate for audit. Fetch the rate pre-tx and pass it in — never inside the tx.
+- **Tiered stats**: `GET /stats` is tier-gated (anon → global/24h; account → personal/24h; pass → selectable window + global toggle + `refresh`). Personal stats recompute from each game's `shotLog`; the per-player math in `stats.ts` mirrors `gameLogic.ts` — keep in lockstep. Also carries a cosmetic `chaosWinRecent` flag (rainbow AVG-BPM flourish) from the last 10 completed games, flowing through `/games/profile`.
+- **One host, many viewers**: the host device is the canonical scorekeeper. Others get a view-only mirror by joining an open seat before the break (`/join/:code`) or spectating by name (`/watch/:name`). Both render `JoinedGameScreen` and poll `/games/state`; neither can score. Spectating requires a paid host.
+- **DB-auto-suspend-friendly closure & polling**: Postgres bills compute-time and suspends when idle — no background timers/cron. Stale games (60-min inactivity / hard 60-min cap) finalize lazily on owner access (`sweepStaleGames`) or when a viewer reads the specific row (`finalizeGameIfStale`). Poll cadences are tiered, and the `/watch/:name` pre-live resolve poll uses idle-backoff so unattended tabs let the DB suspend. Unfinalized games are merely absent from stats/history, never corrupt.
+- **OBS overlay**: `/watch/:name?obs=1` renders the live HUD as a chrome-free, transparent overlay (OBS Browser Source) — reuses spectator resolution + polling, no new route. Collapses to a themed `:(` face when there's nothing to show. Flags: `&log=1` (compact shot log), `&scale=<n>` (0.2–5).
+- **@Mention to link players (opt-in)**: a paid host types `@username` in a non-host slot to link a registered player without a join code. `GET /mentions/resolve` resolves live; on start the server mints a pending `game_mentions` row (gated on `tier==='pass'`). Mentions count toward nothing until the recipient **Accepts** on their Account page (creates their real participant slot); **Delete** ignores/removes. Pending-invite cap is recipient-tier-based.
+- **Venue coordinates are address-authoritative**: a venue's pin comes from geocoding its saved `address` server-side (`resolveVenueCoords` → Nominatim), not typed lat/lng. An admin bulk-repair endpoint re-geocodes all venues. **Never overwrite coordinates on geocode failure.**
 
 ## Product
 
-- **Game modes**: 8-ball (2P or 4P with team assignment, or 1P Shark mode), 9-ball, Practice (solo drills)
-- **Shark mode**: Solo 8-ball vs an invisible AI opponent. Misses and fouls feed balls to the Shark. Aggression toggles between Normal (steals on miss) and Hard (steals on miss + foul). Ball removal is honor-system: when the Shark pockets, the player either lifts an easy-looking Shark ball off the real table or shoots one of the Shark's balls themselves, then taps it in the selector to keep the on-screen rack in sync.
-- **BPM tracking**: Each player's live pace is shown in the HUD. Per-shot BPM is stamped on pocketing entries in the shot log so pace can be traced shot by shot.
-- **HUD sublabel**: In 8-ball after teams are assigned, shows "N SOLIDS/STRIPES LEFT" (including the 8-ball in the count) or "8-BALL TO WIN" once the group is cleared. Other modes show "N BALLS LEFT".
-- **Signed-in name lock**: When logged in, the Player 1 name field is prefilled with the user's screen name and made read-only, preventing stat pollution across all game modes.
-- **@Mention to link players**: Paid hosts can type `@username` into another player's slot to link a registered friend without a join code — no need to be on the same device. The friend gets an opt-in invite on their Account page after the game finishes: Accept to count it toward their stats/history, or Delete to ignore it (it never counts). Accepted games can be removed later (the host's copy is unaffected).
-- **Join & spectate**: Each game has a 5-char share code. Others can join an open seat before the break (view-only, guests allowed, can leave/forfeit) or spectate a player's live game by name. Joiners and spectators see the host's HUD, shot log, and BPM live but never score.
-- **Stats page**: `/stats` shows shooting stats (results, accuracy, pace, ball/pattern breakdowns) with retro CRT styling. Windows and personal/global scope are unlocked by tier (see Tiered stats above). Recent Chaos winners get a cosmetic flourish: if you've WON a Chaos ("No Rules") game within your last 10 completed games, your AVG-BPM number animates through a rainbow (also shown on your `/watch/<name>` profile). Merely playing or losing a Chaos game doesn't unlock it.
-- **Rematch**: The end-of-game screen offers a Rematch button **to signed-in players only** (next to New Game; replaces the old Share button there — Share lives elsewhere) that immediately starts a fresh game reusing the same mode/players/settings with a new server game + share code, skipping setup. Signed-out/anonymous players see only a full-width New Game (a completely fresh restart) — Rematch is gated on sign-in state (`isAuthenticated` passed from `App.tsx` into `GameScreen`), not on paid tier. The breaker inherits to the winner's slot (fallback: previous game's breaker, then slot 0). Auto-assigned teams are stripped for the new game; manual teams carry over. The just-finished game is already saved, so Rematch never abandons it. `GameState.breakerIndex` snapshots the opening breaker so the fallback survives.
-- **Shark end-undo suppressed**: Shark Mode is solo/honor-system, so its result saves immediately with no end-of-game Undo window (the undoable guard excludes `isSharkGame`).
-- **Resume**: Logged-in users can resume an in-progress game from a different device via the server-side snapshot.
-- **Lucky Break**: A $4.99 "roll the rack" unlock sold via redeem code (no card processor). Every roll is a guaranteed win — at minimum a 30-day Monthly Pass, with a disclosed chance (default 20%) of a Lifetime Pass. Redeeming plays a retro "rolling the rack" reveal (reusing the in-game ball chips) that lands on the won tier and shows the odds + a fair-play note. The provably-fair draw is seeded (not biased) by global shot activity, so the odds never move based on how anyone plays — see "Lucky Break (provably-fair roll)" under Architecture decisions for the mechanism and tuning.
-- **History, passes & subscriptions**: Game history is stored per-user. Free users see limited history; Day/Month/Lifetime passes and Monthly/Yearly subscriptions unlock full access (redeemable via code; card checkout via Stripe is behind an env flag, currently off). Subscriptions renew until cancelled; access lasts through the paid period.
-- **Redeem share links**: Any redeem code can be shared as a QR-friendly link `/redeem/:code`. Following it stashes the code (30-min TTL, survives the sign-up/sign-in redirect), sends a signed-out visitor to sign-up (sign-in also works), then auto-applies the existing `/passes/redeem` endpoint once authenticated — showing the normal result, including the Lucky Break "rolling the rack" reveal. Already-signed-in visitors get the code applied immediately. Expected refusals (expired/used/already-have-a-pass/invalid) show a friendly message; the stash is cleared on success and failure so a code never re-applies. No backend changes — the redeem endpoint and reveal are reused as-is.
-- **Admin tools**: Allowlisted admins (via `BREAKBPM_ADMIN_EMAILS`) get an Account-page panel to mint pass-granting redeem codes — they pick the tier (Day/Month/Year/Lifetime) and how many times the code can be used (or unlimited), then share it. Admins are also treated as Lifetime-pass holders, so they get every Lifetime perk (Day-Pass gifting, custom screen names) without buying a pass.
+- **Game modes**: 8-ball (2P/4P with teams, or 1P Shark), 9-ball, Practice. Shark = solo 8-ball vs an invisible honor-system AI (Normal steals on miss; Hard steals on miss + foul).
+- **BPM tracking**: live per-player pace in the HUD; per-shot BPM stamped on pocketing entries. The HUD sublabel shows balls/group remaining.
+- **Signed-in name lock**: the Player 1 name is prefilled + read-only when logged in (prevents stat pollution).
+- **Join & spectate**: each game has a 5-char share code; others join an open seat before the break (view-only, guests allowed) or spectate by name. Joiners/spectators never score.
+- **@Mention**: paid hosts link a registered friend by `@username` (no shared device needed); the friend gets an opt-in invite after the game finishes.
+- **Stats & leaderboard**: `/stats` shows accuracy, pace, and ball/pattern breakdowns (retro CRT styling) with tier-gated windows. Recent Chaos winners get a rainbow AVG-BPM flourish. Plus a global BPM leaderboard.
+- **Rematch / Resume**: signed-in players get a one-tap Rematch at game end (fresh game, same settings); logged-in users can resume an in-progress game cross-device.
+- **Passes (crypto + redeem codes)**: free to play; sign in (free) to save stats. Four one-time passes — Day $1.99 / Month $4.99 (30d) / Year $14.99 (365d) / Lifetime $24.99 — bought on-chain with crypto or unlocked with a redeem code, none auto-renew. Passes unlock full history, stats windows, spectating, Find Players posting, @mention, leaderboard windows, and full export; Lifetime adds custom screen names. (Legacy Stripe card checkout + recurring subscriptions exist behind an env flag, currently off; existing subscriptions can still cancel.)
+- **Lucky Break**: a $4.99 "roll the rack" sold via redeem code — a guaranteed ≥30-day pass with a disclosed ~20% chance of Lifetime, shown via a provably-fair seeded reveal (see Architecture).
+- **Redeem share links**: `/redeem/:code` stashes the code (30-min TTL, survives the sign-up redirect) then auto-applies `/passes/redeem` once signed in, including the Lucky Break reveal.
+- **Admin tools**: allowlisted admins mint pass-granting redeem codes (pick tier + max-uses) from the Account page and get every Lifetime perk without buying a pass.
 
 ## User preferences
 
@@ -132,15 +114,16 @@ lib/
 
 ## Gotchas
 
-- Run `pnpm --filter @workspace/api-spec run codegen` after any OpenAPI spec change — generated files are not auto-rebuilt.
-- Do not `cd` or run `pnpm dev` at the workspace root — use `restart_workflow` or the workflow runner. `PORT` and `BASE_PATH` are injected by the workflow config.
-- The shared reverse proxy routes by path prefix (most-specific-first). All API calls go through `/api`; do not add Vite proxy configs to work around this.
-- `pnpm run typecheck` is the canonical check. Editor/LSP state can lag behind — always trust the CLI output.
-- BPM null-guards: `calculatePlayerBPM` returns `null` (no pockets yet) or `0` (sub-millisecond elapsed). The HUD and shot log both handle null gracefully.
+- Run codegen after any OpenAPI spec change — generated files are not auto-rebuilt.
+- Don't `cd` or run `pnpm dev` at the workspace root — use `restart_workflow`. `PORT`/`BASE_PATH` are injected by the workflow config.
+- The shared reverse proxy routes by path prefix (most-specific-first). All API calls go through `/api` — don't add Vite proxy configs.
+- `pnpm run typecheck` is the canonical check; editor/LSP state can lag — trust the CLI.
+- The api-server has NO hot reload — restart its workflow after editing server source.
+- `calculatePlayerBPM` returns `null` (no pockets yet) or `0` (sub-ms elapsed); the HUD and shot log handle null gracefully.
 
 ## Pointers
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- `pnpm-workspace` skill — workspace structure, TypeScript setup, package details
 - DB schema: `lib/db/src/schema/`
 - API contract: `lib/api-spec/openapi.yaml`
 - Game engine: `artifacts/breakbpm/src/lib/gameLogic.ts`
