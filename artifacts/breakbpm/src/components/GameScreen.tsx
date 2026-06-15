@@ -1039,7 +1039,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           return (
             <>
               {state.players.map((p, i) => {
-                const active = state.phase === 'playing' && i === state.currentPlayerIndex;
+                const active = state.phase === 'playing' && i === state.currentPlayerIndex && !pendingSharkPick;
                 const myGroup = p.team === 'solids' ? SOLIDS : p.team === 'stripes' ? STRIPES : [];
                 const cleared = myGroup.length > 0 && myGroup.every(b => state.sunkBalls.includes(b));
                 const mySunk = state.shotLog
@@ -1072,8 +1072,14 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 );
               })}
               {isSharkGame(state) && (
-                <div style={rowStyle}>
+                <div style={{
+                  ...rowStyle,
+                  borderColor: pendingSharkPick ? '#d8b4ff' : '#5a2a8a',
+                }}>
                   <div style={idLine}>
+                    <span style={{ minWidth: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
+                      {pendingSharkPick ? <span className="cue-ball-icon" /> : null}
+                    </span>
                     <SharkIcon size={14} />
                     <span style={{ fontSize: 16 }}>SHARK</span>
                   </div>
@@ -1261,7 +1267,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       <div className="statusbar">
         <div className="statusbar-item" style={{ flex: 2 }}>
           {paused ? '⏸ PAUSED'
-            : state.phase === 'playing' ? `▶ ${cur.name}'s turn`
+            : state.phase === 'playing' ? (pendingSharkPick ? `▶ Shark's turn` : `▶ ${cur.name}'s turn`)
             : state.phase === 'ended' ? '■ Game Over' : '—'}
         </div>
         <div className="statusbar-item" style={{ flex: 1 }}>
