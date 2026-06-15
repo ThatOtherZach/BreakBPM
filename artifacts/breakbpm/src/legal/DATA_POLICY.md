@@ -26,12 +26,13 @@ guest token for guests.
 
 **Payment information.** When you buy a pass:
 
-- **By card:** payment is processed by **Stripe**. Stripe collects your card
-  details directly — **we never see or store your full card number**. We store
-  references such as a Stripe customer, subscription, or payment identifier so we
-  can match your payment to your account and prevent duplicate grants.
-- **By cryptocurrency** (where offered): we store on-chain order and transaction
-  references needed to confirm your payment.
+- **By cryptocurrency:** we store on-chain order and transaction references
+  needed to confirm your payment.
+- **By card (legacy):** card payment is not currently offered. Where a card was
+  used previously, payment was processed by **Stripe**, which collected the card
+  details directly — **we never saw or stored your full card number** — and we
+  retain references such as a Stripe customer, subscription, or payment identifier
+  to match prior payments to your account and prevent duplicate grants.
 
 **Information stored on your device.** The Service keeps some data locally in
 your browser (localStorage), not on our servers: your **in-progress game** (so a
@@ -78,7 +79,7 @@ We share limited data with service providers who help us operate the Service:
 
 - **Clerk** — authentication and account/session management (including session
   cookies).
-- **Stripe** — card payment processing and fraud prevention.
+- **Stripe** — card payment processing (legacy) and fraud prevention.
 - **Nominatim / OpenStreetMap** — to convert Find Players coordinates into a
   city/country label (performed server-side).
 

@@ -100,10 +100,10 @@ Pass Unlocks:
 
 | Pass     | Price              | Access                                     |
 |----------|:------------------:|--------------------------------------------|
-| Day Pass | $1.99     | Everything for 24 hours              |
-| Monthly  | $4.99     | Everything for 30 days               |
-| Yearly   | $14.99    | Everything for 365 days               |
-| Lifetime | $24.99    | Everything + custom screen name |
+| Day Pass   | $1.99     | Everything for 24 hours          |
+| Month Pass | $4.99     | Everything for 30 days           |
+| Year Pass  | $14.99    | Everything for 365 days          |
+| Lifetime   | $24.99    | Everything + custom screen name  |
 
 Passes can be purchased from your account page or redeemed with a code. All pass types are non-refundable. If you need assistance, use the Github first. 
 

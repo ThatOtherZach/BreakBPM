@@ -52,20 +52,18 @@ const STATIC_PLAN_SUMMARIES = [
     description: "24 hours of full access — stats, history, live spectating.",
   },
   {
-    id: "month-sub",
-    name: "Monthly",
-    price: "$2.99",
-    suffix: "/mo",
-    description: "Full access month to month. Cancel anytime.",
-    note: "↻ Renews monthly · cancel anytime",
+    id: "month",
+    name: "Month Pass",
+    price: "$4.99",
+    suffix: "",
+    description: "30 days of full access. One-time — does not auto-renew.",
   },
   {
-    id: "year-sub",
-    name: "Yearly",
-    price: "$12.99",
-    suffix: "/yr",
-    description: "Full access for a full year at the best recurring rate.",
-    note: "↻ Renews yearly · cancel anytime",
+    id: "year",
+    name: "Year Pass",
+    price: "$14.99",
+    suffix: "",
+    description: "365 days of full access. One-time — does not auto-renew.",
   },
   {
     id: "lifetime",
@@ -153,13 +151,6 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
   const hasAccess =
     !!me.data?.entitlement?.activePass || !!me.data?.entitlement?.activeSubscription;
 
-  // Subscriptions are card-billed; while card payments are off (crypto-only),
-  // recurring plans aren't purchasable, so don't advertise them. This auto-
-  // corrects if card payments flip back on.
-  const publicPlanSummaries = STATIC_PLAN_SUMMARIES.filter(
-    (p) => cardPaymentsEnabled || (p.id !== "month-sub" && p.id !== "year-sub"),
-  );
-
   /**
    * One-time pass purchase. Two-step: createCheckout returns an opaqueToken;
    * the client then calls /passes/verify to confirm and grant. Until a real
@@ -239,7 +230,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {publicPlanSummaries.map((plan) => (
+              {STATIC_PLAN_SUMMARIES.map((plan) => (
                 <div
                   key={plan.id}
                   style={{
@@ -259,9 +250,6 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
                     </span>
                   </div>
                   <div style={{ fontSize: 11, color: "#444" }}>{plan.description}</div>
-                  {plan.note && (
-                    <div style={{ fontSize: 10, color: "#006400" }}>{plan.note}</div>
-                  )}
                 </div>
               ))}
             </div>

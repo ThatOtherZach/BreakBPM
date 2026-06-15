@@ -42,9 +42,9 @@ table, and we are not responsible for disputes between players over scoring.
 
 ## 4. Paid passes and access
 
-- BreakBPM offers paid passes and access tiers, which may be purchased by card
-  (via Stripe) or by cryptocurrency where offered, or unlocked with a redeem
-  code.
+- BreakBPM offers paid passes and access tiers, which may be purchased with
+  cryptocurrency or unlocked with a redeem code. Card payment is not currently
+  offered.
 - Pricing is shown in the app at the time of purchase. Prices may change; any
   change applies only to future purchases.
 - **All sales are final.** Purchases are non-refundable, and there are

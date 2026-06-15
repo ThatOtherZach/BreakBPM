@@ -73,14 +73,14 @@ const PUBLIC_ROUTES: RouteMetaEntry[] = [
   {
     path: "passes",
     title:
-      "BreakBPM Passes & Pricing — Day Pass & Lifetime Access",
+      "BreakBPM Passes & Pricing — Day, Month, Year & Lifetime Access",
     description:
-      "Unlock full stats history, live spectating, and all BreakBPM features. Get a Day Pass ($1.99) or Lifetime ($24.99) pass — pay with crypto or redeem a code.",
+      "Unlock full stats history, live spectating, and all BreakBPM features. Get a Day ($1.99), Month ($4.99), Year ($14.99), or Lifetime ($24.99) pass — pay with crypto or redeem a code.",
     canonical: "https://breakbpm.com/passes",
     ogTitle:
       "BreakBPM Passes & Pricing — Unlock Full Stats & Spectating",
     ogDescription:
-      "Get a Day Pass ($1.99) or Lifetime ($24.99) pass to unlock full stats history, live spectating, and all paid BreakBPM features. Pay with crypto or redeem a code.",
+      "Get a Day ($1.99), Month ($4.99), Year ($14.99), or Lifetime ($24.99) pass to unlock full stats history, live spectating, and all paid BreakBPM features. Pay with crypto or redeem a code.",
   },
   {
     path: "pool-stats-app",
@@ -202,6 +202,8 @@ ${PRERENDER_STYLE}
 function buildPassesBody(): string {
   const plans = [
     { name: "Day Pass", price: "$1.99", suffix: "", desc: "24 hours of full access — stats, history, live spectating, and all paid features.", note: "" },
+    { name: "Month Pass", price: "$4.99", suffix: "", desc: "30 days of full access. One-time — does not auto-renew.", note: "" },
+    { name: "Year Pass", price: "$14.99", suffix: "", desc: "365 days of full access. One-time — does not auto-renew.", note: "" },
     { name: "Lifetime", price: "$24.99", suffix: "", desc: "One-time purchase. Pay once, full access forever, including a custom screen name.", note: "" },
   ];
   const planRows = plans.map(p =>
@@ -283,6 +285,8 @@ function poolStatsAppJsonLd(): string {
     offers: [
       { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD", description: "Free to play forever. Sign in to save stats." },
       { "@type": "Offer", name: "Day Pass", price: "1.99", priceCurrency: "USD", description: "24 hours of full access." },
+      { "@type": "Offer", name: "Month Pass", price: "4.99", priceCurrency: "USD", description: "30 days of full access. One-time — does not auto-renew." },
+      { "@type": "Offer", name: "Year Pass", price: "14.99", priceCurrency: "USD", description: "365 days of full access. One-time — does not auto-renew." },
       { "@type": "Offer", name: "Lifetime", price: "24.99", priceCurrency: "USD", description: "One-time purchase, full access forever." },
     ],
   };

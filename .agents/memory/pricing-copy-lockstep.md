@@ -13,6 +13,7 @@ When changing what passes/offers/payment methods BreakBPM advertises (e.g. "subs
 - `index.html` — the static home `WebApplication` JSON-LD `offers[]`. **Inherited by every prerendered route that has no `jsonLd` of its own** (passes/about/legal), because `injectRouteMeta` only replaces the JSON-LD when `route.jsonLd` is set. So a stale offer here shows up on `/passes`, `/about`, `/legal` prerenders too.
 - `public/llms.txt` — LLM-facing prose about how passes are bought.
 - `src/ABOUT.md` — pricing table (framed as fixed-duration passes).
+- `src/legal/TERMS_OF_SERVICE.md` + `src/legal/DATA_POLICY.md` — the ONLY two legal docs rendered on `/legal` (imported `?raw` by `LegalDisclosure.tsx`, rendered client-side, so the text lives in the JS bundle, NOT the prerendered `legal/index.html`). They state the payment method ("purchased by card / cryptocurrency / redeem code") and list Stripe as a sub-processor — so a payment-method change (e.g. crypto-only) must update them too. `src/legal/SUBSCRIPTION_TERMS.md` is NOT imported anywhere — it is dead/not user-facing, so leave it.
 
 **Why:** these are independent hardcoded copies (not a shared module), so a single edit silently leaves the prerendered HTML / JSON-LD / llms.txt advertising the old thing. In one pass I fixed PassesScreen + pageMeta + buildPassesBody + the pool-stats JSON-LD, but missed the duplicate route-meta block, the inherited `index.html` JSON-LD, and `llms.txt`.
 
