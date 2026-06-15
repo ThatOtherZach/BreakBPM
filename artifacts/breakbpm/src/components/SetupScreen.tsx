@@ -30,9 +30,9 @@ const GAME_TYPES: { id: GameType; label: string; desc: string }[] = [
 ];
 
 const DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
-// Names shown in the locked, signed-out setup. Slot 1 is tagged "(Host)" to
-// pretrain the convention that Player 1 is the device that keeps score.
-const SIGNED_OUT_NAMES = ['Player 1 (Host)', 'Player 2', 'Player 3', 'Player 4'];
+// Names shown in the locked, signed-out setup — exact defaults so anonymous
+// games are stored under "Player N" rather than any embellished label.
+const SIGNED_OUT_NAMES = DEFAULT_NAMES;
 const PLAYER_BALL_COLORS = ['#FDD307', '#1F4E9E', '#C3342B', '#5B247A'];
 
 // Sublabel under "Automatic Team Assignment" — describes when groups lock,
