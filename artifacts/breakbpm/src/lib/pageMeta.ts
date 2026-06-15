@@ -58,4 +58,11 @@ export const PAGE_META = {
     ogTitle: 'BreakBPM Passes & Pricing — Unlock Full Stats & Spectating',
     ogDescription: 'Choose a Day Pass ($1.99), Monthly sub ($2.99/mo), or Lifetime pass ($24.99) to unlock full stats history, live spectating, and all paid BreakBPM features.',
   },
+  poolStatsApp: {
+    title: 'Pool Stats App — Track Balls Per Minute for 8-Ball & 9-Ball | BreakBPM',
+    description: 'BreakBPM is a free pool stats app and live billiards score tracker. Log every shot and see per-player Balls Per Minute (BPM) for 8-ball, 9-ball, practice, and Shark mode. Claim a free pass.',
+    canonical: 'https://breakbpm.com/pool-stats-app',
+    ogTitle: 'BreakBPM — The Pool Stats App with Balls Per Minute',
+    ogDescription: 'Free pool stats app & billiards score tracker. Track accuracy and live Balls Per Minute across 8-ball, 9-ball, practice, and solo Shark mode.',
+  },
 } satisfies Record<string, PageMetaConfig>;

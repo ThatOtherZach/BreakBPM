@@ -95,6 +95,43 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/RedeemResult" }
 
+  /passes/claim:
+    post:
+      operationId: claimFreePass
+      tags: [passes]
+      summary: Claim the one-per-account free pass (landing-page giveaway)
+      description: >
+        Mints a single-use giveaway code and redeems it in one atomic
+        transaction, drawing either a Lucky Break roll or a Day pass from the
+        current month's limited stock. Requires sign-in. Each account may claim
+        at most once, ever. Returns success:false with a machine-readable
+        reason when the caller already claimed, already holds a pass, or all of
+        the period's stock is gone. Takes no request body — the reward is drawn
+        server-side.
+      responses:
+        "200":
+          description: Claim result (granted, or rejected with a reason)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FreePassClaimResult" }
+
+  /passes/claim/status:
+    get:
+      operationId: getFreePassClaimStatus
+      tags: [passes]
+      summary: Free-pass giveaway stock + the caller's eligibility
+      description: >
+        Public. Returns remaining stock for the current period's reward pools
+        and whether the giveaway is open. For a signed-in caller, also reports
+        whether they have already used their one lifetime claim and whether
+        they are eligible to claim right now.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FreePassClaimStatus" }
+
   /passes/discount-codes:
     get:
       operationId: listMyGiftCodes
@@ -1445,6 +1482,48 @@ components:
         pass: { $ref: "#/components/schemas/PassSummary" }
         # Present only when the redeemed code was a Lucky Break roll.
         luckyBreak: { $ref: "#/components/schemas/LuckyBreakResult" }
+
+    FreePassClaimResult:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        # Which reward this claim drew. Present on success.
+        rewardKind: { type: string, enum: [lucky_break, day] }
+        # The granted pass + (for a Lucky Break draw) the roll — same shape as
+        # /passes/redeem so the client reuses the redeem/reveal rendering,
+        # including the "rolling the rack" reveal when rewardKind=lucky_break.
+        pass: { $ref: "#/components/schemas/PassSummary" }
+        luckyBreak: { $ref: "#/components/schemas/LuckyBreakResult" }
+        # Machine-readable refusal reason on success:false, so the client can
+        # branch its UI (closed-for-the-month vs already-claimed vs has-pass).
+        reason:
+          type: string
+          enum: [pool_empty, already_claimed, has_pass]
+
+    FreePassClaimStatus:
+      type: object
+      required:
+        [open, periodKey, monthlyCap, remainingLuckyBreak, remainingDay, signedIn]
+      properties:
+        # True when at least one reward pool still has stock this period.
+        open: { type: boolean }
+        # Calendar period these counts apply to, e.g. "2026-06".
+        periodKey: { type: string }
+        # Per-pool monthly cap, so the client can render "N of M left".
+        monthlyCap: { type: integer }
+        # Remaining stock in each pool this period (clamped to >= 0).
+        remainingLuckyBreak: { type: integer }
+        remainingDay: { type: integer }
+        # True when the caller is signed in — the fields below are meaningful
+        # only then (false/omitted for anonymous callers).
+        signedIn: { type: boolean }
+        # The signed-in caller has already used their one lifetime claim.
+        alreadyClaimed: { type: boolean }
+        # The signed-in caller can claim right now (signed in, no prior claim,
+        # no active pass, and stock remains).
+        eligible: { type: boolean }
 
     PassCheckoutInput:
       type: object

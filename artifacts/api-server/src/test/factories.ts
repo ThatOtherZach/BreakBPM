@@ -14,6 +14,8 @@ import {
   gameParticipantsTable,
   findPlayerPostsTable,
   venuesTable,
+  freePassClaimsTable,
+  freePassClaimPoolsTable,
   PASS_DURATIONS_SECONDS,
   type User,
   type Pass,
@@ -28,6 +30,8 @@ import {
   type GameParticipant,
   type FindPlayerPost,
   type Venue,
+  type FreePassClaim,
+  type FreePassClaimPool,
   type PassKind,
   type SubscriptionInterval,
   type SubscriptionStatus,
@@ -432,6 +436,56 @@ export async function getCryptoOrder(
     .where(eq(cryptoOrdersTable.id, id))
     .limit(1);
   return rows[0];
+}
+
+/**
+ * Seed (or overwrite) a free-pass pool counter for a (periodKey, rewardKind).
+ * Lets a test pre-exhaust a pool (claimedCount = cap) to force a specific
+ * reward draw or the pool-empty path without firing dozens of real claims.
+ */
+export async function seedFreePassPool(
+  periodKey: string,
+  rewardKind: string,
+  claimedCount: number,
+): Promise<void> {
+  await db
+    .insert(freePassClaimPoolsTable)
+    .values({ periodKey, rewardKind, claimedCount })
+    .onConflictDoUpdate({
+      target: [freePassClaimPoolsTable.periodKey, freePassClaimPoolsTable.rewardKind],
+      set: { claimedCount },
+    });
+}
+
+export async function getFreePassClaim(
+  userId: string,
+): Promise<FreePassClaim | undefined> {
+  const rows = await db
+    .select()
+    .from(freePassClaimsTable)
+    .where(eq(freePassClaimsTable.userId, userId))
+    .limit(1);
+  return rows[0];
+}
+
+export async function getFreePassPools(
+  periodKey: string,
+): Promise<FreePassClaimPool[]> {
+  return db
+    .select()
+    .from(freePassClaimPoolsTable)
+    .where(eq(freePassClaimPoolsTable.periodKey, periodKey));
+}
+
+/**
+ * Delete every pool row for a period. The pool table is keyed by
+ * (periodKey, rewardKind) with no user FK, so it is NOT swept by cleanup();
+ * the claim test calls this in afterEach to isolate each case.
+ */
+export async function deleteFreePassPools(periodKey: string): Promise<void> {
+  await db
+    .delete(freePassClaimPoolsTable)
+    .where(eq(freePassClaimPoolsTable.periodKey, periodKey));
 }
 
 export async function getGame(gameId: string): Promise<Game | undefined> {

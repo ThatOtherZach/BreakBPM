@@ -4,6 +4,7 @@ export * from "./cryptoOrders";
 export * from "./subscriptions";
 export * from "./discountCodes";
 export * from "./luckyBreak";
+export * from "./freePassClaims";
 export * from "./games";
 export * from "./mentions";
 export * from "./findPlayers";

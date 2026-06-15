@@ -473,6 +473,43 @@ export interface RedeemResult {
   luckyBreak?: LuckyBreakResult;
 }
 
+export type FreePassClaimResultRewardKind = typeof FreePassClaimResultRewardKind[keyof typeof FreePassClaimResultRewardKind];
+
+
+export const FreePassClaimResultRewardKind = {
+  lucky_break: 'lucky_break',
+  day: 'day',
+} as const;
+
+export type FreePassClaimResultReason = typeof FreePassClaimResultReason[keyof typeof FreePassClaimResultReason];
+
+
+export const FreePassClaimResultReason = {
+  pool_empty: 'pool_empty',
+  already_claimed: 'already_claimed',
+  has_pass: 'has_pass',
+} as const;
+
+export interface FreePassClaimResult {
+  success: boolean;
+  message: string;
+  rewardKind?: FreePassClaimResultRewardKind;
+  pass?: PassSummary;
+  luckyBreak?: LuckyBreakResult;
+  reason?: FreePassClaimResultReason;
+}
+
+export interface FreePassClaimStatus {
+  open: boolean;
+  periodKey: string;
+  monthlyCap: number;
+  remainingLuckyBreak: number;
+  remainingDay: number;
+  signedIn: boolean;
+  alreadyClaimed?: boolean;
+  eligible?: boolean;
+}
+
 export type PassCheckoutInputKind = typeof PassCheckoutInputKind[keyof typeof PassCheckoutInputKind];
 
 

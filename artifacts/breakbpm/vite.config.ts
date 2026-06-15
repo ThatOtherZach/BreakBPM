@@ -6,6 +6,13 @@ import fs from "node:fs";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { createRequire } from "module";
 import type { Plugin } from "vite";
+import {
+  POOL_STATS_H1,
+  POOL_STATS_INTRO,
+  POOL_STATS_MODES,
+  POOL_STATS_FEATURES,
+  POOL_STATS_FAQ,
+} from "./src/lib/landingContent";
 const require = createRequire(import.meta.url);
 const { version } = require("./package.json") as { version: string };
 
@@ -38,6 +45,8 @@ interface RouteMetaEntry {
   canonical: string;
   ogTitle: string;
   ogDescription: string;
+  /** Optional per-route JSON-LD. When set, replaces the index.html structured-data block. */
+  jsonLd?: string;
 }
 
 const PUBLIC_ROUTES: RouteMetaEntry[] = [
@@ -73,10 +82,22 @@ const PUBLIC_ROUTES: RouteMetaEntry[] = [
     ogDescription:
       "Choose a Day Pass ($1.99), Monthly sub ($2.99/mo), or Lifetime pass ($24.99) to unlock full stats history, live spectating, and all paid BreakBPM features.",
   },
+  {
+    path: "pool-stats-app",
+    title:
+      "Pool Stats App — Track Balls Per Minute for 8-Ball & 9-Ball | BreakBPM",
+    description:
+      "BreakBPM is a free pool stats app and live billiards score tracker. Log every shot and see per-player Balls Per Minute (BPM) for 8-ball, 9-ball, practice, and Shark mode. Claim a free pass.",
+    canonical: "https://breakbpm.com/pool-stats-app",
+    ogTitle: "BreakBPM — The Pool Stats App with Balls Per Minute",
+    ogDescription:
+      "Free pool stats app & billiards score tracker. Track accuracy and live Balls Per Minute across 8-ball, 9-ball, practice, and solo Shark mode.",
+    jsonLd: poolStatsAppJsonLd(),
+  },
 ];
 
 function injectRouteMeta(html: string, route: RouteMetaEntry): string {
-  return html
+  let out = html
     .replace(
       /<title>[^<]*<\/title>/,
       `<title>${route.title}</title>`,
@@ -109,6 +130,16 @@ function injectRouteMeta(html: string, route: RouteMetaEntry): string {
       /<meta name="twitter:description" content="[^"]*"/,
       `<meta name="twitter:description" content="${route.ogDescription}"`,
     );
+
+  if (route.jsonLd) {
+    const jsonLd = route.jsonLd;
+    out = out.replace(
+      /<script type="application\/ld\+json">[\s\S]*?<\/script>/,
+      () => jsonLd,
+    );
+  }
+
+  return out;
 }
 
 /** Minimal inline styles to make the static prerendered body legible without
@@ -216,6 +247,96 @@ ${PRERENDER_STYLE}
 </div>`.trim();
 }
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/** SoftwareApplication + FAQPage structured data for the landing page.
+ *  FAQ entries are sourced from the shared landingContent module so the markup
+ *  matches the on-page (and prerendered) FAQ text Google requires for rich results. */
+function poolStatsAppJsonLd(): string {
+  const softwareApp = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "BreakBPM — Pool Stats App",
+    url: "https://breakbpm.com/pool-stats-app",
+    description:
+      "BreakBPM is a free pool stats app and billiards score tracker that calculates per-player Balls Per Minute (BPM) for 8-ball, 9-ball, practice, and solo Shark mode.",
+    applicationCategory: "SportsApplication",
+    applicationSubCategory: "Billiards Score Tracker",
+    operatingSystem: "Any",
+    browserRequirements:
+      "Requires a modern web browser with JavaScript enabled.",
+    image: "https://breakbpm.com/opengraph.jpg",
+    inLanguage: "en",
+    isAccessibleForFree: true,
+    creator: {
+      "@type": "Organization",
+      name: "Saym Services Inc.",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Vancouver",
+        addressCountry: "CA",
+      },
+    },
+    offers: [
+      { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD", description: "Free to play forever. Sign in to save stats." },
+      { "@type": "Offer", name: "Day Pass", price: "1.99", priceCurrency: "USD", description: "24 hours of full access." },
+      { "@type": "Offer", name: "Monthly", price: "2.99", priceCurrency: "USD", description: "Full access, month to month." },
+      { "@type": "Offer", name: "Yearly", price: "12.99", priceCurrency: "USD", description: "Full access for a year." },
+      { "@type": "Offer", name: "Lifetime", price: "24.99", priceCurrency: "USD", description: "One-time purchase, full access forever." },
+    ],
+  };
+  const faqPage = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: POOL_STATS_FAQ.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  };
+  const json = JSON.stringify([softwareApp, faqPage]).replace(/</g, "\\u003c");
+  return `<script type="application/ld+json">${json}</script>`;
+}
+
+function buildPoolStatsAppBody(): string {
+  const modes = POOL_STATS_MODES.map(
+    (m) =>
+      `  <li><strong>${escapeHtml(m.name)}</strong> — ${escapeHtml(m.body)}</li>`,
+  ).join("\n");
+  const features = POOL_STATS_FEATURES.map(
+    (f) => `  <h2>${escapeHtml(f.title)}</h2>\n  <p>${escapeHtml(f.body)}</p>`,
+  ).join("\n");
+  const faq = POOL_STATS_FAQ.map(
+    (f) => `  <h3>${escapeHtml(f.q)}</h3>\n  <p>${escapeHtml(f.a)}</p>`,
+  ).join("\n");
+
+  return `
+${PRERENDER_STYLE}
+<div id="prerender-static">
+  <nav><a href="/">← Home</a><a href="/passes">Passes &amp; Pricing</a><a href="/about">About</a><a href="/legal">Legal</a></nav>
+  <h1>${escapeHtml(POOL_STATS_H1)}</h1>
+  <p>${escapeHtml(POOL_STATS_INTRO)}</p>
+  <p><strong><a href="/claim">Claim your free pass</a></strong> — every claim is a guaranteed win, from a Day pass up to a Lifetime pass via a Lucky Break roll, while the monthly free stock lasts.</p>
+
+  <h2>Track every shot across every pool game mode</h2>
+  <ul>
+${modes}
+  </ul>
+
+${features}
+
+  <h2>Frequently asked questions</h2>
+${faq}
+
+  <p style="margin-top:2em;font-size:.8rem;color:#888">Built by Saym Services Inc. · Vancouver, BC · <a href="/">Open BreakBPM</a></p>
+</div>`.trim();
+}
+
 function routeMetaPlugin(): Plugin {
   return {
     name: "route-meta-prerender",
@@ -233,6 +354,7 @@ function routeMetaPlugin(): Plugin {
         about: buildAboutBody(marked),
         legal: buildLegalBody(marked),
         passes: buildPassesBody(),
+        "pool-stats-app": buildPoolStatsAppBody(),
       };
 
       for (const route of PUBLIC_ROUTES) {

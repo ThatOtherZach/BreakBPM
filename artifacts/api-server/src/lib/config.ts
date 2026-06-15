@@ -105,6 +105,31 @@ export function isAdminEmail(email: string | null | undefined): boolean {
   return adminEmails().has(email.trim().toLowerCase());
 }
 
+/** Default per-pool monthly stock for the landing-page free-pass giveaway. */
+export const FREE_PASS_MONTHLY_CAP_DEFAULT = 15;
+
+/**
+ * Per-pool monthly cap for the landing-page free-pass giveaway. Each reward
+ * pool (Lucky Break roll, Day pass) independently allows this many claims per
+ * calendar month; a new month is a fresh pool, so stock "resets" on the 1st
+ * with no scheduled job. Read from `BREAKBPM_FREE_PASS_MONTHLY_CAP` (a
+ * non-negative integer; 0 closes the giveaway). Blank/invalid values log a
+ * warning and fall back to the default. Restart the API server after changing.
+ */
+export function freePassMonthlyCap(): number {
+  const raw = process.env.BREAKBPM_FREE_PASS_MONTHLY_CAP;
+  if (raw === undefined || raw.trim() === "") return FREE_PASS_MONTHLY_CAP_DEFAULT;
+  const parsed = Number(raw.trim());
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    logger.warn(
+      { value: raw, default: FREE_PASS_MONTHLY_CAP_DEFAULT },
+      "Invalid BREAKBPM_FREE_PASS_MONTHLY_CAP (expected a non-negative integer); using default",
+    );
+    return FREE_PASS_MONTHLY_CAP_DEFAULT;
+  }
+  return parsed;
+}
+
 /** Default splash QR target when no promo override is configured. */
 export const DEFAULT_PROMO_QR_URL = "https://breakbpm.com";
 

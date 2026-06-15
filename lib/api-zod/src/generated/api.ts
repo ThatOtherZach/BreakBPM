@@ -115,6 +115,49 @@ export const RedeemDiscountCodeResponse = zod.object({
 
 
 /**
+ * Mints a single-use giveaway code and redeems it in one atomic transaction, drawing either a Lucky Break roll or a Day pass from the current month's limited stock. Requires sign-in. Each account may claim at most once, ever. Returns success:false with a machine-readable reason when the caller already claimed, already holds a pass, or all of the period's stock is gone. Takes no request body — the reward is drawn server-side.
+
+ * @summary Claim the one-per-account free pass (landing-page giveaway)
+ */
+export const ClaimFreePassResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "rewardKind": zod.enum(['lucky_break', 'day']).optional(),
+  "pass": zod.object({
+  "kind": zod.enum(['day', 'month', 'year', 'lifetime']),
+  "startedAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date(),
+  "isLifetime": zod.boolean()
+}).optional(),
+  "luckyBreak": zod.object({
+  "outcome": zod.enum(['month', 'lifetime']),
+  "lifetimeProbability": zod.number(),
+  "windowDays": zod.number(),
+  "seedHash": zod.string().optional(),
+  "seededShotCount": zod.number().optional()
+}).optional(),
+  "reason": zod.enum(['pool_empty', 'already_claimed', 'has_pass']).optional()
+})
+
+
+/**
+ * Public. Returns remaining stock for the current period's reward pools and whether the giveaway is open. For a signed-in caller, also reports whether they have already used their one lifetime claim and whether they are eligible to claim right now.
+
+ * @summary Free-pass giveaway stock + the caller's eligibility
+ */
+export const GetFreePassClaimStatusResponse = zod.object({
+  "open": zod.boolean(),
+  "periodKey": zod.string(),
+  "monthlyCap": zod.number(),
+  "remainingLuckyBreak": zod.number(),
+  "remainingDay": zod.number(),
+  "signedIn": zod.boolean(),
+  "alreadyClaimed": zod.boolean().optional(),
+  "eligible": zod.boolean().optional()
+})
+
+
+/**
  * Returns the signed-in user's most recent gift codes (newest first) plus their cooldown state. Used by the Account screen to render the "Gift a Day Pass" section.
 
  * @summary List the caller's recently-generated Day-Pass gift codes

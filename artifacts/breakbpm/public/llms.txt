@@ -2,13 +2,15 @@
 
 > BreakBPM is a free, browser-based billiards score tracker that calculates per-player Balls Per Minute (BPM) for 8-ball, 9-ball, practice, and solo Shark mode. No install required.
 
-BreakBPM logs every shot one ball at a time and returns two numbers: accuracy and BPM. It supports live multiplayer scoring via a 5-character share code, spectating by player name, and optional pass-gated features such as full game history, tiered stats, a global leaderboard, and @mention linking. Passes are redeemed by code; card checkout is optional and may be unavailable.
+BreakBPM logs every shot one ball at a time and returns two numbers: accuracy and BPM. It supports live multiplayer scoring via a 5-character share code, spectating by player name, and optional pass-gated features such as full game history, tiered stats, a global leaderboard, and @mention linking. Passes are redeemed by code; card checkout is optional and may be unavailable. New players can claim one free pass per account (a guaranteed win, while monthly stock lasts).
 
 Built and operated by Saym Services Inc. in Vancouver, Canada.
 
 ## Key pages
 
 - Home: https://breakbpm.com/
+- Pool Stats App (overview + free pass): https://breakbpm.com/pool-stats-app
+- Passes & Pricing: https://breakbpm.com/passes
 - About: https://breakbpm.com/about
 - Legal: https://breakbpm.com/legal
 

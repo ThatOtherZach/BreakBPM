@@ -29,6 +29,8 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlay
     <>
       {/* Always-present anchors for crawler discovery — visually hidden, not interactive */}
       <div style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
+        <a href="/pool-stats-app">Pool Stats App</a>
+        <a href="/passes">Passes &amp; Pricing</a>
         <a href="/about">About BreakBPM</a>
         <a href="/legal">Legal</a>
       </div>

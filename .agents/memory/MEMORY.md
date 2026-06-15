@@ -36,3 +36,4 @@
 - [Venue pin placement & drift](venue-pin-placement.md) — saved address is authoritative for venue coords (server geocodes on save + admin bulk-repair endpoint); NEVER overwrite coords on geocode failure; drift can be CSS OR bad data.
 - [Overpass venue proxy](overpass-venue-proxy.md) — OSM billiards-venue fetch must be server-side (browser union query gets WAF 406); single-clause + mirror fallback + 24h/7d cache. Mirrors are individually flaky.
 - [Venue list vs compass coupling](venue-list-vs-compass-coupling.md) — GET /venues serves a paginated list AND the nearest-hall compass (needs ALL venues via ?all=true); paginating the compass silently breaks "nearest".
+- [Free-claim comp ledger](free-claim-comp-ledger.md) — giveaway redemptions (issuerKind='claim') must book $0 comp even for Lucky Break, else a free roll records $4.99 phantom revenue; oversell-safe atomic pool draw + 3 double-grant guards.

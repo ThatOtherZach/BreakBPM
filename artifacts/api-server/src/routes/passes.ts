@@ -5,6 +5,7 @@ import {
   discountCodesTable,
   discountRedemptionsTable,
   luckyBreakRollsTable,
+  freePassClaimsTable,
   type PassKind,
 } from "@workspace/db";
 import {
@@ -19,6 +20,8 @@ import {
   CreateAdminDiscountCodeBody,
   CreateAdminDiscountCodeResponse,
   ListAdminDiscountCodesResponse,
+  ClaimFreePassResponse,
+  GetFreePassClaimStatusResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser } from "../lib/auth";
 import { issuePassTx, grantPurchasedPassTx } from "../lib/passes";
@@ -50,6 +53,7 @@ import {
   CARD_PAYMENTS_OFF_MESSAGE,
   isAdminEmail,
   luckyBreakLifetimeProbability,
+  freePassMonthlyCap,
 } from "../lib/config";
 import {
   LUCKY_BREAK_CODE_KIND,
@@ -60,6 +64,16 @@ import {
 } from "../lib/luckyBreak";
 import { gatherShotEntropy } from "../lib/luckyBreakEntropy";
 import { getUsdToCadRate } from "../lib/fx";
+import { redeemDiscountCodeForUserTx, RedeemFailure } from "../lib/redeemCore";
+import {
+  drawFreePassRewardTx,
+  getFreePassClaimForUser,
+  getRemainingStock,
+  claimCodeLabel,
+  currentPeriodKey,
+  grantKindForReward,
+  type FreePassRewardKind,
+} from "../lib/freePassClaims";
 
 const router: IRouter = Router();
 
@@ -77,6 +91,20 @@ function passToSummary(pass: { kind: string; startedAt: Date; durationSeconds: n
         ? LIFETIME_EXPIRES_AT
         : new Date(pass.startedAt.getTime() + pass.durationSeconds * 1000),
     isLifetime: pass.kind === "lifetime",
+  };
+}
+
+/**
+ * Shape a Lucky Break roll into the API payload. Shared by the redeem and
+ * claim routes so the disclosed fields stay in lockstep.
+ */
+function luckyBreakPayload(roll: LuckyBreakRollResult) {
+  return {
+    outcome: roll.outcome,
+    lifetimeProbability: roll.lifetimeProbability,
+    windowDays: LUCKY_BREAK_WINDOW_DAYS,
+    seedHash: roll.seedHash,
+    seededShotCount: roll.entropyShotCount,
   };
 }
 
@@ -140,142 +168,22 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
   // Freeze today's USD→CAD rate for the ledger BEFORE the tx (fx never throws).
   const fx = await getUsdToCadRate();
 
-  // We use a thrown sentinel for any "validation failed" path INSIDE the
-  // transaction so that pg rolls back any writes that already happened
-  // (e.g. the cap-claim UPDATE) before we hit the failure. Returning a
-  // non-throw result from inside the tx callback would commit those
-  // writes, which would leak entitlement state on the duplicate-redeem
-  // path.
-  class RedeemFailure extends Error {
-    constructor(public reason: string) { super(reason); }
-  }
-
+  // The whole validate → cap-claim → roll → issue → record sequence runs in
+  // one transaction via the shared helper, which throws RedeemFailure for any
+  // refusal path (so pg rolls back partial writes). /passes/claim reuses the
+  // exact same helper after minting its single-use giveaway code.
   type Pass = { kind: string; startedAt: Date; durationSeconds: number | null };
-  type RedeemTxResult = { pass: Pass; roll: LuckyBreakRollResult | null };
 
   let pass: Pass;
   let roll: LuckyBreakRollResult | null;
   try {
-    ({ pass, roll } = await db.transaction(async (tx): Promise<RedeemTxResult> => {
-      const [discount] = await tx
-        .select()
-        .from(discountCodesTable)
-        .where(eq(discountCodesTable.code, code))
-        .for("update")
-        .limit(1);
-      if (!discount) throw new RedeemFailure("Invalid code");
-      if (discount.expiresAt && discount.expiresAt < new Date()) {
-        throw new RedeemFailure("Code expired");
-      }
-
-      // Atomic cap claim: this UPDATE only succeeds if the cap allows it.
-      const claim = await tx
-        .update(discountCodesTable)
-        .set({ redemptionCount: sql`${discountCodesTable.redemptionCount} + 1` })
-        .where(
-          and(
-            eq(discountCodesTable.code, code),
-            sql`(${discountCodesTable.maxRedemptions} IS NULL OR ${discountCodesTable.redemptionCount} < ${discountCodesTable.maxRedemptions})`,
-          ),
-        )
-        .returning({ id: discountCodesTable.code });
-      if (claim.length === 0) throw new RedeemFailure("Code fully redeemed");
-
-      // Lucky Break: SEED the draw from the pre-gathered shot entropy folded
-      // with this redemption's id. The roll happens exactly once, here, inside
-      // the same tx that grants the pass — there is no separate "roll" call to
-      // retry, so a player can never re-roll a result they didn't like. The
-      // outcome is the pass kind to issue ("month" floor or "lifetime").
-      let rollResult: LuckyBreakRollResult | null = null;
-      let kindToIssue: PassKind;
-      if (discount.grantsPassKind === LUCKY_BREAK_CODE_KIND) {
-        rollResult = computeLuckyBreakRoll(
-          entropy,
-          redemptionId,
-          luckyBreakLifetimeProbability(),
-        );
-        kindToIssue = rollResult.outcome;
-      } else {
-        kindToIssue = discount.grantsPassKind as PassKind;
-      }
-
-      const issued = await issuePassTx(tx, {
-        userId: user.id,
-        kind: kindToIssue,
-        source: "discount_code",
-        sourceRef: code,
-      });
-
-      // A code (or a Lucky Break roll) can grant Lifetime — apply the same
-      // mutual exclusion as the purchase/grant paths so an active subscription
-      // stops renewing.
-      if (issued.kind === "lifetime") {
-        await stopRenewingActiveSubscriptionsTx(tx, user.id);
-      }
-
-      // Insert the redemption AFTER the pass so we can wire passId
-      // correctly. The unique (code, user_id) index catches duplicate
-      // redeems; the throw below rolls back the pass insert, the cap
-      // increment, and any Lucky Break record so partial state can never leak.
-      try {
-        await tx.insert(discountRedemptionsTable).values({
-          id: redemptionId,
-          code,
-          userId: user.id,
-          passId: issued.id,
-        });
-      } catch (e) {
-        // drizzle wraps the pg error, so the SQLSTATE can sit on the cause
-        // rather than the top-level error. Check both so the unique
-        // (code, user_id) violation maps to a friendly refusal instead of a
-        // 500.
-        const sqlState =
-          (e as { code?: string }).code ??
-          (e as { cause?: { code?: string } }).cause?.code;
-        if (sqlState === "23505") {
-          throw new RedeemFailure("You've already redeemed this code");
-        }
-        throw e;
-      }
-
-      // Persist the audit trail in the same tx so the roll is reproducible and
-      // can never be silently re-rolled. rolledValuePpm/lifetimeProbabilityBps
-      // are integer-scaled so the [0,1) draw and odds round-trip exactly.
-      if (rollResult) {
-        await tx.insert(luckyBreakRollsTable).values({
-          id: newId(),
-          userId: user.id,
-          code,
-          redemptionId,
-          seedHash: rollResult.seedHash,
-          rolledValuePpm: Math.round(rollResult.value * 1_000_000),
-          lifetimeProbabilityBps: Math.round(rollResult.lifetimeProbability * 10_000),
-          outcome: rollResult.outcome,
-          entropyShotCount: rollResult.entropyShotCount,
-          windowDays: LUCKY_BREAK_WINDOW_DAYS,
-          passId: issued.id,
-        });
-      }
-
-      // Sales ledger: record one valued row per redemption in the same tx.
-      // Lucky Break codes are real revenue (Lucky Break price); every other
-      // code (admin/gift/seed) is a $0 comp. Keyed on the redemption id.
-      {
-        const v = valuationForCodeRedemption(discount.grantsPassKind);
-        await recordSaleEventTx(tx, {
-          userId: user.id,
-          eventType: "code_redemption",
-          paymentMethod: "code",
-          grossCents: v.grossCents,
-          isComp: v.isComp,
-          productLabel: v.productLabel,
-          fx,
-          providerRef: redemptionId,
-        });
-      }
-
-      return { pass: issued, roll: rollResult };
-    }));
+    ({ pass, roll } = await db.transaction((tx) =>
+      redeemDiscountCodeForUserTx(
+        tx,
+        { userId: user.id, code, redemptionId },
+        { entropy, fx, lifetimeProbability: luckyBreakLifetimeProbability() },
+      ),
+    ));
   } catch (err) {
     if (err instanceof RedeemFailure) {
       res.json(RedeemDiscountCodeResponse.parse({ success: false, message: err.reason }));
@@ -311,15 +219,248 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
           : "Nice break — you rolled a Monthly pass!"
         : `Granted ${pass.kind} pass`,
       pass: passToSummary(pass),
+      luckyBreak: roll ? luckyBreakPayload(roll) : undefined,
+    }),
+  );
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// Landing-page free-pass giveaway (#237)
+// ──────────────────────────────────────────────────────────────────────────
+
+/**
+ * Thrown inside the claim tx for an expected refusal (pool empty / racing
+ * second claim) so pg rolls back the pool decrement + minted code. Distinct
+ * from RedeemFailure (which the freshly-minted code should never trigger).
+ */
+class ClaimRefusal extends Error {
+  constructor(public reason: "pool_empty" | "already_claimed") {
+    super(reason);
+  }
+}
+
+/**
+ * Light in-memory per-IP throttle for the giveaway endpoints. Resets on process
+ * restart — fine here: the claim mutation is auth-gated + one-per-account, and
+ * the status read is a cheap pair of indexed lookups. This only caps abusive
+ * hammering of the public surface.
+ */
+const FREE_PASS_RATE_WINDOW_MS = 60 * 1000;
+const FREE_PASS_RATE_MAX = 60;
+const freePassRateBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function freePassRateLimit(ip: string, bucket: string): boolean {
+  const key = `${bucket}:${ip}`;
+  const now = Date.now();
+  const b = freePassRateBuckets.get(key);
+  if (!b || b.resetAt <= now) {
+    freePassRateBuckets.set(key, { count: 1, resetAt: now + FREE_PASS_RATE_WINDOW_MS });
+    return true;
+  }
+  if (b.count >= FREE_PASS_RATE_MAX) return false;
+  b.count += 1;
+  return true;
+}
+
+function claimSuccessMessage(
+  rewardKind: FreePassRewardKind,
+  roll: LuckyBreakRollResult | null,
+): string {
+  if (rewardKind === "lucky_break" && roll) {
+    return roll.outcome === "lifetime"
+      ? "JACKPOT — your free roll landed a Lifetime pass!"
+      : "Nice break — your free roll landed a Monthly pass!";
+  }
+  return "You scored a free Day pass — enjoy!";
+}
+
+/**
+ * Claim the one-per-account free pass. Mints a single-use giveaway code and
+ * redeems it in ONE transaction (pool decrement, code, claim row, pass grant,
+ * and ledger row commit together or not at all). The reward is drawn
+ * server-side from the month's limited pools — never client-chosen. Three
+ * authoritative guards stop a double grant: the active-pass pre-check, the
+ * atomic pool decrement, and the UNIQUE(user_id) claim row.
+ */
+router.post("/passes/claim", async (req, res): Promise<void> => {
+  const ip = req.ip ?? "unknown";
+  if (!freePassRateLimit(ip, "claim")) {
+    res.status(429).json({ error: "Too many requests — try again in a minute." });
+    return;
+  }
+
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Sign in to claim your free pass" });
+    return;
+  }
+
+  // Cheap pre-checks before the tx. The in-tx guards (atomic pool decrement +
+  // UNIQUE user_id) are authoritative; these just avoid burning pool stock on
+  // an obviously-ineligible caller and give a precise refusal reason.
+  const existing = await getActivePasses(user.id);
+  if (existing.length > 0) {
+    res.json(
+      ClaimFreePassResponse.parse({
+        success: false,
+        message: "You already have an active pass — no need to claim.",
+        reason: "has_pass",
+      }),
+    );
+    return;
+  }
+  const prior = await getFreePassClaimForUser(user.id);
+  if (prior) {
+    res.json(
+      ClaimFreePassResponse.parse({
+        success: false,
+        message: "You've already claimed your free pass.",
+        reason: "already_claimed",
+      }),
+    );
+    return;
+  }
+
+  // Prefetch BEFORE the tx: the draw may land on Lucky Break (so entropy is
+  // always gathered — the reward is unknown until the in-tx pool draw), and the
+  // USD→CAD ledger rate is a network call frozen here.
+  const entropy = await gatherShotEntropy();
+  const fx = await getUsdToCadRate();
+  const periodKey = currentPeriodKey();
+  const cap = freePassMonthlyCap();
+  const redemptionId = newId();
+
+  let pass: { kind: string; startedAt: Date; durationSeconds: number | null };
+  let roll: LuckyBreakRollResult | null;
+  let rewardKind: FreePassRewardKind;
+  try {
+    ({ pass, roll, rewardKind } = await db.transaction(async (tx) => {
+      // Atomic draw from the month's pools — null means everything is gone.
+      const draw = await drawFreePassRewardTx(tx, periodKey, cap);
+      if (!draw) throw new ClaimRefusal("pool_empty");
+
+      const code = claimCodeLabel(draw.rewardKind, periodKey, draw.sequence);
+      // Mint the single-use giveaway code in-tx, tagged issuerKind='claim' so
+      // the ledger books it as a $0 comp even for a Lucky Break draw.
+      await tx.insert(discountCodesTable).values({
+        code,
+        grantsPassKind: grantKindForReward(draw.rewardKind),
+        maxRedemptions: 1,
+        issuedByUserId: user.id,
+        issuedAt: new Date(),
+        issuerKind: "claim",
+      });
+
+      // One claim per account, ever. UNIQUE(user_id) is the race backstop: a
+      // second concurrent claim fails here and rolls back the pool decrement.
+      try {
+        await tx.insert(freePassClaimsTable).values({
+          id: newId(),
+          userId: user.id,
+          rewardKind: draw.rewardKind,
+          code,
+          periodKey,
+          sequence: draw.sequence,
+        });
+      } catch (e) {
+        const sqlState =
+          (e as { code?: string }).code ??
+          (e as { cause?: { code?: string } }).cause?.code;
+        if (sqlState === "23505") throw new ClaimRefusal("already_claimed");
+        throw e;
+      }
+
+      const result = await redeemDiscountCodeForUserTx(
+        tx,
+        { userId: user.id, code, redemptionId },
+        { entropy, fx, lifetimeProbability: luckyBreakLifetimeProbability() },
+      );
+      return { pass: result.pass, roll: result.roll, rewardKind: draw.rewardKind };
+    }));
+  } catch (err) {
+    if (err instanceof ClaimRefusal) {
+      const message =
+        err.reason === "pool_empty"
+          ? "All free passes for this month are claimed — check back on the 1st!"
+          : "You've already claimed your free pass.";
+      res.json(ClaimFreePassResponse.parse({ success: false, message, reason: err.reason }));
+      return;
+    }
+    // The freshly-minted code should always redeem cleanly; a RedeemFailure
+    // here (or anything else) is unexpected — surface a transient error.
+    req.log.error({ err, userId: user.id }, "Free pass claim failed");
+    res.status(500).json({ error: "Claim failed" });
+    return;
+  }
+
+  // Mirror the local Lifetime mutual-exclusion to Stripe (best-effort, post-tx).
+  if (pass.kind === "lifetime") {
+    await stopRenewingStripeSubscriptions(user.id);
+  }
+
+  req.log.info(
+    {
+      userId: user.id,
+      rewardKind,
+      passKind: pass.kind,
       luckyBreak: roll
-        ? {
-            outcome: roll.outcome,
-            lifetimeProbability: roll.lifetimeProbability,
-            windowDays: LUCKY_BREAK_WINDOW_DAYS,
-            seedHash: roll.seedHash,
-            seededShotCount: roll.entropyShotCount,
-          }
+        ? { outcome: roll.outcome, seedHash: roll.seedHash, shots: roll.entropyShotCount }
         : undefined,
+    },
+    "Free pass claimed",
+  );
+
+  res.json(
+    ClaimFreePassResponse.parse({
+      success: true,
+      message: claimSuccessMessage(rewardKind, roll),
+      rewardKind,
+      pass: passToSummary(pass),
+      luckyBreak: roll ? luckyBreakPayload(roll) : undefined,
+    }),
+  );
+});
+
+/**
+ * Public giveaway status: remaining stock per pool + whether it's open. For a
+ * signed-in caller, also whether they already claimed and are eligible now.
+ */
+router.get("/passes/claim/status", async (req, res): Promise<void> => {
+  const ip = req.ip ?? "unknown";
+  if (!freePassRateLimit(ip, "claim-status")) {
+    res.status(429).json({ error: "Too many requests — try again in a minute." });
+    return;
+  }
+
+  const cap = freePassMonthlyCap();
+  const periodKey = currentPeriodKey();
+  const remaining = await getRemainingStock(periodKey, cap);
+  const open = remaining.lucky_break > 0 || remaining.day > 0;
+
+  const user = await getOrCreateUser(req);
+  let signedIn = false;
+  let alreadyClaimed: boolean | undefined;
+  let eligible: boolean | undefined;
+  if (user) {
+    signedIn = true;
+    const [prior, activePasses] = await Promise.all([
+      getFreePassClaimForUser(user.id),
+      getActivePasses(user.id),
+    ]);
+    alreadyClaimed = Boolean(prior);
+    eligible = open && !prior && activePasses.length === 0;
+  }
+
+  res.json(
+    GetFreePassClaimStatusResponse.parse({
+      open,
+      periodKey,
+      monthlyCap: cap,
+      remainingLuckyBreak: remaining.lucky_break,
+      remainingDay: remaining.day,
+      signedIn,
+      alreadyClaimed,
+      eligible,
     }),
   );
 });

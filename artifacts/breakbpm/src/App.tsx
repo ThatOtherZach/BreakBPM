@@ -15,8 +15,11 @@ import LeaderboardScreen from "./components/LeaderboardScreen";
 import FindPlayersScreen from "./components/FindPlayersScreen";
 import PassesScreen from "./components/PassesScreen";
 import RedeemScreen from "./components/RedeemScreen";
+import ClaimScreen from "./components/ClaimScreen";
+import PoolStatsAppScreen from "./components/PoolStatsAppScreen";
 import { SignInPage, SignUpPage } from "./components/SignInPage";
 import { readPendingRedeem } from "./lib/pendingRedeem";
+import { readPendingClaim } from "./lib/pendingClaim";
 import type { GameType, GameState, Player, SharkAggression, RuleSet, ChaosMode, PracticeRack, RematchConfig } from "./lib/gameLogic";
 import {
   generateShareCode,
@@ -108,10 +111,12 @@ function CacheInvalidator() {
 }
 
 /**
- * Watches for a redeem code that was stashed (by RedeemScreen) before the
- * sign-up/sign-in redirect. Once the user is authenticated, it bounces them
- * back to `/redeem/:code` so the code can be auto-applied. RedeemScreen owns
- * the actual redeem + clearing the stash, so this only navigates.
+ * Watches for a stashed intent left before the sign-up/sign-in redirect and,
+ * once the user is authenticated, bounces them to the page that completes it:
+ *   - a redeem code (from RedeemScreen) → `/redeem/:code`
+ *   - a free-pass claim (from ClaimScreen / the landing CTA) → `/claim`
+ * Those screens own the actual work + clearing the stash, so this only
+ * navigates. Redeem takes precedence if both somehow exist.
  */
 function RedeemResumer() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -126,7 +131,11 @@ function RedeemResumer() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("code") || params.get("game")) return;
     const pending = readPendingRedeem();
-    if (pending) setLocation(`/redeem/${encodeURIComponent(pending)}`);
+    if (pending) {
+      setLocation(`/redeem/${encodeURIComponent(pending)}`);
+      return;
+    }
+    if (readPendingClaim()) setLocation("/claim");
   }, [isAuthenticated, isLoading, location, setLocation]);
   return null;
 }
@@ -425,6 +434,33 @@ function RedeemRoute({ params }: { params: { code: string } }) {
   );
 }
 
+function ClaimRoute() {
+  const [, setLocation] = useLocation();
+  return (
+    <ClaimScreen
+      onHome={() => setLocation("/")}
+      onAccount={() => setLocation("/account")}
+      onAbout={() => setLocation("/about")}
+      onSignUp={() => setLocation("/sign-up")}
+    />
+  );
+}
+
+function PoolStatsAppRoute() {
+  const [, setLocation] = useLocation();
+  return (
+    <PoolStatsAppScreen
+      onHome={() => setLocation("/")}
+      onAbout={() => setLocation("/about")}
+      onAccount={() => setLocation("/account")}
+      onStats={() => setLocation("/stats")}
+      onFindPlayers={() => setLocation("/find-players")}
+      onSignIn={() => setLocation("/sign-in")}
+      onPasses={() => setLocation("/passes")}
+    />
+  );
+}
+
 function JoinRoute({ params }: { params: { code: string } }) {
   const [, setLocation] = useLocation();
   return (
@@ -491,7 +527,9 @@ function Routes() {
       <Route path="/about" component={AboutRoute} />
       <Route path="/legal" component={LegalRoute} />
       <Route path="/passes" component={PassesRoute} />
+      <Route path="/pool-stats-app" component={PoolStatsAppRoute} />
       <Route path="/redeem/:code" component={RedeemRoute} />
+      <Route path="/claim" component={ClaimRoute} />
       <Route path="/join/:code" component={JoinRoute} />
       <Route path="/watch/:name" component={WatchRoute} />
       <Route component={MainApp} />

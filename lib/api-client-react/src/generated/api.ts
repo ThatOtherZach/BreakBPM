@@ -42,6 +42,8 @@ import type {
   DiscountRedeemInput,
   FindPlayerPostInput,
   FindPlayerPostsResult,
+  FreePassClaimResult,
+  FreePassClaimStatus,
   GameActivityInput,
   GameActivityResult,
   GameHistoryResponse,
@@ -481,6 +483,157 @@ export const useRedeemDiscountCode = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getRedeemDiscountCodeMutationOptions(options));
     }
+
+export const getClaimFreePassUrl = () => {
+
+
+
+
+  return `/api/passes/claim`
+}
+
+/**
+ * Mints a single-use giveaway code and redeems it in one atomic transaction, drawing either a Lucky Break roll or a Day pass from the current month's limited stock. Requires sign-in. Each account may claim at most once, ever. Returns success:false with a machine-readable reason when the caller already claimed, already holds a pass, or all of the period's stock is gone. Takes no request body — the reward is drawn server-side.
+
+ * @summary Claim the one-per-account free pass (landing-page giveaway)
+ */
+export const claimFreePass = async ( options?: RequestInit): Promise<FreePassClaimResult> => {
+
+  return customFetch<FreePassClaimResult>(getClaimFreePassUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClaimFreePassMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimFreePass>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof claimFreePass>>, TError,void, TContext> => {
+
+const mutationKey = ['claimFreePass'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof claimFreePass>>, void> = () => {
+
+
+          return  claimFreePass(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClaimFreePassMutationResult = NonNullable<Awaited<ReturnType<typeof claimFreePass>>>
+
+    export type ClaimFreePassMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Claim the one-per-account free pass (landing-page giveaway)
+ */
+export const useClaimFreePass = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimFreePass>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof claimFreePass>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getClaimFreePassMutationOptions(options));
+    }
+
+export const getGetFreePassClaimStatusUrl = () => {
+
+
+
+
+  return `/api/passes/claim/status`
+}
+
+/**
+ * Public. Returns remaining stock for the current period's reward pools and whether the giveaway is open. For a signed-in caller, also reports whether they have already used their one lifetime claim and whether they are eligible to claim right now.
+
+ * @summary Free-pass giveaway stock + the caller's eligibility
+ */
+export const getFreePassClaimStatus = async ( options?: RequestInit): Promise<FreePassClaimStatus> => {
+
+  return customFetch<FreePassClaimStatus>(getGetFreePassClaimStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFreePassClaimStatusQueryKey = () => {
+    return [
+    `/api/passes/claim/status`
+    ] as const;
+    }
+
+
+export const getGetFreePassClaimStatusQueryOptions = <TData = Awaited<ReturnType<typeof getFreePassClaimStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFreePassClaimStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFreePassClaimStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFreePassClaimStatus>>> = ({ signal }) => getFreePassClaimStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFreePassClaimStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFreePassClaimStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getFreePassClaimStatus>>>
+export type GetFreePassClaimStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Free-pass giveaway stock + the caller's eligibility
+ */
+
+export function useGetFreePassClaimStatus<TData = Awaited<ReturnType<typeof getFreePassClaimStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFreePassClaimStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFreePassClaimStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListMyGiftCodesUrl = () => {
 

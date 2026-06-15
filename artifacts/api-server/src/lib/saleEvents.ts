@@ -56,10 +56,24 @@ export function valuationForCryptoOrder(
  * code is a real sale valued at the Lucky Break price. Every other code
  * (admin comp / Day-Pass gift / boot-time seed) is a COMP: recorded at $0 and
  * flagged so it shows in the ledger but contributes nothing to revenue.
+ *
+ * `issuerKind` is the minting flow (see discount_codes.issuerKind). Free-pass
+ * CLAIM codes (`issuerKind = 'claim'`, the landing-page giveaway) are ALWAYS a
+ * $0 comp — even for the Lucky Break draw kind — because the player paid
+ * nothing. Without this carve-out a free Lucky Break giveaway would falsely
+ * book the Lucky Break price as paid revenue.
  */
 export function valuationForCodeRedemption(
   grantsPassKind: string,
+  issuerKind?: string | null,
 ): SaleValuation {
+  if (issuerKind === "claim") {
+    return {
+      grossCents: 0,
+      isComp: true,
+      productLabel: labelForGrantKind(grantsPassKind),
+    };
+  }
   if (grantsPassKind === LUCKY_BREAK_CODE_KIND) {
     return {
       grossCents: LUCKY_BREAK_PRICE_CENTS,
