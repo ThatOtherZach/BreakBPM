@@ -52,11 +52,11 @@ export const PAGE_META = {
     ogDescription: 'BreakBPM terms of service, privacy policy, and data handling details.',
   },
   passes: {
-    title: 'BreakBPM Passes & Pricing — Day Pass, Monthly, Lifetime Access',
-    description: 'Unlock full stats history, live spectating, and all BreakBPM features. Choose a Day Pass ($1.99), Monthly ($2.99/mo), Yearly ($12.99/yr), or Lifetime ($24.99) pass.',
+    title: 'BreakBPM Passes & Pricing — Day Pass & Lifetime Access',
+    description: 'Unlock full stats history, live spectating, and all BreakBPM features. Get a Day Pass ($1.99) or Lifetime ($24.99) pass — pay with crypto or redeem a code.',
     canonical: 'https://breakbpm.com/passes',
     ogTitle: 'BreakBPM Passes & Pricing — Unlock Full Stats & Spectating',
-    ogDescription: 'Choose a Day Pass ($1.99), Monthly sub ($2.99/mo), or Lifetime pass ($24.99) to unlock full stats history, live spectating, and all paid BreakBPM features.',
+    ogDescription: 'Get a Day Pass ($1.99) or Lifetime ($24.99) pass to unlock full stats history, live spectating, and all paid BreakBPM features. Pay with crypto or redeem a code.',
   },
   poolStatsApp: {
     title: 'Pool Stats App — Track Balls Per Minute for 8-Ball & 9-Ball | BreakBPM',

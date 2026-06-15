@@ -153,6 +153,13 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
   const hasAccess =
     !!me.data?.entitlement?.activePass || !!me.data?.entitlement?.activeSubscription;
 
+  // Subscriptions are card-billed; while card payments are off (crypto-only),
+  // recurring plans aren't purchasable, so don't advertise them. This auto-
+  // corrects if card payments flip back on.
+  const publicPlanSummaries = STATIC_PLAN_SUMMARIES.filter(
+    (p) => cardPaymentsEnabled || (p.id !== "month-sub" && p.id !== "year-sub"),
+  );
+
   /**
    * One-time pass purchase. Two-step: createCheckout returns an opaqueToken;
    * the client then calls /passes/verify to confirm and grant. Until a real
@@ -232,7 +239,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {STATIC_PLAN_SUMMARIES.map((plan) => (
+              {publicPlanSummaries.map((plan) => (
                 <div
                   key={plan.id}
                   style={{

@@ -73,14 +73,14 @@ const PUBLIC_ROUTES: RouteMetaEntry[] = [
   {
     path: "passes",
     title:
-      "BreakBPM Passes & Pricing — Day Pass, Monthly, Lifetime Access",
+      "BreakBPM Passes & Pricing — Day Pass & Lifetime Access",
     description:
-      "Unlock full stats history, live spectating, and all BreakBPM features. Choose a Day Pass ($1.99), Monthly ($2.99/mo), Yearly ($12.99/yr), or Lifetime ($24.99) pass.",
+      "Unlock full stats history, live spectating, and all BreakBPM features. Get a Day Pass ($1.99) or Lifetime ($24.99) pass — pay with crypto or redeem a code.",
     canonical: "https://breakbpm.com/passes",
     ogTitle:
       "BreakBPM Passes & Pricing — Unlock Full Stats & Spectating",
     ogDescription:
-      "Choose a Day Pass ($1.99), Monthly sub ($2.99/mo), or Lifetime pass ($24.99) to unlock full stats history, live spectating, and all paid BreakBPM features.",
+      "Get a Day Pass ($1.99) or Lifetime ($24.99) pass to unlock full stats history, live spectating, and all paid BreakBPM features. Pay with crypto or redeem a code.",
   },
   {
     path: "pool-stats-app",
@@ -202,8 +202,6 @@ ${PRERENDER_STYLE}
 function buildPassesBody(): string {
   const plans = [
     { name: "Day Pass", price: "$1.99", suffix: "", desc: "24 hours of full access — stats, history, live spectating, and all paid features.", note: "" },
-    { name: "Monthly", price: "$2.99", suffix: "/mo", desc: "Full access month to month.", note: "Renews monthly · cancel anytime" },
-    { name: "Yearly", price: "$12.99", suffix: "/yr", desc: "Full access for a full year at the best recurring rate.", note: "Renews yearly · cancel anytime" },
     { name: "Lifetime", price: "$24.99", suffix: "", desc: "One-time purchase. Pay once, full access forever, including a custom screen name.", note: "" },
   ];
   const planRows = plans.map(p =>
@@ -241,7 +239,7 @@ ${PRERENDER_STYLE}
   <p>A $4.99 guaranteed upgrade: redeem a Lucky Break code for at minimum a 30-day Monthly Pass, with a 20% chance of a Lifetime Pass. The outcome is determined by a provably-fair seeded draw using the last 30 days of global shot activity.</p>
 
   <h2>How to Get a Pass</h2>
-  <p>Sign in at <a href="https://breakbpm.com">breakbpm.com</a> and redeem a code from your Account page, or use a Lucky Break code link. Card checkout and cryptocurrency payment are also available when enabled.</p>
+  <p>Sign in at <a href="https://breakbpm.com">breakbpm.com</a> and redeem a code from your Account page, or use a Lucky Break code link. You can also buy a pass on-chain with cryptocurrency.</p>
 
   <p style="margin-top:1.5em;font-size:.8rem;color:#888">All passes are non-refundable. For support, open an issue on GitHub.</p>
 </div>`.trim();
@@ -285,8 +283,6 @@ function poolStatsAppJsonLd(): string {
     offers: [
       { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD", description: "Free to play forever. Sign in to save stats." },
       { "@type": "Offer", name: "Day Pass", price: "1.99", priceCurrency: "USD", description: "24 hours of full access." },
-      { "@type": "Offer", name: "Monthly", price: "2.99", priceCurrency: "USD", description: "Full access, month to month." },
-      { "@type": "Offer", name: "Yearly", price: "12.99", priceCurrency: "USD", description: "Full access for a year." },
       { "@type": "Offer", name: "Lifetime", price: "24.99", priceCurrency: "USD", description: "One-time purchase, full access forever." },
     ],
   };
