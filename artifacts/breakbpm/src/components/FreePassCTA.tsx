@@ -46,7 +46,7 @@ export default function FreePassCTA({ heading }: { heading?: string }) {
   } else if (hasPassAlready) {
     body = (
       <>
-        <p className="fp-cta-note">You're all set — you already have an active pass.</p>
+        <p className="fp-cta-note">You already have an active pass :)</p>
         <button className="btn btn-big w-full" onClick={() => setLocation("/account")}>
           View My Account
         </button>
