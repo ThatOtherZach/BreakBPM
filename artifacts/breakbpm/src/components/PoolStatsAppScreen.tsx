@@ -72,6 +72,8 @@ export default function PoolStatsAppScreen({
 
             <img src="/breakbpm-poster.png" alt="BreakBPM — PC-98 Series Billiards Score Tracker" className="lp-img" />
 
+            <FreePassCTA />
+
             <div className="game-type-grid lp-mode-grid">
               {POOL_STATS_MODES.map((m) => (
                 <button key={m.name} className="btn type-btn lp-mode-btn" onClick={onHome}>
@@ -91,8 +93,6 @@ export default function PoolStatsAppScreen({
             ))}
 
             <img src="/pool-player.jpg" alt="Player lining up a shot" className="lp-img" />
-
-            <FreePassCTA />
 
             <nav className="lp-links" aria-label="More BreakBPM pages">
               <button className="btn btn-big w-full" onClick={onPasses}>
