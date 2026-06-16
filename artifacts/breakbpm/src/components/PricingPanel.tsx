@@ -100,13 +100,7 @@ export default function PricingPanel({
             <span style={{ fontWeight: "bold", fontSize: 12 }}>
               💳 Prefer to pay by card? — 14 Day Pass · $5.99
             </span>
-            <span style={{ fontSize: 11 }}>
-              Buy the 14 Day Pass by card on our store and we'll email your
-              redeem code (usually within 24 hours). Heads up: paying with
-              crypto is the better deal — a 30-day Month Pass is just $4.99,
-              cheaper than this 14-day card option — but card works great if
-              that's easier for you.
-            </span>
+            <span style={{ fontSize: 11 }}>Paying with card? We only sell the 14 Day Pass on the Saym Store. After paying you'll receive a redemption code in 24 hours for 14 days of access. Note that payment with crypto instantly grants access.</span>
             <a
               className="btn btn-primary w-full"
               href={storeUrl}

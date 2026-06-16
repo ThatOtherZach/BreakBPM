@@ -19,8 +19,13 @@ when the env changes.
 
 **Rule:** any change to what `gatherShotEntropy()` reads (global vs per-user, the
 window length, what fields feed the hash), OR the odds *source/semantics*, MUST update the
-STATIC prose in lockstep (the dynamic numbers self-sync, but these hardcode "20%"):
-- `PassesScreen.tsx` hero "Fair play" paragraph
+STATIC prose in lockstep (the dynamic numbers self-sync, but these hardcode "20%" / "provably fair"):
+- `PricingPanel.tsx` Lucky Break callout — the shared public fairness blurb. Shown on the
+  About page; HIDDEN on the Passes screen (PassesScreen passes `hideLuckyBreak`, which now
+  surfaces Lucky Break only in the crypto checkout). This callout reads the server odds
+  number dynamically but hardcodes the "provably fair" prose.
+- `CryptoCheckout.tsx` contextual Lucky Break notice (above the pay button, shown only when
+  the Lucky Break pass is selected) — dynamic odds number, but hardcodes "provably-fair seeded draw" prose.
 - `LuckyBreakReveal.tsx` seed note (the prose, not the dynamic number)
 - `ABOUT.md` Lucky Break section
 - README.md "Lucky Break — provably fair" section
