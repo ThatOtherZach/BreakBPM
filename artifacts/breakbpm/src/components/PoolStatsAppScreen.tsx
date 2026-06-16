@@ -66,8 +66,6 @@ export default function PoolStatsAppScreen({
             <h1 className="lp-h1">{POOL_STATS_H1}</h1>
             <p className="lp-intro">{POOL_STATS_INTRO}</p>
 
-            <FreePassCTA />
-
             <button className="btn btn-primary btn-big w-full" onClick={onHome}>
               ▶ Start Scoring — It's Free
             </button>
@@ -93,6 +91,8 @@ export default function PoolStatsAppScreen({
             ))}
 
             <img src="/pool-player.jpg" alt="Player lining up a shot" className="lp-img" />
+
+            <FreePassCTA />
 
             <nav className="lp-links" aria-label="More BreakBPM pages">
               <button className="btn btn-big w-full" onClick={onPasses}>
