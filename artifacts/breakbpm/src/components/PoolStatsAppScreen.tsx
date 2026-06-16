@@ -59,7 +59,7 @@ export default function PoolStatsAppScreen({
         <div className="panel">
           <div className="panel-header">
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <span aria-hidden="true">🎱</span>Pool Stats App
+              <span aria-hidden="true">🎱</span>BreakBPM.com
             </span>
           </div>
           <div className="panel-body lp-body">
