@@ -92,8 +92,6 @@ Sign in to open the full leaderboard. Pass holders can switch the ranking window
 
 ## Passes
 
-![BreakBPM Passes & Pricing — Day, Month, Year, Lifetime, Lucky Break](/screenshot-passes.jpg)
-
 BreakBPM is free to play. Sign in (no charge) to save your games, but you'll need a pass to access more data.
 
 Pass Unlocks:
@@ -106,17 +104,9 @@ Pass Unlocks:
 - **Full data export** Download every game and shot you've ever played. Free accounts can only export their last 24 hours only.
 - **Custom screen name***Lifetime only:* Pick your own display name instead of the auto-assigned one.
 
-| Pass     | Price              | Access                                     |
-|----------|:------------------:|--------------------------------------------|
-| Day Pass     | $1.99     | Everything for 24 hours          |
-| Month Pass   | $4.99     | Everything for 30 days           |
-| Year Pass    | $14.99    | Everything for 365 days          |
-| Lifetime     | $24.99    | Everything + custom screen name  |
-| 14 Day Pass  | $5.99     | Everything for 14 days (card)    |
+Passes can be purchased on-chain with crypto from your account page or redeemed with a code. Prefer to pay by card? The **14 Day Pass** ($5.99) is sold by card on our off-platform store. After purchase we email your redeem code within 24 hours. All pass types are non-refundable. If you need assistance, use the Github first. 
 
-Passes can be purchased on-chain with crypto from your account page or redeemed with a code. Prefer to pay by card? The **14 Day Pass** ($5.99) is sold by card on our off-platform store — we email your redeem code within 24 hours. Heads up: paying with crypto is the better deal, since the 30-day Month Pass is only $4.99. All pass types are non-refundable. If you need assistance, use the Github first. 
-
-### 🎱 Lucky Break
+### 🎱 Lucky Break Pass
 
 Lucky Break is a $4.99 roll that guarantees you a 30 day pass but there's an 80/20 chance it's upgraded to a Lifetime Pass instead.
 

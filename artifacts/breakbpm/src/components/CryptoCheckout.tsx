@@ -309,7 +309,7 @@ export default function CryptoCheckout({
         </p>
 
         {hasAccess && (
-          <div style={{ fontFamily: "VT323", fontSize: 18, color: "#006400" }}>You already have an active access :)</div>
+          <div style={{ fontFamily: "VT323", fontSize: 18, color: "#006400" }}>You already have an active pass :)</div>
         )}
 
         {/* Pass picker — selectable cards. Locked once an order is quoted. */}
@@ -501,8 +501,24 @@ export default function CryptoCheckout({
             </button>
           </div>)
         ) : phase !== "done" ? (
-          /* ---- Pre-payment: primary manual button + wallet shortcut ---- */
+          /* ---- Pre-payment: Lucky Break info (when selected) + pay button ---- */
           (<>
+            {isLuckyBreakSelected && (
+              <div
+                className="notice"
+                style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}
+              >
+                <span style={{ fontWeight: "bold", fontSize: 12 }}>
+                  🎱 Lucky Break — Roll the Rack
+                </span>
+                <span style={{ fontSize: 11 }}>
+                  A guaranteed upgrade: win at minimum a 30-day Monthly Pass, with
+                  a {oddsPct}% chance it's a Lifetime Pass instead. The outcome is a
+                  provably-fair seeded draw, decided the moment your payment
+                  confirms.
+                </span>
+              </div>
+            )}
             <button
               className="btn btn-primary btn-big"
               disabled={busy}

@@ -40,6 +40,12 @@ interface PricingPanelProps {
   showBuyButtons?: boolean;
   /** Handler for the per-pass Buy buttons (e.g. navigate to /passes). */
   onBuy?: () => void;
+  /** Hide the four static pass cards. Used on the Passes screen, where the
+   *  crypto checkout below already lists the buyable passes. */
+  hidePassList?: boolean;
+  /** Hide the Lucky Break promo notice. Used on the Passes screen, where the
+   *  crypto checkout surfaces Lucky Break contextually instead. */
+  hideLuckyBreak?: boolean;
   /** Extra content rendered at the bottom of the panel body — e.g. the
    *  Passes screen's "Sign In to Get a Pass" CTA. */
   footer?: ReactNode;
@@ -50,7 +56,13 @@ interface PricingPanelProps {
  * and the About page so the pricing copy / callouts never drift between them.
  * Reads the off-platform store URL and Lucky Break odds from server config.
  */
-export default function PricingPanel({ showBuyButtons = false, onBuy, footer }: PricingPanelProps) {
+export default function PricingPanel({
+  showBuyButtons = false,
+  onBuy,
+  hidePassList = false,
+  hideLuckyBreak = false,
+  footer,
+}: PricingPanelProps) {
   const appConfig = useGetAppConfig();
   const plans = useListPlans();
 
@@ -107,51 +119,55 @@ export default function PricingPanel({ showBuyButtons = false, onBuy, footer }: 
           </div>
         )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {STATIC_PLAN_SUMMARIES.map((plan) => (
-            <div
-              key={plan.id}
-              style={{
-                border: "1px solid #888",
-                background: "#fff",
-                padding: 8,
-                display: "flex",
-                flexDirection: "column",
-                gap: 4,
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontFamily: "VT323", fontSize: 22, color: "#000080" }}>{plan.name}</span>
-                <span style={{ fontWeight: "bold" }}>
-                  {plan.price}
-                  <span style={{ fontWeight: "normal", fontSize: 12 }}>{plan.suffix}</span>
-                </span>
+        {!hidePassList && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {STATIC_PLAN_SUMMARIES.map((plan) => (
+              <div
+                key={plan.id}
+                style={{
+                  border: "1px solid #888",
+                  background: "#fff",
+                  padding: 8,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontFamily: "VT323", fontSize: 22, color: "#000080" }}>{plan.name}</span>
+                  <span style={{ fontWeight: "bold" }}>
+                    {plan.price}
+                    <span style={{ fontWeight: "normal", fontSize: 12 }}>{plan.suffix}</span>
+                  </span>
+                </div>
+                <div style={{ fontSize: 11, color: "#444" }}>{plan.description}</div>
+                {showBuyButtons && (
+                  <button
+                    className="btn btn-primary w-full"
+                    onClick={onBuy}
+                    style={{ marginTop: 2 }}
+                  >
+                    Buy
+                  </button>
+                )}
               </div>
-              <div style={{ fontSize: 11, color: "#444" }}>{plan.description}</div>
-              {showBuyButtons && (
-                <button
-                  className="btn btn-primary w-full"
-                  onClick={onBuy}
-                  style={{ marginTop: 2 }}
-                >
-                  Buy
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Lucky Break callout — visible to all */}
-        <div className="notice" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-          <span style={{ fontWeight: "bold", fontSize: 12 }}>🎱 Lucky Break — Roll the Rack</span>
-          <span style={{ fontSize: 11 }}>
-            A $4.99 guaranteed upgrade: win at minimum a 30-day Monthly Pass, with a&nbsp;
-            {luckyBreak?.lifetimeProbability != null
-              ? `${Math.round(luckyBreak.lifetimeProbability * 100)}%`
-              : "20%"}{" "}
-            chance of a Lifetime Pass. Redeem via code — provably fair.
-          </span>
-        </div>
+        {!hideLuckyBreak && (
+          <div className="notice" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+            <span style={{ fontWeight: "bold", fontSize: 12 }}>🎱 Lucky Break — Roll the Rack</span>
+            <span style={{ fontSize: 11 }}>
+              A $4.99 guaranteed upgrade: win at minimum a 30-day Monthly Pass, with a&nbsp;
+              {luckyBreak?.lifetimeProbability != null
+                ? `${Math.round(luckyBreak.lifetimeProbability * 100)}%`
+                : "20%"}{" "}
+              chance of a Lifetime Pass. Redeem via code — provably fair.
+            </span>
+          </div>
+        )}
 
         {footer}
       </div>
