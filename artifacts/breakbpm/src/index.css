@@ -1704,8 +1704,8 @@ html, #root {
 .lp-mode-btn:hover {
   background-color: #147a3e !important;
 }
-.lp-mode-btn .type-btn-label { color: #f4f4dc !important; text-shadow: 1px 1px 0 #042414; }
-.lp-mode-btn__desc { color: #b9e6c4 !important; text-shadow: 1px 1px 0 #042414; }
+.lp-mode-btn .type-btn-label { color: #f4f4dc !important; text-shadow: none; }
+.lp-mode-btn__desc { color: #b9e6c4 !important; text-shadow: none; }
 
 /* ── Player rows ── */
 .player-row {
