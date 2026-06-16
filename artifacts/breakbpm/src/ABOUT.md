@@ -4,6 +4,8 @@ BreakBPM logs every shot, one ball at a time, and gives you two numbers back: **
 
 The higher the BPM, the faster the game moves. It’s calculated per-player from your first pocketed ball to the last. Want a sticker? [Grab one here](https://www.redbubble.com/i/sticker/BreakBPM-Sticker-by-ThatOtherZach/181421812/7sgk).
 
+![A seasoned player leans over the table, cue in hand](/hustler.jpg)
+
 ## Features
 - Live per-player BPM + game timer
 - Smart ball selector (only shows legal shots)
@@ -37,6 +39,8 @@ In 8-Ball, the Format toggle cycles through four ways to play:
 -->
 
 ## 🦈 Shark Mode
+
+![🦈 Shark Mode — solo 8-ball against an invisible opponent](/shark.jpg)
 
 Play solo against an invisible Shark. Your first pocketed ball locks your group (solids or stripes); clear your group and sink the 8 ball to win.
 

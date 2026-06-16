@@ -70,6 +70,8 @@ export default function PoolStatsAppScreen({
               ▶ Start Scoring — It's Free
             </button>
 
+            <img src="/breakbpm-poster.png" alt="BreakBPM — PC-98 Series Billiards Score Tracker" className="lp-img" />
+
             <h2 className="lp-h2">Track every shot across every pool game mode</h2>
             <ul className="lp-list">
               {POOL_STATS_MODES.map((m) => (
@@ -78,6 +80,8 @@ export default function PoolStatsAppScreen({
                 </li>
               ))}
             </ul>
+
+            <img src="/pool-player.jpg" alt="Player lining up a shot" className="lp-img" />
 
             {POOL_STATS_FEATURES.map((f) => (
               <section key={f.title}>
