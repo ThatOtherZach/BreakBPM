@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { marked } from 'marked';
 import Navbar from './Navbar';
+import PricingPanel from './PricingPanel';
 import ballImg from '/eightball_nobg.png';
 import aboutMd from '../ABOUT.md?raw';
 import { APP_VERSION } from '../lib/version';
@@ -11,9 +12,10 @@ const tagline = pickTagline();
 
 interface AboutScreenProps {
   onBack: () => void;
+  onPasses: () => void;
 }
 
-export default function AboutScreen({ onBack }: AboutScreenProps) {
+export default function AboutScreen({ onBack, onPasses }: AboutScreenProps) {
   usePageMeta(PAGE_META.about);
   const html = useMemo(() => marked(aboutMd) as string, []);
 
@@ -49,6 +51,8 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
               dangerouslySetInnerHTML={{ __html: html }}
             />
           </div>
+
+          <PricingPanel showBuyButtons onBuy={onPasses} />
         </div>
       </div>
 

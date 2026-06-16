@@ -7,7 +7,8 @@ description: The marketing/SEO surfaces that advertise pass prices/offers/paymen
 
 When changing what passes/offers/payment methods BreakBPM advertises (e.g. "subscriptions off", "crypto only", a price change), you must update ALL of these or the crawlable/prerendered content drifts from the live UI:
 
-- `src/components/PassesScreen.tsx` — `STATIC_PLAN_SUMMARIES` (always-visible public pricing) AND the card-payment panel (gated on `cardPaymentsEnabled`).
+- `src/components/PricingPanel.tsx` — the always-visible public pricing panel (`STATIC_PLAN_SUMMARIES`, the 14-Day card-store callout, the Lucky Break callout). This ONE component is now shared by BOTH the Passes screen and the bottom of the About page, so the in-app public pricing copy is centralized here (edit it once to cover both surfaces). It reads `storeUrl`/Lucky Break odds from server config.
+- `src/components/PassesScreen.tsx` — renders `<PricingPanel>` for the public panel; still owns the authenticated card-payment panel (gated on `cardPaymentsEnabled`) and crypto checkout.
 - `src/lib/pageMeta.ts` — `PAGE_META.passes` (runtime `<title>`/meta, set by JS).
 - `vite.config.ts` — THREE separate copies for prerender: (a) the `passes` route entry in the route-meta array (a build-time DUPLICATE of `pageMeta.ts`, easy to miss), (b) `buildPassesBody()` plan rows + payment line, (c) `poolStatsAppJsonLd()` `offers[]`.
 - `index.html` — the static home `WebApplication` JSON-LD `offers[]`. **Inherited by every prerendered route that has no `jsonLd` of its own** (passes/about/legal), because `injectRouteMeta` only replaces the JSON-LD when `route.jsonLd` is set. So a stale offer here shows up on `/passes`, `/about`, `/legal` prerenders too.

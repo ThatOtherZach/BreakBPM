@@ -395,7 +395,7 @@ function LeaderboardRoute() {
 
 function AboutRoute() {
   const [, setLocation] = useLocation();
-  return <AboutScreen onBack={() => setLocation("/")} />;
+  return <AboutScreen onBack={() => setLocation("/")} onPasses={() => setLocation("/passes")} />;
 }
 
 function LegalRoute() {
