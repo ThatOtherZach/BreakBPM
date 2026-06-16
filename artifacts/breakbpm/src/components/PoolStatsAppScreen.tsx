@@ -72,7 +72,7 @@ export default function PoolStatsAppScreen({
 
             <img src="/breakbpm-poster.png" alt="BreakBPM — PC-98 Series Billiards Score Tracker" className="lp-img" />
 
-            <h2 className="lp-h2">Track every shot across every pool game mode</h2>
+            <h2 className="lp-h2">Track Every Shot Across Every Pool Game</h2>
             <ul className="lp-list">
               {POOL_STATS_MODES.map((m) => (
                 <li key={m.name}>
