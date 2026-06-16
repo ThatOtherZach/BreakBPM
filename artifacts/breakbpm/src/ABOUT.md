@@ -11,8 +11,7 @@ The higher the BPM, the faster the game moves. It’s calculated per-player from
 - Smart ball selector (only shows legal shots)
 - Full shot log with undo
 - Track fouls, safeties, and misses
-- 5-character share code for easy joining
-- Spectate any game
+- Share code for easy joining
 - Link players with @ mentions
 - Global BPM leaderboard
 - Stats with accuracy and pace breakdowns
@@ -114,4 +113,4 @@ The outcome is determined by a seeded draw using the last 30 days of global shot
 
 ---
 
-*Built by [@ThatOtherZach](https://github.com/ThatOtherZach). Owned and operated by Saym Services Inc. in Vancouver, Canada.*
+*Designed & Built by [@ThatOtherZach](https://github.com/ThatOtherZach). Operated by [Saym Services Inc](https://www.saymservices.com/breakbpm) - Vancouver Canada*
