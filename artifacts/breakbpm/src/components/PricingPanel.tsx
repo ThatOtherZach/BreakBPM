@@ -9,28 +9,28 @@ const STATIC_PLAN_SUMMARIES = [
     name: "Day Pass",
     price: "$1.99",
     suffix: "",
-    description: "24 hours of full access — stats, history, live spectating.",
+    description: "Pass Access for 24 Hours, single use.",
   },
   {
     id: "month",
     name: "Month Pass",
     price: "$4.99",
     suffix: "",
-    description: "30 days of full access. One-time — does not auto-renew.",
+    description: "Pass Access for 30 Days, single use.",
   },
   {
     id: "year",
     name: "Year Pass",
     price: "$14.99",
     suffix: "",
-    description: "365 days of full access. One-time — does not auto-renew.",
+    description: "Pass Access for 365 Days, single use.",
   },
   {
     id: "lifetime",
     name: "Lifetime",
     price: "$24.99",
     suffix: "",
-    description: "One-time purchase. Pay once, full access forever.",
+    description: "One-Time Purchase. Full Access Forever.",
   },
 ];
 
