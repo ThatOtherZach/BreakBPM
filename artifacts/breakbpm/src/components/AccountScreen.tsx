@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { QRCodeCanvas } from "qrcode.react";
 import { useAuth, signInPath } from "../lib/authClient";
 import {
-  loadSharkImage,
+  loadCardBackground,
   ensureCardFonts,
   drawRedeemCard,
   downloadCanvas,
@@ -187,7 +187,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
     let cancelled = false;
     (async () => {
       try {
-        const [img] = await Promise.all([loadSharkImage(), ensureCardFonts()]);
+        const [img] = await Promise.all([loadCardBackground(), ensureCardFonts()]);
         if (cancelled) return;
         const out = cardCanvasRef.current;
         const qr = qrCanvasRef.current;
@@ -195,7 +195,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
         drawRedeemCard(out, {
           code: card.code,
           kind: card.kind,
-          sharkImg: img,
+          bgImg: img,
           qrCanvas: qr,
         });
         if (pendingCardDownloadRef.current) {
