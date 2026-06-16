@@ -81,10 +81,7 @@ export default function FreePassCTA({ heading }: { heading?: string }) {
   return (
     <div className="fp-cta">
       <div className="fp-cta-headline">{heading ?? "Get a Free Day Pass!"}</div>
-      <p className="fp-cta-sub">
-        Every claim is a guaranteed win: at minimum a Day pass, with a real shot at a
-        Lucky Break roll for Monthly — or even Lifetime. One per player.
-      </p>
+      <p className="fp-cta-sub">Claim a Day Pass, or potentially get a free Lucky Break roll for Monthly, or even Lifetime. One per player.</p>
       {body}
     </div>
   );
