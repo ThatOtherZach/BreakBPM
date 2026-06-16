@@ -27,10 +27,10 @@ export interface TitledBlock {
 }
 
 export const POOL_STATS_H1 =
-  "The Pool Stats App That Measures Your Balls Per Minute";
+  "Nice Rack, Track It";
 
 export const POOL_STATS_INTRO =
-  "A free, browser-based pool stats app and live billiards score tracker. Log every shot and get the two numbers that define your game: shooting accuracy and Balls Per Minute (BPM), your live scoring pace. No download, nothing to install.";
+  "BreakBPM is a a free, browser-based pool stats app and live billiards score tracker. Log every shot and measure your shooting accuracy and Balls Per Minute (BPM score, No download, no install, no subscription.";
 
 export const POOL_STATS_MODES: NamedBlock[] = [
   {
