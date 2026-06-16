@@ -86,7 +86,6 @@ export default function PoolStatsAppScreen({
             {POOL_STATS_FEATURES.map((f) => (
               <section key={f.title}>
                 <h2 className="lp-h2">{f.title}</h2>
-                <p>{f.body}</p>
               </section>
             ))}
 
