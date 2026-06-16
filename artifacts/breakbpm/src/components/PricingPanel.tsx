@@ -40,6 +40,8 @@ interface PricingPanelProps {
   showBuyButtons?: boolean;
   /** Handler for the per-pass Buy buttons (e.g. navigate to /passes). */
   onBuy?: () => void;
+  /** Hide the 14 Day Pass card-store callout. Used on the About page. */
+  hideCardCallout?: boolean;
   /** Hide the four static pass cards. Used on the Passes screen, where the
    *  crypto checkout below already lists the buyable passes. */
   hidePassList?: boolean;
@@ -56,6 +58,7 @@ interface PricingPanelProps {
 export default function PricingPanel({
   showBuyButtons = false,
   onBuy,
+  hideCardCallout = false,
   hidePassList = false,
   footer,
 }: PricingPanelProps) {
@@ -77,16 +80,13 @@ export default function PricingPanel({
         </h1>
       </div>
       <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <p style={{ fontSize: 12, margin: 0 }}>
-          A pass unlocks full stats history, extended windows, live spectating, and all paid features.
-          Free play is always available — sign in to save your stats.
-        </p>
+        <p style={{ fontSize: 12, margin: 0 }}>A pass unlocks full game history, extended stats, spectating, and other paid features. Free play is always available; sign in to save your stats.</p>
 
         {/* ── Pay-by-card callout (14 Day Pass via Squarespace) ──
             Framed as the card alternative to crypto: deliberately pricier
             so crypto stays the better deal. Only rendered once an owner
             configures the store URL. */}
-        {storeUrl && (
+        {!hideCardCallout && storeUrl && (
           <div
             className="notice"
             style={{ flexDirection: "column", alignItems: "flex-start", gap: 6 }}

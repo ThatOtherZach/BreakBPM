@@ -52,7 +52,7 @@ export default function AboutScreen({ onBack, onPasses }: AboutScreenProps) {
             />
           </div>
 
-          <PricingPanel showBuyButtons onBuy={onPasses} />
+          <PricingPanel showBuyButtons onBuy={onPasses} hideCardCallout />
         </div>
       </div>
 
