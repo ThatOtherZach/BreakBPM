@@ -81,7 +81,7 @@ export const POOL_STATS_FAQ: FaqItem[] = [
   },
   {
     q: "Can other people watch my pool game live?",
-    a: "Yes. Every game has a 5-character share code. Others can join an open seat before the break or spectate by name — seeing your HUD, shot log, and live BPM but never scoring. There's also an OBS overlay for streamers.",
+    a: "Yes. Every game has a 5-character share code. Others can join an open seat before the break or spectate by name — seeing your HUD, shot log, and live BPM but never scoring.",
   },
   {
     q: "How do I get a free pass?",
