@@ -11,6 +11,7 @@ export type AdminCodeInputKind = typeof AdminCodeInputKind[keyof typeof AdminCod
 
 export const AdminCodeInputKind = {
   day: 'day',
+  twoweek: 'twoweek',
   month: 'month',
   year: 'year',
   lifetime: 'lifetime',

@@ -5,7 +5,7 @@ import { db, discountCodesTable, type PassKind } from "@workspace/db";
 /**
  * Admin-issued comp codes. Unlike the Day-Pass gift flow (one live single-use
  * code per issuer, 12h cooldown, 24h expiry), admin codes:
- *   - grant any pass tier the admin picks (day | month | year | lifetime),
+ *   - grant any pass tier the admin picks (day | twoweek | month | year | lifetime),
  *   - carry a chosen redemption cap,
  *   - never expire (expiresAt = NULL), and
  *   - are tagged `issuerKind = 'admin'` so the gift flow never touches them.
@@ -31,6 +31,7 @@ function randomCode(): string {
 /** Tiers an admin code may grant. Excludes the Lucky Break draw kind. */
 export const ADMIN_GRANTABLE_KINDS: readonly PassKind[] = [
   "day",
+  "twoweek",
   "month",
   "year",
   "lifetime",

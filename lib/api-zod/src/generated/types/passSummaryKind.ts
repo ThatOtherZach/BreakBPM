@@ -11,6 +11,7 @@ export type PassSummaryKind = typeof PassSummaryKind[keyof typeof PassSummaryKin
 
 export const PassSummaryKind = {
   day: 'day',
+  twoweek: 'twoweek',
   month: 'month',
   year: 'year',
   lifetime: 'lifetime',

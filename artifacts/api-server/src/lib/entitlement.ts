@@ -14,7 +14,7 @@ import { isAdminEmail } from "./config";
 export type Tier = "public" | "account" | "pass";
 
 export interface PassSummary {
-  kind: "day" | "month" | "year" | "lifetime";
+  kind: "day" | "twoweek" | "month" | "year" | "lifetime";
   startedAt: Date;
   expiresAt: Date;
   isLifetime: boolean;

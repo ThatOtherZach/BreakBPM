@@ -1094,7 +1094,7 @@ components:
 
     AppConfig:
       type: object
-      required: [qrUrl]
+      required: [qrUrl, storeUrl]
       properties:
         qrUrl:
           type: string
@@ -1102,6 +1102,13 @@ components:
             URL encoded into the splash-art QR easter egg. Configurable via the
             BREAKBPM_PROMO_QR_URL env var so promo links can be swapped at
             runtime; defaults to the marketing site.
+        storeUrl:
+          type: string
+          description: >
+            Off-platform card store (Squarespace) URL where buyers can purchase
+            the 14 Day Pass by card; the owner then emails a redeem code.
+            Configurable via the BREAKBPM_STORE_URL env var; empty string when
+            unset, in which case the client hides the card-store callout.
 
     Account:
       type: object
@@ -1116,7 +1123,7 @@ components:
       type: object
       required: [kind, startedAt, expiresAt, isLifetime]
       properties:
-        kind: { type: string, enum: [day, month, year, lifetime] }
+        kind: { type: string, enum: [day, twoweek, month, year, lifetime] }
         startedAt: { type: string, format: date-time }
         expiresAt: { type: string, format: date-time }
         isLifetime: { type: boolean }
@@ -1153,7 +1160,7 @@ components:
       required: [code, grantsPassKind, maxRedemptions, redemptionCount, createdAt]
       properties:
         code: { type: string }
-        grantsPassKind: { type: string, enum: [day, month, year, lifetime] }
+        grantsPassKind: { type: string, enum: [day, twoweek, month, year, lifetime] }
         # null means unlimited redemptions.
         maxRedemptions: { type: ["integer", "null"] }
         redemptionCount: { type: integer }
@@ -1163,7 +1170,7 @@ components:
       type: object
       required: [kind]
       properties:
-        kind: { type: string, enum: [day, month, year, lifetime] }
+        kind: { type: string, enum: [day, twoweek, month, year, lifetime] }
         # Optional cap on redemptions. Omit (or null) for unlimited.
         maxRedemptions: { type: ["integer", "null"], minimum: 1 }
 

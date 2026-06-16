@@ -217,7 +217,7 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
         ? roll.outcome === "lifetime"
           ? "JACKPOT — you rolled a Lifetime pass!"
           : "Nice break — you rolled a Monthly pass!"
-        : `Granted ${pass.kind} pass`,
+        : `Granted ${PASS_PRODUCT_LABELS[pass.kind as PassKind] ?? `${pass.kind} pass`}`,
       pass: passToSummary(pass),
       luckyBreak: roll ? luckyBreakPayload(roll) : undefined,
     }),

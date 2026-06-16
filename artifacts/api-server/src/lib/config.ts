@@ -130,6 +130,20 @@ export function freePassMonthlyCap(): number {
   return parsed;
 }
 
+/**
+ * Off-platform card store URL (Squarespace) where buyers can purchase the
+ * 14 Day Pass by card. The owner manually mints + emails a redeem code after a
+ * sale. Read fresh from `BREAKBPM_STORE_URL` on every request so the link can
+ * be swapped at runtime; returns "" when unset, which the client treats as "no
+ * store configured" and hides the card-store callout. Restart not required for
+ * the static frontend — just the API server picks up the new env value.
+ */
+export function storeUrl(): string {
+  const raw = process.env.BREAKBPM_STORE_URL;
+  if (raw === undefined || raw.trim() === "") return "";
+  return raw.trim();
+}
+
 /** Default splash QR target when no promo override is configured. */
 export const DEFAULT_PROMO_QR_URL = "https://breakbpm.com";
 

@@ -11,6 +11,7 @@ export type AdminCodeGrantsPassKind = typeof AdminCodeGrantsPassKind[keyof typeo
 
 export const AdminCodeGrantsPassKind = {
   day: 'day',
+  twoweek: 'twoweek',
   month: 'month',
   year: 'year',
   lifetime: 'lifetime',

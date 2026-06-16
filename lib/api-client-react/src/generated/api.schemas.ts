@@ -13,6 +13,9 @@ export interface AppConfig {
   /** URL encoded into the splash-art QR easter egg. Configurable via the BREAKBPM_PROMO_QR_URL env var so promo links can be swapped at runtime; defaults to the marketing site.
    */
   qrUrl: string;
+  /** Off-platform card store (Squarespace) URL where buyers can purchase the 14 Day Pass by card; the owner then emails a redeem code. Configurable via the BREAKBPM_STORE_URL env var; empty string when unset, in which case the client hides the card-store callout.
+   */
+  storeUrl: string;
 }
 
 export interface Account {
@@ -28,6 +31,7 @@ export type PassSummaryKind = typeof PassSummaryKind[keyof typeof PassSummaryKin
 
 export const PassSummaryKind = {
   day: 'day',
+  twoweek: 'twoweek',
   month: 'month',
   year: 'year',
   lifetime: 'lifetime',
@@ -88,6 +92,7 @@ export type AdminCodeGrantsPassKind = typeof AdminCodeGrantsPassKind[keyof typeo
 
 export const AdminCodeGrantsPassKind = {
   day: 'day',
+  twoweek: 'twoweek',
   month: 'month',
   year: 'year',
   lifetime: 'lifetime',
@@ -107,6 +112,7 @@ export type AdminCodeInputKind = typeof AdminCodeInputKind[keyof typeof AdminCod
 
 export const AdminCodeInputKind = {
   day: 'day',
+  twoweek: 'twoweek',
   month: 'month',
   year: 'year',
   lifetime: 'lifetime',

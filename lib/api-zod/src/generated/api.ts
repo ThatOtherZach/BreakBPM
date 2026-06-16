@@ -22,7 +22,8 @@ export const HealthCheckResponse = zod.object({
  * @summary Public runtime app config (no auth)
  */
 export const GetAppConfigResponse = zod.object({
-  "qrUrl": zod.string().describe('URL encoded into the splash-art QR easter egg. Configurable via the BREAKBPM_PROMO_QR_URL env var so promo links can be swapped at runtime; defaults to the marketing site.\n')
+  "qrUrl": zod.string().describe('URL encoded into the splash-art QR easter egg. Configurable via the BREAKBPM_PROMO_QR_URL env var so promo links can be swapped at runtime; defaults to the marketing site.\n'),
+  "storeUrl": zod.string().describe('Off-platform card store (Squarespace) URL where buyers can purchase the 14 Day Pass by card; the owner then emails a redeem code. Configurable via the BREAKBPM_STORE_URL env var; empty string when unset, in which case the client hides the card-store callout.\n')
 })
 
 
@@ -43,7 +44,7 @@ export const GetMeResponse = zod.object({
   "hasActivePass": zod.boolean(),
   "historyVisibleLimit": zod.number().nullable(),
   "activePass": zod.object({
-  "kind": zod.enum(['day', 'month', 'year', 'lifetime']),
+  "kind": zod.enum(['day', 'twoweek', 'month', 'year', 'lifetime']),
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
   "isLifetime": zod.boolean()
@@ -57,7 +58,7 @@ export const GetMeResponse = zod.object({
   "isAdmin": zod.boolean()
 }),
   "passes": zod.array(zod.object({
-  "kind": zod.enum(['day', 'month', 'year', 'lifetime']),
+  "kind": zod.enum(['day', 'twoweek', 'month', 'year', 'lifetime']),
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
   "isLifetime": zod.boolean()
@@ -99,7 +100,7 @@ export const RedeemDiscountCodeResponse = zod.object({
   "success": zod.boolean(),
   "message": zod.string(),
   "pass": zod.object({
-  "kind": zod.enum(['day', 'month', 'year', 'lifetime']),
+  "kind": zod.enum(['day', 'twoweek', 'month', 'year', 'lifetime']),
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
   "isLifetime": zod.boolean()
@@ -124,7 +125,7 @@ export const ClaimFreePassResponse = zod.object({
   "message": zod.string(),
   "rewardKind": zod.enum(['lucky_break', 'day']).optional(),
   "pass": zod.object({
-  "kind": zod.enum(['day', 'month', 'year', 'lifetime']),
+  "kind": zod.enum(['day', 'twoweek', 'month', 'year', 'lifetime']),
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
   "isLifetime": zod.boolean()
@@ -205,7 +206,7 @@ export const GenerateGiftCodeResponse = zod.object({
 export const ListAdminDiscountCodesResponse = zod.object({
   "codes": zod.array(zod.object({
   "code": zod.string(),
-  "grantsPassKind": zod.enum(['day', 'month', 'year', 'lifetime']),
+  "grantsPassKind": zod.enum(['day', 'twoweek', 'month', 'year', 'lifetime']),
   "maxRedemptions": zod.number().nullable(),
   "redemptionCount": zod.number(),
   "createdAt": zod.coerce.date()
@@ -222,14 +223,14 @@ export const ListAdminDiscountCodesResponse = zod.object({
 
 
 export const CreateAdminDiscountCodeBody = zod.object({
-  "kind": zod.enum(['day', 'month', 'year', 'lifetime']),
+  "kind": zod.enum(['day', 'twoweek', 'month', 'year', 'lifetime']),
   "maxRedemptions": zod.number().min(1).nullish()
 })
 
 export const CreateAdminDiscountCodeResponse = zod.object({
   "code": zod.object({
   "code": zod.string(),
-  "grantsPassKind": zod.enum(['day', 'month', 'year', 'lifetime']),
+  "grantsPassKind": zod.enum(['day', 'twoweek', 'month', 'year', 'lifetime']),
   "maxRedemptions": zod.number().nullable(),
   "redemptionCount": zod.number(),
   "createdAt": zod.coerce.date()
@@ -267,7 +268,7 @@ export const VerifyPassCheckoutResponse = zod.object({
   "success": zod.boolean(),
   "message": zod.string(),
   "pass": zod.object({
-  "kind": zod.enum(['day', 'month', 'year', 'lifetime']),
+  "kind": zod.enum(['day', 'twoweek', 'month', 'year', 'lifetime']),
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
   "isLifetime": zod.boolean()
@@ -424,7 +425,7 @@ export const VerifyCryptoPaymentResponse = zod.object({
   "status": zod.enum(['granted', 'pending', 'not_found', 'mismatch', 'failed', 'expired']),
   "message": zod.string(),
   "pass": zod.object({
-  "kind": zod.enum(['day', 'month', 'year', 'lifetime']),
+  "kind": zod.enum(['day', 'twoweek', 'month', 'year', 'lifetime']),
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
   "isLifetime": zod.boolean()

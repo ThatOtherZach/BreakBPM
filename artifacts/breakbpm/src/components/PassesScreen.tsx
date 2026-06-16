@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   useGetMe,
   useListPlans,
+  useGetAppConfig,
   useCreatePassCheckout,
   useVerifyPassCheckout,
   useCreateSubscriptionCheckout,
@@ -79,6 +80,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
 
   const me = useGetMe();
   const plans = useListPlans();
+  const appConfig = useGetAppConfig();
   const passCheckout = useCreatePassCheckout();
   const passVerify = useVerifyPassCheckout();
   const subCheckout = useCreateSubscriptionCheckout();
@@ -138,6 +140,11 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
   }, []);
 
   const signedIn = !!me.data?.signedIn;
+
+  // Off-platform card store (Squarespace) for the 14 Day Pass. The callout is
+  // hidden entirely until an owner configures BREAKBPM_STORE_URL (server sends
+  // "" when unset).
+  const storeUrl = appConfig.data?.storeUrl ?? "";
 
   const busy =
     passCheckout.isPending ||
@@ -228,6 +235,37 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
               A pass unlocks full stats history, extended windows, live spectating, and all paid features.
               Free play is always available — sign in to save your stats.
             </p>
+
+            {/* ── Pay-by-card callout (14 Day Pass via Squarespace) ──
+                Framed as the card alternative to crypto: deliberately pricier
+                so crypto stays the better deal. Only rendered once an owner
+                configures the store URL. */}
+            {storeUrl && (
+              <div
+                className="notice"
+                style={{ flexDirection: "column", alignItems: "flex-start", gap: 6 }}
+              >
+                <span style={{ fontWeight: "bold", fontSize: 12 }}>
+                  💳 Prefer to pay by card? — 14 Day Pass · $5.99
+                </span>
+                <span style={{ fontSize: 11 }}>
+                  Buy the 14 Day Pass by card on our store and we'll email your
+                  redeem code (usually within 24 hours). Heads up: paying with
+                  crypto is the better deal — a 30-day Month Pass is just $4.99,
+                  cheaper than this 14-day card option — but card works great if
+                  that's easier for you.
+                </span>
+                <a
+                  className="btn btn-primary w-full"
+                  href={storeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ textAlign: "center", textDecoration: "none" }}
+                >
+                  Buy 14 Day Pass by Card →
+                </a>
+              </div>
+            )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {STATIC_PLAN_SUMMARIES.map((plan) => (
