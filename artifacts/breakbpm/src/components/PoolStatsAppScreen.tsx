@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import Navbar from "./Navbar";
 import FreePassCTA from "./FreePassCTA";
 import LegalDisclosure from "./LegalDisclosure";
+import { LeaderboardWidget } from "./LeaderboardScreen";
 import { usePageMeta, PAGE_META } from "../lib/pageMeta";
 import {
   POOL_STATS_H1,
@@ -88,6 +89,8 @@ export default function PoolStatsAppScreen({
                 <p>{f.body}</p>
               </section>
             ))}
+
+            <LeaderboardWidget />
 
             <img src="/pool-player.jpg" alt="Player lining up a shot" className="lp-img" />
 
