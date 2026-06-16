@@ -62,6 +62,8 @@ Based on the aggression setting, determines when the Shark pockets a ball. It is
 
 ## Play Anywhere, With Anyone
 
+![BreakBPM game setup screen — pick mode, players, and format](/screenshot-home.jpg)
+
 One device keeps score and acts as host for other players to join using a **5-character share code**. You can copy the code with the 📋 icon, or click-and-hold to reveal a QR code to scan and join. 
 
 Join with the code (`breakbpm.com/join/CODE`) before the first pocketed ball and you’ll be added to the game as a player. Players that are not signed in will be identified as "Player #".
@@ -89,6 +91,8 @@ Who's fastest? The **🏆 Leaderboard** ranks players by BPM across recent 8-bal
 Sign in to open the full leaderboard. Pass holders can switch the ranking window to 90 days or all-time.
 
 ## Passes
+
+![BreakBPM Passes & Pricing — Day, Month, Year, Lifetime, Lucky Break](/screenshot-passes.jpg)
 
 BreakBPM is free to play. Sign in (no charge) to save your games, but you'll need a pass to access more data.
 
