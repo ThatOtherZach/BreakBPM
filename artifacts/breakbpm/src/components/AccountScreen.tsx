@@ -1,6 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
+import { QRCodeCanvas } from "qrcode.react";
 import { useAuth, signInPath } from "../lib/authClient";
+import {
+  loadSharkImage,
+  ensureCardFonts,
+  drawRedeemCard,
+  downloadCanvas,
+  redeemUrlFor,
+  cardFilename,
+} from "../lib/redeemCard";
 import {
   useGetMe,
   useUpdateScreenName,
@@ -80,6 +89,16 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   const [adminUnlimited, setAdminUnlimited] = useState(false);
   const [adminMsg, setAdminMsg] = useState("");
   const [adminCopied, setAdminCopied] = useState("");
+  // Branded redeem-card image generator. `card` holds the code+tier currently
+  // rendered onto the preview canvas; `autoDownloadCard` controls whether a
+  // freshly minted code's card downloads automatically.
+  const [autoDownloadCard, setAutoDownloadCard] = useState(true);
+  const [card, setCard] = useState<{ code: string; kind: string } | null>(null);
+  const cardCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  // Set true right before `card` changes when the resulting render should also
+  // download; the draw effect consumes (and clears) it after compositing.
+  const pendingCardDownloadRef = useRef(false);
   // Force a re-render every 5 minutes so the cooldown / "expires in ~Xh"
   // labels in the gift panel drift naturally without spamming setInterval.
   const [, setClockTick] = useState(0);
@@ -158,6 +177,39 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   useEffect(() => {
     if (me.data?.account?.screenName) setName(me.data.account.screenName);
   }, [me.data?.account?.screenName]);
+
+  // Composite the card whenever `card` changes: shark background + QR + brand.
+  // The hidden <QRCodeCanvas> paints in its own (child) effect before this one,
+  // and awaiting the image/fonts guarantees the QR is ready by the time we draw.
+  // Must stay above the early returns below so hook order is stable.
+  useEffect(() => {
+    if (!card) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [img] = await Promise.all([loadSharkImage(), ensureCardFonts()]);
+        if (cancelled) return;
+        const out = cardCanvasRef.current;
+        const qr = qrCanvasRef.current;
+        if (!out || !qr) return;
+        drawRedeemCard(out, {
+          code: card.code,
+          kind: card.kind,
+          sharkImg: img,
+          qrCanvas: qr,
+        });
+        if (pendingCardDownloadRef.current) {
+          pendingCardDownloadRef.current = false;
+          downloadCanvas(out, cardFilename(card.code));
+        }
+      } catch {
+        setAdminMsg("Couldn't build the card image.");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [card]);
 
   if (me.isLoading) {
     return (
@@ -251,13 +303,25 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
       maxRedemptions = n;
     }
     try {
-      await createAdminCode.mutateAsync({
+      const res = await createAdminCode.mutateAsync({
         data: { kind: adminKind, maxRedemptions },
       });
       qc.invalidateQueries({ queryKey: getListAdminDiscountCodesQueryKey() });
+      // Render the shareable card for the freshly minted code; auto-download
+      // it when the admin opted in (their main use case — emailing the buyer).
+      pendingCardDownloadRef.current = autoDownloadCard;
+      setCard({ code: res.code.code, kind: res.code.grantsPassKind });
     } catch (e) {
       setAdminMsg(e instanceof Error ? e.message : "Could not create code.");
     }
+  }
+
+  // Build (and download) the card for any existing code from the Recent Codes
+  // list. An explicit click always downloads, regardless of the checkbox.
+  function handleMakeCard(code: string, kind: string) {
+    setAdminMsg("");
+    pendingCardDownloadRef.current = true;
+    setCard({ code, kind });
   }
 
   async function handleCopyAdmin(code: string) {
@@ -631,6 +695,15 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                   />
                 </label>
               )}
+              <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="checkbox"
+                  checked={autoDownloadCard}
+                  onChange={(e) => setAutoDownloadCard(e.target.checked)}
+                  disabled={createAdminCode.isPending}
+                />
+                Auto-download card image
+              </label>
               <button
                 className="btn btn-primary w-full"
                 disabled={createAdminCode.isPending}
@@ -642,6 +715,48 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 <div className="notice">
                   <span>ℹ</span>
                   <span>{adminMsg}</span>
+                </div>
+              )}
+              {/* Off-screen QR feeding the card renderer. It paints in its own
+                  effect (before the draw effect) whenever `card` changes. */}
+              {card && (
+                <div style={{ position: "absolute", left: -99999, top: 0 }} aria-hidden="true">
+                  <QRCodeCanvas
+                    key={card.code}
+                    ref={qrCanvasRef}
+                    value={redeemUrlFor(card.code)}
+                    size={560}
+                    level="M"
+                  />
+                </div>
+              )}
+              {/* Generated card preview — also lets the admin long-press to
+                  save on mobile if the auto-download was blocked. */}
+              {card && (
+                <div style={{ marginTop: 4 }}>
+                  <div style={{ fontFamily: "VT323", fontSize: 16, marginBottom: 4 }}>
+                    Shareable Card
+                  </div>
+                  <canvas
+                    ref={cardCanvasRef}
+                    style={{
+                      width: "100%",
+                      height: "auto",
+                      display: "block",
+                      border: "1px solid #999",
+                    }}
+                    aria-label={`Redeem card for ${card.code}`}
+                  />
+                  <button
+                    className="btn w-full"
+                    style={{ marginTop: 6 }}
+                    onClick={() => {
+                      if (cardCanvasRef.current)
+                        downloadCanvas(cardCanvasRef.current, cardFilename(card.code));
+                    }}
+                  >
+                    Download Card
+                  </button>
                 </div>
               )}
               {adminCodes.data && adminCodes.data.codes.length > 0 && (
@@ -680,9 +795,17 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                             : `${c.redemptionCount}/${c.maxRedemptions} used`}
                         </div>
                       </div>
-                      <button className="btn" onClick={() => handleCopyAdmin(c.code)}>
-                        {adminCopied === c.code ? "Copied" : "Copy"}
-                      </button>
+                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                        <button className="btn" onClick={() => handleCopyAdmin(c.code)}>
+                          {adminCopied === c.code ? "Copied" : "Copy"}
+                        </button>
+                        <button
+                          className="btn"
+                          onClick={() => handleMakeCard(c.code, c.grantsPassKind)}
+                        >
+                          Card
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
