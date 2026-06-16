@@ -104,9 +104,6 @@ export default function PoolStatsAppScreen({
               <button className="btn btn-big w-full" onClick={onPasses}>
                 Passes &amp; Pricing
               </button>
-              <button className="btn btn-big w-full" onClick={onStats}>
-                Stats
-              </button>
               <button className="btn btn-big w-full" onClick={onAbout}>
                 About BreakBPM
               </button>
