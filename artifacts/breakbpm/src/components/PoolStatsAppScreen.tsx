@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import Navbar from "./Navbar";
 import FreePassCTA from "./FreePassCTA";
+import LegalDisclosure from "./LegalDisclosure";
 import { usePageMeta, PAGE_META } from "../lib/pageMeta";
 import {
   POOL_STATS_H1,
@@ -108,6 +109,8 @@ export default function PoolStatsAppScreen({
                 </div>
               ))}
             </dl>
+
+            <LegalDisclosure />
 
             <p className="lp-footer">
               Built by Saym Services Inc. · Vancouver, BC
