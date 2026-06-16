@@ -90,6 +90,15 @@ export default function PoolStatsAppScreen({
 
             <img src="/pool-player.jpg" alt="Player lining up a shot" className="lp-img" />
 
+            <nav className="lp-links" aria-label="More BreakBPM pages">
+              <button className="btn btn-big w-full" onClick={onPasses}>
+                Passes &amp; Pricing
+              </button>
+              <button className="btn btn-big w-full" onClick={onAbout}>
+                About BreakBPM
+              </button>
+            </nav>
+
             <h2 className="lp-h2">Frequently Asked Questions (FAQ)</h2>
             <dl className="lp-faq">
               {POOL_STATS_FAQ.map((f) => (
@@ -99,15 +108,6 @@ export default function PoolStatsAppScreen({
                 </div>
               ))}
             </dl>
-
-            <nav className="lp-links" aria-label="More BreakBPM pages">
-              <button className="btn btn-big w-full" onClick={onPasses}>
-                Passes &amp; Pricing
-              </button>
-              <button className="btn btn-big w-full" onClick={onAbout}>
-                About BreakBPM
-              </button>
-            </nav>
 
             <p className="lp-footer">
               Built by Saym Services Inc. · Vancouver, BC
