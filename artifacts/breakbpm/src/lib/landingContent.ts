@@ -69,7 +69,7 @@ export const POOL_STATS_FEATURES: TitledBlock[] = [
 export const POOL_STATS_FAQ: FaqItem[] = [
   {
     q: "What is BreakBPM?",
-    a: "A free, browser-based pool stats app and billiards score tracker. It logs every shot and reports two numbers per player: shooting accuracy and Balls Per Minute (BPM), a live measure of scoring pace.",
+    a: "The clock starts at your first pocketed ball and runs to your latest, so BPM measures how fast you clear — not how long you spent racking. Compare runs and read your pace shot by shot.",
   },
   {
     q: "What does Balls Per Minute (BPM) mean?",
