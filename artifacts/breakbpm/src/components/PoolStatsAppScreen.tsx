@@ -81,14 +81,14 @@ export default function PoolStatsAppScreen({
               ))}
             </ul>
 
-            <img src="/pool-player.jpg" alt="Player lining up a shot" className="lp-img" />
-
             {POOL_STATS_FEATURES.map((f) => (
               <section key={f.title}>
                 <h2 className="lp-h2">{f.title}</h2>
                 <p>{f.body}</p>
               </section>
             ))}
+
+            <img src="/pool-player.jpg" alt="Player lining up a shot" className="lp-img" />
 
             <h2 className="lp-h2">Frequently Asked Questions (FAQ)</h2>
             <dl className="lp-faq">
