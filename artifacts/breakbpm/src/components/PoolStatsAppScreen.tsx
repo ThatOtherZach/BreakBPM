@@ -90,7 +90,7 @@ export default function PoolStatsAppScreen({
               </section>
             ))}
 
-            <h2 className="lp-h2">Frequently asked questions</h2>
+            <h2 className="lp-h2">Frequently Asked Questions (FAQ)</h2>
             <dl className="lp-faq">
               {POOL_STATS_FAQ.map((f) => (
                 <div key={f.q}>
