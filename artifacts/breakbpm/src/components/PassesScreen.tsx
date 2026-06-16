@@ -183,12 +183,11 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
 
         {/* ── Public pricing section — always visible to all visitors ──
             Shared with the About page via <PricingPanel>. On this screen the
-            static pass list + Lucky Break note are hidden (the crypto checkout
-            below lists the passes and surfaces Lucky Break contextually); the
-            Sign-In CTA is passed as the panel footer (only when signed out). */}
+            static pass list is hidden (the crypto checkout below lists the
+            passes and surfaces Lucky Break contextually); the Sign-In CTA is
+            passed as the panel footer (only when signed out). */}
         <PricingPanel
           hidePassList
-          hideLuckyBreak
           footer={
             !signedIn && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

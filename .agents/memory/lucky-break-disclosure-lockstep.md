@@ -20,10 +20,6 @@ when the env changes.
 **Rule:** any change to what `gatherShotEntropy()` reads (global vs per-user, the
 window length, what fields feed the hash), OR the odds *source/semantics*, MUST update the
 STATIC prose in lockstep (the dynamic numbers self-sync, but these hardcode "20%" / "provably fair"):
-- `PricingPanel.tsx` Lucky Break callout — the shared public fairness blurb. Shown on the
-  About page; HIDDEN on the Passes screen (PassesScreen passes `hideLuckyBreak`, which now
-  surfaces Lucky Break only in the crypto checkout). This callout reads the server odds
-  number dynamically but hardcodes the "provably fair" prose.
 - `CryptoCheckout.tsx` contextual Lucky Break notice (above the pay button, shown only when
   the Lucky Break pass is selected) — dynamic odds number, but hardcodes "provably-fair seeded draw" prose.
 - `LuckyBreakReveal.tsx` seed note (the prose, not the dynamic number)
@@ -38,4 +34,4 @@ prop is accurate disclosure, so a copy/impl mismatch is a correctness bug, not a
 
 **How to apply:** treat the disclosure strings as part of the feature contract, like
 the OpenAPI shape. When touching `luckyBreakEntropy.ts` or `luckyBreak.ts` odds/window
-constants, grep for the four copy locations above and reconcile them.
+constants, grep for the copy locations listed above and reconcile them.

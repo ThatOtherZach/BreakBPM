@@ -96,13 +96,25 @@ BreakBPM is free to play. Sign in (no charge) to save your games, but you'll nee
 
 Pass Unlocks:
 - **Post to Find Players** Create meetup posts for other players to join your game. Free accounts can browse, only pass holders can post.
-- **Let others spectate** Hosting with a pass allowes anyone to watch live via the share code or by name. Without a pass, your games can not be spectated.
+- **Let others spectate** Hosting with a pass allows anyone to watch live. Without a pass, your games cannot be spectated.
 - **Link players by @mention** Use `@USERNAME` to link a friend to your game without a share code. You do not need a pass to accept an invite, but there is a limit.
 - **Leaderboard windows** Over 90 days or all-time, not just the normie 30-day leaderboard.
 - **Full game history** See every game you've ever played.
 - **Full stats** Switch between 24-hour, 30-day, 365-day, and all-time windows, and refresh on demand. Free accounts see personal stats for the last 24 hours only.
 - **Full data export** Download every game and shot you've ever played. Free accounts can only export their last 24 hours only.
 - **Custom screen name***Lifetime only:* Pick your own display name instead of the auto-assigned one.
+
+Let others spectate Hosting with a pass allows anyone to watch live via the share code or by name.
+
+Link players by @mention Use @USERNAME to link a friend into your game. You do not need a pass to accept an invite, but there is a limit.
+
+Leaderboard windows Over 90 days or all-time, not just the 30-day leaderboard.
+
+Full game history See every game you've ever played.
+
+Full stats Switch between 24-hour, 30-day, 365-day, and all-time windows, and refresh on demand.
+
+Full data export Download every game and shot you've ever played and export your data.
 
 Passes can be purchased on-chain with crypto from your account page or redeemed with a code. Prefer to pay by card? The **14 Day Pass** ($5.99) is sold by card on our off-platform store. After purchase we email your redeem code within 24 hours. All pass types are non-refundable. If you need assistance, use the Github first. 
 

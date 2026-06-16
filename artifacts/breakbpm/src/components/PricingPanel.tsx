@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useGetAppConfig, useListPlans } from "@workspace/api-client-react";
+import { useGetAppConfig } from "@workspace/api-client-react";
 
 /** Static plan summaries shown to all visitors (signed-out and signed-in).
  *  Kept in sync with the server pricing catalog for display purposes only. */
@@ -43,9 +43,6 @@ interface PricingPanelProps {
   /** Hide the four static pass cards. Used on the Passes screen, where the
    *  crypto checkout below already lists the buyable passes. */
   hidePassList?: boolean;
-  /** Hide the Lucky Break promo notice. Used on the Passes screen, where the
-   *  crypto checkout surfaces Lucky Break contextually instead. */
-  hideLuckyBreak?: boolean;
   /** Extra content rendered at the bottom of the panel body — e.g. the
    *  Passes screen's "Sign In to Get a Pass" CTA. */
   footer?: ReactNode;
@@ -54,23 +51,20 @@ interface PricingPanelProps {
 /**
  * The public "BreakBPM Passes & Pricing" panel, shared by the Passes screen
  * and the About page so the pricing copy / callouts never drift between them.
- * Reads the off-platform store URL and Lucky Break odds from server config.
+ * Reads the off-platform store URL from server config.
  */
 export default function PricingPanel({
   showBuyButtons = false,
   onBuy,
   hidePassList = false,
-  hideLuckyBreak = false,
   footer,
 }: PricingPanelProps) {
   const appConfig = useGetAppConfig();
-  const plans = useListPlans();
 
   // Off-platform card store (Squarespace) for the 14 Day Pass. The callout is
   // hidden entirely until an owner configures BREAKBPM_STORE_URL (server sends
   // "" when unset).
   const storeUrl = appConfig.data?.storeUrl ?? "";
-  const luckyBreak = plans.data?.luckyBreak;
 
   return (
     <div className="panel">
@@ -146,20 +140,6 @@ export default function PricingPanel({
                 )}
               </div>
             ))}
-          </div>
-        )}
-
-        {/* Lucky Break callout — visible to all */}
-        {!hideLuckyBreak && (
-          <div className="notice" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-            <span style={{ fontWeight: "bold", fontSize: 12 }}>🎱 Lucky Break — Roll the Rack</span>
-            <span style={{ fontSize: 11 }}>
-              A $4.99 guaranteed upgrade: win at minimum a 30-day Monthly Pass, with a&nbsp;
-              {luckyBreak?.lifetimeProbability != null
-                ? `${Math.round(luckyBreak.lifetimeProbability * 100)}%`
-                : "20%"}{" "}
-              chance of a Lifetime Pass. Redeem via code — provably fair.
-            </span>
           </div>
         )}
 
