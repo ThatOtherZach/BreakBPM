@@ -35,19 +35,19 @@ export const POOL_STATS_INTRO =
 export const POOL_STATS_MODES: NamedBlock[] = [
   {
     name: "8-Ball",
-    body: "2 or 4 players with team assignment — solids and stripes down to the 8.",
+    body: "Straight Pool Rules with Open Break",
   },
   {
     name: "9-Ball",
-    body: "Rotation scoring with per-shot pace on every pocketed ball.",
+    body: "Rotation scoring with a 1-9 rack included",
   },
   {
     name: "Practice",
-    body: "Solo drills to dial in your stroke and pace.",
+    body: "For solo drills and basic tracking",
   },
   {
     name: "Shark Mode",
-    body: "Solo 8-ball vs an invisible AI that steals balls on misses and fouls.",
+    body: "Solo 8-Ball with a digital shark player",
   },
 ];
 
