@@ -101,7 +101,11 @@ Pass Unlocks:
 - **Full data export** Download every game and shot you've ever played and export it. Free accounts can only export the last 24 hours only.
 - **Custom screen name***Lifetime only:* Pick your own display name instead of the auto-assigned one.
 
-Passes can be purchased on-chain with crypto from your account page or redeemed with a code. Prefer to pay by card? The **14 Day Pass** ($5.99) is [sold on our off-platform store](https://www.saymservices.com/store/p/breakbpm-14-day-pass). After purchase we email your code within 24 hours. Crypto passes are applied on purchase once payment is confirmed. All pass types are non-refundable. If you need assistance, use the Github first. 
+Passes can be purchased on-chain with crypto from your account page or redeemed with a code. Crypto passes are applied automatically on purchase once payment is confirmed.
+
+Prefer to pay by card? A **14 Day Pass** is [sold on our off-platform store](https://www.saymservices.com/store/p/breakbpm-14-day-pass). After purchase we email your code to you within 24 hours. You can try to get a free day pass from a Lifetime pass holder or [try your luck here](https://breakbpm.com/pool-stats-app).
+
+All pass types are non-refundable. If you need assistance, use the Github first. 
 
 ### 🎱 Lucky Break Pass
 
