@@ -101,13 +101,10 @@ Pass Unlocks:
 - **Leaderboard windows** Over 90 days or all-time, not just the 30-day leaderboard.
 - **Full game history** See every game you've ever played.
 - **Full stats** Switch between 24-hour, 30-day, 365-day, and all-time windows, and refresh on demand. Free accounts see personal stats for the last 24 hours only.
-- **Full data export** Download every game and shot you've ever played and export your data.. Free accounts can only export their last 24 hours only.
+- **Full data export** Download every game and shot you've ever played and export it. Free accounts can only export the last 24 hours only.
 - **Custom screen name***Lifetime only:* Pick your own display name instead of the auto-assigned one.
 
-
-Full data export Download every game and shot you've ever played and export your data.
-
-Passes can be purchased on-chain with crypto from your account page or redeemed with a code. Prefer to pay by card? The **14 Day Pass** ($5.99) is sold by card on our off-platform store. After purchase we email your redeem code within 24 hours. All pass types are non-refundable. If you need assistance, use the Github first. 
+Passes can be purchased on-chain with crypto from your account page or redeemed with a code. Prefer to pay by card? The **14 Day Pass** ($5.99) is [sold on our off-platform store](https://www.saymservices.com/store/p/breakbpm-14-day-pass). After purchase we email your code within 24 hours. Crypto passes are applied on purchase once payment is confirmed. All pass types are non-refundable. If you need assistance, use the Github first. 
 
 ### 🎱 Lucky Break Pass
 
