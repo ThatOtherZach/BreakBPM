@@ -77,17 +77,15 @@ If you have a pass, type `@USERNAME` into another player input during setup to l
 
 When the game finishes the tagged user can **Accept** or **Delete** the game from thier stats and game history. There is a max number of invites a player can recieve.
 
-## Track Your Racks
+Can't find players? Pass holders get access to Meetup posts to host billiard events for other players to join. Shy? Use the compass to find the nearest pool hall to your location!
+
+## Rack Up The Leaderboard
 
 The Stats page shows your shooting over time a results including relative accuracy, pace, and ball patterns.
 
-Free 24-hour global snapshot, sign in to save and view your own. Grab a pass to unlock full history (30 days, a year, or all-time) to compare against everyone. Full export included.
+Sign in to save and view your ownas well as a free 24-hour global view. Use a pass to unlock your full game history to compare against everyone; data export included.
 
-## Leaderboard
-
-Who's fastest? The **🏆 Leaderboard** ranks players by BPM across recent 8-ball singles games with a time weighted average, recent games only.
-
-Sign in to open the full leaderboard. Pass holders can switch the ranking window to 90 days or all-time.
+Who's fastest? Use the **Leaderboard** to see your rank by BPM across recent 8-ball singles games (time weighted average). Pass holders can switch the ranking window to 90 days or all-time. Sign in to open the full leaderboard. 
 
 ## Passes
 
@@ -107,9 +105,9 @@ Passes can be purchased on-chain with crypto from your account page or redeemed 
 
 ### 🎱 Lucky Break Pass
 
-Lucky Break is a $4.99 roll that guarantees you a 30 day pass but there's an 80/20 chance it's upgraded to a Lifetime Pass instead.
+Lucky Break is a $4.99 a 30 day pass but there's a 80/20 chance it's upgraded to a Lifetime Pass.
 
-The outcome is determined by a seeded draw using the last 30 days of global shot activity. You are guarenteed a 30 day pass regardless of winning outcome. Your pass is granted automatically after payment is confirmed.
+The outcome is determined by a seeded draw using the last 30 days of global shot activity. You are guarenteed a 30 day pass regardless of winning outcome. Pass is granted automatically after payment is confirmed.
 
 ---
 
