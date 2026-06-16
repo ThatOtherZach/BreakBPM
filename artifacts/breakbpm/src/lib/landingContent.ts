@@ -53,10 +53,6 @@ export const POOL_STATS_MODES: NamedBlock[] = [
 
 export const POOL_STATS_FEATURES: TitledBlock[] = [
   {
-    title: "What is Balls Per Minute (BPM)?",
-    body: "The clock starts at your first pocketed ball and runs to your latest, so BPM measures how fast you clear — not how long you spent racking. Compare runs and read your pace shot by shot.",
-  },
-  {
     title: "Live scoreboard, spectating & OBS overlay",
     body: "Every game gets a 5-character share code. Friends join an open seat or spectate by name — your HUD, shot log, and live BPM, view-only. Streamers get a chrome-free, transparent OBS overlay.",
   },
