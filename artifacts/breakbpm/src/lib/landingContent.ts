@@ -54,7 +54,7 @@ export const POOL_STATS_MODES: NamedBlock[] = [
 export const POOL_STATS_FEATURES: TitledBlock[] = [
   {
     title: "Live scoreboard, spectating & OBS overlay",
-    body: "Every game gets a 5-character share code. Friends join an open seat or spectate by name — your HUD, shot log, and live BPM, view-only. Streamers get a chrome-free, transparent OBS overlay.",
+    body: "Every game has a share code. Friends can join or spectate the HUD, shot log, and live BPM. Per-player history, accuracy, pace, and ball/pattern breakdowns are unlocked with a pass. It also includes a full history, a global leaderboard, and @ mention game linking.",
   },
   {
     title: "Stats that deepen the more you play",
