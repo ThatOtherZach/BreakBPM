@@ -205,6 +205,7 @@ function buildPassesBody(): string {
     { name: "Month Pass", price: "$4.99", suffix: "", desc: "30 days of full access. One-time — does not auto-renew.", note: "" },
     { name: "Year Pass", price: "$14.99", suffix: "", desc: "365 days of full access. One-time — does not auto-renew.", note: "" },
     { name: "Lifetime", price: "$24.99", suffix: "", desc: "One-time purchase. Pay once, full access forever, including a custom screen name.", note: "" },
+    { name: "14 Day Pass", price: "$5.99", suffix: "", desc: "14 days of full access. Pay by card on our store — we email your redeem code within 24 hours.", note: "Card-only alternative — crypto's Month Pass ($4.99 / 30 days) is the better deal." },
   ];
   const planRows = plans.map(p =>
     `<div class="plan-row">
@@ -241,7 +242,7 @@ ${PRERENDER_STYLE}
   <p>A $4.99 guaranteed upgrade: redeem a Lucky Break code for at minimum a 30-day Monthly Pass, with a 20% chance of a Lifetime Pass. The outcome is determined by a provably-fair seeded draw using the last 30 days of global shot activity.</p>
 
   <h2>How to Get a Pass</h2>
-  <p>Sign in at <a href="https://breakbpm.com">breakbpm.com</a> and redeem a code from your Account page, or use a Lucky Break code link. You can also buy a pass on-chain with cryptocurrency.</p>
+  <p>Sign in at <a href="https://breakbpm.com">breakbpm.com</a> and redeem a code from your Account page, or use a Lucky Break code link. You can also buy a pass on-chain with cryptocurrency. Prefer to pay by card? The 14 Day Pass ($5.99) is sold by card on our off-platform store — we email your redeem code within 24 hours.</p>
 
   <p style="margin-top:1.5em;font-size:.8rem;color:#888">All passes are non-refundable. For support, open an issue on GitHub.</p>
 </div>`.trim();
@@ -288,6 +289,7 @@ function poolStatsAppJsonLd(): string {
       { "@type": "Offer", name: "Month Pass", price: "4.99", priceCurrency: "USD", description: "30 days of full access. One-time — does not auto-renew." },
       { "@type": "Offer", name: "Year Pass", price: "14.99", priceCurrency: "USD", description: "365 days of full access. One-time — does not auto-renew." },
       { "@type": "Offer", name: "Lifetime", price: "24.99", priceCurrency: "USD", description: "One-time purchase, full access forever." },
+      { "@type": "Offer", name: "14 Day Pass", price: "5.99", priceCurrency: "USD", description: "14 days of full access. Paid by card via our off-platform store; redeem code emailed within 24 hours." },
     ],
   };
   const faqPage = {

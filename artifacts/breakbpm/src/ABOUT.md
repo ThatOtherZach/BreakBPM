@@ -108,12 +108,13 @@ Pass Unlocks:
 
 | Pass     | Price              | Access                                     |
 |----------|:------------------:|--------------------------------------------|
-| Day Pass   | $1.99     | Everything for 24 hours          |
-| Month Pass | $4.99     | Everything for 30 days           |
-| Year Pass  | $14.99    | Everything for 365 days          |
-| Lifetime   | $24.99    | Everything + custom screen name  |
+| Day Pass     | $1.99     | Everything for 24 hours          |
+| Month Pass   | $4.99     | Everything for 30 days           |
+| Year Pass    | $14.99    | Everything for 365 days          |
+| Lifetime     | $24.99    | Everything + custom screen name  |
+| 14 Day Pass  | $5.99     | Everything for 14 days (card)    |
 
-Passes can be purchased from your account page or redeemed with a code. All pass types are non-refundable. If you need assistance, use the Github first. 
+Passes can be purchased on-chain with crypto from your account page or redeemed with a code. Prefer to pay by card? The **14 Day Pass** ($5.99) is sold by card on our off-platform store — we email your redeem code within 24 hours. Heads up: paying with crypto is the better deal, since the 30-day Month Pass is only $4.99. All pass types are non-refundable. If you need assistance, use the Github first. 
 
 ### 🎱 Lucky Break
 

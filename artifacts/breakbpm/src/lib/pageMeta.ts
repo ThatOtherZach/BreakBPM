@@ -53,10 +53,10 @@ export const PAGE_META = {
   },
   passes: {
     title: 'BreakBPM Passes & Pricing — Day, Month, Year & Lifetime Access',
-    description: 'Unlock full stats history, live spectating, and all BreakBPM features. Get a Day ($1.99), Month ($4.99), Year ($14.99), or Lifetime ($24.99) pass — pay with crypto or redeem a code.',
+    description: 'Unlock full stats history, live spectating, and all BreakBPM features. Get a Day ($1.99), Month ($4.99), Year ($14.99), or Lifetime ($24.99) pass — pay with crypto or redeem a code. Prefer card? A 14 Day Pass ($5.99) is available by card via our store.',
     canonical: 'https://breakbpm.com/passes',
     ogTitle: 'BreakBPM Passes & Pricing — Unlock Full Stats & Spectating',
-    ogDescription: 'Get a Day ($1.99), Month ($4.99), Year ($14.99), or Lifetime ($24.99) pass to unlock full stats history, live spectating, and all paid BreakBPM features. Pay with crypto or redeem a code.',
+    ogDescription: 'Get a Day ($1.99), Month ($4.99), Year ($14.99), or Lifetime ($24.99) pass to unlock full stats history, live spectating, and all paid BreakBPM features. Pay with crypto or redeem a code, or grab a 14 Day Pass ($5.99) by card on our store.',
   },
   poolStatsApp: {
     title: 'Pool Stats App — Track Balls Per Minute for 8-Ball & 9-Ball | BreakBPM',
