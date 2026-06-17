@@ -1,8 +1,10 @@
 # BreakBPM
 
-BreakBPM logs every shot, one ball at a time, and gives you two numbers back: **accuracy** (what actually matters) and **BPM**, a relative  stat you can compare with friends (or no one).
+BreakBPM was developed by Saym Software Systems in the late 1990s. However, due to the Y2K bug, the software was never officially released — until now!
 
-The higher the BPM, the faster the game moves. It’s calculated per-player from your first pocketed ball to the last. Want a sticker? [Grab one here](https://www.redbubble.com/i/sticker/BreakBPM-Sticker-by-ThatOtherZach/181421812/7sgk).
+BreakBPM got started as a bowling score tracker before being augmented into a billiards format. The system logs every shot over your game, one ball at a time, and gives you two numbers back: **accuracy** and **BPM**, a relative stat you can compare with friends (or no one).
+
+That's basically it. Want a sticker? [Grab one here](https://www.redbubble.com/i/sticker/BreakBPM-Sticker-by-ThatOtherZach/181421812/7sgk).
 
 ![A seasoned player leans over the table, cue in hand](/hustler.jpg)
 
@@ -43,14 +45,14 @@ In 8-Ball, the Format toggle cycles through four ways to play:
 
 Play solo against an invisible Shark. Your first pocketed ball locks your group (solids or stripes); clear your group and sink the 8 ball to win.
 
-Based on the aggression setting, determines when the Shark pockets a ball. It is an honor system; when the Shark “pockets” a ball, you should physically remove one of the Sharks grouping balls from the table.
+The aggression setting determines when the Shark pockets a ball. It is an honor system; when the Shark “pockets” a ball, you should physically remove one of the Shark’s grouping balls from the table.
 
 **Shark Aggression**
 - **Normal**: Shark only pockets on fouls
 - **Hard**: Shark pockets on every miss *and* every foul
 
 **Two Ways to Play:**
-- When its the Sharks turn, pick whichever of the Shark’s balls looks easiest and lift it off the table.
+- When it’s the Shark’s turn, pick whichever of the Shark’s balls looks easiest and lift it off the table.
 - Or shoot the shark's ball yourself (playing *as* the Shark). Missed? Remove it anyway.
 
 **Shark Mode Rules**
@@ -73,17 +75,17 @@ If the game is full (max 4 players), you join as a spectator only. You can also 
 
 ### Link Friends In
 
-If you have a pass, type `@USERNAME` into another player input during setup to link and save thier stats. No share code needed.
+If you have a pass, type `@USERNAME` into another player input during setup to link and save their stats. No share code needed.
 
-When the game finishes the tagged user can **Accept** or **Delete** the game from thier stats and game history. There is a max number of invites a player can recieve.
+When the game finishes the tagged user can **Accept** or **Delete** the game from their stats and game history. There is a max number of invites a player can receive.
 
 Can't find players? Pass holders get access to Meetup posts to host billiard events for other players to join. Shy? Use the compass to find the nearest pool hall to your location!
 
 ## Rack Up The Leaderboard
 
-The Stats page shows your shooting over time a results including relative accuracy, pace, and ball patterns.
+The Stats page shows your shooting over time, including relative accuracy, pace, and ball patterns.
 
-Sign in to save and view your ownas well as a free 24-hour global view. Use a pass to unlock your full game history to compare against everyone; data export included.
+Sign in to save and view your own, as well as a free 24-hour global view. Use a pass to unlock your full game history to compare against everyone; data export included.
 
 Who's fastest? Use the **Leaderboard** to see your rank by BPM across recent 8-ball singles games (time weighted average). Pass holders can switch the ranking window to 90 days or all-time. Sign in to open the full leaderboard. 
 
@@ -99,8 +101,8 @@ Pass Unlocks:
 - **Full game history** See every game you've ever played.
 - **Full stats** Switch between 24-hour, 30-day, 365-day, and all-time windows, and refresh on demand. Free accounts see personal stats for the last 24 hours only.
 - **Full data export** Download every game and shot you've ever played and export it. Free accounts can only export the last 24 hours only.
-- **Custom screen name***Lifetime only:* Pick your own display name instead of the auto-assigned one.
-- **Custom profile theme***Lifetime only:* Choose which splash artwork appears behind your public watch profile, or turn it off. Pass holders get an artwork automatically; Lifetime holders can override it.
+- **Custom screen name** — *Lifetime only:* Pick your own display name instead of the auto-assigned one.
+- **Custom profile theme** — *Lifetime only:* Choose which splash artwork appears behind your public watch profile, or turn it off. Pass holders get an artwork automatically; Lifetime holders can override it.
 
 Passes can be purchased on-chain with crypto from your account page or redeemed with a code. Crypto passes are applied automatically on purchase once payment is confirmed.
 
@@ -110,9 +112,9 @@ All pass types are non-refundable. If you need assistance, use the Github first.
 
 ### 🎱 Lucky Break Pass
 
-Lucky Break is a $4.99 a 30 day pass but there's a 80/20 chance it's upgraded to a Lifetime Pass.
+Lucky Break is a $4.99, 30-day pass, but there's an 80/20 chance it's upgraded to a Lifetime Pass.
 
-The outcome is determined by a seeded draw using the last 30 days of global shot activity. You are guarenteed a 30 day pass regardless of winning outcome. Pass is granted automatically after payment is confirmed.
+The outcome is determined by a seeded draw using the last 30 days of global shot activity. You are guaranteed a 30-day pass regardless of the outcome. Pass is granted automatically after payment is confirmed.
 
 ---
 
