@@ -30,12 +30,12 @@ export const POOL_STATS_H1 =
   "Nice Rack, Track It";
 
 export const POOL_STATS_INTRO =
-  "BreakBPM is a a free, browser-based pool stats app and live billiards score tracker. Log every shot and measure your shooting accuracy and Balls Per Minute (BPM score, No download, no install, no subscription.";
+  "BreakBPM is a free, browser-based pool stats app and live billiards score tracker. Log every shot to measure your shooting accuracy and Balls Per Minute (BPM) — no download, no install, no subscription.";
 
 export const POOL_STATS_MODES: NamedBlock[] = [
   {
     name: "8-Ball",
-    body: "Straight Pool Rules with Open Break",
+    body: "Stripes vs. solids with an open break",
   },
   {
     name: "9-Ball",
@@ -54,18 +54,18 @@ export const POOL_STATS_MODES: NamedBlock[] = [
 export const POOL_STATS_FEATURES: TitledBlock[] = [
   {
     title: "Spectate & Share Your Stats",
-    body: "Every game has a share code. Friends can join or spectate the HUD, shot log, and live BPM. Per-player history, accuracy, pace, and ball/pattern breakdowns are unlocked with a pass. It also includes a full history, a global leaderboard, and @ mention game linking.",
+    body: "Every game gets a 5-character share code. Friends can join an open seat before the break or spectate by name to follow your HUD, shot log, and live BPM in real time — they watch, you score. Link a registered friend with an @mention, no shared device needed.",
   },
   {
     title: "Stats that deepen the more you play",
-    body: "Per-player history, accuracy, pace, and ball/pattern breakdowns on a retro CRT stats page. A pass unlocks longer windows, full history, a global leaderboard, and @mention player linking.",
+    body: "Track accuracy, pace, and ball/pattern breakdowns on a retro CRT stats page, with a global BPM leaderboard to measure up. A pass unlocks your full game history, longer stats windows, and on-demand refresh.",
   },
 ];
 
 export const POOL_STATS_FAQ: FaqItem[] = [
   {
     q: "What is BreakBPM?",
-    a: "The clock starts at your first pocketed ball and runs to your latest, so BPM measures how fast you clear — not how long you spent racking. Compare runs and read your pace shot by shot.",
+    a: "BreakBPM is a free, browser-based pool stats app and live billiards score tracker. It logs every shot one ball at a time and gives you two numbers — your shooting accuracy and your Balls Per Minute (BPM) — across 8-ball, 9-ball, practice, and solo Shark mode. Nothing to install.",
   },
   {
     q: "What does Balls Per Minute (BPM) mean?",
