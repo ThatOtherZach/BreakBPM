@@ -100,6 +100,7 @@ Pass Unlocks:
 - **Full stats** Switch between 24-hour, 30-day, 365-day, and all-time windows, and refresh on demand. Free accounts see personal stats for the last 24 hours only.
 - **Full data export** Download every game and shot you've ever played and export it. Free accounts can only export the last 24 hours only.
 - **Custom screen name***Lifetime only:* Pick your own display name instead of the auto-assigned one.
+- **Custom profile theme***Lifetime only:* Choose which splash artwork appears behind your public watch profile, or turn it off. Pass holders get an artwork automatically; Lifetime holders can override it.
 
 Passes can be purchased on-chain with crypto from your account page or redeemed with a code. Crypto passes are applied automatically on purchase once payment is confirmed.
 
