@@ -11,6 +11,7 @@ import {
 import { getVerifiedSubject, getOrCreateUser, needsOnboarding } from "../lib/auth";
 import { computeEntitlement, getActivePasses } from "../lib/entitlement";
 import { normalizeProfileTheme } from "../lib/profileBackground";
+import { resolveUserProfileBackground } from "../lib/userProfileBackground";
 import type { User } from "@workspace/db";
 
 // Custom screen names are a Lifetime-pass perk. Admins are treated as effective
@@ -43,6 +44,13 @@ router.get("/auth/me", async (req, res): Promise<void> => {
   }
   const entitlement = await computeEntitlement(user);
   const passes = await getActivePasses(user.id);
+  // The concrete artwork the profile resolves to right now, so the Theme picker
+  // can preselect it when the stored preference is still "auto".
+  const profileBackground = await resolveUserProfileBackground({
+    userId: user.id,
+    email: user.email,
+    profileTheme: user.profileTheme,
+  });
   res.json(
     GetMeResponse.parse({
       signedIn: true,
@@ -53,6 +61,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
         email: user.email,
         createdAt: user.createdAt,
         profileTheme: normalizeProfileTheme(user.profileTheme),
+        profileBackground,
       },
       entitlement,
       passes,
@@ -133,6 +142,11 @@ router.patch("/auth/screen-name", async (req, res): Promise<void> => {
       email: updated.email,
       createdAt: updated.createdAt,
       profileTheme: normalizeProfileTheme(updated.profileTheme),
+      profileBackground: await resolveUserProfileBackground({
+        userId: updated.id,
+        email: updated.email,
+        profileTheme: updated.profileTheme,
+      }),
     }),
   );
 });
@@ -171,6 +185,11 @@ router.patch("/auth/profile-theme", async (req, res): Promise<void> => {
       email: updated.email,
       createdAt: updated.createdAt,
       profileTheme: normalizeProfileTheme(updated.profileTheme),
+      profileBackground: await resolveUserProfileBackground({
+        userId: updated.id,
+        email: updated.email,
+        profileTheme: updated.profileTheme,
+      }),
     }),
   );
 });

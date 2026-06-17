@@ -29,6 +29,18 @@ export const AccountProfileTheme = {
   hustler: 'hustler',
 } as const;
 
+/**
+ * @nullable
+ */
+export type AccountProfileBackground = typeof AccountProfileBackground[keyof typeof AccountProfileBackground] | null;
+
+
+export const AccountProfileBackground = {
+  shark: 'shark',
+  'pool-player': 'pool-player',
+  hustler: 'hustler',
+} as const;
+
 export interface Account {
   id: string;
   screenName: string;
@@ -36,6 +48,8 @@ export interface Account {
   email?: string | null;
   createdAt: string;
   profileTheme: AccountProfileTheme;
+  /** @nullable */
+  profileBackground: AccountProfileBackground;
 }
 
 export type PassSummaryKind = typeof PassSummaryKind[keyof typeof PassSummaryKind];

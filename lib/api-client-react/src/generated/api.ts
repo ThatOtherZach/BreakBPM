@@ -423,7 +423,7 @@ export const getUpdateProfileThemeUrl = () => {
 }
 
 /**
- * Sets the player's watch-profile background artwork preference. A Lifetime-pass perk (admins are effective Lifetime holders). "auto" clears the override so the artwork is derived from the player's pass.
+ * Sets the player's watch-profile background artwork preference. A Lifetime-pass perk (admins are effective Lifetime holders). "auto" clears the override so the artwork derives from the pass's redeem card (plain when the pass carried no card).
 
  * @summary Update the signed-in user's watch-profile background theme
  */

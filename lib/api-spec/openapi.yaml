@@ -86,7 +86,8 @@ paths:
       description: >
         Sets the player's watch-profile background artwork preference. A
         Lifetime-pass perk (admins are effective Lifetime holders). "auto"
-        clears the override so the artwork is derived from the player's pass.
+        clears the override so the artwork derives from the pass's redeem card
+        (plain when the pass carried no card).
       requestBody:
         required: true
         content:
@@ -1133,19 +1134,26 @@ components:
 
     Account:
       type: object
-      required: [id, screenName, createdAt, profileTheme]
+      required: [id, screenName, createdAt, profileTheme, profileBackground]
       properties:
         id: { type: string }
         screenName: { type: string }
         email: { type: ["string", "null"] }
         createdAt: { type: string, format: date-time }
-        # Watch-profile background theme preference. "auto" derives the splash
-        # artwork from the user's pass (matching their redeem card); "none" is
-        # a plain background; otherwise a specific artwork. Only Lifetime
-        # holders / admins can change it.
+        # Watch-profile background theme preference. "auto" (the default, stored
+        # as NULL) derives the splash artwork from the pass's redeem card when
+        # the pass carried one; passes with no card (crypto / grant / admin) and
+        # "none" render a plain background. A specific variant pins one artwork.
+        # Only Lifetime holders / admins can change it.
         profileTheme:
           type: string
           enum: [auto, none, shark, pool-player, hustler]
+        # The concrete artwork the profile currently resolves to, so the Theme
+        # picker can preselect it when the stored preference is "auto". Null =
+        # plain background (unpaid, "none", or a pass with no redeem card).
+        profileBackground:
+          type: ["string", "null"]
+          enum: [shark, pool-player, hustler]
 
     PassSummary:
       type: object
@@ -1492,8 +1500,8 @@ components:
       type: object
       required: [profileTheme]
       properties:
-        # "auto" clears the override (derive from pass); "none" = plain
-        # background; otherwise a specific splash artwork.
+        # "auto" clears the override (derive from the pass's redeem card, else
+        # plain); "none" = plain background; otherwise a specific splash artwork.
         profileTheme:
           type: string
           enum: [auto, none, shark, pool-player, hustler]

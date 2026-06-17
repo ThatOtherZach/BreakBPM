@@ -69,4 +69,12 @@ describe("resolveProfileBackground", () => {
     expect(resolveProfileBackground({ isPaid: true, theme: "auto", deriveKey: "HELLO" })).toBe("shark");
     expect(resolveProfileBackground({ isPaid: true, theme: null, deriveKey: "HELLO" })).toBe("shark");
   });
+
+  it("falls back to plain (null) when auto has no derivation key", () => {
+    // A pass that carried no redeem card → nothing to derive from → plain.
+    expect(resolveProfileBackground({ isPaid: true, theme: "auto", deriveKey: null })).toBeNull();
+    expect(resolveProfileBackground({ isPaid: true, theme: "auto", deriveKey: undefined })).toBeNull();
+    expect(resolveProfileBackground({ isPaid: true, theme: "auto", deriveKey: "   " })).toBeNull();
+    expect(resolveProfileBackground({ isPaid: true, theme: null, deriveKey: null })).toBeNull();
+  });
 });

@@ -16,7 +16,8 @@ export const BACKGROUND_VARIANTS = ["shark", "pool-player", "hustler"] as const;
 export type BackgroundVariant = (typeof BACKGROUND_VARIANTS)[number];
 
 /** Stored profile-theme preference values. `auto` (or NULL in the DB) means
- * "derive from my pass"; `none` means a plain background. */
+ * "derive from my pass's redeem card when it carried one, else plain"; `none`
+ * means a plain background. */
 export const PROFILE_THEME_VALUES = ["auto", "none", ...BACKGROUND_VARIANTS] as const;
 export type ProfileTheme = (typeof PROFILE_THEME_VALUES)[number];
 
@@ -49,16 +50,21 @@ export function normalizeProfileTheme(raw: string | null | undefined): ProfileTh
  * - Unpaid players never get a themed background (null).
  * - `none` → null (plain default background).
  * - An explicit variant override → that variant.
- * - `auto` → deterministic pick from the derivation key (redeem code / pass id).
+ * - `auto` → deterministic pick from the derivation key (the pass's redeem
+ *   code). When there is no key — a pass that carried no card (crypto / grant /
+ *   admin) — `auto` falls back to the plain default (null), so artwork is only
+ *   ever assigned by a card.
  */
 export function resolveProfileBackground(opts: {
   isPaid: boolean;
   theme: string | null | undefined;
-  deriveKey: string;
+  deriveKey: string | null | undefined;
 }): BackgroundVariant | null {
   if (!opts.isPaid) return null;
   const theme = normalizeProfileTheme(opts.theme);
   if (theme === "none") return null;
   if (theme !== "auto") return theme;
-  return backgroundVariantForKey(opts.deriveKey);
+  const key = opts.deriveKey?.trim();
+  if (!key) return null;
+  return backgroundVariantForKey(key);
 }

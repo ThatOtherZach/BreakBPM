@@ -89,7 +89,12 @@ export async function createUser(
 export async function seedPass(
   userId: string,
   kind: PassKind,
-  opts: { startedAt?: Date; durationSeconds?: number | null } = {},
+  opts: {
+    startedAt?: Date;
+    durationSeconds?: number | null;
+    source?: Pass["source"];
+    sourceRef?: string | null;
+  } = {},
 ): Promise<Pass> {
   const startedAt = opts.startedAt ?? new Date();
   const durationSeconds =
@@ -104,8 +109,8 @@ export async function seedPass(
       kind,
       startedAt,
       durationSeconds,
-      source: "grant",
-      sourceRef: null,
+      source: opts.source ?? "grant",
+      sourceRef: opts.sourceRef ?? null,
       priceCents: 0,
     })
     .returning();

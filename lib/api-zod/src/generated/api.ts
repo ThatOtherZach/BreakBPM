@@ -38,7 +38,8 @@ export const GetMeResponse = zod.object({
   "screenName": zod.string(),
   "email": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
-  "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler'])
+  "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler']),
+  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable()
 }).optional(),
   "entitlement": zod.object({
   "tier": zod.enum(['public', 'account', 'pass']),
@@ -83,12 +84,13 @@ export const UpdateScreenNameResponse = zod.object({
   "screenName": zod.string(),
   "email": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
-  "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler'])
+  "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler']),
+  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable()
 })
 
 
 /**
- * Sets the player's watch-profile background artwork preference. A Lifetime-pass perk (admins are effective Lifetime holders). "auto" clears the override so the artwork is derived from the player's pass.
+ * Sets the player's watch-profile background artwork preference. A Lifetime-pass perk (admins are effective Lifetime holders). "auto" clears the override so the artwork derives from the pass's redeem card (plain when the pass carried no card).
 
  * @summary Update the signed-in user's watch-profile background theme
  */
@@ -101,7 +103,8 @@ export const UpdateProfileThemeResponse = zod.object({
   "screenName": zod.string(),
   "email": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
-  "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler'])
+  "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler']),
+  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable()
 })
 
 

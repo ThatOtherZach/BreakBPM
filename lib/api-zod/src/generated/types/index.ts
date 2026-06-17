@@ -10,6 +10,7 @@ export * from './abandonGameInput';
 export * from './abandonGameResult';
 export * from './acceptInviteResult';
 export * from './account';
+export * from './accountProfileBackground';
 export * from './accountProfileTheme';
 export * from './adminCode';
 export * from './adminCodeGrantsPassKind';

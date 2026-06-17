@@ -13,7 +13,7 @@ vi.mock("../lib/auth", () => ({
 
 import gamesRouter from "./games";
 import { backgroundVariantForKey } from "../lib/profileBackground";
-import { createUser, seedPass, getPasses, cleanup } from "../test/factories";
+import { createUser, seedPass, cleanup } from "../test/factories";
 
 function makeApp(): Express {
   const app = express();
@@ -58,20 +58,50 @@ afterEach(async () => {
 });
 
 describe("GET /games/profile — profileBackground wiring", () => {
-  it("returns a non-null background for a paid host", async () => {
+  it("returns a non-null background for a paid host with a card-redeemed pass", async () => {
     const host = await createUser();
+    // A discount-code pass carries a redeem card; its code is the derivation
+    // key so the profile artwork matches the printed card.
+    await seedPass(host.id, "lifetime", { source: "discount_code", sourceRef: "CARD-TEST" });
+
+    const res = await fetchProfile(host.screenName);
+
+    expect(res.status).toBe(200);
+    expect(res.body.found).toBe(true);
+    expect(res.body.profileBackground).toBe(backgroundVariantForKey("CARD-TEST"));
+    expect(res.body.profileBackground).not.toBeNull();
+  });
+
+  it("returns a null background for a paid host whose pass carried no card", async () => {
+    const host = await createUser();
+    // A 'grant' pass has no sourceRef (no card) → nothing to derive → plain.
     await seedPass(host.id, "lifetime");
 
     const res = await fetchProfile(host.screenName);
 
     expect(res.status).toBe(200);
     expect(res.body.found).toBe(true);
-    // auto (default theme) → deterministic pick from the headline pass's
-    // derivation key. The seeded pass is a 'grant' (no sourceRef), so the
-    // route falls back to the pass id as the key.
-    const [pass] = await getPasses(host.id);
-    expect(res.body.profileBackground).toBe(backgroundVariantForKey(pass.id));
-    expect(res.body.profileBackground).not.toBeNull();
+    expect(res.body.profileBackground).toBeNull();
+  });
+
+  it("headline pass wins: a longer non-card pass yields plain even with a card pass present", async () => {
+    const host = await createUser();
+    // A short card pass that would derive artwork on its own...
+    await seedPass(host.id, "month", {
+      source: "discount_code",
+      sourceRef: "CARD-X",
+      durationSeconds: 30 * 24 * 60 * 60,
+    });
+    // ...but a longer-expiring lifetime grant (no card) is the headline pass,
+    // and it carries no redeem code → nothing to derive → plain. This is a
+    // deliberate product rule (theme follows the headline/longest pass).
+    await seedPass(host.id, "lifetime"); // grant, durationSeconds=null → never expires
+
+    const res = await fetchProfile(host.screenName);
+
+    expect(res.status).toBe(200);
+    expect(res.body.found).toBe(true);
+    expect(res.body.profileBackground).toBeNull();
   });
 
   it("returns a null background for an unpaid host", async () => {
@@ -107,16 +137,15 @@ describe("GET /games/profile — profileBackground wiring", () => {
       expect(res.body.profileBackground).toBe("hustler");
     });
 
-    it("'auto' → derived from the headline pass key", async () => {
+    it("'auto' → derived from the headline pass's redeem code", async () => {
       const host = await createUser();
-      await seedPass(host.id, "lifetime");
+      await seedPass(host.id, "lifetime", { source: "discount_code", sourceRef: "CARD-TEST" });
       await setTheme(host.id, "auto");
 
       const res = await fetchProfile(host.screenName);
-      const [pass] = await getPasses(host.id);
 
       expect(res.status).toBe(200);
-      expect(res.body.profileBackground).toBe(backgroundVariantForKey(pass.id));
+      expect(res.body.profileBackground).toBe(backgroundVariantForKey("CARD-TEST"));
     });
   });
 });

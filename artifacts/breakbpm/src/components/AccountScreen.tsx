@@ -491,16 +491,19 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
               <div style={{ fontSize: 11, color: "#444", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
                 <span>🎨 Profile theme</span>
                 <select
-                  value={account.profileTheme}
+                  value={
+                    account.profileTheme === "auto"
+                      ? (account.profileBackground ?? "none")
+                      : account.profileTheme
+                  }
                   disabled={updateTheme.isPending}
                   onChange={(e) => handleChangeTheme(e.target.value as AccountProfileTheme)}
                   style={{ fontFamily: "inherit", fontSize: 11, padding: "1px 2px" }}
                 >
-                  <option value="auto">Default (from pass)</option>
+                  <option value="none">None</option>
                   <option value="shark">Shark</option>
                   <option value="pool-player">Pool Player</option>
                   <option value="hustler">Hustler</option>
-                  <option value="none">None</option>
                 </select>
               </div>
             )}
