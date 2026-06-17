@@ -1834,6 +1834,15 @@ html, #root {
   align-items: flex-end;
   text-align: right;
 }
+/* When the header wraps and the BPM block lands on its own line, centre it
+   (JS toggles this class on an actual wrap — see StatsHero). margin-right:auto
+   pairs with the base margin-left:auto to centre without changing its width,
+   so it can't feed back into the wrap detection. */
+.stats-hero-header .stats-hero-main--wrapped {
+  margin-right: auto;
+  align-items: center;
+  text-align: center;
+}
 /* The player identity block must be allowed to shrink (min-width:0) or its long
    name keeps the header wider than the card and pushes the BPM block out. */
 .stats-hero-header .stats-hero-player {

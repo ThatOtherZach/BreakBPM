@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import type { StatsResult } from "@workspace/api-client-react";
 import { SOLIDS } from "../lib/gameLogic";
 import { PlayerName } from "./PlayerName";
@@ -161,6 +162,29 @@ export default function StatsHero({
   const rateLabel = isPersonal ? "WIN RATE" : "FINISH RATE";
   const rateValue = isPersonal ? stats.winRate : stats.finishRate;
 
+  // When a long screen name forces the header to wrap, the AVG-BPM block drops
+  // onto its own line — right-aligned, it would hug the edge awkwardly, so we
+  // centre it instead. Detection is geometric (is the BPM block on a lower row
+  // than the name?) rather than a viewport breakpoint, so it only triggers on
+  // an actual wrap. The centring tweak doesn't change the block's width, so it
+  // can't feed back into the wrap measurement.
+  const playerRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const [bpmWrapped, setBpmWrapped] = useState(false);
+  useLayoutEffect(() => {
+    const player = playerRef.current;
+    const main = mainRef.current;
+    if (!player || !main) return;
+    const measure = () => setBpmWrapped(main.offsetTop > player.offsetTop + 1);
+    measure();
+    const ro = new ResizeObserver(measure);
+    const header = player.parentElement;
+    if (header) ro.observe(header);
+    ro.observe(player);
+    ro.observe(main);
+    return () => ro.disconnect();
+  }, [screenName, stats.gamesPlayed, stats.avgBpm]);
+
   // Pass-themed artwork sits *behind* this CRT readout: the splash image is the
   // bottom layer, a dark gradient over it keeps the green text legible, and the
   // base scanlines (normally from CSS) are re-declared on top so they survive
@@ -202,7 +226,7 @@ export default function StatsHero({
     <div className="stats-hero" style={heroStyle}>
       <div className="stats-hero-header">
         {screenName && (
-          <div className="stats-hero-player">
+          <div className="stats-hero-player" ref={playerRef}>
             <div className="stats-hero-name-row">
               {stats.topBalls.length > 0 && (() => {
                 const top = stats.topBalls[0].ball;
@@ -235,7 +259,7 @@ export default function StatsHero({
             <span className="stats-hero-window">{fmtInt(stats.gamesPlayed)} Games in {WINDOW_SPELLED[stats.appliedWindow]}</span>
           </div>
         )}
-        <div className="stats-hero-main">
+        <div className={`stats-hero-main${bpmWrapped ? " stats-hero-main--wrapped" : ""}`} ref={mainRef}>
           <span className="stats-hero-label">▲ AVG BPM</span>
           <span className={`stats-hero-value${stats.avgBpm == null ? " dim" : ""}`}>
             {stats.avgBpm == null ? (
