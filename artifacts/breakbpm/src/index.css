@@ -1213,6 +1213,7 @@ html, #root {
 .splash-title-main {
   font-family: 'VT323', 'Courier New', monospace;
   font-size: 46px;
+  font-weight: normal;
   line-height: 1;
   color: #e8e8e8;
   letter-spacing: 1px;
