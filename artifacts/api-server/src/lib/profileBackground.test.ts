@@ -1,39 +1,33 @@
 import { describe, it, expect } from "vitest";
 import {
-  backgroundVariantForKey,
+  randomBackgroundVariant,
+  coerceBackgroundVariant,
   resolveProfileBackground,
   normalizeProfileTheme,
   BACKGROUND_VARIANTS,
 } from "./profileBackground";
 
-// LOCKSTEP: these expected pairs are mirrored in the breakbpm client's
-// redeemCard.test.ts. Both implementations must agree so a redeem card's
-// artwork matches the recipient's server-resolved watch-profile background.
-// If you change the variant order or the hash, update BOTH tests.
-describe("backgroundVariantForKey (lockstep with client)", () => {
-  it.each([
-    ["BB-ABC123", "hustler"],
-    ["HELLO", "shark"],
-    ["abc", "pool-player"],
-    ["pass_001", "shark"],
-    ["ZZZ-999", "hustler"],
-    ["gift-7", "shark"],
-    ["lucky", "pool-player"],
-    ["u_5f3a9c", "hustler"],
-    ["CARD-TEST", "pool-player"],
-    ["x", "pool-player"],
-  ])("maps %s -> %s", (key, variant) => {
-    expect(backgroundVariantForKey(key)).toBe(variant);
-  });
-
-  it("is case- and whitespace-insensitive", () => {
-    expect(backgroundVariantForKey("  hello  ")).toBe(backgroundVariantForKey("HELLO"));
-  });
-
+describe("randomBackgroundVariant", () => {
   it("only ever returns a known variant", () => {
-    for (const k of ["", "a", "longer-key-here", "12345"]) {
-      expect(BACKGROUND_VARIANTS).toContain(backgroundVariantForKey(k));
+    for (let i = 0; i < 50; i++) {
+      expect(BACKGROUND_VARIANTS).toContain(randomBackgroundVariant());
     }
+  });
+});
+
+describe("coerceBackgroundVariant", () => {
+  it("passes through known variants", () => {
+    for (const v of BACKGROUND_VARIANTS) {
+      expect(coerceBackgroundVariant(v)).toBe(v);
+    }
+  });
+
+  it("maps NULL / undefined / unknown to null", () => {
+    expect(coerceBackgroundVariant(null)).toBeNull();
+    expect(coerceBackgroundVariant(undefined)).toBeNull();
+    expect(coerceBackgroundVariant("garbage")).toBeNull();
+    expect(coerceBackgroundVariant("")).toBeNull();
+    expect(coerceBackgroundVariant("auto")).toBeNull();
   });
 });
 
@@ -53,28 +47,31 @@ describe("normalizeProfileTheme", () => {
 
 describe("resolveProfileBackground", () => {
   it("returns null for unpaid players regardless of theme", () => {
-    expect(resolveProfileBackground({ isPaid: false, theme: "shark", deriveKey: "X" })).toBeNull();
-    expect(resolveProfileBackground({ isPaid: false, theme: "auto", deriveKey: "X" })).toBeNull();
+    expect(resolveProfileBackground({ isPaid: false, theme: "shark", cardVariant: "shark" })).toBeNull();
+    expect(resolveProfileBackground({ isPaid: false, theme: "auto", cardVariant: "shark" })).toBeNull();
   });
 
   it("returns null when the override is 'none'", () => {
-    expect(resolveProfileBackground({ isPaid: true, theme: "none", deriveKey: "X" })).toBeNull();
+    expect(resolveProfileBackground({ isPaid: true, theme: "none", cardVariant: "shark" })).toBeNull();
   });
 
-  it("honors an explicit variant override", () => {
-    expect(resolveProfileBackground({ isPaid: true, theme: "hustler", deriveKey: "X" })).toBe("hustler");
+  it("honors an explicit variant override (beats the stored card variant)", () => {
+    expect(
+      resolveProfileBackground({ isPaid: true, theme: "hustler", cardVariant: "shark" }),
+    ).toBe("hustler");
   });
 
-  it("derives from the key when theme is auto (or NULL)", () => {
-    expect(resolveProfileBackground({ isPaid: true, theme: "auto", deriveKey: "HELLO" })).toBe("shark");
-    expect(resolveProfileBackground({ isPaid: true, theme: null, deriveKey: "HELLO" })).toBe("shark");
+  it("uses the card's stored variant when theme is auto (or NULL)", () => {
+    expect(resolveProfileBackground({ isPaid: true, theme: "auto", cardVariant: "pool-player" })).toBe(
+      "pool-player",
+    );
+    expect(resolveProfileBackground({ isPaid: true, theme: null, cardVariant: "shark" })).toBe("shark");
   });
 
-  it("falls back to plain (null) when auto has no derivation key", () => {
-    // A pass that carried no redeem card → nothing to derive from → plain.
-    expect(resolveProfileBackground({ isPaid: true, theme: "auto", deriveKey: null })).toBeNull();
-    expect(resolveProfileBackground({ isPaid: true, theme: "auto", deriveKey: undefined })).toBeNull();
-    expect(resolveProfileBackground({ isPaid: true, theme: "auto", deriveKey: "   " })).toBeNull();
-    expect(resolveProfileBackground({ isPaid: true, theme: null, deriveKey: null })).toBeNull();
+  it("falls back to plain (null) when auto has no stored card variant", () => {
+    // A pass whose card carried no artwork (crypto / grant / artwork-disabled)
+    // → nothing stored → plain.
+    expect(resolveProfileBackground({ isPaid: true, theme: "auto", cardVariant: null })).toBeNull();
+    expect(resolveProfileBackground({ isPaid: true, theme: null, cardVariant: null })).toBeNull();
   });
 });

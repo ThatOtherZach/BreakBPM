@@ -30,6 +30,13 @@ export const discountCodesTable = pgTable(
     issuedByUserId: text("issued_by_user_id"),
     issuedAt: timestamp("issued_at", { withTimezone: true }),
     issuerKind: text("issuer_kind"), // "gift" | "admin" | null (legacy/seed)
+    // Splash artwork stamped on the redeem card at generation time
+    // ("shark" | "pool-player" | "hustler"). NULL = no artwork. This is the
+    // single source of truth for both the printed card and the redeemer's
+    // watch-profile background — chosen by the admin (checkbox) when minting,
+    // not derived from the code string. The profile resolver maps a redeemed
+    // pass back to this column via the pass's sourceRef.
+    backgroundVariant: text("background_variant"),
   },
   (t) => [index("discount_codes_issuer_issued_at_idx").on(t.issuedByUserId, t.issuedAt)],
 );

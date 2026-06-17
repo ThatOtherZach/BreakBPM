@@ -12,8 +12,7 @@ vi.mock("../lib/auth", () => ({
 }));
 
 import gamesRouter from "./games";
-import { backgroundVariantForKey } from "../lib/profileBackground";
-import { createUser, seedPass, cleanup } from "../test/factories";
+import { createUser, seedPass, seedDiscountCode, cleanup } from "../test/factories";
 
 function makeApp(): Express {
   const app = express();
@@ -52,29 +51,41 @@ async function setTheme(userId: string, theme: string | null): Promise<void> {
   await db.update(usersTable).set({ profileTheme: theme }).where(eq(usersTable.id, userId));
 }
 
+/** Seed a redeemed-card pass: a discount code carrying a stored artwork variant
+ * plus an active pass whose sourceRef points back at that code. */
+async function seedCardPass(
+  userId: string,
+  code: string,
+  variant: string,
+  kind: Parameters<typeof seedPass>[1] = "lifetime",
+  passOpts: Parameters<typeof seedPass>[2] = {},
+): Promise<void> {
+  await seedDiscountCode(code, kind, { backgroundVariant: variant });
+  await seedPass(userId, kind, { source: "discount_code", sourceRef: code, ...passOpts });
+}
+
 afterEach(async () => {
   vi.clearAllMocks();
   await cleanup();
 });
 
 describe("GET /games/profile — profileBackground wiring", () => {
-  it("returns a non-null background for a paid host with a card-redeemed pass", async () => {
+  it("returns the stored card artwork for a paid host with a card-redeemed pass", async () => {
     const host = await createUser();
-    // A discount-code pass carries a redeem card; its code is the derivation
-    // key so the profile artwork matches the printed card.
-    await seedPass(host.id, "lifetime", { source: "discount_code", sourceRef: "CARD-TEST" });
+    // The redeem card stored 'hustler' at mint time; the profile must wear
+    // exactly that — no derivation from the code string.
+    await seedCardPass(host.id, "CARD-TEST", "hustler");
 
     const res = await fetchProfile(host.screenName);
 
     expect(res.status).toBe(200);
     expect(res.body.found).toBe(true);
-    expect(res.body.profileBackground).toBe(backgroundVariantForKey("CARD-TEST"));
-    expect(res.body.profileBackground).not.toBeNull();
+    expect(res.body.profileBackground).toBe("hustler");
   });
 
   it("returns a null background for a paid host whose pass carried no card", async () => {
     const host = await createUser();
-    // A 'grant' pass has no sourceRef (no card) → nothing to derive → plain.
+    // A 'grant' pass has no sourceRef (no card) → nothing stored → plain.
     await seedPass(host.id, "lifetime");
 
     const res = await fetchProfile(host.screenName);
@@ -84,23 +95,33 @@ describe("GET /games/profile — profileBackground wiring", () => {
     expect(res.body.profileBackground).toBeNull();
   });
 
-  it("a redeemed-card pass applies its artwork even alongside a longer non-card pass", async () => {
+  it("returns null when the card was minted without artwork", async () => {
     const host = await createUser();
-    // A redeemed card (discount-code pass) carries artwork...
-    await seedPass(host.id, "month", {
-      source: "discount_code",
-      sourceRef: "CARD-X",
+    // A discount-code pass whose code stored no artwork (includeArtwork off).
+    await seedDiscountCode("CARD-NOART", "lifetime", { backgroundVariant: null });
+    await seedPass(host.id, "lifetime", { source: "discount_code", sourceRef: "CARD-NOART" });
+
+    const res = await fetchProfile(host.screenName);
+
+    expect(res.status).toBe(200);
+    expect(res.body.found).toBe(true);
+    expect(res.body.profileBackground).toBeNull();
+  });
+
+  it("a redeemed-card pass applies its stored artwork even alongside a longer non-card pass", async () => {
+    const host = await createUser();
+    // A redeemed card (discount-code pass) carries stored artwork...
+    await seedCardPass(host.id, "CARD-X", "pool-player", "month", {
       durationSeconds: 30 * 24 * 60 * 60,
     });
-    // ...and a longer-expiring non-card grant must NOT suppress it: if they
-    // redeemed a pass with artwork, that artwork gets applied.
+    // ...and a longer-expiring non-card grant must NOT suppress it.
     await seedPass(host.id, "lifetime"); // grant, no card
 
     const res = await fetchProfile(host.screenName);
 
     expect(res.status).toBe(200);
     expect(res.body.found).toBe(true);
-    expect(res.body.profileBackground).toBe(backgroundVariantForKey("CARD-X"));
+    expect(res.body.profileBackground).toBe("pool-player");
   });
 
   it("returns a null background for an unpaid host", async () => {
@@ -125,9 +146,9 @@ describe("GET /games/profile — profileBackground wiring", () => {
       expect(res.body.profileBackground).toBeNull();
     });
 
-    it("an explicit variant → that variant", async () => {
+    it("an explicit variant → that variant (beats the stored card variant)", async () => {
       const host = await createUser();
-      await seedPass(host.id, "lifetime");
+      await seedCardPass(host.id, "CARD-OVR", "shark");
       await setTheme(host.id, "hustler");
 
       const res = await fetchProfile(host.screenName);
@@ -136,15 +157,15 @@ describe("GET /games/profile — profileBackground wiring", () => {
       expect(res.body.profileBackground).toBe("hustler");
     });
 
-    it("'auto' → derived from an active redeemed-card pass's code", async () => {
+    it("'auto' → the stored artwork of an active redeemed-card pass", async () => {
       const host = await createUser();
-      await seedPass(host.id, "lifetime", { source: "discount_code", sourceRef: "CARD-TEST" });
+      await seedCardPass(host.id, "CARD-TEST", "shark");
       await setTheme(host.id, "auto");
 
       const res = await fetchProfile(host.screenName);
 
       expect(res.status).toBe(200);
-      expect(res.body.profileBackground).toBe(backgroundVariantForKey("CARD-TEST"));
+      expect(res.body.profileBackground).toBe("shark");
     });
   });
 });

@@ -1,31 +1,33 @@
 ---
-name: Watch-profile background derivation rule
-description: How a /watch profile's splash artwork is chosen — card-only, default none, headline-pass driven.
+name: Watch-profile background (stored-at-mint artwork)
+description: How a /watch profile's splash artwork is chosen — stored on the redeem code at admin mint time, mapped via the pass sourceRef. NO hashing.
 ---
 
 A `/watch/<name>` profile's splash artwork (shark / pool-player / hustler) is
-**only ever assigned by a redeem card**. The DB-aware resolver
-(`resolveUserProfileBackground` in `artifacts/api-server/src/lib/`) wraps the pure
-`resolveProfileBackground` picker.
+**chosen and stored when an admin mints the redeem card**, never derived from the
+code string. The DB-aware resolver (`resolveUserProfileBackground` in
+`artifacts/api-server/src/lib/`) wraps the pure `resolveProfileBackground` picker.
 
 **Rule:**
-- Default is **none** (plain). `profileTheme` NULL/"auto" with no derivation key → plain.
-- Only an active **`discount_code`-sourced** pass carries a redeem card; its
-  `sourceRef` (the code) is the djb2 derivation key, so the artwork matches the
-  printed card. Passes with no card — crypto, `grant`, admin effective-Lifetime —
-  derive nothing → plain.
-- A stored explicit `profileTheme` (shark/pool-player/hustler/none) always wins —
-  this is how a Lifetime holder selects/overrides their theme.
-- **Any active redeemed-card pass applies its artwork** — do NOT gate on a
-  "headline / longest pass". A user with a card pass AND a longer non-card/lifetime
-  pass still shows the card's artwork (most-recently-redeemed card wins if several).
-  An earlier "headline pass wins" rule was wrong and contradicted the owner's
-  intent ("if they redeemed a pass with artwork, it gets applied"); `games-profile.test.ts`
-  now guards the corrected behavior.
+- Artwork is stored on `discount_codes.background_variant` at mint time, driven by
+  the admin "Include splash artwork (random)" checkbox (default on →
+  `randomBackgroundVariant()`; off → null). A redeemed card pass keeps that code in
+  `sourceRef`, so the resolver maps the player's active `discount_code`-sourced pass
+  back to the code's stored variant. Passes with no card — crypto, `grant`, admin
+  effective-Lifetime — and cards minted without artwork (null) → plain.
+- Precedence: unpaid → null; explicit `profileTheme` (shark/pool-player/hustler) →
+  that variant (a Lifetime holder's override, beats the stored card variant);
+  `none` → null; `auto`/NULL → the stored card variant (or null).
+- **Any active redeemed-card pass applies its stored artwork** — do NOT gate on a
+  "headline / longest pass". Most-recently-redeemed card with a non-null variant
+  wins when several. `games-profile.test.ts` guards this.
 
-**Why:** the artwork exists to mirror the physical/redeem card, so assigning it to
-non-card holders is meaningless; the owner wanted the default to be plain.
+**Why:** the owner explicitly killed the old read-time djb2 hashing of the code
+(it felt arbitrary/unpredictable); artwork must be a deliberate choice baked into
+the card so the printed card and the redeemer's profile always match exactly. Do
+NOT re-introduce hash/auto-derive-from-key.
 
-**Lockstep:** server djb2 (`profileBackground.ts`) and client mirror
-(`backgroundVariants.ts`) must agree on variant order + hash; mirrored mapping
-tests enforce it — keep them whenever variant order or hash changes.
+**Lockstep:** `BACKGROUND_VARIANTS` order must match between server
+`profileBackground.ts` and client `backgroundVariants.ts` so the stored value maps
+to the same artwork on both sides. The client card (`redeemCard.ts loadCardBackground`)
+takes the stored variant (nullable → plain dark card).

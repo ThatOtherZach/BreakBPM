@@ -232,7 +232,8 @@ export const ListAdminDiscountCodesResponse = zod.object({
   "grantsPassKind": zod.enum(['day', 'twoweek', 'month', 'year', 'lifetime']),
   "maxRedemptions": zod.number().nullable(),
   "redemptionCount": zod.number(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "backgroundVariant": zod.enum(['shark', 'pool-player', 'hustler']).nullable()
 }))
 })
 
@@ -247,7 +248,8 @@ export const ListAdminDiscountCodesResponse = zod.object({
 
 export const CreateAdminDiscountCodeBody = zod.object({
   "kind": zod.enum(['day', 'twoweek', 'month', 'year', 'lifetime']),
-  "maxRedemptions": zod.number().min(1).nullish()
+  "maxRedemptions": zod.number().min(1).nullish(),
+  "includeArtwork": zod.boolean().optional()
 })
 
 export const CreateAdminDiscountCodeResponse = zod.object({
@@ -256,7 +258,8 @@ export const CreateAdminDiscountCodeResponse = zod.object({
   "grantsPassKind": zod.enum(['day', 'twoweek', 'month', 'year', 'lifetime']),
   "maxRedemptions": zod.number().nullable(),
   "redemptionCount": zod.number(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "backgroundVariant": zod.enum(['shark', 'pool-player', 'hustler']).nullable()
 })
 })
 

@@ -1193,7 +1193,8 @@ components:
 
     AdminCode:
       type: object
-      required: [code, grantsPassKind, maxRedemptions, redemptionCount, createdAt]
+      required:
+        [code, grantsPassKind, maxRedemptions, redemptionCount, createdAt, backgroundVariant]
       properties:
         code: { type: string }
         grantsPassKind: { type: string, enum: [day, twoweek, month, year, lifetime] }
@@ -1201,6 +1202,12 @@ components:
         maxRedemptions: { type: ["integer", "null"] }
         redemptionCount: { type: integer }
         createdAt: { type: string, format: date-time }
+        # The splash artwork stamped on this code's redeem card and applied to
+        # whoever redeems it. Stored at generation (chosen via the admin
+        # checkbox), never derived from the code. Null = no artwork.
+        backgroundVariant:
+          type: ["string", "null"]
+          enum: [shark, pool-player, hustler]
 
     AdminCodeInput:
       type: object
@@ -1209,6 +1216,10 @@ components:
         kind: { type: string, enum: [day, twoweek, month, year, lifetime] }
         # Optional cap on redemptions. Omit (or null) for unlimited.
         maxRedemptions: { type: ["integer", "null"], minimum: 1 }
+        # When true (default), the minted card gets a random splash artwork that
+        # is stored on the code and applied to the redeemer's watch profile.
+        # When false, the card and profile stay plain (backgroundVariant = null).
+        includeArtwork: { type: boolean }
 
     AdminCodeResult:
       type: object

@@ -692,14 +692,16 @@ router.post("/passes/admin/codes", async (req, res): Promise<void> => {
     return;
   }
 
+  const includeArtwork = parsed.data.includeArtwork ?? true;
   const code = await createAdminDiscountCode({
     issuedByUserId: user.id,
     kind,
     maxRedemptions,
+    includeArtwork,
   });
   // Do not log the raw code — anyone with log access could redeem it.
   req.log.info(
-    { userId: user.id, kind, maxRedemptions },
+    { userId: user.id, kind, maxRedemptions, includeArtwork },
     "Admin comp code generated",
   );
   res.json(CreateAdminDiscountCodeResponse.parse({ code }));

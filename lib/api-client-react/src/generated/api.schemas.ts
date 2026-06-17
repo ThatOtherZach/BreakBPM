@@ -124,6 +124,18 @@ export const AdminCodeGrantsPassKind = {
   lifetime: 'lifetime',
 } as const;
 
+/**
+ * @nullable
+ */
+export type AdminCodeBackgroundVariant = typeof AdminCodeBackgroundVariant[keyof typeof AdminCodeBackgroundVariant] | null;
+
+
+export const AdminCodeBackgroundVariant = {
+  shark: 'shark',
+  'pool-player': 'pool-player',
+  hustler: 'hustler',
+} as const;
+
 export interface AdminCode {
   code: string;
   grantsPassKind: AdminCodeGrantsPassKind;
@@ -131,6 +143,8 @@ export interface AdminCode {
   maxRedemptions: number | null;
   redemptionCount: number;
   createdAt: string;
+  /** @nullable */
+  backgroundVariant: AdminCodeBackgroundVariant;
 }
 
 export type AdminCodeInputKind = typeof AdminCodeInputKind[keyof typeof AdminCodeInputKind];
@@ -151,6 +165,7 @@ export interface AdminCodeInput {
      * @nullable
      */
   maxRedemptions?: number | null;
+  includeArtwork?: boolean;
 }
 
 export interface AdminCodeResult {

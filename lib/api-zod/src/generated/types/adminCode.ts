@@ -5,6 +5,7 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminCodeBackgroundVariant } from './adminCodeBackgroundVariant';
 import type { AdminCodeGrantsPassKind } from './adminCodeGrantsPassKind';
 
 export interface AdminCode {
@@ -14,4 +15,6 @@ export interface AdminCode {
   maxRedemptions: number | null;
   redemptionCount: number;
   createdAt: Date;
+  /** @nullable */
+  backgroundVariant: AdminCodeBackgroundVariant;
 }

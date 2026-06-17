@@ -13,6 +13,7 @@ export * from './account';
 export * from './accountProfileBackground';
 export * from './accountProfileTheme';
 export * from './adminCode';
+export * from './adminCodeBackgroundVariant';
 export * from './adminCodeGrantsPassKind';
 export * from './adminCodeInput';
 export * from './adminCodeInputKind';

@@ -10,6 +10,7 @@ import {
   redeemUrlFor,
   cardFilename,
 } from "../lib/redeemCard";
+import type { BackgroundVariant } from "../lib/backgroundVariants";
 import {
   useGetMe,
   useUpdateScreenName,
@@ -95,7 +96,14 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   // rendered onto the preview canvas; `autoDownloadCard` controls whether a
   // freshly minted code's card downloads automatically.
   const [autoDownloadCard, setAutoDownloadCard] = useState(true);
-  const [card, setCard] = useState<{ code: string; kind: string } | null>(null);
+  // Whether a freshly minted code should carry splash artwork (stored on the
+  // code; the recipient's watch profile + the card both wear it). Default on.
+  const [includeArtwork, setIncludeArtwork] = useState(true);
+  const [card, setCard] = useState<{
+    code: string;
+    kind: string;
+    variant: BackgroundVariant | null;
+  } | null>(null);
   const cardCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
   // Set true right before `card` changes when the resulting render should also
@@ -190,7 +198,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
     let cancelled = false;
     (async () => {
       try {
-        const [img] = await Promise.all([loadCardBackground(card.code), ensureCardFonts()]);
+        const [img] = await Promise.all([loadCardBackground(card.variant), ensureCardFonts()]);
         if (cancelled) return;
         const out = cardCanvasRef.current;
         const qr = qrCanvasRef.current;
@@ -317,24 +325,34 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
     }
     try {
       const res = await createAdminCode.mutateAsync({
-        data: { kind: adminKind, maxRedemptions },
+        data: { kind: adminKind, maxRedemptions, includeArtwork },
       });
       qc.invalidateQueries({ queryKey: getListAdminDiscountCodesQueryKey() });
       // Render the shareable card for the freshly minted code; auto-download
       // it when the admin opted in (their main use case — emailing the buyer).
+      // The artwork is whatever the server stored on the code.
       pendingCardDownloadRef.current = autoDownloadCard;
-      setCard({ code: res.code.code, kind: res.code.grantsPassKind });
+      setCard({
+        code: res.code.code,
+        kind: res.code.grantsPassKind,
+        variant: res.code.backgroundVariant ?? null,
+      });
     } catch (e) {
       setAdminMsg(e instanceof Error ? e.message : "Could not create code.");
     }
   }
 
   // Build (and download) the card for any existing code from the Recent Codes
-  // list. An explicit click always downloads, regardless of the checkbox.
-  function handleMakeCard(code: string, kind: string) {
+  // list. An explicit click always downloads, regardless of the checkbox. The
+  // artwork is whatever was stored on the code when it was minted.
+  function handleMakeCard(
+    code: string,
+    kind: string,
+    variant: BackgroundVariant | null,
+  ) {
     setAdminMsg("");
     pendingCardDownloadRef.current = true;
-    setCard({ code, kind });
+    setCard({ code, kind, variant });
   }
 
   async function handleCopyAdmin(code: string) {
@@ -737,6 +755,15 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 />
                 Auto-download card image
               </label>
+              <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="checkbox"
+                  checked={includeArtwork}
+                  onChange={(e) => setIncludeArtwork(e.target.checked)}
+                  disabled={createAdminCode.isPending}
+                />
+                Include splash artwork (random)
+              </label>
               <button
                 className="btn btn-primary w-full"
                 disabled={createAdminCode.isPending}
@@ -826,6 +853,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                           {c.maxRedemptions === null
                             ? `${c.redemptionCount} used (unlimited)`
                             : `${c.redemptionCount}/${c.maxRedemptions} used`}
+                          {c.backgroundVariant ? " · 🎨 art" : ""}
                         </div>
                       </div>
                       <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
@@ -834,7 +862,13 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                         </button>
                         <button
                           className="btn"
-                          onClick={() => handleMakeCard(c.code, c.grantsPassKind)}
+                          onClick={() =>
+                            handleMakeCard(
+                              c.code,
+                              c.grantsPassKind,
+                              c.backgroundVariant ?? null,
+                            )
+                          }
                         >
                           Card
                         </button>

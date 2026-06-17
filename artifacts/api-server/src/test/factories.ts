@@ -155,6 +155,7 @@ export async function seedDiscountCode(
     issuedByUserId?: string | null;
     issuerKind?: string | null;
     issuedAt?: Date | null;
+    backgroundVariant?: string | null;
   } = {},
 ): Promise<void> {
   await db.insert(discountCodesTable).values({
@@ -165,6 +166,7 @@ export async function seedDiscountCode(
     issuedByUserId: opts.issuedByUserId ?? null,
     issuerKind: opts.issuerKind ?? null,
     issuedAt: opts.issuedAt ?? null,
+    backgroundVariant: opts.backgroundVariant ?? null,
   });
   createdCodes.push(code);
 }

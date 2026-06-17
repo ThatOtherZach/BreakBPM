@@ -14,4 +14,5 @@ export interface AdminCodeInput {
      * @nullable
      */
   maxRedemptions?: number | null;
+  includeArtwork?: boolean;
 }

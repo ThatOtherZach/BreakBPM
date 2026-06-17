@@ -27,6 +27,31 @@ describe("createAdminDiscountCode", () => {
     expect(row?.expiresAt).toBeNull();
   });
 
+  it("stores a random artwork variant by default (includeArtwork omitted)", async () => {
+    const admin = await createUser();
+    const result = await createAdminDiscountCode({
+      issuedByUserId: admin.id,
+      kind: "month",
+      maxRedemptions: 1,
+    });
+    expect(["shark", "pool-player", "hustler"]).toContain(result.backgroundVariant);
+    const row = await getDiscountCode(result.code);
+    expect(row?.backgroundVariant).toBe(result.backgroundVariant);
+  });
+
+  it("stores no artwork when includeArtwork is false", async () => {
+    const admin = await createUser();
+    const result = await createAdminDiscountCode({
+      issuedByUserId: admin.id,
+      kind: "month",
+      maxRedemptions: 1,
+      includeArtwork: false,
+    });
+    expect(result.backgroundVariant).toBeNull();
+    const row = await getDiscountCode(result.code);
+    expect(row?.backgroundVariant).toBeNull();
+  });
+
   it("supports unlimited redemptions via null cap", async () => {
     const admin = await createUser();
     const result = await createAdminDiscountCode({

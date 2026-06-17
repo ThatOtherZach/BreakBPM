@@ -1821,9 +1821,9 @@ router.get("/games/profile", async (req, res): Promise<void> => {
   };
 
   // Pass-themed background: a paid player wears one of three splash artworks
-  // only when their pass carried a redeem card (the card's code is the
-  // derivation key, so the profile matches it) — otherwise the plain default.
-  // A stored Theme override wins. Admins are effective Lifetime.
+  // only when their pass carried a redeem card whose code stored a variant at
+  // mint time (so the profile matches the printed card) — otherwise the plain
+  // default. A stored Theme override wins. Admins are effective Lifetime.
   const hostIsAdmin = isAdminEmail(host.email ?? "");
   const profileBackground = await resolveUserProfileBackground({
     userId: host.id,

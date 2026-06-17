@@ -1,6 +1,11 @@
 import { randomBytes } from "crypto";
 import { and, desc, eq } from "drizzle-orm";
 import { db, discountCodesTable, type PassKind } from "@workspace/db";
+import {
+  randomBackgroundVariant,
+  coerceBackgroundVariant,
+  type BackgroundVariant,
+} from "./profileBackground";
 
 /**
  * Admin-issued comp codes. Unlike the Day-Pass gift flow (one live single-use
@@ -43,18 +48,26 @@ export interface AdminCodeSummary {
   maxRedemptions: number | null;
   redemptionCount: number;
   createdAt: Date;
+  backgroundVariant: BackgroundVariant | null;
 }
 
 /**
  * Mint a new admin comp code. Retries on the (astronomically unlikely) PK
  * collision so we never surface a 500 for a transient duplicate.
+ *
+ * When `includeArtwork` is true (the default), a random splash artwork is
+ * chosen NOW and stored on the code, so the redeem card and whoever redeems it
+ * wear that exact artwork. When false, the code carries no artwork.
  */
 export async function createAdminDiscountCode(input: {
   issuedByUserId: string;
   kind: PassKind;
   maxRedemptions: number | null;
+  includeArtwork?: boolean;
 }): Promise<AdminCodeSummary> {
   const now = new Date();
+  const backgroundVariant =
+    input.includeArtwork === false ? null : randomBackgroundVariant();
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = randomCode();
     try {
@@ -67,6 +80,7 @@ export async function createAdminDiscountCode(input: {
           issuedByUserId: input.issuedByUserId,
           issuedAt: now,
           issuerKind: "admin",
+          backgroundVariant,
         })
         .returning();
       return {
@@ -75,6 +89,7 @@ export async function createAdminDiscountCode(input: {
         maxRedemptions: row.maxRedemptions,
         redemptionCount: row.redemptionCount,
         createdAt: row.createdAt,
+        backgroundVariant: coerceBackgroundVariant(row.backgroundVariant),
       };
     } catch (e) {
       // drizzle can wrap the pg error, so the SQLSTATE may sit on the cause.
@@ -100,6 +115,7 @@ export async function listAdminDiscountCodes(
       maxRedemptions: discountCodesTable.maxRedemptions,
       redemptionCount: discountCodesTable.redemptionCount,
       createdAt: discountCodesTable.createdAt,
+      backgroundVariant: discountCodesTable.backgroundVariant,
     })
     .from(discountCodesTable)
     .where(
@@ -117,5 +133,6 @@ export async function listAdminDiscountCodes(
     maxRedemptions: r.maxRedemptions,
     redemptionCount: r.redemptionCount,
     createdAt: r.createdAt,
+    backgroundVariant: coerceBackgroundVariant(r.backgroundVariant),
   }));
 }
