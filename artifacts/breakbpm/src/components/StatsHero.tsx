@@ -149,19 +149,34 @@ export default function StatsHero({
   screenName,
   adminName,
   joinedAt,
+  backgroundUrl,
 }: {
   stats: StatsResult;
   screenName?: string;
   adminName?: boolean;
   joinedAt?: string | null;
+  backgroundUrl?: string | null;
 }) {
   const isPersonal = stats.appliedScope === "personal";
   const rateLabel = isPersonal ? "WIN RATE" : "FINISH RATE";
   const rateValue = isPersonal ? stats.winRate : stats.finishRate;
 
+  // Pass-themed artwork sits *behind* this CRT readout: the splash image is the
+  // bottom layer, a dark gradient over it keeps the green text legible, and the
+  // base scanlines (normally from CSS) are re-declared on top so they survive
+  // the inline background-image override. No artwork → undefined → CSS default.
+  const heroStyle: React.CSSProperties | undefined = backgroundUrl
+    ? {
+        backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.16) 2px, rgba(0,0,0,0.16) 4px), linear-gradient(rgba(10,26,10,0.82), rgba(10,26,10,0.9)), url(${backgroundUrl})`,
+        backgroundSize: "auto, auto, cover",
+        backgroundPosition: "center, center, center",
+        backgroundRepeat: "repeat, no-repeat, no-repeat",
+      }
+    : undefined;
+
   if (stats.gamesPlayed === 0) {
     return (
-      <div className="stats-hero">
+      <div className="stats-hero" style={heroStyle}>
         {screenName && isPersonal && (
           <div className="stats-hero-header">
             <div className="stats-hero-player">
@@ -184,7 +199,7 @@ export default function StatsHero({
   }
 
   return (
-    <div className="stats-hero">
+    <div className="stats-hero" style={heroStyle}>
       <div className="stats-hero-header">
         {screenName && (
           <div className="stats-hero-player">

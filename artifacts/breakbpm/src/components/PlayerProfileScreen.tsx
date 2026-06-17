@@ -55,23 +55,15 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
   const games = profile.data?.games ?? [];
   const stats = profile.data?.stats ?? null;
 
-  // Pass-themed background: paid players' profiles wear one of three splash
-  // artworks (server-resolved to match their redeem card / Theme override). A
-  // dark gradient is layered over the artwork so the CRT readout stays legible;
-  // unpaid/anon players get null here and keep the default teal background.
+  // Pass-themed artwork for the CRT stat readout: paid players' hero card wears
+  // one of three splash artworks (server-resolved to match their redeem card /
+  // Theme override) behind a dark overlay; unpaid/anon players get null and the
+  // hero keeps its default CRT look. The page background itself is unchanged.
   const bgVariant = (profile.data?.profileBackground ?? null) as BackgroundVariant | null;
-  const pageStyle = bgVariant
-    ? {
-        backgroundImage: `linear-gradient(rgba(5,10,8,0.84), rgba(5,10,8,0.92)), url(${VARIANT_IMAGE_URLS[bgVariant]})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
-      }
-    : undefined;
+  const heroBackgroundUrl = bgVariant ? VARIANT_IMAGE_URLS[bgVariant] : null;
 
   return (
-    <div className="app-window app-window--page" style={pageStyle}>
+    <div className="app-window app-window--page">
       <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
       <div className="app-body">
         {profile.isLoading && (
@@ -104,7 +96,7 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
             {/* Header — the same CRT hero readout as the Stats page, scoped to
                 this player's last 24 hours. */}
             {stats ? (
-              <StatsHero stats={stats} screenName={screenName} adminName={profile.data.isAdmin ?? false} joinedAt={profile.data.memberSince} />
+              <StatsHero stats={stats} screenName={screenName} adminName={profile.data.isAdmin ?? false} joinedAt={profile.data.memberSince} backgroundUrl={heroBackgroundUrl} />
             ) : (
               <div
                 className="panel"
