@@ -4,11 +4,12 @@
  * Theme picker can preselect the resolved artwork). Wraps the pure
  * `resolveProfileBackground` with the pass lookup + derivation-key rule.
  *
- * Derivation rule: artwork is only ever *assigned by a redeem card*. The
- * headline active pass's redeem code (stored in `sourceRef` for discount-code
- * passes) is the derivation key, so the profile matches the printed card.
- * Passes with no card — crypto purchases, grants, admin effective-Lifetime —
- * carry no key, so `auto` resolves to the plain default (null) for them.
+ * Derivation rule: artwork is only ever *assigned by a redeem card*. ANY active
+ * discount-code pass's redeem code (stored in `sourceRef`) is the derivation key
+ * (the most recently redeemed wins if there are several), so the profile matches
+ * the printed card. Passes with no card — crypto purchases, grants, admin
+ * effective-Lifetime — carry no key, so `auto` resolves to the plain default
+ * (null) for them.
  */
 import { db, passesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -40,20 +41,15 @@ export async function resolveUserProfileBackground(args: {
 
   const isAdmin = isAdminEmail(args.email ?? "");
 
-  // Headline pass = latest-expiring (lifetime sorts last); its redeem code is
-  // the derivation key when it was redeemed from a card.
-  const headlinePass =
-    activePassRows.length > 0
-      ? activePassRows.reduce((a, b) => {
-          const ae = a.durationSeconds === null ? Infinity : a.startedAt.getTime() + a.durationSeconds * 1000;
-          const be = b.durationSeconds === null ? Infinity : b.startedAt.getTime() + b.durationSeconds * 1000;
-          return be > ae ? b : a;
-        })
-      : null;
-  const deriveKey =
-    headlinePass && headlinePass.source === "discount_code" && headlinePass.sourceRef
-      ? headlinePass.sourceRef
-      : null;
+  // Artwork is carried by a redeemed *card* — a discount-code pass whose code we
+  // stored in `sourceRef`. If the player holds ANY active card pass, its code is
+  // the derivation key (the most recently redeemed wins when there are several),
+  // so the profile matches the printed card. Passes with no card — crypto
+  // purchases, grants, admin effective-Lifetime — carry no artwork.
+  const latestCardPass = activePassRows
+    .filter((p) => p.source === "discount_code" && p.sourceRef)
+    .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())[0];
+  const deriveKey = latestCardPass?.sourceRef ?? null;
 
   return resolveProfileBackground({
     isPaid: activePassRows.length > 0 || isAdmin,

@@ -14,11 +14,14 @@ A `/watch/<name>` profile's splash artwork (shark / pool-player / hustler) is
   `sourceRef` (the code) is the djb2 derivation key, so the artwork matches the
   printed card. Passes with no card — crypto, `grant`, admin effective-Lifetime —
   derive nothing → plain.
-- A stored explicit `profileTheme` (shark/pool-player/hustler/none) always wins.
-- The **headline pass = latest-expiring** (lifetime sorts last). The theme follows
-  the headline pass, so a user with a short card pass AND a longer non-card/lifetime
-  pass resolves to **plain** (the longer pass is headline and has no card). This is
-  deliberate — there's a regression test in `games-profile.test.ts` guarding it.
+- A stored explicit `profileTheme` (shark/pool-player/hustler/none) always wins —
+  this is how a Lifetime holder selects/overrides their theme.
+- **Any active redeemed-card pass applies its artwork** — do NOT gate on a
+  "headline / longest pass". A user with a card pass AND a longer non-card/lifetime
+  pass still shows the card's artwork (most-recently-redeemed card wins if several).
+  An earlier "headline pass wins" rule was wrong and contradicted the owner's
+  intent ("if they redeemed a pass with artwork, it gets applied"); `games-profile.test.ts`
+  now guards the corrected behavior.
 
 **Why:** the artwork exists to mirror the physical/redeem card, so assigning it to
 non-card holders is meaningless; the owner wanted the default to be plain.

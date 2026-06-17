@@ -84,24 +84,23 @@ describe("GET /games/profile — profileBackground wiring", () => {
     expect(res.body.profileBackground).toBeNull();
   });
 
-  it("headline pass wins: a longer non-card pass yields plain even with a card pass present", async () => {
+  it("a redeemed-card pass applies its artwork even alongside a longer non-card pass", async () => {
     const host = await createUser();
-    // A short card pass that would derive artwork on its own...
+    // A redeemed card (discount-code pass) carries artwork...
     await seedPass(host.id, "month", {
       source: "discount_code",
       sourceRef: "CARD-X",
       durationSeconds: 30 * 24 * 60 * 60,
     });
-    // ...but a longer-expiring lifetime grant (no card) is the headline pass,
-    // and it carries no redeem code → nothing to derive → plain. This is a
-    // deliberate product rule (theme follows the headline/longest pass).
-    await seedPass(host.id, "lifetime"); // grant, durationSeconds=null → never expires
+    // ...and a longer-expiring non-card grant must NOT suppress it: if they
+    // redeemed a pass with artwork, that artwork gets applied.
+    await seedPass(host.id, "lifetime"); // grant, no card
 
     const res = await fetchProfile(host.screenName);
 
     expect(res.status).toBe(200);
     expect(res.body.found).toBe(true);
-    expect(res.body.profileBackground).toBeNull();
+    expect(res.body.profileBackground).toBe(backgroundVariantForKey("CARD-X"));
   });
 
   it("returns a null background for an unpaid host", async () => {
@@ -137,7 +136,7 @@ describe("GET /games/profile — profileBackground wiring", () => {
       expect(res.body.profileBackground).toBe("hustler");
     });
 
-    it("'auto' → derived from the headline pass's redeem code", async () => {
+    it("'auto' → derived from an active redeemed-card pass's code", async () => {
       const host = await createUser();
       await seedPass(host.id, "lifetime", { source: "discount_code", sourceRef: "CARD-TEST" });
       await setTheme(host.id, "auto");

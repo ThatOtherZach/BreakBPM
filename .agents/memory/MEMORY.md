@@ -39,4 +39,4 @@
 - [Venue list vs compass coupling](venue-list-vs-compass-coupling.md) — GET /venues serves a paginated list AND the nearest-hall compass (needs ALL venues via ?all=true); paginating the compass silently breaks "nearest".
 - [Free-claim comp ledger](free-claim-comp-ledger.md) — giveaway redemptions (issuerKind='claim') must book $0 comp even for Lucky Break, else a free roll records $4.99 phantom revenue; oversell-safe atomic pool draw + 3 double-grant guards.
 - [Account schema shared by 3 handlers](account-schema-shared-parse.md) — required field on OpenAPI Account must be populated in GET /auth/me + both PATCH handlers; Zod .parse(unknown) means typecheck won't catch a missing one (runtime 500).
-- [Profile background derivation](profile-background-derivation.md) — /watch artwork is card-only (discount_code sourceRef = djb2 key); default none; explicit theme wins; headline = latest-expiring pass drives it.
+- [Profile background derivation](profile-background-derivation.md) — /watch artwork is card-only (any active discount_code pass's sourceRef = djb2 key, latest wins); default none; explicit theme wins; NO headline/longest-pass gating.
