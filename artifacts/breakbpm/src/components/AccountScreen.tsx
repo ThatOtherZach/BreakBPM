@@ -489,7 +489,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
             )}
             {!editing && canEditName && (
               <div style={{ fontSize: 11, color: "#444", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
-                <span>🎨 Profile theme</span>
+                <span>🎨 Theme</span>
                 <select
                   value={
                     account.profileTheme === "auto"
@@ -500,10 +500,10 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                   onChange={(e) => handleChangeTheme(e.target.value as AccountProfileTheme)}
                   style={{ fontFamily: "inherit", fontSize: 11, padding: "1px 2px" }}
                 >
+                  <option value="shark">The Shark</option>
+                  <option value="pool-player">The Kid</option>
+                  <option value="hustler">The Hustler</option>
                   <option value="none">None</option>
-                  <option value="shark">Shark</option>
-                  <option value="pool-player">Pool Player</option>
-                  <option value="hustler">Hustler</option>
                 </select>
               </div>
             )}
