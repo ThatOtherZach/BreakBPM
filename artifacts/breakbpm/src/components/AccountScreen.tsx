@@ -93,12 +93,11 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   const [adminMsg, setAdminMsg] = useState("");
   const [adminCopied, setAdminCopied] = useState("");
   // Branded redeem-card image generator. `card` holds the code+tier currently
-  // rendered onto the preview canvas; `autoDownloadCard` controls whether a
-  // freshly minted code's card downloads automatically.
+  // rendered onto the preview canvas.
+  // One flow: when on, a freshly minted code downloads its branded card AND
+  // carries splash artwork (stored on the code; the recipient's watch profile +
+  // the card both wear it). Off → no card download and no artwork assigned.
   const [autoDownloadCard, setAutoDownloadCard] = useState(true);
-  // Whether a freshly minted code should carry splash artwork (stored on the
-  // code; the recipient's watch profile + the card both wear it). Default on.
-  const [includeArtwork, setIncludeArtwork] = useState(true);
   const [card, setCard] = useState<{
     code: string;
     kind: string;
@@ -325,7 +324,9 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
     }
     try {
       const res = await createAdminCode.mutateAsync({
-        data: { kind: adminKind, maxRedemptions, includeArtwork },
+        // One flow: opting into the branded card download also stores its
+        // artwork on the code, so the buyer's card and watch profile match.
+        data: { kind: adminKind, maxRedemptions, includeArtwork: autoDownloadCard },
       });
       qc.invalidateQueries({ queryKey: getListAdminDiscountCodesQueryKey() });
       // Render the shareable card for the freshly minted code; auto-download
@@ -753,16 +754,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                   onChange={(e) => setAutoDownloadCard(e.target.checked)}
                   disabled={createAdminCode.isPending}
                 />
-                Auto-download card image
-              </label>
-              <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                <input
-                  type="checkbox"
-                  checked={includeArtwork}
-                  onChange={(e) => setIncludeArtwork(e.target.checked)}
-                  disabled={createAdminCode.isPending}
-                />
-                Include splash artwork (random)
+                Auto-download card + assign artwork
               </label>
               <button
                 className="btn btn-primary w-full"
