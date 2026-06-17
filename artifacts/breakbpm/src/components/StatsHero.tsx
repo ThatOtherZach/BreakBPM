@@ -167,7 +167,7 @@ export default function StatsHero({
   // the inline background-image override. No artwork → undefined → CSS default.
   const heroStyle: React.CSSProperties | undefined = backgroundUrl
     ? {
-        backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.16) 2px, rgba(0,0,0,0.16) 4px), linear-gradient(rgba(8,18,10,0.93), rgba(8,18,10,0.95)), url(${backgroundUrl})`,
+        backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.16) 2px, rgba(0,0,0,0.16) 4px), linear-gradient(rgba(8,18,10,0.75), rgba(8,18,10,0.82)), url(${backgroundUrl})`,
         backgroundSize: "auto, auto, cover",
         backgroundPosition: "center, center, center",
         backgroundRepeat: "repeat, no-repeat, no-repeat",

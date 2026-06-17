@@ -1823,12 +1823,26 @@ html, #root {
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  /* Wrap when the name + BPM block can't fit on one row, so a long screen name
+     drops the AVG-BPM readout onto its own line instead of shoving it off the
+     right edge of the card. */
+  flex-wrap: wrap;
 }
 .stats-hero-header .stats-hero-main {
   flex: 0 0 auto;
   margin-left: auto;
   align-items: flex-end;
   text-align: right;
+}
+/* The player identity block must be allowed to shrink (min-width:0) or its long
+   name keeps the header wider than the card and pushes the BPM block out. */
+.stats-hero-header .stats-hero-player {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.stats-hero-name {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .stats-hero-main {
