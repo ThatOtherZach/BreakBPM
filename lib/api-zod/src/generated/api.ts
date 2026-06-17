@@ -37,7 +37,8 @@ export const GetMeResponse = zod.object({
   "id": zod.string(),
   "screenName": zod.string(),
   "email": zod.string().nullish(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler'])
 }).optional(),
   "entitlement": zod.object({
   "tier": zod.enum(['public', 'account', 'pass']),
@@ -81,7 +82,26 @@ export const UpdateScreenNameResponse = zod.object({
   "id": zod.string(),
   "screenName": zod.string(),
   "email": zod.string().nullish(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler'])
+})
+
+
+/**
+ * Sets the player's watch-profile background artwork preference. A Lifetime-pass perk (admins are effective Lifetime holders). "auto" clears the override so the artwork is derived from the player's pass.
+
+ * @summary Update the signed-in user's watch-profile background theme
+ */
+export const UpdateProfileThemeBody = zod.object({
+  "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler'])
+})
+
+export const UpdateProfileThemeResponse = zod.object({
+  "id": zod.string(),
+  "screenName": zod.string(),
+  "email": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler'])
 })
 
 
@@ -651,6 +671,7 @@ export const GetPublicProfileResponse = zod.object({
   "winRate": zod.number().nullish(),
   "avgBpm": zod.number().nullish(),
   "isAdmin": zod.boolean().optional(),
+  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullish(),
   "games": zod.array(zod.object({
   "id": zod.string(),
   "gameType": zod.string(),

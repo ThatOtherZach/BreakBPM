@@ -72,6 +72,7 @@ import type {
   OsmVenueList,
   PassCheckoutInput,
   PlanCatalog,
+  ProfileThemeUpdate,
   PublicProfileResult,
   RedeemResult,
   RemoveInviteResult,
@@ -411,6 +412,79 @@ export const useUpdateScreenName = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateScreenNameMutationOptions(options));
+    }
+
+export const getUpdateProfileThemeUrl = () => {
+
+
+
+
+  return `/api/auth/profile-theme`
+}
+
+/**
+ * Sets the player's watch-profile background artwork preference. A Lifetime-pass perk (admins are effective Lifetime holders). "auto" clears the override so the artwork is derived from the player's pass.
+
+ * @summary Update the signed-in user's watch-profile background theme
+ */
+export const updateProfileTheme = async (profileThemeUpdate: ProfileThemeUpdate, options?: RequestInit): Promise<Account> => {
+
+  return customFetch<Account>(getUpdateProfileThemeUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      profileThemeUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateProfileThemeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfileTheme>>, TError,{data: BodyType<ProfileThemeUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProfileTheme>>, TError,{data: BodyType<ProfileThemeUpdate>}, TContext> => {
+
+const mutationKey = ['updateProfileTheme'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProfileTheme>>, {data: BodyType<ProfileThemeUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateProfileTheme(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateProfileThemeMutationResult = NonNullable<Awaited<ReturnType<typeof updateProfileTheme>>>
+    export type UpdateProfileThemeMutationBody = BodyType<ProfileThemeUpdate>
+    export type UpdateProfileThemeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update the signed-in user's watch-profile background theme
+ */
+export const useUpdateProfileTheme = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfileTheme>>, TError,{data: BodyType<ProfileThemeUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateProfileTheme>>,
+        TError,
+        {data: BodyType<ProfileThemeUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateProfileThemeMutationOptions(options));
     }
 
 export const getRedeemDiscountCodeUrl = () => {

@@ -5,6 +5,7 @@ import StatsHero from "./StatsHero";
 import { PlayerName } from "./PlayerName";
 import { useAuth } from "../lib/authClient";
 import { useGetPublicProfile, getGetPublicProfileQueryKey } from "@workspace/api-client-react";
+import { VARIANT_IMAGE_URLS, type BackgroundVariant } from "../lib/backgroundVariants";
 
 interface Props {
   name: string;
@@ -54,8 +55,23 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
   const games = profile.data?.games ?? [];
   const stats = profile.data?.stats ?? null;
 
+  // Pass-themed background: paid players' profiles wear one of three splash
+  // artworks (server-resolved to match their redeem card / Theme override). A
+  // dark gradient is layered over the artwork so the CRT readout stays legible;
+  // unpaid/anon players get null here and keep the default teal background.
+  const bgVariant = (profile.data?.profileBackground ?? null) as BackgroundVariant | null;
+  const pageStyle = bgVariant
+    ? {
+        backgroundImage: `linear-gradient(rgba(5,10,8,0.84), rgba(5,10,8,0.92)), url(${VARIANT_IMAGE_URLS[bgVariant]})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
+      }
+    : undefined;
+
   return (
-    <div className="app-window app-window--page">
+    <div className="app-window app-window--page" style={pageStyle}>
       <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
       <div className="app-body">
         {profile.isLoading && (

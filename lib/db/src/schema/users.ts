@@ -16,6 +16,14 @@ export const usersTable = pgTable(
     authSubject: text("auth_subject").notNull(),
     screenName: text("screen_name").notNull(),
     email: text("email"),
+    /**
+     * Watch-profile background theme preference. NULL = "auto" (derive the
+     * splash artwork deterministically from the user's pass, matching their
+     * redeem card). "none" = plain default background. Otherwise a specific
+     * variant id ("shark" | "pool-player" | "hustler"). Only ever set by
+     * Lifetime holders / admins; ignored for unpaid players.
+     */
+    profileTheme: text("profile_theme"),
     /** Null until the user confirms their screen name in onboarding. */
     onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

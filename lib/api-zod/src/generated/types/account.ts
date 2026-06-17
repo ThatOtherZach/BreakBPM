@@ -5,6 +5,7 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { AccountProfileTheme } from './accountProfileTheme';
 
 export interface Account {
   id: string;
@@ -12,4 +13,5 @@ export interface Account {
   /** @nullable */
   email?: string | null;
   createdAt: Date;
+  profileTheme: AccountProfileTheme;
 }

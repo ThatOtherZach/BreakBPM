@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { GameHistoryEntry } from './gameHistoryEntry';
+import type { PublicProfileResultProfileBackground } from './publicProfileResultProfileBackground';
 import type { PublicProfileResultReason } from './publicProfileResultReason';
 import type { StatsResult } from './statsResult';
 
@@ -23,6 +24,8 @@ export interface PublicProfileResult {
   /** @nullable */
   avgBpm?: number | null;
   isAdmin?: boolean;
+  /** @nullable */
+  profileBackground?: PublicProfileResultProfileBackground;
   games: GameHistoryEntry[];
   stats?: StatsResult | null;
 }

@@ -5,9 +5,12 @@ import {
   GetMeResponse,
   UpdateScreenNameBody,
   UpdateScreenNameResponse,
+  UpdateProfileThemeBody,
+  UpdateProfileThemeResponse,
 } from "@workspace/api-zod";
 import { getVerifiedSubject, getOrCreateUser, needsOnboarding } from "../lib/auth";
 import { computeEntitlement, getActivePasses } from "../lib/entitlement";
+import { normalizeProfileTheme } from "../lib/profileBackground";
 import type { User } from "@workspace/db";
 
 // Custom screen names are a Lifetime-pass perk. Admins are treated as effective
@@ -49,6 +52,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
         screenName: user.screenName,
         email: user.email,
         createdAt: user.createdAt,
+        profileTheme: normalizeProfileTheme(user.profileTheme),
       },
       entitlement,
       passes,
@@ -128,6 +132,45 @@ router.patch("/auth/screen-name", async (req, res): Promise<void> => {
       screenName: updated.screenName,
       email: updated.email,
       createdAt: updated.createdAt,
+      profileTheme: normalizeProfileTheme(updated.profileTheme),
+    }),
+  );
+});
+
+// Watch-profile background theme. Like custom screen names, this is a Lifetime
+// perk (admins included). "auto" clears the override (stored as NULL) so the
+// artwork derives from the player's pass; any other value is stored verbatim.
+router.patch("/auth/profile-theme", async (req, res): Promise<void> => {
+  const parsed = UpdateProfileThemeBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  if (!(await hasLifetimePerk(user))) {
+    res.status(403).json({
+      error: "Profile themes are a Lifetime pass perk. Upgrade to customise.",
+    });
+    return;
+  }
+  const stored = parsed.data.profileTheme === "auto" ? null : parsed.data.profileTheme;
+  const rows = await db
+    .update(usersTable)
+    .set({ profileTheme: stored })
+    .where(eq(usersTable.id, user.id))
+    .returning();
+  const updated = rows[0];
+  res.json(
+    UpdateProfileThemeResponse.parse({
+      id: updated.id,
+      screenName: updated.screenName,
+      email: updated.email,
+      createdAt: updated.createdAt,
+      profileTheme: normalizeProfileTheme(updated.profileTheme),
     }),
   );
 });

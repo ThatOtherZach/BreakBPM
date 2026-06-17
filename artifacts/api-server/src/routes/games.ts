@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { randomUUID } from "node:crypto";
 import { and, count, desc, eq, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
-import { db, gamesTable, gameParticipantsTable, usersTable, gameMentionsTable } from "@workspace/db";
+import { db, gamesTable, gameParticipantsTable, usersTable, gameMentionsTable, passesTable } from "@workspace/db";
 import {
   StartGameBody,
   StartGameResponse,
@@ -43,6 +43,7 @@ import { sweepStaleGames, finalizeGameIfStale, INACTIVITY_FORFEIT_MS, MAX_GAME_D
 import { newId } from "../lib/ids";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
 import { isAdminEmail } from "../lib/config";
+import { resolveProfileBackground } from "../lib/profileBackground";
 
 const router: IRouter = Router();
 
@@ -1677,6 +1678,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
       screenName: usersTable.screenName,
       createdAt: usersTable.createdAt,
       email: usersTable.email,
+      profileTheme: usersTable.profileTheme,
     })
     .from(usersTable)
     .where(sql`lower(${usersTable.screenName}) = ${handle}`)
@@ -1818,6 +1820,49 @@ router.get("/games/profile", async (req, res): Promise<void> => {
     ...statsRest,
   };
 
+  // Pass-themed background: paid players wear one of three splash artworks,
+  // derived from their pass so it matches the redeem card they were given
+  // (or honoring their stored Theme override). Resolved from the host's raw
+  // active passes — we need the source code / pass id as the derivation key,
+  // which the PassSummary shape doesn't carry. Admins are effective Lifetime.
+  const passRows = await db
+    .select({
+      id: passesTable.id,
+      source: passesTable.source,
+      sourceRef: passesTable.sourceRef,
+      startedAt: passesTable.startedAt,
+      durationSeconds: passesTable.durationSeconds,
+    })
+    .from(passesTable)
+    .where(eq(passesTable.userId, host.id));
+  const profileNow = Date.now();
+  const activePassRows = passRows.filter((p) => {
+    if (p.startedAt.getTime() > profileNow) return false;
+    if (p.durationSeconds === null) return true; // lifetime
+    return p.startedAt.getTime() + p.durationSeconds * 1000 > profileNow;
+  });
+  const hostIsAdmin = isAdminEmail(host.email ?? "");
+  // Headline pass = latest-expiring (lifetime sorts last). Its redeem code
+  // (discount-code passes store it in sourceRef) is the derivation key so the
+  // profile matches the card; fall back to the pass id, then the user id.
+  const headlinePass =
+    activePassRows.length > 0
+      ? activePassRows.reduce((a, b) => {
+          const ae = a.durationSeconds === null ? Infinity : a.startedAt.getTime() + a.durationSeconds * 1000;
+          const be = b.durationSeconds === null ? Infinity : b.startedAt.getTime() + b.durationSeconds * 1000;
+          return be > ae ? b : a;
+        })
+      : null;
+  const deriveKey =
+    headlinePass && headlinePass.source === "discount_code" && headlinePass.sourceRef
+      ? headlinePass.sourceRef
+      : (headlinePass?.id ?? host.id);
+  const profileBackground = resolveProfileBackground({
+    isPaid: activePassRows.length > 0 || hostIsAdmin,
+    theme: host.profileTheme,
+    deriveKey,
+  });
+
   res.json(
     GetPublicProfileResponse.parse({
       found: true,
@@ -1826,7 +1871,8 @@ router.get("/games/profile", async (req, res): Promise<void> => {
       gamesPlayed,
       winRate,
       avgBpm,
-      isAdmin: isAdminEmail(host.email ?? ""),
+      isAdmin: hostIsAdmin,
+      profileBackground,
       games,
       stats,
     }),

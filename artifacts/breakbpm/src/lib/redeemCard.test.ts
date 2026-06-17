@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { redeemUrlFor, cardFilename, passKindLabel } from "./redeemCard";
+import { backgroundVariantForKey, BACKGROUND_VARIANTS } from "./backgroundVariants";
 
 function stubOrigin(origin: string): void {
   vi.stubGlobal("window", { location: { origin } });
@@ -89,5 +90,36 @@ describe("passKindLabel", () => {
 
   it("falls back to 'PASS' for an empty string", () => {
     expect(passKindLabel("")).toBe("PASS");
+  });
+});
+
+// LOCKSTEP: these expected pairs are mirrored in the api-server's
+// profileBackground.test.ts. Both implementations must agree so a redeem
+// card's artwork matches the recipient's server-resolved watch-profile
+// background. If you change the variant order or the hash, update BOTH tests.
+describe("backgroundVariantForKey (lockstep with server)", () => {
+  it.each([
+    ["BB-ABC123", "hustler"],
+    ["HELLO", "shark"],
+    ["abc", "pool-player"],
+    ["pass_001", "shark"],
+    ["ZZZ-999", "hustler"],
+    ["gift-7", "shark"],
+    ["lucky", "pool-player"],
+    ["u_5f3a9c", "hustler"],
+    ["CARD-TEST", "pool-player"],
+    ["x", "pool-player"],
+  ])("maps %s -> %s", (key, variant) => {
+    expect(backgroundVariantForKey(key)).toBe(variant);
+  });
+
+  it("is case- and whitespace-insensitive", () => {
+    expect(backgroundVariantForKey("  hello  ")).toBe(backgroundVariantForKey("HELLO"));
+  });
+
+  it("only ever returns a known variant", () => {
+    for (const k of ["", "a", "longer-key-here", "12345"]) {
+      expect(BACKGROUND_VARIANTS).toContain(backgroundVariantForKey(k));
+    }
   });
 });

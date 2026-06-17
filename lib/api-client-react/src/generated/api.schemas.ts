@@ -18,12 +18,24 @@ export interface AppConfig {
   storeUrl: string;
 }
 
+export type AccountProfileTheme = typeof AccountProfileTheme[keyof typeof AccountProfileTheme];
+
+
+export const AccountProfileTheme = {
+  auto: 'auto',
+  none: 'none',
+  shark: 'shark',
+  'pool-player': 'pool-player',
+  hustler: 'hustler',
+} as const;
+
 export interface Account {
   id: string;
   screenName: string;
   /** @nullable */
   email?: string | null;
   createdAt: string;
+  profileTheme: AccountProfileTheme;
 }
 
 export type PassSummaryKind = typeof PassSummaryKind[keyof typeof PassSummaryKind];
@@ -462,6 +474,21 @@ export interface ScreenNameUpdate {
      * @maxLength 32
      */
   screenName: string;
+}
+
+export type ProfileThemeUpdateProfileTheme = typeof ProfileThemeUpdateProfileTheme[keyof typeof ProfileThemeUpdateProfileTheme];
+
+
+export const ProfileThemeUpdateProfileTheme = {
+  auto: 'auto',
+  none: 'none',
+  shark: 'shark',
+  'pool-player': 'pool-player',
+  hustler: 'hustler',
+} as const;
+
+export interface ProfileThemeUpdate {
+  profileTheme: ProfileThemeUpdateProfileTheme;
 }
 
 export interface DiscountRedeemInput {
@@ -989,6 +1016,18 @@ export const PublicProfileResultReason = {
   rate_limited: 'rate_limited',
 } as const;
 
+/**
+ * @nullable
+ */
+export type PublicProfileResultProfileBackground = typeof PublicProfileResultProfileBackground[keyof typeof PublicProfileResultProfileBackground] | null;
+
+
+export const PublicProfileResultProfileBackground = {
+  shark: 'shark',
+  'pool-player': 'pool-player',
+  hustler: 'hustler',
+} as const;
+
 export type StatsResultTier = typeof StatsResultTier[keyof typeof StatsResultTier];
 
 
@@ -1124,6 +1163,8 @@ export interface PublicProfileResult {
   /** @nullable */
   avgBpm?: number | null;
   isAdmin?: boolean;
+  /** @nullable */
+  profileBackground?: PublicProfileResultProfileBackground;
   games: GameHistoryEntry[];
   stats?: StatsResult | null;
 }

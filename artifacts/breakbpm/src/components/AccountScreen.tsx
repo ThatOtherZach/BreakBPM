@@ -13,6 +13,7 @@ import {
 import {
   useGetMe,
   useUpdateScreenName,
+  useUpdateProfileTheme,
   useGetGameHistory,
   useCancelSubscription,
   useListMyGiftCodes,
@@ -30,6 +31,7 @@ import {
   getListMyInvitesQueryKey,
   type LuckyBreakResult,
   type AdminCodeInputKind,
+  type AccountProfileTheme,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "./Navbar";
@@ -106,6 +108,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   const me = useGetMe();
   const history = useGetGameHistory({ page: historyPage });
   const updateName = useUpdateScreenName();
+  const updateTheme = useUpdateProfileTheme();
   const cancelSub = useCancelSubscription();
   const myGiftCodes = useListMyGiftCodes();
   const generateGift = useGenerateGiftCode();
@@ -187,7 +190,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
     let cancelled = false;
     (async () => {
       try {
-        const [img] = await Promise.all([loadCardBackground(), ensureCardFonts()]);
+        const [img] = await Promise.all([loadCardBackground(card.code), ensureCardFonts()]);
         if (cancelled) return;
         const out = cardCanvasRef.current;
         const qr = qrCanvasRef.current;
@@ -264,6 +267,16 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
       // in the response body — surface that rather than a generic message.
       const serverError = (e as { data?: { error?: string } })?.data?.error;
       setError(serverError ?? (e instanceof Error ? e.message : "Update failed"));
+    }
+  }
+
+  async function handleChangeTheme(theme: AccountProfileTheme) {
+    try {
+      await updateTheme.mutateAsync({ data: { profileTheme: theme } });
+      qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+    } catch {
+      // Non-fatal: the select snaps back to the server value on the next
+      // me refetch, so a failed save simply leaves the old theme in place.
     }
   }
 
@@ -472,6 +485,23 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 >
                   breakbpm.com/watch/{account.screenName}
                 </a>
+              </div>
+            )}
+            {!editing && canEditName && (
+              <div style={{ fontSize: 11, color: "#444", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                <span>🎨 Profile theme</span>
+                <select
+                  value={account.profileTheme}
+                  disabled={updateTheme.isPending}
+                  onChange={(e) => handleChangeTheme(e.target.value as AccountProfileTheme)}
+                  style={{ fontFamily: "inherit", fontSize: 11, padding: "1px 2px" }}
+                >
+                  <option value="auto">Default (from pass)</option>
+                  <option value="shark">Shark</option>
+                  <option value="pool-player">Pool Player</option>
+                  <option value="hustler">Hustler</option>
+                  <option value="none">None</option>
+                </select>
               </div>
             )}
             {error && <div style={{ color: "#c00", fontSize: 12 }}>{error}</div>}

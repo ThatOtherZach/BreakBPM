@@ -78,6 +78,27 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Account" }
 
+  /auth/profile-theme:
+    patch:
+      operationId: updateProfileTheme
+      tags: [auth]
+      summary: Update the signed-in user's watch-profile background theme
+      description: >
+        Sets the player's watch-profile background artwork preference. A
+        Lifetime-pass perk (admins are effective Lifetime holders). "auto"
+        clears the override so the artwork is derived from the player's pass.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProfileThemeUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Account" }
+
   /passes/redeem:
     post:
       operationId: redeemDiscountCode
@@ -1112,12 +1133,19 @@ components:
 
     Account:
       type: object
-      required: [id, screenName, createdAt]
+      required: [id, screenName, createdAt, profileTheme]
       properties:
         id: { type: string }
         screenName: { type: string }
         email: { type: ["string", "null"] }
         createdAt: { type: string, format: date-time }
+        # Watch-profile background theme preference. "auto" derives the splash
+        # artwork from the user's pass (matching their redeem card); "none" is
+        # a plain background; otherwise a specific artwork. Only Lifetime
+        # holders / admins can change it.
+        profileTheme:
+          type: string
+          enum: [auto, none, shark, pool-player, hustler]
 
     PassSummary:
       type: object
@@ -1459,6 +1487,16 @@ components:
       required: [screenName]
       properties:
         screenName: { type: string, minLength: 1, maxLength: 32 }
+
+    ProfileThemeUpdate:
+      type: object
+      required: [profileTheme]
+      properties:
+        # "auto" clears the override (derive from pass); "none" = plain
+        # background; otherwise a specific splash artwork.
+        profileTheme:
+          type: string
+          enum: [auto, none, shark, pool-player, hustler]
 
     DiscountRedeemInput:
       type: object
@@ -2058,6 +2096,13 @@ components:
         avgBpm: { type: ["number", "null"] }
         # True when this player is an admin (rainbow name effect).
         isAdmin: { type: boolean }
+        # The splash artwork to render behind this profile's stats. Resolved
+        # server-side from the player's pass (matching their redeem card) or
+        # their stored Theme override. Null for unpaid players or a "none"
+        # override — the profile keeps the plain default background.
+        profileBackground:
+          type: ["string", "null"]
+          enum: [shark, pool-player, hustler]
         # Up to the five most recent completed games, newest-first. Same
         # shape (and rendered with the same cards) as the owner's own
         # account history. Empty when found is false.
