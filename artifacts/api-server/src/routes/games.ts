@@ -2229,6 +2229,15 @@ router.get("/stats", async (req, res): Promise<void> => {
     effectiveRefresh,
   );
 
+  // For personal stats, fetch the global 24h average so the hero can show an
+  // above/below-average arrow. Global scope needs no comparison. Global stats
+  // are cached so this adds negligible overhead.
+  let globalAvgBpm: number | null = null;
+  if (appliedScope === "personal") {
+    const { core: globalCore } = await resolveStats("global", "24h", null, false);
+    globalAvgBpm = globalCore.avgBpm ?? null;
+  }
+
   const { computedAt, ...rest } = core;
   res.json(
     GetStatsResponse.parse({
@@ -2242,6 +2251,7 @@ router.get("/stats", async (req, res): Promise<void> => {
       canRefresh: isPass,
       cached,
       computedAt: new Date(computedAt).toISOString(),
+      globalAvgBpm,
       ...rest,
     }),
   );

@@ -260,7 +260,21 @@ export default function StatsHero({
           </div>
         )}
         <div className={`stats-hero-main${bpmWrapped ? " stats-hero-main--wrapped" : ""}`} ref={mainRef}>
-          <span className="stats-hero-label">▲ AVG BPM</span>
+          <span className="stats-hero-label">
+            {(() => {
+              const { avgBpm, globalAvgBpm } = stats;
+              const isBelow =
+                avgBpm != null && globalAvgBpm != null && avgBpm < globalAvgBpm;
+              return (
+                <>
+                  <span style={{ color: isBelow ? "#ff4444" : "#00ff41" }}>
+                    {isBelow ? "▼" : "▲"}
+                  </span>
+                  {" AVG BPM"}
+                </>
+              );
+            })()}
+          </span>
           <span className={`stats-hero-value${stats.avgBpm == null ? " dim" : ""}`}>
             {stats.avgBpm == null ? (
               "--"

@@ -2265,6 +2265,11 @@ components:
         # Mean / peak per-game BPM. Null when no game has a BPM yet.
         avgBpm: { type: ["number", "null"] }
         bestBpm: { type: ["number", "null"] }
+        # Global 24h average BPM across all players, for comparison. Only
+        # populated for personal-scope responses so the client can show an
+        # above/below-average arrow. Null for global scope or when there is
+        # no qualifying global data yet.
+        globalAvgBpm: { type: ["number", "null"] }
         # Aligned per-game trend for up to the last 24 games in the scope/window,
         # ordered oldest→newest so a chart reads left-to-right as time progresses.
         # One entry per game (in lockstep): each carries that game's BPM and

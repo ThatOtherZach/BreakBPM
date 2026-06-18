@@ -50,6 +50,8 @@ export interface StatsResult {
   avgBpm?: number | null;
   /** @nullable */
   bestBpm?: number | null;
+  /** @nullable */
+  globalAvgBpm?: number | null;
   trend: StatTrendPoint[];
   playTimeByType: StatPlayTime[];
   topBalls: StatBall[];

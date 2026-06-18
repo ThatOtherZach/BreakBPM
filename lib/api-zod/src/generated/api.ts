@@ -739,6 +739,7 @@ export const GetPublicProfileResponse = zod.object({
   "avgSafetiesPerGame": zod.number(),
   "avgBpm": zod.number().nullish(),
   "bestBpm": zod.number().nullish(),
+  "globalAvgBpm": zod.number().nullish(),
   "trend": zod.array(zod.object({
   "bpm": zod.number().nullable(),
   "accuracy": zod.number().nullable()
@@ -1003,6 +1004,7 @@ export const GetStatsResponse = zod.object({
   "avgSafetiesPerGame": zod.number(),
   "avgBpm": zod.number().nullish(),
   "bestBpm": zod.number().nullish(),
+  "globalAvgBpm": zod.number().nullish(),
   "trend": zod.array(zod.object({
   "bpm": zod.number().nullable(),
   "accuracy": zod.number().nullable()
