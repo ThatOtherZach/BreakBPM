@@ -131,9 +131,9 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
               </div>
             )}
 
-            {/* When there's no recent activity, fill the space with the
-                global leaderboard so the page has something to show. */}
-            {!stats && <LeaderboardWidget />}
+            {/* When the player has no activity in the last 24h, fill the
+                space with the global leaderboard instead of an empty panel. */}
+            {(stats?.gamesPlayed ?? 0) === 0 && <LeaderboardWidget />}
 
             {/* Recent games — same cards as the account page */}
             <div className="panel panel--wood">
