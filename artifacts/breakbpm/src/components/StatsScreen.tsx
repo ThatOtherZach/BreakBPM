@@ -261,7 +261,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                 title={canToggleGlobal ? undefined : "Get a pass to compare against everyone"}
               >
                 {appliedScope === "personal" ? "🙋 Me" : "🌍 Everyone"}
-                {!canToggleGlobal && " 🔒"}
+                {!canToggleGlobal ? " 🔒" : " ▸"}
               </button>
               {/* Window: cycles 24H → 30D → 1Y → ALL → … (pass holders only) */}
               {canChooseWindow && (
@@ -273,71 +273,83 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     setWindow(WINDOWS[(idx + 1) % WINDOWS.length]);
                   }}
                 >
-                  {WINDOW_LABEL[appliedWindow]}
+                  {WINDOW_LABEL[appliedWindow]} ▸
                 </button>
               )}
             </div>
 
-            {/* Game mode filter — pass holders only; non-pass always shows "All Modes" */}
+            {/* Game mode filter + Refresh on the same row (pass holders only) */}
             {canChooseWindow && (
-              <select
-                className="btn"
-                style={{ width: "100%", paddingTop: 6, paddingBottom: 6 }}
-                value={gameMode}
-                onChange={(e) => setGameMode(e.target.value as typeof gameMode)}
-              >
-                <option value="all">All Modes</option>
-                <option value="8ball">8-Ball</option>
-                <option value="9ball">9-Ball</option>
-                <option value="practice">Practice</option>
-                <option value="shark">🦈 Shark Mode</option>
-              </select>
-            )}
-
-            {(canRefresh || isAuthenticated) && (
-              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <select
+                  className="btn"
+                  style={{ flex: 1, paddingTop: 6, paddingBottom: 6 }}
+                  value={gameMode}
+                  onChange={(e) => setGameMode(e.target.value as typeof gameMode)}
+                >
+                  <option value="all">All Modes</option>
+                  <option value="8ball">8-Ball</option>
+                  <option value="9ball">9-Ball</option>
+                  <option value="practice">Practice</option>
+                  <option value="shark">🦈 Shark Mode</option>
+                </select>
                 {canRefresh && (
                   <button
                     className="btn"
-                    style={{ flex: 1 }}
+                    style={{ flexShrink: 0 }}
                     disabled={refreshing || statsQuery.isFetching}
                     onClick={handleRefresh}
                   >
                     {refreshing ? "↻ Refreshing…" : "↻ Refresh"}
                   </button>
                 )}
-                {isAuthenticated && isPersonal && (
-                  <>
-                    <button
-                      className="btn"
-                      style={{ flex: 1 }}
-                      disabled={exporting || deleting || hasNoData}
-                      onClick={handleExport}
-                      title={
-                        hasNoData
-                          ? "No games to export"
-                          : isFreeTier
-                            ? "Download your last 24 hours of games as a CSV spreadsheet — get a pass to export your full history"
-                            : "Download all your games and shots as a CSV spreadsheet"
-                      }
-                    >
-                      {exporting ? "🧳 Exporting…" : isFreeTier ? "🧳 Export (24h)" : "🧳 Export"}
-                    </button>
-                    <button
-                      className={`btn${confirmDelete ? " btn-primary" : ""}`}
-                      style={{ flex: 1 }}
-                      disabled={deleting || exporting || hasNoData}
-                      onClick={handleDelete}
-                      title={hasNoData ? "No games to delete" : "Permanently delete all your games and shots"}
-                    >
-                      {deleting
-                        ? "☢️ Deleting…"
-                        : confirmDelete
-                          ? "☢️ Are you sure?"
-                          : "☢️ Delete"}
-                    </button>
-                  </>
-                )}
+              </div>
+            )}
+
+            {/* Refresh (non-pass tier) */}
+            {canRefresh && !canChooseWindow && (
+              <div style={{ display: "flex", gap: 6 }}>
+                <button
+                  className="btn"
+                  style={{ flex: 1 }}
+                  disabled={refreshing || statsQuery.isFetching}
+                  onClick={handleRefresh}
+                >
+                  {refreshing ? "↻ Refreshing…" : "↻ Refresh"}
+                </button>
+              </div>
+            )}
+            {/* Export + Delete (all authenticated personal-scope users) */}
+            {isAuthenticated && isPersonal && (
+              <div style={{ display: "flex", gap: 6 }}>
+                <button
+                  className="btn"
+                  style={{ flex: 1 }}
+                  disabled={exporting || deleting || hasNoData}
+                  onClick={handleExport}
+                  title={
+                    hasNoData
+                      ? "No games to export"
+                      : isFreeTier
+                        ? "Download your last 24 hours of games as a CSV spreadsheet — get a pass to export your full history"
+                        : "Download all your games and shots as a CSV spreadsheet"
+                  }
+                >
+                  {exporting ? "🧳 Exporting…" : isFreeTier ? "🧳 Export (24h)" : "🧳 Export"}
+                </button>
+                <button
+                  className={`btn${confirmDelete ? " btn-primary" : ""}`}
+                  style={{ flex: 1 }}
+                  disabled={deleting || exporting || hasNoData}
+                  onClick={handleDelete}
+                  title={hasNoData ? "No games to delete" : "Permanently delete all your games and shots"}
+                >
+                  {deleting
+                    ? "☢️ Deleting…"
+                    : confirmDelete
+                      ? "☢️ Are you sure?"
+                      : "☢️ Delete"}
+                </button>
               </div>
             )}
 
