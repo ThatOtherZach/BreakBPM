@@ -1,47 +1,31 @@
 ---
 name: History-card host-theme snapshot
-description: The completed-game history card felt color is the host's theme frozen onto the game at start time, not resolved live — and how client gameState writes must protect it.
+description: Completed-game history-card felt color is the host's theme FROZEN onto the game at play time — and the invariant that protects it from client gameState writes.
 ---
 
 # History-card host-theme snapshot
 
-The pool-felt tint on a completed game's history card (account history, watch
-profile, mention invites — anywhere `toHistoryEntry` renders) is the **host's
-theme as it was at play time**, snapshotted onto the game, NOT resolved live from
-the host's current profile.
+The pool-felt tint on a **completed** game's history card (account history, watch
+profile, mention invites) is the host's theme **as it was at play time**, frozen
+onto the game — NOT resolved live from the host's current profile. No theme / a
+legacy pre-snapshot game → default green. (Live `/games/state` host theme is
+intentionally still live; only finished-game history is historical.)
 
-- Snapshot is written at `POST /games/start`: `resolveUserEffectiveTheme(host)` →
-  stored as a `hostTheme` string key inside the game's `gameState` JSON. No theme
-  → key omitted → history renders default green. Pre-snapshot (legacy) games have
-  no key → green.
-- `toHistoryEntry` derives the card color from the snapshot
-  (`coerceBackgroundVariant(readHostThemeRaw(gs))`), never from a live lookup.
-- Live `/games/state` host theme is intentionally LEFT live (only finished-game
-  history is historical).
+**Why:** the requirement is explicitly historical — the card must show the felt
+the host played with then, even if they later change or clear their theme.
 
-**Why:** the requirement is explicitly historical — a card must show the felt the
-host was playing with then, even if they later change or remove their theme.
+## Invariant: client gameState writes must preserve server snapshot keys
 
-## The trap: whole-blob gameState writes erase the snapshot
+The frozen theme lives **inside the same `gameState` JSON blob the client owns**.
+Any route that persists client-supplied `gameState` (resume snapshot, finalize,
+and any future one) will silently erase server-authoritative keys unless it
+strips the client copy and re-applies the server value. Treat `gameState` as a
+mixed blob: client-owned fields + server-snapshot keys.
 
-`hostTheme` lives inside the same `gameState` JSON blob the client owns. Two routes
-replace that blob wholesale with client-supplied state and will silently clobber
-the snapshot unless guarded:
+**How to apply:** before persisting a client `gameState`, re-merge the existing
+server snapshot keys (today: the host theme). A no-id insert path that bypasses
+game-start must resolve the value the same way start does. The delete-my-data
+anonymizer mutates the existing blob in place, so it's already safe.
 
-- `/games/activity` (resume snapshot) and `/games/save` (finalize) both persist
-  client `gameState`.
-- Guard with `withHostThemeSnapshot(clientState, hostTheme)`: it **strips any
-  client-supplied `hostTheme`** (clients must never set it) and re-applies the
-  server-authoritative value (null → key omitted). Read the existing snapshot off
-  the started row with `readHostThemeRaw(gs)` and pass it through.
-- `/games/save` with no `gameId` (insert fallback that bypasses `/games/start`)
-  must resolve the theme fresh via `resolveUserEffectiveTheme`, same rule as start.
-- The delete-my-data anonymizer mutates the existing `gameState` object in place
-  and writes it whole, so it already preserves `hostTheme` — safe, leave it.
-
-**How to apply:** any NEW code path that writes a game's `gameState` from
-client-supplied data must preserve server-snapshotted keys (today: `hostTheme`).
-Treat `gameState` as a mixed blob: client-owned fields + server-authoritative
-snapshot keys. Regression coverage lives in
-`artifacts/api-server/src/routes/games-history-theme.test.ts` (drives the real
-routes end-to-end).
+Regression coverage: `artifacts/api-server/src/routes/games-history-theme.test.ts`
+(drives the real routes end-to-end, incl. the client-injection-is-ignored case).

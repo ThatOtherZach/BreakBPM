@@ -1500,6 +1500,12 @@ components:
         passes:
           type: array
           items: { $ref: "#/components/schemas/PassSummary" }
+        # The signed-in caller's own standing in the all-time global BPM
+        # leaderboard (same ranking the /leaderboard "all" window shows), so
+        # the Account page can render the Identity card like a leaderboard row
+        # with the player's global rank. Omitted when the caller isn't ranked
+        # yet (too few qualifying games) or for signed-out callers.
+        globalStanding: { $ref: "#/components/schemas/LeaderboardRow" }
 
     ScreenNameUpdate:
       type: object

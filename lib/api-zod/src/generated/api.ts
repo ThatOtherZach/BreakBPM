@@ -64,7 +64,16 @@ export const GetMeResponse = zod.object({
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
   "isLifetime": zod.boolean()
-})).optional()
+})).optional(),
+  "globalStanding": zod.object({
+  "rank": zod.number(),
+  "screenName": zod.string(),
+  "bpm": zod.number(),
+  "accuracy": zod.number().nullable(),
+  "gamesPlayed": zod.number(),
+  "sharkLevel": zod.number(),
+  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable()
+}).optional()
 })
 
 

@@ -489,12 +489,37 @@ export interface CancelSubscriptionResult {
   subscription?: SubscriptionSummary;
 }
 
+/**
+ * @nullable
+ */
+export type LeaderboardRowProfileBackground = typeof LeaderboardRowProfileBackground[keyof typeof LeaderboardRowProfileBackground] | null;
+
+
+export const LeaderboardRowProfileBackground = {
+  shark: 'shark',
+  'pool-player': 'pool-player',
+  hustler: 'hustler',
+} as const;
+
+export interface LeaderboardRow {
+  rank: number;
+  screenName: string;
+  bpm: number;
+  /** @nullable */
+  accuracy: number | null;
+  gamesPlayed: number;
+  sharkLevel: number;
+  /** @nullable */
+  profileBackground: LeaderboardRowProfileBackground;
+}
+
 export interface MeResponse {
   signedIn: boolean;
   needsOnboarding: boolean;
   account?: Account;
   entitlement: Entitlement;
   passes?: PassSummary[];
+  globalStanding?: LeaderboardRow;
 }
 
 export interface ScreenNameUpdate {
@@ -1226,30 +1251,6 @@ export interface PublicProfileResult {
   profileBackground?: PublicProfileResultProfileBackground;
   games: GameHistoryEntry[];
   stats?: StatsResult | null;
-}
-
-/**
- * @nullable
- */
-export type LeaderboardRowProfileBackground = typeof LeaderboardRowProfileBackground[keyof typeof LeaderboardRowProfileBackground] | null;
-
-
-export const LeaderboardRowProfileBackground = {
-  shark: 'shark',
-  'pool-player': 'pool-player',
-  hustler: 'hustler',
-} as const;
-
-export interface LeaderboardRow {
-  rank: number;
-  screenName: string;
-  bpm: number;
-  /** @nullable */
-  accuracy: number | null;
-  gamesPlayed: number;
-  sharkLevel: number;
-  /** @nullable */
-  profileBackground: LeaderboardRowProfileBackground;
 }
 
 export type LeaderboardResultWindow = typeof LeaderboardResultWindow[keyof typeof LeaderboardResultWindow];

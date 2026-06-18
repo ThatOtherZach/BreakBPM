@@ -11,7 +11,7 @@ import {
   cardFilename,
 } from "../lib/redeemCard";
 import type { BackgroundVariant } from "../lib/backgroundVariants";
-import { THEME_DOT, themeColorOf } from "../lib/backgroundVariants";
+import { THEME_DOT, THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
 import {
   useGetMe,
   useUpdateScreenName,
@@ -261,6 +261,11 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   // Custom screen names are a Lifetime perk; admins are effective Lifetime
   // holders, so honor the synthesized entitlement (mirrors the server gate).
   const canEditName = ent.isAdmin || ent.activePass?.isLifetime === true;
+  // The caller's own all-time global BPM standing, so the Identity card can
+  // read like a leaderboard row (felt tint + global rank). Null until they have
+  // enough qualifying ranked games to appear in the leaderboard.
+  const standing = me.data.globalStanding ?? null;
+  const identityFelt = THEME_FELT[themeColorOf(account.profileBackground)];
 
   async function handleSaveName() {
     setError("");
@@ -463,10 +468,96 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
               </div>
             ) : (
               <>
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  <span style={{ fontFamily: "VT323", fontSize: 22, color: "#000080" }}>{account.screenName}</span>
+                {/* Styled like a leaderboard standing (fpp-card history-card):
+                    felt tinted to the player's theme, global rank on the left,
+                    name in the middle, and the player's all-time BPM/accuracy
+                    hero on the right. */}
+                <div
+                  className="fpp-card history-card"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    backgroundColor: identityFelt.felt,
+                    boxShadow: `inset 0 0 0 2px ${identityFelt.feltShadow}, inset 0 2px 6px rgba(0, 0, 0, 0.35)`,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "VT323",
+                      fontSize: 20,
+                      lineHeight: 1,
+                      color: "#ffe98a",
+                      textShadow: "1px 1px 0 #042414",
+                      minWidth: 44,
+                      textAlign: "center",
+                      flexShrink: 0,
+                    }}
+                    title={
+                      standing
+                        ? `Global rank #${standing.rank}`
+                        : "Play ranked 8-ball 1-on-1 games to earn a global rank"
+                    }
+                  >
+                    {standing ? `🌎#${standing.rank}` : "🌎—"}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+                    <span
+                      style={{
+                        fontFamily: "VT323",
+                        fontSize: 22,
+                        lineHeight: 1,
+                        color: "#f4f4dc",
+                        textShadow: "1px 1px 0 #042414",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {account.screenName}
+                    </span>
+                    {standing != null && standing.sharkLevel > 0 && (
+                      <span
+                        style={{
+                          fontFamily: "VT323",
+                          fontSize: 14,
+                          lineHeight: 1,
+                          color: "#9fc6ff",
+                          textShadow: "1px 1px 0 #042414",
+                        }}
+                      >
+                        🦈{standing.sharkLevel}
+                      </span>
+                    )}
+                  </div>
+                  {standing != null && (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                      <span
+                        style={{
+                          fontFamily: "VT323",
+                          fontSize: 22,
+                          lineHeight: 1,
+                          color: "#ffe98a",
+                          textShadow: "1px 1px 0 #042414",
+                        }}
+                      >
+                        {standing.bpm.toFixed(1)} BPM
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "VT323",
+                          fontSize: 16,
+                          lineHeight: 1,
+                          color: standing.accuracy != null ? "#b9e6c4" : "#8aa593",
+                          textShadow: "1px 1px 0 #042414",
+                        }}
+                      >
+                        {standing.accuracy != null ? `${standing.accuracy}% ACC` : "—% ACC"}
+                      </span>
+                    </div>
+                  )}
                   {canEditName && (
-                    <button className="btn" style={{ marginLeft: "auto" }} onClick={() => setEditing(true)}>Edit</button>
+                    <button className="btn" style={{ flexShrink: 0 }} onClick={() => setEditing(true)}>Edit</button>
                   )}
                 </div>
                 {!canEditName && (

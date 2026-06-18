@@ -7,6 +7,7 @@
  */
 import type { Account } from './account';
 import type { Entitlement } from './entitlement';
+import type { LeaderboardRow } from './leaderboardRow';
 import type { PassSummary } from './passSummary';
 
 export interface MeResponse {
@@ -15,4 +16,5 @@ export interface MeResponse {
   account?: Account;
   entitlement: Entitlement;
   passes?: PassSummary[];
+  globalStanding?: LeaderboardRow;
 }

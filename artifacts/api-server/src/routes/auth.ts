@@ -12,6 +12,7 @@ import { getVerifiedSubject, getOrCreateUser, needsOnboarding } from "../lib/aut
 import { computeEntitlement, getActivePasses } from "../lib/entitlement";
 import { normalizeProfileTheme } from "../lib/profileBackground";
 import { resolveUserProfileBackground } from "../lib/userProfileBackground";
+import { resolveLeaderboard } from "../lib/stats";
 import type { User } from "@workspace/db";
 
 // Custom screen names are a Lifetime-pass perk. Admins are treated as effective
@@ -51,6 +52,12 @@ router.get("/auth/me", async (req, res): Promise<void> => {
     email: user.email,
     profileTheme: user.profileTheme,
   });
+  // The caller's own standing in the all-time global BPM ranking (shares the
+  // 1-hour leaderboard cache, so this is a cheap lookup in the common case).
+  // Screen names are canonical + unique, so they key a row to a single user.
+  // Omitted when the caller has too few qualifying games to be ranked.
+  const globalRanking = await resolveLeaderboard("all");
+  const globalStanding = globalRanking.find((r) => r.screenName === user.screenName);
   res.json(
     GetMeResponse.parse({
       signedIn: true,
@@ -65,6 +72,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
       },
       entitlement,
       passes,
+      ...(globalStanding ? { globalStanding } : {}),
     }),
   );
 });
