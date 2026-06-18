@@ -505,7 +505,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                         : "Play ranked 8-ball 1-on-1 games to earn a global rank"
                     }
                   >
-                    {standing ? `🌎#${standing.rank}` : "🌎—"}
+                    {standing ? `#${standing.rank}` : "—"}
                   </span>
                   <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
