@@ -1896,12 +1896,11 @@ router.get("/games/profile", async (req, res): Promise<void> => {
   // Full last-24h stats, shaped exactly like /stats so the profile header can
   // render the same CRT hero readout. Always personal scope + 24h window; the
   // tier/capability flags are fixed (this is a public, view-only readout).
-  const { core: statsCore, cached: statsCached } = await resolveStats(
-    "personal",
-    "24h",
-    host.id,
-    false,
-  );
+  const [{ core: statsCore, cached: statsCached }, { core: globalStatsCore }] =
+    await Promise.all([
+      resolveStats("personal", "24h", host.id, false),
+      resolveStats("global", "24h", null, false),
+    ]);
   const { computedAt: statsComputedAt, ...statsRest } = statsCore;
   const stats = {
     tier: "public" as const,
@@ -1914,6 +1913,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
     canRefresh: false,
     cached: statsCached,
     computedAt: new Date(statsComputedAt).toISOString(),
+    globalAvgBpm: globalStatsCore.avgBpm ?? null,
     ...statsRest,
   };
 
