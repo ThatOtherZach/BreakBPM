@@ -521,19 +521,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     >
                       {account.screenName}
                     </span>
-                    {standing != null && standing.sharkLevel > 0 && (
-                      <span
-                        style={{
-                          fontFamily: "VT323",
-                          fontSize: 14,
-                          lineHeight: 1,
-                          color: "#9fc6ff",
-                          textShadow: "1px 1px 0 #042414",
-                        }}
-                      >
-                        🦈{standing.sharkLevel}
-                      </span>
-                    )}
                     {account.email && (
                       <span
                         style={{
@@ -545,6 +532,19 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                         }}
                       >
                         {account.email}
+                      </span>
+                    )}
+                    {standing != null && standing.sharkLevel > 0 && (
+                      <span
+                        style={{
+                          fontFamily: "VT323",
+                          fontSize: 14,
+                          lineHeight: 1,
+                          color: "#9fc6ff",
+                          textShadow: "1px 1px 0 #042414",
+                        }}
+                      >
+                        🦈{standing.sharkLevel}
                       </span>
                     )}
                   </div>
