@@ -51,8 +51,16 @@ describe("resolveProfileBackground", () => {
     expect(resolveProfileBackground({ isPaid: false, theme: "auto", cardVariant: "shark" })).toBeNull();
   });
 
-  it("returns null when the override is 'none'", () => {
+  it("returns null when the override is 'none' (opt-out beats card + earned)", () => {
     expect(resolveProfileBackground({ isPaid: true, theme: "none", cardVariant: "shark" })).toBeNull();
+    expect(
+      resolveProfileBackground({
+        isPaid: true,
+        theme: "none",
+        cardVariant: "shark",
+        earnedVariant: "hustler",
+      }),
+    ).toBeNull();
   });
 
   it("honors an explicit variant override (beats the stored card variant)", () => {
@@ -68,9 +76,35 @@ describe("resolveProfileBackground", () => {
     expect(resolveProfileBackground({ isPaid: true, theme: null, cardVariant: "shark" })).toBe("shark");
   });
 
-  it("falls back to plain (null) when auto has no stored card variant", () => {
+  it("prefers the card's stored variant over an auto-earned theme (auto)", () => {
+    // A paid player with both a card AND a qualifying game-history streak wears
+    // the deliberate card artwork, not the auto-earned one.
+    expect(
+      resolveProfileBackground({
+        isPaid: true,
+        theme: "auto",
+        cardVariant: "pool-player",
+        earnedVariant: "shark",
+      }),
+    ).toBe("pool-player");
+  });
+
+  it("falls back to an auto-earned theme when a paid player has no card (auto)", () => {
+    // Crypto / grant / admin effective-Lifetime: no card stored, but recent game
+    // history earned a theme → wear the earned one.
+    expect(
+      resolveProfileBackground({
+        isPaid: true,
+        theme: "auto",
+        cardVariant: null,
+        earnedVariant: "hustler",
+      }),
+    ).toBe("hustler");
+  });
+
+  it("falls back to plain (null) when auto has neither a card nor an earned variant", () => {
     // A pass whose card carried no artwork (crypto / grant / artwork-disabled)
-    // → nothing stored → plain.
+    // and no qualifying game history → plain.
     expect(resolveProfileBackground({ isPaid: true, theme: "auto", cardVariant: null })).toBeNull();
     expect(resolveProfileBackground({ isPaid: true, theme: null, cardVariant: null })).toBeNull();
   });

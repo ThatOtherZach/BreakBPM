@@ -39,15 +39,23 @@
  * Resolution order:
  *   1. Pass holder / admin with an explicit variant theme → return it directly
  *      (no time limit; persists for the life of the pass / admin status).
- *   2. Fall through to auto-earn (applies to everyone: free, account, pass-with-auto/none).
- *   3. Null → caller renders the default green felt.
+ *   2. Paid with auto/NULL → the artwork stamped on their active redeem card.
+ *   3. Fall through to auto-earn (applies to everyone: free, account, or paid
+ *      with no explicit pick and no card).
+ *   4. Null → caller renders the default green felt.
  */
-import { db, passesTable, gamesTable, gameParticipantsTable } from "@workspace/db";
+import {
+  db,
+  passesTable,
+  gamesTable,
+  gameParticipantsTable,
+  discountCodesTable,
+} from "@workspace/db";
 import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { isAdminEmail } from "./config";
 import {
   coerceBackgroundVariant,
-  normalizeProfileTheme,
+  resolveProfileBackground,
   type BackgroundVariant,
 } from "./profileBackground";
 
@@ -232,6 +240,56 @@ function isActivePass(p: { startedAt: Date; durationSeconds: number | null }, no
 }
 
 // ---------------------------------------------------------------------------
+// Card-artwork helpers
+// ---------------------------------------------------------------------------
+
+type CardPass = { source: string; sourceRef: string | null; startedAt: Date };
+
+/**
+ * Pick the splash artwork a set of active passes earns from their redeem cards.
+ * Only `discount_code`-sourced passes carry a card; the artwork is stored on the
+ * code at mint time and mapped back via `sourceRef`. The most recently redeemed
+ * card with a stored (non-null) variant wins. Pure — `variantByCode` must
+ * already map each card's `code` to its coerced variant.
+ */
+function resolveCardVariantFromMap(
+  activePasses: CardPass[],
+  variantByCode: Map<string, BackgroundVariant | null>,
+): BackgroundVariant | null {
+  const cardPasses = activePasses
+    .filter((p) => p.source === "discount_code" && p.sourceRef)
+    .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
+  for (const p of cardPasses) {
+    const v = variantByCode.get(p.sourceRef as string) ?? null;
+    if (v) return v;
+  }
+  return null;
+}
+
+/**
+ * Single-user form of {@link resolveCardVariantFromMap}: queries `discount_codes`
+ * for just this user's active card passes, then resolves in memory.
+ */
+async function resolveCardVariant(activePasses: CardPass[]): Promise<BackgroundVariant | null> {
+  const codes = activePasses
+    .filter((p) => p.source === "discount_code" && p.sourceRef)
+    .map((p) => p.sourceRef as string);
+  if (codes.length === 0) return null;
+
+  const codeRows = await db
+    .select({
+      code: discountCodesTable.code,
+      backgroundVariant: discountCodesTable.backgroundVariant,
+    })
+    .from(discountCodesTable)
+    .where(inArray(discountCodesTable.code, codes));
+  const variantByCode = new Map(
+    codeRows.map((r) => [r.code, coerceBackgroundVariant(r.backgroundVariant)]),
+  );
+  return resolveCardVariantFromMap(activePasses, variantByCode);
+}
+
+// ---------------------------------------------------------------------------
 // Single-user resolver
 // ---------------------------------------------------------------------------
 
@@ -241,8 +299,9 @@ function isActivePass(p: { startedAt: Date; durationSeconds: number | null }, no
  * Resolution order:
  *   1. Active pass holder / admin with an explicit variant theme → return it directly
  *      (no time limit; persists for the life of the pass / admin status).
- *   2. Fall through to auto-earn (applies to everyone: free, account, pass-with-auto/none).
- *   3. Null → caller renders the default green felt.
+ *   2. Paid with auto/NULL → the artwork stamped on their active redeem card.
+ *   3. Fall through to auto-earn (everyone: free, account, or paid with no card).
+ *   4. Null → caller renders the default green felt.
  */
 export async function resolveUserProfileBackground(args: {
   userId: string;
@@ -265,19 +324,19 @@ export async function resolveUserProfileBackground(args: {
   const isAdmin = isAdminEmail(args.email ?? "");
   const isPaid = activePassRows.length > 0 || isAdmin;
 
-  // Path 1: paid user with an explicit variant override → honour it permanently
-  // (while the pass is active / while they remain an admin). Paid users with
-  // auto/none fall through to auto-earn below, same as everyone else.
-  if (isPaid) {
-    const theme = normalizeProfileTheme(args.profileTheme);
-    if (theme !== "auto" && theme !== "none") {
-      const explicit = coerceBackgroundVariant(theme);
-      if (explicit) return explicit;
-    }
-  }
+  // Paid users may wear the artwork stamped on their active redeem card; everyone
+  // (free, account, or paid-without-a-card) can fall back to a theme auto-earned
+  // from recent game history. `resolveProfileBackground` applies the precedence:
+  // explicit theme → `none` opt-out → card artwork → auto-earn → plain.
+  const cardVariant = isPaid ? await resolveCardVariant(activePassRows) : null;
+  const earnedVariant = await computeAutoEarnedVariant(args.userId);
 
-  // Path 2: auto-earn (applies to everyone — free, account, or paid-with-no-explicit-pick).
-  return computeAutoEarnedVariant(args.userId);
+  return resolveProfileBackground({
+    isPaid,
+    theme: args.profileTheme,
+    cardVariant,
+    earnedVariant,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -286,12 +345,12 @@ export async function resolveUserProfileBackground(args: {
 
 /**
  * Batched form of {@link resolveUserProfileBackground} for resolving many users
- * at once (e.g. the leaderboard ranking). Runs at most one `passes` query and
- * one `games` query for the whole set, then resolves each user in memory with
- * the IDENTICAL rule as the single-user path — same active-pass filter, same
- * explicit-theme check for paid users, same auto-earn majority/freshness logic.
- * Returns a Map keyed by userId; users absent from `args` are simply absent
- * from the map.
+ * at once (e.g. the leaderboard ranking). Runs at most one `passes` query, one
+ * `discount_codes` query, and one `games` query for the whole set, then resolves
+ * each user in memory with the IDENTICAL rule as the single-user path — same
+ * active-pass filter, same card-artwork lookup, same auto-earn majority/freshness
+ * logic. Returns a Map keyed by userId; users absent from `args` are simply
+ * absent from the map.
  */
 export async function resolveUserProfileBackgrounds(
   args: Array<{
@@ -327,7 +386,29 @@ export async function resolveUserProfileBackgrounds(
     activeByUser.set(p.userId, arr);
   }
 
-  // Fetch last 50 completed games for ALL users — paid users with auto/none also
+  // One discount_codes query for every active card pass in the set — map each
+  // code to its stored artwork variant so the per-user loop stays in-memory.
+  const allCodes = new Set<string>();
+  for (const rows of activeByUser.values()) {
+    for (const p of rows) {
+      if (p.source === "discount_code" && p.sourceRef) allCodes.add(p.sourceRef);
+    }
+  }
+  const variantByCode = new Map<string, BackgroundVariant | null>();
+  if (allCodes.size > 0) {
+    const codeRows = await db
+      .select({
+        code: discountCodesTable.code,
+        backgroundVariant: discountCodesTable.backgroundVariant,
+      })
+      .from(discountCodesTable)
+      .where(inArray(discountCodesTable.code, [...allCodes]));
+    for (const r of codeRows) {
+      variantByCode.set(r.code, coerceBackgroundVariant(r.backgroundVariant));
+    }
+  }
+
+  // Fetch last 50 completed games for ALL users — paid users without a card also
   // fall through to auto-earn, so we can't skip them.
   const gameRows = await db
     .select({
@@ -365,20 +446,20 @@ export async function resolveUserProfileBackgrounds(
     const isAdmin = isAdminEmail(a.email ?? "");
     const isPaid = activePassRows.length > 0 || isAdmin;
 
-    // Path 1: paid user with an explicit variant override.
-    if (isPaid) {
-      const theme = normalizeProfileTheme(a.profileTheme);
-      if (theme !== "auto" && theme !== "none") {
-        const explicit = coerceBackgroundVariant(theme);
-        if (explicit) {
-          result.set(a.userId, explicit);
-          continue;
-        }
-      }
-    }
+    const cardVariant = isPaid
+      ? resolveCardVariantFromMap(activePassRows, variantByCode)
+      : null;
+    const earnedVariant = computeAutoEarnedVariantFromGames(gamesByUser.get(a.userId) ?? []);
 
-    // Path 2: auto-earn.
-    result.set(a.userId, computeAutoEarnedVariantFromGames(gamesByUser.get(a.userId) ?? []));
+    result.set(
+      a.userId,
+      resolveProfileBackground({
+        isPaid,
+        theme: a.profileTheme,
+        cardVariant,
+        earnedVariant,
+      }),
+    );
   }
 
   return result;

@@ -64,7 +64,10 @@ export function normalizeProfileTheme(raw: string | null | undefined): ProfileTh
  * - Explicit variant override → that variant, permanent while the pass is
  *   active. The 10-day game-history window never overrides a paid manual pick.
  * - `none` → null (plain default background).
- * - `auto` → the artwork stamped on the pass's redeem card (`cardVariant`).
+ * - `auto` → the artwork stamped on the pass's redeem card (`cardVariant`); when
+ *   the pass carried no card (crypto / grant / admin effective-Lifetime) it falls
+ *   back to a theme auto-earned from recent game history (`earnedVariant`), else
+ *   plain.
  *
  * Unpaid users (free / account tier, or a user whose pass has since expired):
  * - `earnedVariant` → a variant auto-earned by game-history majority rule,
@@ -86,7 +89,8 @@ export function resolveProfileBackground(opts: {
     // `rainbow` is a name-only flair and pins no artwork — it falls through to
     // the auto/card resolution like `auto` so the felt stays default/earned.
     if (theme !== "auto" && theme !== "rainbow") return theme;
-    return opts.cardVariant;
+    // Card artwork wins; with no card, fall back to an auto-earned theme.
+    return opts.cardVariant ?? opts.earnedVariant ?? null;
   }
   // Non-paid (free / account / expired pass): only auto-earned themes apply.
   return opts.earnedVariant ?? null;
