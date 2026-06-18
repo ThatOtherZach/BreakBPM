@@ -46,9 +46,8 @@ import { isAdminEmail } from "../lib/config";
 import {
   resolveUserProfileBackground,
   resolveUserEffectiveTheme,
-  resolveUserEffectiveThemes,
 } from "../lib/userProfileBackground";
-import { type BackgroundVariant } from "../lib/profileBackground";
+import { coerceBackgroundVariant, type BackgroundVariant } from "../lib/profileBackground";
 
 const router: IRouter = Router();
 
@@ -244,14 +243,45 @@ function resolveParticipantPace(
  * player whose history this is (by stable slot, with name fallback), used to
  * make the outcome/opponent viewer-relative.
  */
+/**
+ * Read the raw `hostTheme` string snapshotted into a game's `gameState` (frozen
+ * at /games/start), or null when absent/non-string. Coerce the result with
+ * `coerceBackgroundVariant` to validate it against the known felt themes.
+ */
+function readHostThemeRaw(gs: unknown): string | null {
+  return gs &&
+    typeof gs === "object" &&
+    typeof (gs as Record<string, unknown>)["hostTheme"] === "string"
+    ? ((gs as Record<string, unknown>)["hostTheme"] as string)
+    : null;
+}
+
+/**
+ * Carry the server-authoritative host-theme snapshot onto a client-supplied
+ * gameState. The snapshot is frozen at /games/start, but /games/activity and
+ * /games/save replace the whole gameState blob with client state — so without
+ * this the snapshot would be erased before history reads it. The client is
+ * never trusted to set it: any client-provided `hostTheme` is stripped and the
+ * authoritative value (the existing row's snapshot, or a freshly resolved one
+ * for save-created games) is re-applied. Null host theme → key omitted.
+ */
+function withHostThemeSnapshot(
+  clientState: Record<string, unknown>,
+  hostTheme: BackgroundVariant | null,
+): Record<string, unknown> {
+  const { hostTheme: _client, ...rest } = clientState;
+  return hostTheme ? { ...rest, hostTheme } : rest;
+}
+
 function toHistoryEntry(
   g: GameRow,
   accuracy: number | null,
   subject: { slot: number | null; name: string | null },
   pace: { bpm: number | null; sunkBallsCount: number },
-  hostTheme: BackgroundVariant | null,
 ) {
   const gs = g.gameState as Record<string, unknown> | null;
+  // Host theme snapshotted onto gameState at /games/start (see return field).
+  const hostTheme = coerceBackgroundVariant(readHostThemeRaw(gs));
   const rawReason =
     gs && typeof gs["forfeitReason"] === "string" ? (gs["forfeitReason"] as string) : undefined;
   const endReason =
@@ -294,48 +324,13 @@ function toHistoryEntry(
         ? (gs!["chaosMode"] as "eight-last" | "anything-goes" | "none")
         : null,
     pocketSequence,
-    // The game HOST's effective theme (resolved by the caller), so every
-    // viewer's history card tints its felt to the host's table — not the
-    // viewer's own theme. Null → default green felt.
+    // The HOST's theme, snapshotted onto this game's gameState at /games/start,
+    // so the felt reflects the table the host had WHILE PLAYING this game —
+    // frozen in history and identical for every viewer. Null → default green
+    // felt (also covers games created before the snapshot existed).
     hostTheme,
     ...(endReason ? { endReason } : {}),
   };
-}
-
-/**
- * Resolve the felt theme for a set of finished games, keyed by game id. Each
- * history card tints its felt to that game's HOST theme (the host is the game
- * owner, `game.userId`) using the same effective-theme rule the host's own
- * GameScreen and live spectators use — so a themed host's table shows for EVERY
- * viewer of the history, regardless of the viewer's own theme. Hosts with no
- * theme map to null (the default green felt). Batched (one users query + the
- * batched theme resolver) to avoid an N+1 across the rendered page.
- */
-async function resolveHostThemesByGame(
-  games: Array<{ id: string; userId: string }>,
-): Promise<Map<string, BackgroundVariant | null>> {
-  const byGame = new Map<string, BackgroundVariant | null>();
-  if (games.length === 0) return byGame;
-  const hostIds = [...new Set(games.map((g) => g.userId))];
-  const hostRows = await db
-    .select({
-      id: usersTable.id,
-      email: usersTable.email,
-      profileTheme: usersTable.profileTheme,
-    })
-    .from(usersTable)
-    .where(inArray(usersTable.id, hostIds));
-  const themeByHost = await resolveUserEffectiveThemes(
-    hostRows.map((u) => ({
-      userId: u.id,
-      email: u.email,
-      profileTheme: u.profileTheme,
-    })),
-  );
-  for (const g of games) {
-    byGame.set(g.id, themeByHost.get(g.userId) ?? null);
-  }
-  return byGame;
 }
 
 /**
@@ -480,6 +475,18 @@ router.post("/games/start", async (req, res): Promise<void> => {
   const shareCode = await generateUniqueShareCode();
   const now = new Date();
 
+  // Snapshot the host's effective theme onto the game at creation, so THIS
+  // game's history card keeps the felt the host had WHILE PLAYING it (frozen),
+  // not whatever theme they switch to later — and identical for every viewer.
+  // Games created before this carry no value and fall back to default green.
+  // Null when the host has no theme. Resolved server-side (authoritative),
+  // mirroring the live /games/state HUD tint.
+  const hostTheme = await resolveUserEffectiveTheme({
+    userId: user.id,
+    email: user.email,
+    profileTheme: user.profileTheme,
+  });
+
   await db.transaction(async (tx) => {
     await tx.insert(gamesTable).values({
       id,
@@ -491,6 +498,7 @@ router.post("/games/start", async (req, res): Promise<void> => {
         gameType: parsed.data.gameType,
         startedAt: now.toISOString(),
         shareCode,
+        ...(hostTheme ? { hostTheme } : {}),
       },
       startedAt: now,
       lastActivityAt: now,
@@ -585,7 +593,7 @@ router.post("/games/activity", async (req, res): Promise<void> => {
   // Sweep the host's stale rows so this row gets closed if it's past
   // the cap. Cheap because /games/activity is already per-shot.
   const ownerRow = await db
-    .select({ userId: gamesTable.userId })
+    .select({ userId: gamesTable.userId, gameState: gamesTable.gameState })
     .from(gamesTable)
     .where(eq(gamesTable.id, parsed.data.gameId))
     .limit(1);
@@ -607,7 +615,15 @@ router.post("/games/activity", async (req, res): Promise<void> => {
     lastActivityAt: new Date(),
   };
   if (parsed.data.gameState !== undefined && parsed.data.gameState !== null) {
-    setFields.gameState = parsed.data.gameState as Record<string, unknown>;
+    // Preserve the host-theme snapshot frozen at /games/start — the client
+    // gameState doesn't carry it, so replacing the blob would erase it.
+    const existingHostTheme = coerceBackgroundVariant(
+      readHostThemeRaw(ownerRow[0]?.gameState),
+    );
+    setFields.gameState = withHostThemeSnapshot(
+      parsed.data.gameState as Record<string, unknown>,
+      existingHostTheme,
+    );
   }
   const updated = await db
     .update(gamesTable)
@@ -663,43 +679,48 @@ router.post("/games/save", async (req, res): Promise<void> => {
     durationMs: parsed.data.durationMs,
     sunkBallsCount: parsed.data.sunkBallsCount,
     outcome: parsed.data.outcome,
-    gameState: parsed.data.gameState,
     startedAt: new Date(parsed.data.startedAt),
     lastActivityAt: new Date(),
     endedAt: new Date(),
   };
 
+  // Client-supplied game state; the host-theme snapshot is re-applied
+  // server-side per write path below (never trusted from the client).
+  const clientState = parsed.data.gameState as Record<string, unknown>;
+
   await sweepStaleGames(user.id);
 
   let id = parsed.data.gameId ?? null;
   if (id) {
+    // Fetch the started row once: used for the host-fallback ownership check,
+    // to carry forward the host-theme snapshot frozen at /games/start (the
+    // client never sets it), and for the already-finalized response below.
+    const existing = await db
+      .select({ userId: gamesTable.userId, gameState: gamesTable.gameState })
+      .from(gamesTable)
+      .where(eq(gamesTable.id, id))
+      .limit(1);
+
     // Only the scorekeeping host may finalize the game — joiners are
     // view-only.
     if (!(await isHostOf(id, user.id))) {
       // Fallback for legacy (pre-v0.7) rows that may not yet have a
       // participant entry: allow the owner.
-      const ownerRow = await db
-        .select({ userId: gamesTable.userId })
-        .from(gamesTable)
-        .where(eq(gamesTable.id, id))
-        .limit(1);
-      if (!ownerRow[0] || ownerRow[0].userId !== user.id) {
+      if (!existing[0] || existing[0].userId !== user.id) {
         res.json(SaveGameResponse.parse({ saved: false, message: "Only the scorekeeper can save this game" }));
         return;
       }
     }
 
+    const existingHostTheme = coerceBackgroundVariant(
+      readHostThemeRaw(existing[0]?.gameState),
+    );
     const updated = await db
       .update(gamesTable)
-      .set(fields)
+      .set({ ...fields, gameState: withHostThemeSnapshot(clientState, existingHostTheme) })
       .where(and(eq(gamesTable.id, id), isNull(gamesTable.endedAt)))
       .returning({ id: gamesTable.id });
     if (updated.length === 0) {
-      const existing = await db
-        .select()
-        .from(gamesTable)
-        .where(eq(gamesTable.id, id))
-        .limit(1);
       const row = existing[0];
       if (!row) {
         id = null;
@@ -728,7 +749,20 @@ router.post("/games/save", async (req, res): Promise<void> => {
   }
   if (!id) {
     id = newId();
-    await db.insert(gamesTable).values({ id, userId: user.id, ...fields });
+    // No started row to carry a snapshot from (save-created game): resolve the
+    // host's effective theme now, same rule as /games/start, so it still
+    // freezes a felt for history.
+    const hostTheme = await resolveUserEffectiveTheme({
+      userId: user.id,
+      email: user.email,
+      profileTheme: user.profileTheme,
+    });
+    await db.insert(gamesTable).values({
+      id,
+      userId: user.id,
+      ...fields,
+      gameState: withHostThemeSnapshot(clientState, hostTheme),
+    });
     // Self-participate so history queries pick it up.
     await db
       .insert(gameParticipantsTable)
@@ -1837,7 +1871,6 @@ router.get("/games/profile", async (req, res): Promise<void> => {
             )
         : [];
     const partByGame = new Map(parts.map((p) => [p.gameId, p]));
-    const hostThemeByGame = await resolveHostThemesByGame(visible);
     games = visible.map((g) => {
       const part = partByGame.get(g.id);
       const pace = resolveParticipantPace(g, {
@@ -1851,7 +1884,6 @@ router.get("/games/profile", async (req, res): Promise<void> => {
         part ? (part.accuracy ?? null) : (g.accuracy ?? null),
         { slot: part?.slotIndex ?? null, name: host.screenName },
         pace,
-        hostThemeByGame.get(g.id) ?? null,
       );
     });
   }
@@ -2115,7 +2147,6 @@ router.get("/games/history", async (req, res): Promise<void> => {
       : [];
   const myPartByGame = new Map(myParts.map((p) => [p.gameId, p]));
 
-  const hostThemeByGame = await resolveHostThemesByGame(visible);
   const games = visible.map((g) => {
     const part = myPartByGame.get(g.id);
     const pace = resolveParticipantPace(g, {
@@ -2129,7 +2160,6 @@ router.get("/games/history", async (req, res): Promise<void> => {
       part ? (part.accuracy ?? null) : (g.accuracy ?? null),
       { slot: part?.slotIndex ?? null, name: user.screenName },
       pace,
-      hostThemeByGame.get(g.id) ?? null,
     );
   });
 
@@ -2690,7 +2720,6 @@ router.get("/mentions", async (req, res): Promise<void> => {
       : [];
   const partByGame = new Map(myParts.map((p) => [p.gameId, p]));
 
-  const hostThemeByGame = await resolveHostThemesByGame(rows.map((r) => r.game));
   const invites = rows.map((r) => {
     const part = partByGame.get(r.game.id);
     const slot = part?.slotIndex ?? r.slotIndex;
@@ -2710,7 +2739,6 @@ router.get("/mentions", async (req, res): Promise<void> => {
         part ? (part.accuracy ?? null) : null,
         { slot, name: user.screenName },
         pace,
-        hostThemeByGame.get(r.game.id) ?? null,
       ),
     };
   });
