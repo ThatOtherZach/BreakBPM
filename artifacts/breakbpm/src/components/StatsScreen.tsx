@@ -246,42 +246,32 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
             )}
           </div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {/* Scope + Timeframe selectors share one row (above the action
-                buttons). The window buttons are pass-only — free/anon tiers have
-                a fixed window (24h personal / all-time global), so for them this
-                row is just the Me/Everyone scope toggle. */}
+            {/* Scope + Timeframe selectors: each is a single cycle-button. */}
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              {/* Scope: cycles Me ↔ Everyone on click */}
               <button
-                className={`btn${appliedScope === "personal" ? " btn-primary" : ""}`}
+                className="btn btn-primary"
                 style={{ flex: 1 }}
-                disabled={!canToggleGlobal && appliedScope !== "personal"}
-                onClick={() => setScope("personal")}
-              >
-                🙋 Me
-              </button>
-              <button
-                className={`btn${appliedScope === "global" ? " btn-primary" : ""}`}
-                style={{ flex: 1 }}
-                disabled={!canToggleGlobal && appliedScope !== "global"}
-                onClick={() => canToggleGlobal && setScope("global")}
+                disabled={!canToggleGlobal}
+                onClick={() => setScope(scope === "personal" ? "global" : "personal")}
                 title={canToggleGlobal ? undefined : "Get a pass to compare against everyone"}
               >
-                🌍 Everyone {canToggleGlobal ? "" : "🔒"}
+                {appliedScope === "personal" ? "🙋 Me" : "🌍 Everyone"}
+                {!canToggleGlobal && " 🔒"}
               </button>
-              {canChooseWindow &&
-                WINDOWS.map((w) => {
-                  const active = appliedWindow === w;
-                  return (
-                    <button
-                      key={w}
-                      className={`btn${active ? " btn-primary" : ""}`}
-                      style={{ flex: 1, padding: "6px 4px" }}
-                      onClick={() => setWindow(w)}
-                    >
-                      {WINDOW_LABEL[w]}
-                    </button>
-                  );
-                })}
+              {/* Window: cycles 24H → 30D → 1Y → ALL → … (pass holders only) */}
+              {canChooseWindow && (
+                <button
+                  className="btn btn-primary"
+                  style={{ flex: 1, padding: "6px 4px" }}
+                  onClick={() => {
+                    const idx = WINDOWS.indexOf(window);
+                    setWindow(WINDOWS[(idx + 1) % WINDOWS.length]);
+                  }}
+                >
+                  {WINDOW_LABEL[appliedWindow]}
+                </button>
+              )}
             </div>
 
             {/* Game mode filter — pass holders only; non-pass always shows "All Modes" */}
