@@ -279,10 +279,10 @@ export default function StatsHero({
               <TrendOverlay data={stats.trend} />
               <div className="stats-hero-graph-legend">
                 <span className="stats-hero-legend-item">
-                  <span className="stats-hero-legend-swatch green" aria-hidden="true" />BPM
+                  <span className="stats-hero-legend-swatch green" aria-hidden="true" /><span style={{ color: "#00ff41" }}>BPM</span>
                 </span>
                 <span className="stats-hero-legend-item">
-                  <span className="stats-hero-legend-swatch cyan" aria-hidden="true" />ACCURACY
+                  <span className="stats-hero-legend-swatch cyan" aria-hidden="true" /><span style={{ color: "#36c5f0" }}>ACCURACY</span>
                 </span>
               </div>
               <span className="stats-hero-graph-label" style={{ color: "#00ff41" }}>
