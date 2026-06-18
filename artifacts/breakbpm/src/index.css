@@ -568,24 +568,11 @@ html, #root {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
-  font-weight: bold;
   animation: rainbow-name-pan 2.5s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .rainbow-name { animation: none; }
   .rainbow-cue::before { animation: none; }
-}
-/* Names rendered on a tinted felt card (account identity preview, leaderboard
-   rows). A bare rainbow gradient muddies into the busy felt pattern, so we add
-   a crisp dark outline so the rainbow reads cleanly on any felt color.
-   Scoped to .felt-name so the HUD/OBS rainbow look is untouched. */
-.felt-name .rainbow-name {
-  text-shadow:
-    1px 1px 0 #042414,
-    -1px 1px 0 #042414,
-    1px -1px 0 #042414,
-    -1px -1px 0 #042414,
-    0 2px 3px rgba(0, 0, 0, 0.55);
 }
 .about-markdown blockquote {
   border-left: 3px solid var(--navy);
