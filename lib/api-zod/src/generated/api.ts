@@ -77,7 +77,8 @@ export const GetMeResponse = zod.object({
   "gamesPlayed": zod.number(),
   "sharkLevel": zod.number(),
   "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
-  "winsToday": zod.number().default(getMeResponseGlobalStandingWinsTodayDefault)
+  "winsToday": zod.number().default(getMeResponseGlobalStandingWinsTodayDefault),
+  "rainbowName": zod.boolean()
 }).optional()
 })
 
@@ -1083,7 +1084,8 @@ export const GetLeaderboardResponse = zod.object({
   "gamesPlayed": zod.number(),
   "sharkLevel": zod.number(),
   "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
-  "winsToday": zod.number().default(getLeaderboardResponseRowsItemWinsTodayDefault)
+  "winsToday": zod.number().default(getLeaderboardResponseRowsItemWinsTodayDefault),
+  "rainbowName": zod.boolean()
 }))
 })
 

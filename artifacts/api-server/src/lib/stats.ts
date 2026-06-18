@@ -1,7 +1,8 @@
 import { and, count, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
-import { db, gamesTable, gameParticipantsTable, usersTable } from "@workspace/db";
+import { db, gamesTable, gameParticipantsTable, usersTable, passesTable, subscriptionsTable } from "@workspace/db";
 import { resolveUserProfileBackgrounds } from "./userProfileBackground";
 import type { BackgroundVariant } from "./profileBackground";
+import { isAdminEmail } from "./config";
 
 /**
  * Server-side statistics aggregation for the /stats endpoint.
@@ -743,6 +744,9 @@ export interface LeaderboardRow {
   profileBackground: BackgroundVariant | null;
   // 8-ball wins in the last 24 hours for this player. Drives the wins-today chip.
   winsToday: number;
+  // Whether to render this player's name with the rainbow flair — admins always,
+  // or any paid ("pass") tier holder whose profileTheme is "rainbow".
+  rainbowName: boolean;
 }
 
 /** Defensive cap on eligible game rows parsed in one ranking pass (cached). */
@@ -946,6 +950,7 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
   // N+1). Output is identical to the per-user path; bounded further by the
   // 1-hour leaderboard cache.
   let bgByUser = new Map<string, BackgroundVariant | null>();
+  let metaById = new Map<string, { id: string; email: string | null; profileTheme: string | null }>();
   if (rankedUserIds.length > 0) {
     const metaRows = await db
       .select({
@@ -955,7 +960,7 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
       })
       .from(usersTable)
       .where(inArray(usersTable.id, rankedUserIds));
-    const metaById = new Map(metaRows.map((m) => [m.id, m]));
+    metaById = new Map(metaRows.map((m) => [m.id, m]));
     bgByUser = await resolveUserProfileBackgrounds(
       rankedUserIds.map((userId) => {
         const m = metaById.get(userId);
@@ -964,16 +969,51 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
     );
   }
 
-  const result: LeaderboardRow[] = ranked.map((r) => ({
-    rank: 0,
-    screenName: r.screenName,
-    bpm: r.bpm,
-    accuracy: r.accuracy,
-    gamesPlayed: r.gamesPlayed,
-    sharkLevel: sharkByUser.get(r.userId) ?? 0,
-    profileBackground: bgByUser.get(r.userId) ?? null,
-    winsToday: winsTodayByUser.get(r.userId) ?? 0,
-  }));
+  // Resolve which ranked players hold the paid ("pass") tier, so we can light
+  // the rainbow name for those who picked the "rainbow" theme (admins always
+  // get it). Tier = active one-time pass OR active subscription — mirroring
+  // computeEntitlement. Two batched queries cover the whole ranked set.
+  const paidUserIds = new Set<string>();
+  if (rankedUserIds.length > 0) {
+    const now = new Date();
+    const nowMs = now.getTime();
+    const [passRows, subRows] = await Promise.all([
+      db
+        .select({ userId: passesTable.userId, startedAt: passesTable.startedAt, durationSeconds: passesTable.durationSeconds })
+        .from(passesTable)
+        .where(inArray(passesTable.userId, rankedUserIds)),
+      db
+        .select({ userId: subscriptionsTable.userId, status: subscriptionsTable.status, currentPeriodEnd: subscriptionsTable.currentPeriodEnd })
+        .from(subscriptionsTable)
+        .where(inArray(subscriptionsTable.userId, rankedUserIds)),
+    ]);
+    for (const pr of passRows) {
+      const started = pr.startedAt.getTime();
+      const expires = pr.durationSeconds === null ? Infinity : started + pr.durationSeconds * 1000;
+      if (started <= nowMs && expires > nowMs) paidUserIds.add(pr.userId);
+    }
+    for (const sr of subRows) {
+      if (sr.status === "active" && sr.currentPeriodEnd > now) paidUserIds.add(sr.userId);
+    }
+  }
+
+  const result: LeaderboardRow[] = ranked.map((r) => {
+    const meta = metaById.get(r.userId);
+    const isAdmin = isAdminEmail(meta?.email ?? "");
+    const isPaid = paidUserIds.has(r.userId);
+    const rainbowName = isAdmin || (isPaid && meta?.profileTheme === "rainbow");
+    return {
+      rank: 0,
+      screenName: r.screenName,
+      bpm: r.bpm,
+      accuracy: r.accuracy,
+      gamesPlayed: r.gamesPlayed,
+      sharkLevel: sharkByUser.get(r.userId) ?? 0,
+      profileBackground: bgByUser.get(r.userId) ?? null,
+      winsToday: winsTodayByUser.get(r.userId) ?? 0,
+      rainbowName,
+    };
+  });
   // Rank by score (bpm) desc; tie-break by accuracy desc then name for stability.
   result.sort(
     (a, b) =>

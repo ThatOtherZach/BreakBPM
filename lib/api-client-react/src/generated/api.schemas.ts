@@ -514,6 +514,7 @@ export interface LeaderboardRow {
   /** @nullable */
   profileBackground: LeaderboardRowProfileBackground;
   winsToday: number;
+  rainbowName: boolean;
 }
 
 export interface MeResponse {

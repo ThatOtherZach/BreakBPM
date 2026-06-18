@@ -6,6 +6,7 @@ import Navbar from "./Navbar";
 import { useAuth } from "../lib/authClient";
 import { THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
 import { WinsTodayChip } from "./WinsTodayChip";
+import { PlayerName } from "./PlayerName";
 
 const PAGE_SIZE = 50;
 const WIDGET_SIZE = 10;
@@ -71,6 +72,7 @@ function LeaderboardRowCard({
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
           <span
+            className="felt-name"
             style={{
               fontFamily: "VT323",
               fontSize: 20,
@@ -82,7 +84,7 @@ function LeaderboardRowCard({
               whiteSpace: "nowrap",
             }}
           >
-            {row.screenName}
+            <PlayerName name={row.screenName} rainbow={row.rainbowName ?? false} />
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>

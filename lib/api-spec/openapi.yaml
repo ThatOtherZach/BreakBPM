@@ -2336,7 +2336,7 @@ components:
 
     LeaderboardRow:
       type: object
-      required: [rank, screenName, bpm, accuracy, gamesPlayed, sharkLevel, profileBackground, winsToday]
+      required: [rank, screenName, bpm, accuracy, gamesPlayed, sharkLevel, profileBackground, winsToday, rainbowName]
       properties:
         # 1-indexed standing within the ranking (after sorting by bpm desc).
         rank: { type: integer }
@@ -2363,6 +2363,10 @@ components:
         # 8-ball wins in the last 24 hours for this player. Drives the
         # wins-today ball chip on each leaderboard card.
         winsToday: { type: integer, default: 0 }
+        # Whether to render this player's name with the rainbow flair: true for
+        # admins, or active pass holders (one-time pass or subscription) whose
+        # profileTheme is "rainbow". Resolved server-side per response.
+        rainbowName: { type: boolean }
 
     LeaderboardResult:
       type: object
