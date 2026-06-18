@@ -266,12 +266,12 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   // read like a leaderboard row (felt tint + global rank). Null until they have
   // enough qualifying ranked games to appear in the leaderboard.
   const standing = me.data.globalStanding ?? null;
-  const identityFelt = THEME_FELT[themeColorOf(account.profileBackground)];
   // Theme cycle for the identity card toggle button (same order as the old select).
   const THEME_CYCLE = ["shark", "pool-player", "hustler", "none"] as const;
   const effectiveTheme = (account.profileTheme === "auto"
     ? (account.profileBackground ?? "none")
     : account.profileTheme) as AccountProfileTheme;
+  const identityFelt = THEME_FELT[themeColorOf(effectiveTheme)];
 
   async function handleSaveName() {
     setError("");
