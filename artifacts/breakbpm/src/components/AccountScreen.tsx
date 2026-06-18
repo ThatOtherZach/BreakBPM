@@ -597,7 +597,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     {" with a Lifetime Pass."}
                   </div>
                 )}
-                <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 4 }}>
+                <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: -4 }}>
                   <button
                     className="btn"
                     title="View watch profile"
