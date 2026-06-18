@@ -7,6 +7,7 @@
  */
 import type { GameHistoryEntryChaosMode } from './gameHistoryEntryChaosMode';
 import type { GameHistoryEntryEndReason } from './gameHistoryEntryEndReason';
+import type { GameHistoryEntryHostTheme } from './gameHistoryEntryHostTheme';
 import type { GameHistoryEntryPocketSequenceItem } from './gameHistoryEntryPocketSequenceItem';
 
 export interface GameHistoryEntry {
@@ -31,4 +32,6 @@ export interface GameHistoryEntry {
   chaosMode?: GameHistoryEntryChaosMode;
   endReason?: GameHistoryEntryEndReason;
   pocketSequence?: GameHistoryEntryPocketSequenceItem[];
+  /** @nullable */
+  hostTheme?: GameHistoryEntryHostTheme;
 }

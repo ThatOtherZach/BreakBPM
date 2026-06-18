@@ -213,3 +213,45 @@ export async function resolveUserEffectiveTheme(args: {
   // "auto" → derive from the pass's redeem card (same as the watch profile).
   return resolveUserProfileBackground(args);
 }
+
+/**
+ * Batched form of {@link resolveUserEffectiveTheme} for resolving many hosts at
+ * once (e.g. tinting each history card to its game's host). Mirrors the
+ * single-user rule EXACTLY: an explicit Theme override
+ * (`shark`/`hustler`/`pool-player`/`none`) resolves in memory with no DB work
+ * (matching the single-user path, which coerces the override without a paid
+ * check), while "auto" hosts derive from their pass's redeem card via the
+ * batched background resolver (one `passes` + one `discount_codes` query for the
+ * whole "auto" set). Returns a Map keyed by userId; users absent from `args` are
+ * absent from the map.
+ */
+export async function resolveUserEffectiveThemes(
+  args: Array<{
+    userId: string;
+    email: string | null | undefined;
+    profileTheme: string | null | undefined;
+  }>,
+): Promise<Map<string, BackgroundVariant | null>> {
+  const result = new Map<string, BackgroundVariant | null>();
+  if (args.length === 0) return result;
+
+  const autoUsers: typeof args = [];
+  for (const a of args) {
+    const theme = a.profileTheme ?? "auto";
+    if (theme !== "auto") {
+      // Explicit override pins the value (null for "none").
+      result.set(a.userId, coerceBackgroundVariant(theme));
+    } else {
+      autoUsers.push(a);
+    }
+  }
+
+  if (autoUsers.length > 0) {
+    const backgrounds = await resolveUserProfileBackgrounds(autoUsers);
+    for (const a of autoUsers) {
+      result.set(a.userId, backgrounds.get(a.userId) ?? null);
+    }
+  }
+
+  return result;
+}

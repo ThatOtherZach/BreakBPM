@@ -46,7 +46,9 @@ import { isAdminEmail } from "../lib/config";
 import {
   resolveUserProfileBackground,
   resolveUserEffectiveTheme,
+  resolveUserEffectiveThemes,
 } from "../lib/userProfileBackground";
+import { type BackgroundVariant } from "../lib/profileBackground";
 
 const router: IRouter = Router();
 
@@ -247,6 +249,7 @@ function toHistoryEntry(
   accuracy: number | null,
   subject: { slot: number | null; name: string | null },
   pace: { bpm: number | null; sunkBallsCount: number },
+  hostTheme: BackgroundVariant | null,
 ) {
   const gs = g.gameState as Record<string, unknown> | null;
   const rawReason =
@@ -291,8 +294,48 @@ function toHistoryEntry(
         ? (gs!["chaosMode"] as "eight-last" | "anything-goes" | "none")
         : null,
     pocketSequence,
+    // The game HOST's effective theme (resolved by the caller), so every
+    // viewer's history card tints its felt to the host's table — not the
+    // viewer's own theme. Null → default green felt.
+    hostTheme,
     ...(endReason ? { endReason } : {}),
   };
+}
+
+/**
+ * Resolve the felt theme for a set of finished games, keyed by game id. Each
+ * history card tints its felt to that game's HOST theme (the host is the game
+ * owner, `game.userId`) using the same effective-theme rule the host's own
+ * GameScreen and live spectators use — so a themed host's table shows for EVERY
+ * viewer of the history, regardless of the viewer's own theme. Hosts with no
+ * theme map to null (the default green felt). Batched (one users query + the
+ * batched theme resolver) to avoid an N+1 across the rendered page.
+ */
+async function resolveHostThemesByGame(
+  games: Array<{ id: string; userId: string }>,
+): Promise<Map<string, BackgroundVariant | null>> {
+  const byGame = new Map<string, BackgroundVariant | null>();
+  if (games.length === 0) return byGame;
+  const hostIds = [...new Set(games.map((g) => g.userId))];
+  const hostRows = await db
+    .select({
+      id: usersTable.id,
+      email: usersTable.email,
+      profileTheme: usersTable.profileTheme,
+    })
+    .from(usersTable)
+    .where(inArray(usersTable.id, hostIds));
+  const themeByHost = await resolveUserEffectiveThemes(
+    hostRows.map((u) => ({
+      userId: u.id,
+      email: u.email,
+      profileTheme: u.profileTheme,
+    })),
+  );
+  for (const g of games) {
+    byGame.set(g.id, themeByHost.get(g.userId) ?? null);
+  }
+  return byGame;
 }
 
 /**
@@ -1794,6 +1837,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
             )
         : [];
     const partByGame = new Map(parts.map((p) => [p.gameId, p]));
+    const hostThemeByGame = await resolveHostThemesByGame(visible);
     games = visible.map((g) => {
       const part = partByGame.get(g.id);
       const pace = resolveParticipantPace(g, {
@@ -1807,6 +1851,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
         part ? (part.accuracy ?? null) : (g.accuracy ?? null),
         { slot: part?.slotIndex ?? null, name: host.screenName },
         pace,
+        hostThemeByGame.get(g.id) ?? null,
       );
     });
   }
@@ -2070,6 +2115,7 @@ router.get("/games/history", async (req, res): Promise<void> => {
       : [];
   const myPartByGame = new Map(myParts.map((p) => [p.gameId, p]));
 
+  const hostThemeByGame = await resolveHostThemesByGame(visible);
   const games = visible.map((g) => {
     const part = myPartByGame.get(g.id);
     const pace = resolveParticipantPace(g, {
@@ -2083,6 +2129,7 @@ router.get("/games/history", async (req, res): Promise<void> => {
       part ? (part.accuracy ?? null) : (g.accuracy ?? null),
       { slot: part?.slotIndex ?? null, name: user.screenName },
       pace,
+      hostThemeByGame.get(g.id) ?? null,
     );
   });
 
@@ -2643,6 +2690,7 @@ router.get("/mentions", async (req, res): Promise<void> => {
       : [];
   const partByGame = new Map(myParts.map((p) => [p.gameId, p]));
 
+  const hostThemeByGame = await resolveHostThemesByGame(rows.map((r) => r.game));
   const invites = rows.map((r) => {
     const part = partByGame.get(r.game.id);
     const slot = part?.slotIndex ?? r.slotIndex;
@@ -2662,6 +2710,7 @@ router.get("/mentions", async (req, res): Promise<void> => {
         part ? (part.accuracy ?? null) : null,
         { slot, name: user.screenName },
         pace,
+        hostThemeByGame.get(r.game.id) ?? null,
       ),
     };
   });

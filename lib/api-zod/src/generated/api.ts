@@ -698,7 +698,8 @@ export const GetPublicProfileResponse = zod.object({
   "pocketSequence": zod.array(zod.object({
   "ball": zod.number(),
   "player": zod.string()
-})).optional()
+})).optional(),
+  "hostTheme": zod.enum(['shark', 'pool-player', 'hustler', 'none']).nullish()
 })),
   "stats": zod.union([zod.object({
   "tier": zod.enum(['public', 'account', 'pass']),
@@ -847,7 +848,8 @@ export const GetGameHistoryResponse = zod.object({
   "pocketSequence": zod.array(zod.object({
   "ball": zod.number(),
   "player": zod.string()
-})).optional()
+})).optional(),
+  "hostTheme": zod.enum(['shark', 'pool-player', 'hustler', 'none']).nullish()
 }))
 })
 
@@ -911,7 +913,8 @@ export const ListMyInvitesResponse = zod.object({
   "pocketSequence": zod.array(zod.object({
   "ball": zod.number(),
   "player": zod.string()
-})).optional()
+})).optional(),
+  "hostTheme": zod.enum(['shark', 'pool-player', 'hustler', 'none']).nullish()
 })
 }))
 })

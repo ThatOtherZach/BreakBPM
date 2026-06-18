@@ -1,6 +1,7 @@
 import type { GameHistoryEntry } from "@workspace/api-client-react";
 import SharkIcon from "./SharkIcon";
 import { SHARK_PLAYER_NAME, SOLIDS } from "../lib/gameLogic";
+import { THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
 
 const BALL_COLORS: Record<number, string> = {
   1: "#FDD307", 2: "#1F4E9E", 3: "#C3342B", 4: "#5B247A",
@@ -175,6 +176,10 @@ export default function GameHistoryCard({
   const modeLabel = GAME_TYPE_LABEL[g.gameType] ?? g.gameType;
   const hasBpm = g.bpm != null;
   const hasAcc = g.accuracy != null;
+  // Tint the card's pool-table felt to THIS game's HOST theme (server-resolved
+  // `hostTheme`), so every viewer sees the host's table — not their own theme.
+  // No host theme → green (the default felt). Mirrors the leaderboard card felt.
+  const felt = THEME_FELT[themeColorOf(g.hostTheme)];
   return (
     <div
       className="fpp-card history-card"
@@ -182,6 +187,8 @@ export default function GameHistoryCard({
         display: "flex",
         flexDirection: "column",
         gap: 6,
+        backgroundColor: felt.felt,
+        boxShadow: `inset 0 0 0 2px ${felt.feltShadow}, inset 0 2px 6px rgba(0, 0, 0, 0.35)`,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

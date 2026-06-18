@@ -794,6 +794,19 @@ export type GameHistoryEntryPocketSequenceItem = {
   player: string;
 };
 
+/**
+ * @nullable
+ */
+export type GameHistoryEntryHostTheme = typeof GameHistoryEntryHostTheme[keyof typeof GameHistoryEntryHostTheme] | null;
+
+
+export const GameHistoryEntryHostTheme = {
+  shark: 'shark',
+  'pool-player': 'pool-player',
+  hustler: 'hustler',
+  none: 'none',
+} as const;
+
 export interface GameHistoryEntry {
   id: string;
   gameType: string;
@@ -816,6 +829,8 @@ export interface GameHistoryEntry {
   chaosMode?: GameHistoryEntryChaosMode;
   endReason?: GameHistoryEntryEndReason;
   pocketSequence?: GameHistoryEntryPocketSequenceItem[];
+  /** @nullable */
+  hostTheme?: GameHistoryEntryHostTheme;
 }
 
 export interface MentionResolveResult {

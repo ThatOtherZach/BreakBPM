@@ -1841,6 +1841,15 @@ components:
             properties:
               ball: { type: integer }
               player: { type: string }
+        # The HOST's resolved profile theme/background for THIS game, so every
+        # player's history card tints its felt to the host's table — the same
+        # rule the host's own GameScreen and live spectators use (shark → blue,
+        # hustler → red, pool-player → purple, else the default green). "auto"
+        # hosts derive it from their pass's redeem card; an explicit Theme
+        # override pins one. Null/"none"/unpaid → default green felt.
+        hostTheme:
+          type: ["string", "null"]
+          enum: [shark, pool-player, hustler, none]
 
     MentionResolveResult:
       type: object
