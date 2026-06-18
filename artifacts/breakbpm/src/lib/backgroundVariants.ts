@@ -47,18 +47,21 @@ export function themeColorOf(bg: string | null | undefined): ThemeColor {
   return "green";
 }
 
-/** Pool-table felt shades per theme color: the baize `felt` base and the
- * `feltShadow` used for the inset rail. Green reproduces the current default. */
-export const THEME_FELT: Record<ThemeColor, { felt: string; feltShadow: string }> = {
-  green: { felt: "#0f5a2e", feltShadow: "#0a4322" },
-  blue: { felt: "#0e3a6e", feltShadow: "#0a2a52" },
+/** Pool-table felt shades per theme color: the baize `felt` base, the
+ * `feltShadow` used for the inset rail, and `feltFade` (the felt color at
+ * zero opacity) for CSS gradients that must fade into the felt without the
+ * "dark band" artefact of fading to `transparent`. Green reproduces the
+ * current default. */
+export const THEME_FELT: Record<ThemeColor, { felt: string; feltShadow: string; feltFade: string }> = {
+  green: { felt: "#0f5a2e", feltShadow: "#0a4322", feltFade: "rgba(15, 90, 46, 0)" },
+  blue: { felt: "#0e3a6e", feltShadow: "#0a2a52", feltFade: "rgba(14, 58, 110, 0)" },
   // Burgundy kept deliberately dark — darker than every ball fill (incl. the
   // maroon 7/15 #6B1F2A) so the rack chips' black rim + white number circle
   // stay legible on the felt.
-  red: { felt: "#54151d", feltShadow: "#3d0f15" },
+  red: { felt: "#54151d", feltShadow: "#3d0f15", feltFade: "rgba(84, 21, 29, 0)" },
   // Deep violet kept darker than the purple 4/12 ball (#5B247A) for the same
   // reason as the burgundy felt, so the rack chips stay legible.
-  purple: { felt: "#3d2154", feltShadow: "#2a1640" },
+  purple: { felt: "#3d2154", feltShadow: "#2a1640", feltFade: "rgba(61, 33, 84, 0)" },
 };
 
 /** Vivid accent per theme color — used for the leaderboard card stripe and the

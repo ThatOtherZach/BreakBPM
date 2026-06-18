@@ -2422,7 +2422,7 @@ html, #root {
 .history-card { margin-bottom: 10px; }
 .history-card:last-of-type { margin-bottom: 0; }
 .history-card .shotlog-row::after {
-  background: linear-gradient(to right, rgba(15, 90, 46, 0), #0f5a2e);
+  background: linear-gradient(to right, var(--felt-fade), var(--felt));
 }
 .fpp-card-name {
   font-family: 'VT323', monospace;

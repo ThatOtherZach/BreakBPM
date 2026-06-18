@@ -189,7 +189,9 @@ export default function GameHistoryCard({
         gap: 6,
         backgroundColor: felt.felt,
         boxShadow: `inset 0 0 0 2px ${felt.feltShadow}, inset 0 2px 6px rgba(0, 0, 0, 0.35)`,
-      }}
+        "--felt": felt.felt,
+        "--felt-fade": felt.feltFade,
+      } as React.CSSProperties}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         {/* Left: mode + result + winner */}
