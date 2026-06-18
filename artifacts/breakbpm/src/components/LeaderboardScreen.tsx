@@ -91,7 +91,7 @@ function LeaderboardRowCard({
             <span
               style={{
                 fontFamily: "VT323",
-                fontSize: 14,
+                fontSize: 16,
                 lineHeight: 1,
                 color: "#9fc6ff",
                 textShadow: "1px 1px 0 #042414",
