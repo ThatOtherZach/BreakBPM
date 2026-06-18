@@ -575,6 +575,20 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                       )}
                     </div>
                   </div>
+                  {canEditName && (
+                    <button
+                      className="btn"
+                      disabled={updateTheme.isPending}
+                      title="Cycle theme"
+                      style={{ flexShrink: 0 }}
+                      onClick={() => {
+                        const idx = THEME_CYCLE.indexOf(effectiveTheme as (typeof THEME_CYCLE)[number]);
+                        handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length] as AccountProfileTheme);
+                      }}
+                    >
+                      {THEME_DOT[themeColorOf(effectiveTheme)]}
+                    </button>
+                  )}
                 </div>
                 {!canEditName && (
                   <div style={{ fontSize: 11, color: "#444" }}>
@@ -604,20 +618,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     onClick={() => setLocation(`/watch/${encodeURIComponent(account.screenName)}`)}
                   >👁 View</button>
                   {canEditName && (
-                    <>
-                      <button
-                        className="btn"
-                        disabled={updateTheme.isPending}
-                        title="Cycle theme"
-                        onClick={() => {
-                          const idx = THEME_CYCLE.indexOf(effectiveTheme as (typeof THEME_CYCLE)[number]);
-                          handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length] as AccountProfileTheme);
-                        }}
-                      >
-                        {THEME_DOT[themeColorOf(effectiveTheme)]}
-                      </button>
-                      <button className="btn" onClick={() => setEditing(true)}>Edit</button>
-                    </>
+                    <button className="btn" onClick={() => setEditing(true)}>Edit</button>
                   )}
                 </div>
               </>
