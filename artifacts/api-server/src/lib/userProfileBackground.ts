@@ -27,11 +27,11 @@
  *                       (i.e. the player beat the 🦈 Shark AI).
  *
  *   8-Ball (standard) → "hustler"     (gameType==="8ball" && maxPlayers>1 && no chaos)
- *                       Earn: at least 10 wins in standard 8-ball across the last 50
- *                       completed games, with the most recent win within 10 days.
- *                       A "win" means the host's display name matches the stored winner.
- *
- *   9-ball (any)      → no theme earned
+ *   9-ball            → "hustler"     (any 9-ball game — same competitive bucket)
+ *                       Earn: at least 10 wins across standard 8-ball + 9-ball combined,
+ *                       across the last 50 completed games, with the most recent win
+ *                       within 10 days. A "win" means the host's display name matches
+ *                       the stored winner.
  *
  * Pool-player majority is checked first. Shark (5 wins) is checked second.
  * Hustler (10 wins) is the final fallback.
@@ -70,13 +70,13 @@ export type ClassifiedGame = {
 
 /**
  * Classify one completed game into the auto-earn bucket that should receive
- * credit. Returns null for game types that don't map to any earnable theme
- * (e.g. 9-ball).
+ * credit. Returns null for game types that don't map to any earnable theme.
  *
  * - Shark        (8-ball solo, maxPlayers===1) → "shark"
  * - Practice     (all practice games)          → "pool-player"
  * - Chaos 8-ball (chaosMode set / non-null)    → "pool-player"
  * - Standard 8-ball (maxPlayers>1, no chaos)   → "hustler"
+ * - 9-ball (any)                               → "hustler" (same competitive bucket)
  */
 function classifyGame(g: ClassifiedGame): BackgroundVariant | null {
   if (g.gameType === "8ball" && g.maxPlayers === 1) return "shark";
@@ -85,7 +85,8 @@ function classifyGame(g: ClassifiedGame): BackgroundVariant | null {
     if (g.chaosMode !== null) return "pool-player";
     return "hustler";
   }
-  return null;
+  if (g.gameType === "9ball") return "hustler";
+  return null; // any future unrecognised types do not earn a theme
 }
 
 /**

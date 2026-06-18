@@ -198,6 +198,31 @@ describe("computeAutoEarnedVariantFromGames — hustler (10-win threshold)", () 
     );
     expect(computeAutoEarnedVariantFromGames(games)).toBeNull();
   });
+
+  it("counts 9-ball wins toward the hustler threshold", () => {
+    // 5 standard 8-ball wins + 5 9-ball wins = 10 total → hustler
+    const games = [
+      ...Array.from({ length: 5 }, (_, i) => hustlerWin(i + 1)),
+      ...Array.from({ length: 5 }, (_, i) =>
+        game({ gameType: "9ball", daysAgo: i + 6, winner: "Alice", hostDisplayName: "Alice" }),
+      ),
+    ];
+    expect(computeAutoEarnedVariantFromGames(games)).toBe("hustler");
+  });
+
+  it("earns hustler from 10 pure 9-ball wins", () => {
+    const games = Array.from({ length: 10 }, (_, i) =>
+      game({ gameType: "9ball", daysAgo: i + 1, winner: "Alice", hostDisplayName: "Alice" }),
+    );
+    expect(computeAutoEarnedVariantFromGames(games)).toBe("hustler");
+  });
+
+  it("does NOT earn hustler from 9-ball losses", () => {
+    const games = Array.from({ length: 10 }, (_, i) =>
+      game({ gameType: "9ball", daysAgo: i + 1, winner: "Bob", hostDisplayName: "Alice" }),
+    );
+    expect(computeAutoEarnedVariantFromGames(games)).toBeNull();
+  });
 });
 
 // ---------------------------------------------------------------------------
