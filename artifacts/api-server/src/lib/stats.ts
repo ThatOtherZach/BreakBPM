@@ -904,6 +904,15 @@ interface LeaderboardCacheEntry {
 const leaderboardCache = new Map<string, LeaderboardCacheEntry>();
 
 /**
+ * Drop all cached leaderboard windows. Call after any change that affects
+ * a player's ranking appearance (e.g. profile-theme update) so the next
+ * request recomputes with the fresh data rather than serving a stale card.
+ */
+export function clearLeaderboardCache(): void {
+  leaderboardCache.clear();
+}
+
+/**
  * Resolve the full ranking for a window, using the 1-hour cache. The route
  * paginates / slices the returned array; the whole ranking is computed once per
  * window so per-page and widget reads are cheap.

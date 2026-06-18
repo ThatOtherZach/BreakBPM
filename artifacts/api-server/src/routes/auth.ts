@@ -12,7 +12,7 @@ import { getVerifiedSubject, getOrCreateUser, needsOnboarding } from "../lib/aut
 import { computeEntitlement, getActivePasses } from "../lib/entitlement";
 import { normalizeProfileTheme } from "../lib/profileBackground";
 import { resolveUserProfileBackground } from "../lib/userProfileBackground";
-import { resolveLeaderboard } from "../lib/stats";
+import { resolveLeaderboard, clearLeaderboardCache } from "../lib/stats";
 import type { User } from "@workspace/db";
 
 // Custom screen names are a Lifetime-pass perk. Admins are treated as effective
@@ -186,6 +186,10 @@ router.patch("/auth/profile-theme", async (req, res): Promise<void> => {
     .where(eq(usersTable.id, user.id))
     .returning();
   const updated = rows[0];
+  // A theme change updates the player's card colour on every leaderboard window;
+  // drop all windows so the next request recomputes with the new profileBackground
+  // rather than serving a stale (possibly wrong-coloured) cached ranking.
+  clearLeaderboardCache();
   res.json(
     UpdateProfileThemeResponse.parse({
       id: updated.id,
