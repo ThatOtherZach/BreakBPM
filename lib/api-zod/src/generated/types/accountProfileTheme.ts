@@ -12,6 +12,7 @@ export type AccountProfileTheme = typeof AccountProfileTheme[keyof typeof Accoun
 export const AccountProfileTheme = {
   auto: 'auto',
   none: 'none',
+  rainbow: 'rainbow',
   shark: 'shark',
   'pool-player': 'pool-player',
   hustler: 'hustler',

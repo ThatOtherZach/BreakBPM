@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { randomUUID } from "node:crypto";
 import { and, count, desc, eq, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
-import { db, gamesTable, gameParticipantsTable, usersTable, gameMentionsTable } from "@workspace/db";
+import { db, gamesTable, gameParticipantsTable, usersTable, gameMentionsTable, passesTable, subscriptionsTable } from "@workspace/db";
 import {
   StartGameBody,
   StartGameResponse,
@@ -47,7 +47,7 @@ import {
   resolveUserProfileBackground,
   resolveUserEffectiveTheme,
 } from "../lib/userProfileBackground";
-import { coerceBackgroundVariant, type BackgroundVariant } from "../lib/profileBackground";
+import { coerceBackgroundVariant, normalizeProfileTheme, type BackgroundVariant } from "../lib/profileBackground";
 
 const router: IRouter = Router();
 
@@ -1634,11 +1634,59 @@ router.get("/games/state", async (req, res): Promise<void> => {
       leftAt: gameParticipantsTable.leftAt,
       userId: gameParticipantsTable.userId,
       email: usersTable.email,
+      profileTheme: usersTable.profileTheme,
     })
     .from(gameParticipantsTable)
     .leftJoin(usersTable, eq(usersTable.id, gameParticipantsTable.userId))
     .where(eq(gameParticipantsTable.gameId, fresh.id))
     .orderBy(gameParticipantsTable.slotIndex);
+  // Resolve which participants are on the paid ("pass") tier, so we can light
+  // the rainbow name for paid players who picked the "rainbow" theme (admins
+  // always get it). The tier is granted by an active one-time pass OR an active
+  // subscription — mirroring computeEntitlement — so we batch both tables. The
+  // pass active test mirrors getActivePasses (issued + not yet expired); the
+  // subscription active test mirrors getActiveSubscription (status 'active' and
+  // still within the paid-through window).
+  const participantUserIds = parts
+    .map((p) => p.userId)
+    .filter((id): id is string => id != null);
+  const paidUserIds = new Set<string>();
+  if (participantUserIds.length > 0) {
+    const now = new Date();
+    const nowMs = now.getTime();
+    const [passRows, subRows] = await Promise.all([
+      db
+        .select({
+          userId: passesTable.userId,
+          startedAt: passesTable.startedAt,
+          durationSeconds: passesTable.durationSeconds,
+        })
+        .from(passesTable)
+        .where(inArray(passesTable.userId, participantUserIds)),
+      db
+        .select({
+          userId: subscriptionsTable.userId,
+          status: subscriptionsTable.status,
+          currentPeriodEnd: subscriptionsTable.currentPeriodEnd,
+        })
+        .from(subscriptionsTable)
+        .where(inArray(subscriptionsTable.userId, participantUserIds)),
+    ]);
+    for (const pr of passRows) {
+      const started = pr.startedAt.getTime();
+      const expires =
+        pr.durationSeconds === null ? Infinity : started + pr.durationSeconds * 1000;
+      if (started <= nowMs && expires > nowMs) paidUserIds.add(pr.userId);
+    }
+    for (const sr of subRows) {
+      if (sr.status === "active" && sr.currentPeriodEnd > now) paidUserIds.add(sr.userId);
+    }
+  }
+  const participantRainbowName = (p: (typeof parts)[number]): boolean =>
+    isAdminEmail(p.email) ||
+    (p.userId != null &&
+      paidUserIds.has(p.userId) &&
+      normalizeProfileTheme(p.profileTheme) === "rainbow");
   // Resolve the host's effective profile theme so joiners/spectators can tint
   // the view-only HUD felt to match the host's table (the host's own GameScreen
   // tints the same way). The host is the game's owner (`fresh.userId`).
@@ -1672,6 +1720,7 @@ router.get("/games/state", async (req, res): Promise<void> => {
         hasLeft: !!p.leftAt,
         isGuest: p.userId == null,
         isAdmin: isAdminEmail(p.email),
+        rainbowName: participantRainbowName(p),
       })),
     }),
   );
@@ -1928,6 +1977,17 @@ router.get("/games/profile", async (req, res): Promise<void> => {
     email: host.email,
     profileTheme: host.profileTheme,
   });
+  // Rainbow name: admins always, or any paid ("pass") tier holder — active
+  // one-time pass OR active subscription — who picked "rainbow". Mirrors the
+  // tier==='pass' gate enforced on PATCH /auth/profile-theme.
+  const [hostActivePasses, hostActiveSubscription] = await Promise.all([
+    getActivePasses(host.id),
+    getActiveSubscription(host.id),
+  ]);
+  const hostIsPaid = hostActivePasses.length > 0 || hostActiveSubscription !== null;
+  const hostRainbowName =
+    hostIsAdmin ||
+    (hostIsPaid && normalizeProfileTheme(host.profileTheme) === "rainbow");
 
   res.json(
     GetPublicProfileResponse.parse({
@@ -1938,6 +1998,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
       winRate,
       avgBpm,
       isAdmin: hostIsAdmin,
+      rainbowName: hostRainbowName,
       profileBackground,
       games,
       stats,

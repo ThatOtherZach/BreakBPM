@@ -149,13 +149,13 @@ export function TrendOverlay({
 export default function StatsHero({
   stats,
   screenName,
-  adminName,
+  rainbowName,
   joinedAt,
   backgroundUrl,
 }: {
   stats: StatsResult;
   screenName?: string;
-  adminName?: boolean;
+  rainbowName?: boolean;
   joinedAt?: string | null;
   backgroundUrl?: string | null;
 }) {
@@ -208,7 +208,7 @@ export default function StatsHero({
               <div className="stats-hero-name-row">
                 <WinsTodayChip winsToday={stats.winsToday ?? 0} />
                 <span className="stats-hero-name text-[28px]">
-                  <PlayerName name={screenName} admin={adminName ?? false} />
+                  <PlayerName name={screenName} rainbow={rainbowName ?? false} />
                 </span>
               </div>
             </div>
@@ -235,7 +235,7 @@ export default function StatsHero({
               )}
               <span className="stats-hero-name text-[28px]">
                 {isPersonal
-                  ? <PlayerName name={screenName} admin={adminName ?? false} />
+                  ? <PlayerName name={screenName} rainbow={rainbowName ?? false} />
                   : "Everyone"}
               </span>
             </div>

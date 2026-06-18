@@ -318,13 +318,13 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
     isHost: boolean;
     hasLeft: boolean;
     isGuest: boolean;
-    isAdmin: boolean;
+    rainbowName: boolean;
   }> } | undefined)?.participants ?? [];
   const rosterBySlot = new Map(participants.map(p => [p.slotIndex, p]));
-  // Set of admin display names (resolved server-side, carried only in the
-  // participants payload) used to rainbow matching names in the HUD/shot log.
-  const adminNames = new Set(participants.filter(p => p.isAdmin).map(p => p.displayName));
-  const isAdminName = (name: string | null | undefined): boolean => !!name && adminNames.has(name);
+  // Set of rainbow-name display names (resolved server-side, carried only in
+  // the participants payload) used to rainbow matching names in the HUD/shot log.
+  const rainbowNames = new Set(participants.filter(p => p.rainbowName).map(p => p.displayName));
+  const isRainbowName = (name: string | null | undefined): boolean => !!name && rainbowNames.has(name);
   const currentIdx = state?.currentPlayerIndex ?? 0;
   const cur = players[currentIdx];
   // The host is always Player 1 (slot 0). Prefer the live roster name,
@@ -401,7 +401,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
             <div className="hud-bpm-sub">
               {dispBpm === null
                 ? 'AWAITING PLAY'
-                : <PlayerName name={dispPlayerName ?? ''} admin={isAdminName(dispPlayerName)} upper />}
+                : <PlayerName name={dispPlayerName ?? ''} rainbow={isRainbowName(dispPlayerName)} upper />}
             </div>
           </div>
           <div className="hud-divider" />
@@ -494,7 +494,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
                   {active ? <span className="cue-ball-icon" /> : null}
                 </span>
                 <span style={{ fontSize: 16, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  <PlayerName name={shownName} admin={roster?.isAdmin ?? isAdminName(shownName)} />{isMe ? ' (you)' : ''}{roster?.isHost ? ' ★' : ''}
+                  <PlayerName name={shownName} rainbow={roster?.rainbowName ?? isRainbowName(shownName)} />{isMe ? ' (you)' : ''}{roster?.isHost ? ' ★' : ''}
                 </span>
                 {roster?.hasLeft && (
                   <span style={{ fontSize: 12, color: '#ff9090' }}>· left</span>
@@ -527,7 +527,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
             }}>
               <span style={{ minWidth: 12 }} aria-hidden="true" />
               <span style={{ fontSize: 18 }}>
-                <PlayerName name={rp.displayName} admin={rp.isAdmin} />{joinResult?.slotIndex === rp.slotIndex ? ' (you)' : ''}
+                <PlayerName name={rp.displayName} rainbow={rp.rainbowName} />{joinResult?.slotIndex === rp.slotIndex ? ' (you)' : ''}
               </span>
               <span style={{ fontSize: 12, opacity: 0.7 }}>· joining…</span>
               {rp.hasLeft && <span style={{ fontSize: 12, color: '#ff9090' }}>· left</span>}
@@ -540,7 +540,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
               {state.winner ? (
                 <>
                   ★ {state.winner === SHARK_PLAYER_NAME && <SharkIcon size={21} />}
-                  <PlayerName name={state.winner} admin={isAdminName(state.winner)} upper /> WINS
+                  <PlayerName name={state.winner} rainbow={isRainbowName(state.winner)} upper /> WINS
                 </>
               ) : 'GAME OVER'}
             </span>
@@ -567,7 +567,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
           const bpmTag = e.bpm !== undefined ? ` · ${e.bpm.toFixed(1)} BPM` : '';
           return (
             <div key={i} className={`log-entry ${e.type}`}>
-              {`[${t}] `}<PlayerName name={e.playerName} admin={isAdminName(e.playerName)} />{rest}{bpmTag}
+              {`[${t}] `}<PlayerName name={e.playerName} rainbow={isRainbowName(e.playerName)} />{rest}{bpmTag}
             </div>
           );
         })
@@ -613,7 +613,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
                 const bpmTag = e.bpm !== undefined ? ` · ${e.bpm.toFixed(1)} BPM` : '';
                 return (
                   <div key={i} className={`log-entry ${e.type}`}>
-                    {`[${t}] `}<PlayerName name={e.playerName} admin={isAdminName(e.playerName)} />{rest}{bpmTag}{e.note ? ` — ${e.note}` : ''}
+                    {`[${t}] `}<PlayerName name={e.playerName} rainbow={isRainbowName(e.playerName)} />{rest}{bpmTag}{e.note ? ` — ${e.note}` : ''}
                   </div>
                 );
               })

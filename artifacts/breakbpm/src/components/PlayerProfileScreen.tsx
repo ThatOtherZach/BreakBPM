@@ -96,7 +96,7 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
             {/* Header — the same CRT hero readout as the Stats page, scoped to
                 this player's last 24 hours. */}
             {stats ? (
-              <StatsHero stats={stats} screenName={screenName} adminName={profile.data.isAdmin ?? false} joinedAt={profile.data.memberSince} backgroundUrl={heroBackgroundUrl} />
+              <StatsHero stats={stats} screenName={screenName} rainbowName={profile.data.rainbowName ?? false} joinedAt={profile.data.memberSince} backgroundUrl={heroBackgroundUrl} />
             ) : (
               <div
                 className="panel"
@@ -120,7 +120,7 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
                     whiteSpace: "nowrap",
                   }}
                 >
-                  <PlayerName name={screenName} admin={profile.data.isAdmin ?? false} />
+                  <PlayerName name={screenName} rainbow={profile.data.rainbowName ?? false} />
                 </div>
                 <div style={{ fontSize: 12, color: "#d8b4ff", marginTop: 2 }}>
                   {profile.data.memberSince

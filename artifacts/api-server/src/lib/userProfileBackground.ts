@@ -320,10 +320,12 @@ export async function resolveUserEffectiveTheme(args: {
   profileTheme: string | null | undefined;
 }): Promise<BackgroundVariant | null> {
   const theme = args.profileTheme ?? "auto";
-  if (theme !== "auto") {
+  if (theme !== "auto" && theme !== "rainbow") {
     // Explicit override: "none" → plain (null); otherwise the chosen variant.
     return coerceBackgroundVariant(theme);
   }
-  // "auto" → use the full profile resolver (auto-earn, or explicit-theme if paid).
+  // "auto"/"rainbow" → use the full profile resolver (auto-earn, or
+  // explicit-theme if paid). "rainbow" is a name-only flair: the felt still
+  // falls through to the auto-earned variant rather than pinning one.
   return resolveUserProfileBackground(args);
 }

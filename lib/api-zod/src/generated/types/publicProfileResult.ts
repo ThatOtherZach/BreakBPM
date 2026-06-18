@@ -24,6 +24,7 @@ export interface PublicProfileResult {
   /** @nullable */
   avgBpm?: number | null;
   isAdmin?: boolean;
+  rainbowName?: boolean;
   /** @nullable */
   profileBackground?: PublicProfileResultProfileBackground;
   games: GameHistoryEntry[];

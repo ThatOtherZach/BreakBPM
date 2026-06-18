@@ -24,6 +24,7 @@ export type AccountProfileTheme = typeof AccountProfileTheme[keyof typeof Accoun
 export const AccountProfileTheme = {
   auto: 'auto',
   none: 'none',
+  rainbow: 'rainbow',
   shark: 'shark',
   'pool-player': 'pool-player',
   hustler: 'hustler',
@@ -538,6 +539,7 @@ export type ProfileThemeUpdateProfileTheme = typeof ProfileThemeUpdateProfileThe
 export const ProfileThemeUpdateProfileTheme = {
   auto: 'auto',
   none: 'none',
+  rainbow: 'rainbow',
   shark: 'shark',
   'pool-player': 'pool-player',
   hustler: 'hustler',
@@ -1054,6 +1056,7 @@ export type GameStateSnapshotParticipantsItem = {
   hasLeft: boolean;
   isGuest?: boolean;
   isAdmin: boolean;
+  rainbowName: boolean;
 };
 
 export interface GameStateSnapshot {
@@ -1252,6 +1255,7 @@ export interface PublicProfileResult {
   /** @nullable */
   avgBpm?: number | null;
   isAdmin?: boolean;
+  rainbowName?: boolean;
   /** @nullable */
   profileBackground?: PublicProfileResultProfileBackground;
   games: GameHistoryEntry[];

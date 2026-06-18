@@ -11,7 +11,7 @@ import {
   cardFilename,
 } from "../lib/redeemCard";
 import type { BackgroundVariant } from "../lib/backgroundVariants";
-import { THEME_DOT, THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
+import { THEME_DOT, THEME_FELT, RAINBOW_DOT, themeColorOf } from "../lib/backgroundVariants";
 import {
   useGetMe,
   useUpdateScreenName,
@@ -262,16 +262,30 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   // Custom screen names are a Lifetime perk; admins are effective Lifetime
   // holders, so honor the synthesized entitlement (mirrors the server gate).
   const canEditName = ent.isAdmin || ent.activePass?.isLifetime === true;
+  // Felt artwork (shark/hustler/pool-player) is Lifetime-only, but the
+  // name-only rainbow flair (+ plain "none") is open to any active pass holder.
+  const canTheme = ent.tier === "pass";
   // The caller's own all-time global BPM standing, so the Identity card can
   // read like a leaderboard row (felt tint + global rank). Null until they have
   // enough qualifying ranked games to appear in the leaderboard.
   const standing = me.data.globalStanding ?? null;
-  // Theme cycle for the identity card toggle button (same order as the old select).
-  const THEME_CYCLE = ["shark", "pool-player", "hustler", "none"] as const;
+  // Theme cycle for the identity card toggle button. Lifetime/admins get the
+  // full felt-artwork set; everyone else (active pass) gets the name-only
+  // rainbow flair plus plain "none". "rainbow" is appended last in both.
+  const THEME_CYCLE: readonly AccountProfileTheme[] = canEditName
+    ? ["shark", "pool-player", "hustler", "none", "rainbow"]
+    : ["none", "rainbow"];
+  // The button glyph/cycle index reflect the explicit stored theme ("auto"
+  // resolves to its auto-earned background so the dot matches the felt).
   const effectiveTheme = (account.profileTheme === "auto"
     ? (account.profileBackground ?? "none")
     : account.profileTheme) as AccountProfileTheme;
-  const identityFelt = THEME_FELT[themeColorOf(effectiveTheme)];
+  // Felt tint: "rainbow" pins no artwork, so (like "auto") it shows the
+  // auto-earned color, defaulting to green until the player qualifies.
+  const feltTheme = (account.profileTheme === "auto" || account.profileTheme === "rainbow"
+    ? (account.profileBackground ?? "none")
+    : account.profileTheme) as AccountProfileTheme;
+  const identityFelt = THEME_FELT[themeColorOf(feltTheme)];
 
   async function handleSaveName() {
     setError("");
@@ -575,18 +589,18 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                       )}
                     </div>
                   </div>
-                  {canEditName && (
+                  {canTheme && (
                     <button
                       className="btn"
                       disabled={updateTheme.isPending}
                       title="Cycle theme"
                       style={{ flexShrink: 0 }}
                       onClick={() => {
-                        const idx = THEME_CYCLE.indexOf(effectiveTheme as (typeof THEME_CYCLE)[number]);
-                        handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length] as AccountProfileTheme);
+                        const idx = THEME_CYCLE.indexOf(effectiveTheme);
+                        handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length]);
                       }}
                     >
-                      {THEME_DOT[themeColorOf(effectiveTheme)]}
+                      {effectiveTheme === "rainbow" ? RAINBOW_DOT : THEME_DOT[themeColorOf(effectiveTheme)]}
                     </button>
                   )}
                 </div>

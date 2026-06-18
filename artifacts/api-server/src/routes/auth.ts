@@ -177,11 +177,27 @@ router.patch("/auth/profile-theme", async (req, res): Promise<void> => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  if (!(await hasLifetimePerk(user))) {
-    res.status(403).json({
-      error: "Profile themes are a Lifetime pass perk. Upgrade to customise.",
-    });
-    return;
+  // Gating splits by theme: manual felt artwork (shark/hustler/pool-player)
+  // stays a Lifetime perk, while the name-only "rainbow" flair (and the
+  // plain "auto"/"none" toggles) are open to any active pass holder.
+  const requested = parsed.data.profileTheme;
+  const isArtwork =
+    requested === "shark" || requested === "pool-player" || requested === "hustler";
+  if (isArtwork) {
+    if (!(await hasLifetimePerk(user))) {
+      res.status(403).json({
+        error: "Felt artwork is a Lifetime pass perk. Upgrade to customise.",
+      });
+      return;
+    }
+  } else {
+    const entitlement = await computeEntitlement(user);
+    if (entitlement.tier !== "pass") {
+      res.status(403).json({
+        error: "Profile themes are a pass perk. Buy a pass to customise.",
+      });
+      return;
+    }
   }
   const stored = parsed.data.profileTheme === "auto" ? null : parsed.data.profileTheme;
   const rows = await db

@@ -41,7 +41,7 @@ export const GetMeResponse = zod.object({
   "screenName": zod.string(),
   "email": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
-  "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler']),
+  "profileTheme": zod.enum(['auto', 'none', 'rainbow', 'shark', 'pool-player', 'hustler']),
   "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
   "winsToday": zod.number().default(getMeResponseAccountWinsTodayDefault)
 }).optional(),
@@ -100,7 +100,7 @@ export const UpdateScreenNameResponse = zod.object({
   "screenName": zod.string(),
   "email": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
-  "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler']),
+  "profileTheme": zod.enum(['auto', 'none', 'rainbow', 'shark', 'pool-player', 'hustler']),
   "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
   "winsToday": zod.number().default(updateScreenNameResponseWinsTodayDefault)
 })
@@ -112,7 +112,7 @@ export const UpdateScreenNameResponse = zod.object({
  * @summary Update the signed-in user's watch-profile background theme
  */
 export const UpdateProfileThemeBody = zod.object({
-  "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler'])
+  "profileTheme": zod.enum(['auto', 'none', 'rainbow', 'shark', 'pool-player', 'hustler'])
 })
 
 export const updateProfileThemeResponseWinsTodayDefault = 0;
@@ -122,7 +122,7 @@ export const UpdateProfileThemeResponse = zod.object({
   "screenName": zod.string(),
   "email": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
-  "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler']),
+  "profileTheme": zod.enum(['auto', 'none', 'rainbow', 'shark', 'pool-player', 'hustler']),
   "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
   "winsToday": zod.number().default(updateProfileThemeResponseWinsTodayDefault)
 })
@@ -650,7 +650,8 @@ export const GetGameStateByCodeResponse = zod.object({
   "isHost": zod.boolean(),
   "hasLeft": zod.boolean(),
   "isGuest": zod.boolean().optional(),
-  "isAdmin": zod.boolean()
+  "isAdmin": zod.boolean(),
+  "rainbowName": zod.boolean()
 })).optional()
 })
 
@@ -700,6 +701,7 @@ export const GetPublicProfileResponse = zod.object({
   "winRate": zod.number().nullish(),
   "avgBpm": zod.number().nullish(),
   "isAdmin": zod.boolean().optional(),
+  "rainbowName": zod.boolean().optional(),
   "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullish(),
   "games": zod.array(zod.object({
   "id": zod.string(),

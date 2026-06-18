@@ -25,8 +25,10 @@ export type BackgroundVariant = (typeof BACKGROUND_VARIANTS)[number];
 
 /** Stored profile-theme preference values. `auto` (or NULL in the DB) means
  * "use the artwork stamped on my pass's redeem card when it carried one, else
- * plain"; `none` means a plain background. */
-export const PROFILE_THEME_VALUES = ["auto", "none", ...BACKGROUND_VARIANTS] as const;
+ * plain"; `none` means a plain background. `rainbow` is a name-only flair (a
+ * rainbow screen name everywhere the player's name shows) that does NOT pin a
+ * felt artwork — the felt stays default/auto-earned, exactly like `auto`. */
+export const PROFILE_THEME_VALUES = ["auto", "none", "rainbow", ...BACKGROUND_VARIANTS] as const;
 export type ProfileTheme = (typeof PROFILE_THEME_VALUES)[number];
 
 /** Pick a random splash artwork. Used when an admin mints a card with artwork
@@ -81,7 +83,9 @@ export function resolveProfileBackground(opts: {
   if (opts.isPaid) {
     const theme = normalizeProfileTheme(opts.theme);
     if (theme === "none") return null;
-    if (theme !== "auto") return theme;
+    // `rainbow` is a name-only flair and pins no artwork — it falls through to
+    // the auto/card resolution like `auto` so the felt stays default/earned.
+    if (theme !== "auto" && theme !== "rainbow") return theme;
     return opts.cardVariant;
   }
   // Non-paid (free / account / expired pass): only auto-earned themes apply.

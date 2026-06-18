@@ -81,3 +81,7 @@ export const THEME_DOT: Record<ThemeColor, string> = {
   red: "🔴",
   purple: "🟣",
 };
+
+/** Glyph for the name-only "rainbow" theme (no felt artwork). Shown on the
+ * Account theme-cycle button when the player has picked the rainbow flair. */
+export const RAINBOW_DOT = "🌈";

@@ -414,7 +414,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
             ) : (
               <>
                 {/* ── CRT hero readout — only shown when signed in ── */}
-                {isAuthenticated && <StatsHero stats={stats} screenName={user?.screenName} joinedAt={joinedAt} />}
+                {isAuthenticated && <StatsHero stats={stats} screenName={user?.screenName} rainbowName={(meQuery.data?.entitlement.isAdmin ?? false) || (meQuery.data?.entitlement.tier === "pass" && meQuery.data?.account?.profileTheme === "rainbow")} joinedAt={joinedAt} />}
 
                 {/* ── Upsell for non-pass tiers ── */}
                 {stats.tier !== "pass" && (

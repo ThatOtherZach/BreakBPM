@@ -12,6 +12,7 @@ export type ProfileThemeUpdateProfileTheme = typeof ProfileThemeUpdateProfileThe
 export const ProfileThemeUpdateProfileTheme = {
   auto: 'auto',
   none: 'none',
+  rainbow: 'rainbow',
   shark: 'shark',
   'pool-player': 'pool-player',
   hustler: 'hustler',
