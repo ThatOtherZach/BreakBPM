@@ -637,11 +637,11 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
         <div className="panel">
           <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🎖️</span>Tier</span></div>
           <div className="panel-body">
-            <div style={{ fontFamily: "VT323", fontSize: 24, color: ent.tier === "pass" ? "#006400" : "#000080" }}>
+            <div style={{ fontFamily: "VT323", fontSize: 24, color: ent.tier === "pass" ? "#006400" : "#000080", textAlign: "center" }}>
               {tierLabel}
             </div>
             {ent.activePass && (
-              <div style={{ fontSize: 12, marginTop: 4 }}>
+              <div style={{ fontSize: 12, marginTop: 4, textAlign: "center" }}>
                 {ent.activePass.isLifetime
                   ? "Never Expires :)"
                   : `Expires ${fmtDate(ent.activePass.expiresAt)}`}

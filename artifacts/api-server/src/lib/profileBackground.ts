@@ -8,6 +8,11 @@
  * admins, who are effective Lifetime) can override the artwork via a stored
  * Theme preference.
  *
+ * Free / account / expired-pass users auto-earn a theme when one game mode
+ * forms a plurality of their last 10 completed games AND the most recent such
+ * game was within the past 10 days. See `computeAutoEarnedVariantFromGames` in
+ * `userProfileBackground.ts` for the earn logic.
+ *
  * LOCKSTEP: `BACKGROUND_VARIANTS` order is mirrored client-side in
  * `artifacts/breakbpm/src/lib/backgroundVariants.ts`; both must list the same
  * variant ids so the redeem card and the server-resolved profile reference the
@@ -52,22 +57,33 @@ export function normalizeProfileTheme(raw: string | null | undefined): ProfileTh
 
 /**
  * Resolve the background a profile should display.
- * - Unpaid players never get a themed background (null).
+ *
+ * Paid users (active pass / admin):
+ * - Explicit variant override → that variant, permanent while the pass is
+ *   active. The 10-day game-history window never overrides a paid manual pick.
  * - `none` → null (plain default background).
- * - An explicit variant override → that variant.
- * - `auto` → the artwork stored on the pass's redeem card (`cardVariant`). When
- *   the pass carried no card, or the card had no artwork (crypto / grant /
- *   admin / artwork-disabled), `cardVariant` is null and `auto` falls back to
- *   the plain default (null), so artwork is only ever assigned by a card.
+ * - `auto` → the artwork stamped on the pass's redeem card (`cardVariant`).
+ *
+ * Unpaid users (free / account tier, or a user whose pass has since expired):
+ * - `earnedVariant` → a variant auto-earned by game-history majority rule,
+ *   subject to a 10-day recency window. Returns null when not currently earned.
+ *   The stored `profileTheme` preference is ignored for unpaid callers — the
+ *   picker is Lifetime/admin-only, so any stored value is stale from a
+ *   now-expired pass.
  */
 export function resolveProfileBackground(opts: {
   isPaid: boolean;
   theme: string | null | undefined;
   cardVariant: BackgroundVariant | null;
+  /** Auto-earned variant from the caller's recent game history (non-paid path). */
+  earnedVariant?: BackgroundVariant | null;
 }): BackgroundVariant | null {
-  if (!opts.isPaid) return null;
-  const theme = normalizeProfileTheme(opts.theme);
-  if (theme === "none") return null;
-  if (theme !== "auto") return theme;
-  return opts.cardVariant;
+  if (opts.isPaid) {
+    const theme = normalizeProfileTheme(opts.theme);
+    if (theme === "none") return null;
+    if (theme !== "auto") return theme;
+    return opts.cardVariant;
+  }
+  // Non-paid (free / account / expired pass): only auto-earned themes apply.
+  return opts.earnedVariant ?? null;
 }
