@@ -284,21 +284,19 @@ export default function StatsHero({
                 <span className="stats-hero-legend-item">
                   <span className="stats-hero-legend-swatch cyan" aria-hidden="true" /><span style={{ color: "#36c5f0" }}>ACCURACY</span>
                 </span>
+                <span className="stats-hero-graph-label" style={{ color: "#00ff41" }}>
+                  {(() => {
+                    const n = stats.trend.length;
+                    const unit =
+                      stats.appliedWindow === "24h"
+                        ? "GAMES"
+                        : stats.appliedWindow === "30d"
+                          ? "DAYS"
+                          : "MONTHS";
+                    return `LAST ${n} ${unit}`;
+                  })()}
+                </span>
               </div>
-              <span className="stats-hero-graph-label" style={{ color: "#00ff41" }}>
-                {(() => {
-                  const n = stats.trend.length;
-                  // The trend's granularity tracks the window: per-game at 24h,
-                  // per-day at 30d, per-month for the longer windows.
-                  const unit =
-                    stats.appliedWindow === "24h"
-                      ? "GAMES"
-                      : stats.appliedWindow === "30d"
-                        ? "DAYS"
-                        : "MONTHS";
-                  return `LAST ${n} ${unit}`;
-                })()}
-              </span>
             </div>
           </div>
         )}
