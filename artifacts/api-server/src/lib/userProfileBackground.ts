@@ -10,26 +10,29 @@
  * `sourceRef`, so we map the player's active card pass back to the code's stored
  * variant — no hashing, no re-derivation. The most recently redeemed card wins
  * when there are several. Passes with no card — crypto purchases, grants, admin
- * effective-Lifetime — carry no code, so `auto` resolves to the plain default
- * (null) for them.
+ * effective-Lifetime — carry no code, so `auto` falls through to the auto-earn
+ * path.
  *
- * Auto-earn rule (non-paid path):
- * The last 10 completed games hosted by the user are classified by mode:
- *   - Shark          → "shark"       (8-ball solo: gameType==="8ball" && maxPlayers===1)
- *   - 8-Ball versus  → "hustler"     (gameType==="8ball" && maxPlayers>1)
- *   - Chaos Practice → "pool-player" (gameType==="practice" && chaosMode!=="none")
- * The mode with the plurality wins. On a tie → null (green). Additionally, the
- * most recent game belonging to the winning mode must have ended within the last
- * 10 days — otherwise the theme lapses and null is returned.
- * Pass holders are entirely exempt from this path; their manual pick (if any)
- * persists for the full life of the pass with no time limit.
+ * Auto-earn: any user (including free/account) can earn a themed profile by
+ * playing mostly one mode in their last 10 completed games within the past 10
+ * days. A simple majority (> 50%) of those games must be the same category:
+ *   Shark mode        → "shark"       (8-ball solo: gameType==="8ball" && maxPlayers===1)
+ *   8-Ball (standard) → "hustler"     (gameType==="8ball" && maxPlayers>1 && no chaos)
+ *   Practice / Chaos  → "pool-player" (all practice games; 8-ball with chaosMode set)
+ * Additionally, the most recent game in the winning category must have ended
+ * within the last 10 days — otherwise the theme lapses and null is returned.
+ *
+ * Resolution order:
+ *   1. Pass holder / admin with an explicit variant theme → that variant (permanent while pass active).
+ *   2. Anyone (incl. pass holder with auto/none) → auto-earn helper result.
+ *   3. Null → green default.
  */
-import { db, passesTable, discountCodesTable, gamesTable } from "@workspace/db";
+import { db, passesTable, gamesTable } from "@workspace/db";
 import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { isAdminEmail } from "./config";
 import {
-  resolveProfileBackground,
   coerceBackgroundVariant,
+  normalizeProfileTheme,
   type BackgroundVariant,
 } from "./profileBackground";
 
@@ -39,25 +42,46 @@ import {
 
 const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
 
-type ClassifiedGame = {
+export type ClassifiedGame = {
   gameType: string;
   maxPlayers: number;
   chaosMode: string | null;
   endedAt: Date;
 };
 
+/**
+ * Classify one completed game into the auto-earn bucket that should receive
+ * credit. Returns null for game types that don't map to any earneable theme
+ * (e.g. 9-ball).
+ *
+ * - Shark        (8-ball solo, maxPlayers===1) → "shark"
+ * - Practice     (all practice games)          → "pool-player"
+ * - Chaos 8-ball (chaosMode set / non-null)    → "pool-player"
+ * - Standard 8-ball (maxPlayers>1, no chaos)   → "hustler"
+ */
 function classifyGame(g: ClassifiedGame): BackgroundVariant | null {
   if (g.gameType === "8ball" && g.maxPlayers === 1) return "shark";
-  if (g.gameType === "8ball" && g.maxPlayers > 1) return "hustler";
-  if (g.gameType === "practice" && g.chaosMode && g.chaosMode !== "none")
-    return "pool-player";
-  return null;
+  if (g.gameType === "practice") return "pool-player";
+  if (g.gameType === "8ball") {
+    // Chaos / no-teams formats carry a chaosMode value in gameState; standard
+    // team play leaves it absent (null from the SQL extraction).
+    if (g.chaosMode !== null) return "pool-player";
+    return "hustler";
+  }
+  return null; // 9-ball and any future types do not earn a theme
 }
 
 /**
  * Given a pre-fetched slice of up to 10 completed games (newest-first), return
  * the auto-earned BackgroundVariant or null. Pure — no DB access; split out so
  * the batched path can share the logic without re-querying.
+ *
+ * Rules:
+ * - One category must hold a **simple majority** (strictly more than 50%).
+ * - The most recent game belonging to the winning category must have ended
+ *   within the last 10 days (freshness scoped to the winning mode — a stale
+ *   dominant mode is not rescued by recent games in other modes).
+ * - Ties → null (green default).
  */
 export function computeAutoEarnedVariantFromGames(
   games: ClassifiedGame[],
@@ -66,33 +90,30 @@ export function computeAutoEarnedVariantFromGames(
 
   const now = Date.now();
   const counts = new Map<BackgroundVariant, number>();
+  // Rows are newest-first; the first game seen per category is its most recent.
   const latestAt = new Map<BackgroundVariant, Date>();
 
   for (const g of games) {
     const variant = classifyGame(g);
     if (!variant) continue;
     counts.set(variant, (counts.get(variant) ?? 0) + 1);
-    const prev = latestAt.get(variant);
-    if (!prev || g.endedAt > prev) latestAt.set(variant, g.endedAt);
+    if (!latestAt.has(variant)) latestAt.set(variant, g.endedAt);
   }
 
   if (counts.size === 0) return null;
 
+  const total = games.length;
+  // Simple majority: strictly more than half of the qualifying set.
   let winner: BackgroundVariant | null = null;
-  let maxCount = 0;
-  let tie = false;
   for (const [variant, count] of counts) {
-    if (count > maxCount) {
-      maxCount = count;
+    if (count * 2 > total) {
       winner = variant;
-      tie = false;
-    } else if (count === maxCount) {
-      tie = true;
+      break;
     }
   }
+  if (!winner) return null;
 
-  if (tie || !winner) return null;
-
+  // Freshness gate: the most recent game in the winning category must be recent.
   const latest = latestAt.get(winner)!;
   if (latest.getTime() < now - TEN_DAYS_MS) return null;
 
@@ -118,9 +139,36 @@ async function computeAutoEarnedVariant(userId: string): Promise<BackgroundVaria
 }
 
 // ---------------------------------------------------------------------------
+// Pass helpers
+// ---------------------------------------------------------------------------
+
+type PassRow = {
+  id: string;
+  source: string;
+  sourceRef: string | null;
+  startedAt: Date;
+  durationSeconds: number | null;
+};
+
+function isActivePass(p: { startedAt: Date; durationSeconds: number | null }, now: number): boolean {
+  if (p.startedAt.getTime() > now) return false;
+  if (p.durationSeconds === null) return true; // lifetime
+  return p.startedAt.getTime() + p.durationSeconds * 1000 > now;
+}
+
+// ---------------------------------------------------------------------------
 // Single-user resolver
 // ---------------------------------------------------------------------------
 
+/**
+ * Resolve the background for a single user.
+ *
+ * Resolution order:
+ *   1. Active pass holder / admin with an explicit variant theme → return it directly
+ *      (no time limit; persists for the life of the pass / admin status).
+ *   2. Fall through to auto-earn (applies to everyone: free, account, pass-with-auto/none).
+ *   3. Null → caller renders the default green felt.
+ */
 export async function resolveUserProfileBackground(args: {
   userId: string;
   email: string | null | undefined;
@@ -138,49 +186,23 @@ export async function resolveUserProfileBackground(args: {
     .where(eq(passesTable.userId, args.userId));
 
   const now = Date.now();
-  const activePassRows = passRows.filter((p) => {
-    if (p.startedAt.getTime() > now) return false;
-    if (p.durationSeconds === null) return true; // lifetime
-    return p.startedAt.getTime() + p.durationSeconds * 1000 > now;
-  });
-
+  const activePassRows = passRows.filter((p) => isActivePass(p, now));
   const isAdmin = isAdminEmail(args.email ?? "");
   const isPaid = activePassRows.length > 0 || isAdmin;
 
-  const cardPasses = activePassRows
-    .filter((p) => p.source === "discount_code" && p.sourceRef)
-    .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
-
-  let cardVariant: BackgroundVariant | null = null;
-  if (cardPasses.length > 0) {
-    const codes = cardPasses.map((p) => p.sourceRef as string);
-    const codeRows = await db
-      .select({
-        code: discountCodesTable.code,
-        backgroundVariant: discountCodesTable.backgroundVariant,
-      })
-      .from(discountCodesTable)
-      .where(inArray(discountCodesTable.code, codes));
-    const variantByCode = new Map(
-      codeRows.map((r) => [r.code, coerceBackgroundVariant(r.backgroundVariant)]),
-    );
-    for (const p of cardPasses) {
-      const v = variantByCode.get(p.sourceRef as string) ?? null;
-      if (v) {
-        cardVariant = v;
-        break;
-      }
+  // Path 1: paid user with an explicit variant override → honour it permanently
+  // (while the pass is active / while they remain an admin). Paid users with
+  // auto/none fall through to auto-earn below, same as everyone else.
+  if (isPaid) {
+    const theme = normalizeProfileTheme(args.profileTheme);
+    if (theme !== "auto" && theme !== "none") {
+      const explicit = coerceBackgroundVariant(theme);
+      if (explicit) return explicit;
     }
   }
 
-  const earnedVariant = isPaid ? null : await computeAutoEarnedVariant(args.userId);
-
-  return resolveProfileBackground({
-    isPaid,
-    theme: args.profileTheme,
-    cardVariant,
-    earnedVariant,
-  });
+  // Path 2: auto-earn (applies to everyone — free, account, or paid-with-no-explicit-pick).
+  return computeAutoEarnedVariant(args.userId);
 }
 
 // ---------------------------------------------------------------------------
@@ -189,9 +211,10 @@ export async function resolveUserProfileBackground(args: {
 
 /**
  * Batched form of {@link resolveUserProfileBackground} for resolving many users
- * at once (e.g. the leaderboard ranking). Runs at most one `passes` query, one
- * `discount_codes` query, and one `games` query for the whole set, then
- * resolves each user in memory with the IDENTICAL rule as the single-user path.
+ * at once (e.g. the leaderboard ranking). Runs at most one `passes` query and
+ * one `games` query for the whole set, then resolves each user in memory with
+ * the IDENTICAL rule as the single-user path — same active-pass filter, same
+ * explicit-theme check for paid users, same auto-earn majority/freshness logic.
  * Returns a Map keyed by userId; users absent from `args` are simply absent
  * from the map.
  */
@@ -220,72 +243,36 @@ export async function resolveUserProfileBackgrounds(
     .where(inArray(passesTable.userId, userIds));
 
   const now = Date.now();
-  const isActive = (p: { startedAt: Date; durationSeconds: number | null }) => {
-    if (p.startedAt.getTime() > now) return false;
-    if (p.durationSeconds === null) return true;
-    return p.startedAt.getTime() + p.durationSeconds * 1000 > now;
-  };
 
-  const activeByUser = new Map<string, typeof passRows>();
+  const activeByUser = new Map<string, PassRow[]>();
   for (const p of passRows) {
-    if (!isActive(p)) continue;
+    if (!isActivePass(p, now)) continue;
     const arr = activeByUser.get(p.userId) ?? [];
     arr.push(p);
     activeByUser.set(p.userId, arr);
   }
 
-  const paidUserIds = new Set<string>();
-  for (const a of args) {
-    const activePasses = activeByUser.get(a.userId) ?? [];
-    if (activePasses.length > 0 || isAdminEmail(a.email ?? "")) {
-      paidUserIds.add(a.userId);
-    }
-  }
+  // Fetch last-10 completed games for ALL users — paid users with auto/none also
+  // fall through to auto-earn, so we can't skip them.
+  const gameRows = await db
+    .select({
+      userId: gamesTable.userId,
+      gameType: gamesTable.gameType,
+      maxPlayers: gamesTable.maxPlayers,
+      endedAt: gamesTable.endedAt,
+      chaosMode: sql<string | null>`${gamesTable.gameState}->>'chaosMode'`,
+    })
+    .from(gamesTable)
+    .where(and(inArray(gamesTable.userId, userIds), isNotNull(gamesTable.endedAt)))
+    .orderBy(desc(gamesTable.endedAt));
 
-  const allCodes = new Set<string>();
-  for (const rows of activeByUser.values()) {
-    for (const p of rows) {
-      if (p.source === "discount_code" && p.sourceRef) allCodes.add(p.sourceRef);
-    }
-  }
-
-  const variantByCode = new Map<string, BackgroundVariant | null>();
-  if (allCodes.size > 0) {
-    const codeRows = await db
-      .select({
-        code: discountCodesTable.code,
-        backgroundVariant: discountCodesTable.backgroundVariant,
-      })
-      .from(discountCodesTable)
-      .where(inArray(discountCodesTable.code, [...allCodes]));
-    for (const r of codeRows) {
-      variantByCode.set(r.code, coerceBackgroundVariant(r.backgroundVariant));
-    }
-  }
-
-  const unpaidUserIds = userIds.filter((id) => !paidUserIds.has(id));
+  // Bucket games by user, keeping only the 10 most recent per user.
   const gamesByUser = new Map<string, ClassifiedGame[]>();
-  if (unpaidUserIds.length > 0) {
-    const gameRows = await db
-      .select({
-        userId: gamesTable.userId,
-        gameType: gamesTable.gameType,
-        maxPlayers: gamesTable.maxPlayers,
-        endedAt: gamesTable.endedAt,
-        chaosMode: sql<string | null>`${gamesTable.gameState}->>'chaosMode'`,
-      })
-      .from(gamesTable)
-      .where(
-        and(inArray(gamesTable.userId, unpaidUserIds), isNotNull(gamesTable.endedAt)),
-      )
-      .orderBy(desc(gamesTable.endedAt));
-
-    for (const r of gameRows) {
-      const arr = gamesByUser.get(r.userId) ?? [];
-      if (arr.length < 10) {
-        arr.push({ ...r, endedAt: r.endedAt as Date });
-        gamesByUser.set(r.userId, arr);
-      }
+  for (const r of gameRows) {
+    const arr = gamesByUser.get(r.userId) ?? [];
+    if (arr.length < 10) {
+      arr.push({ ...r, endedAt: r.endedAt as Date });
+      gamesByUser.set(r.userId, arr);
     }
   }
 
@@ -294,32 +281,20 @@ export async function resolveUserProfileBackgrounds(
     const isAdmin = isAdminEmail(a.email ?? "");
     const isPaid = activePassRows.length > 0 || isAdmin;
 
-    const cardPasses = activePassRows
-      .filter((p) => p.source === "discount_code" && p.sourceRef)
-      .sort((x, y) => y.startedAt.getTime() - x.startedAt.getTime());
-
-    let cardVariant: BackgroundVariant | null = null;
-    for (const p of cardPasses) {
-      const v = variantByCode.get(p.sourceRef as string) ?? null;
-      if (v) {
-        cardVariant = v;
-        break;
+    // Path 1: paid user with an explicit variant override.
+    if (isPaid) {
+      const theme = normalizeProfileTheme(a.profileTheme);
+      if (theme !== "auto" && theme !== "none") {
+        const explicit = coerceBackgroundVariant(theme);
+        if (explicit) {
+          result.set(a.userId, explicit);
+          continue;
+        }
       }
     }
 
-    const earnedVariant = isPaid
-      ? null
-      : computeAutoEarnedVariantFromGames(gamesByUser.get(a.userId) ?? []);
-
-    result.set(
-      a.userId,
-      resolveProfileBackground({
-        isPaid,
-        theme: a.profileTheme,
-        cardVariant,
-        earnedVariant,
-      }),
-    );
+    // Path 2: auto-earn.
+    result.set(a.userId, computeAutoEarnedVariantFromGames(gamesByUser.get(a.userId) ?? []));
   }
 
   return result;
@@ -334,10 +309,10 @@ export async function resolveUserProfileBackgrounds(
  * surfaces (the HUD felt) tint through. Mirrors the client's effective-theme
  * rule used on the host's own GameScreen: an explicit Theme override
  * (`shark`/`hustler`/`pool-player`/`none`) pins that value, while "auto"
- * (the default, stored NULL) derives the resolved background from the pass's
- * redeem card. Returns null for "none"/unpaid/no-card so the consumer falls
- * back to the default green felt. Carried to joiners/spectators on the
- * `/games/state` snapshot (`hostTheme`).
+ * (the default, stored NULL) derives the resolved background via the normal
+ * profile resolver (which now includes auto-earn). Returns null for
+ * "none"/no-earned-theme so the consumer falls back to the default green felt.
+ * Carried to joiners/spectators on the `/games/state` snapshot (`hostTheme`).
  */
 export async function resolveUserEffectiveTheme(args: {
   userId: string;
@@ -346,7 +321,9 @@ export async function resolveUserEffectiveTheme(args: {
 }): Promise<BackgroundVariant | null> {
   const theme = args.profileTheme ?? "auto";
   if (theme !== "auto") {
+    // Explicit override: "none" → plain (null); otherwise the chosen variant.
     return coerceBackgroundVariant(theme);
   }
+  // "auto" → use the full profile resolver (auto-earn, or explicit-theme if paid).
   return resolveUserProfileBackground(args);
 }
