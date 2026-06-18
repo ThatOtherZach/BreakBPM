@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { StatsResult } from "@workspace/api-client-react";
-import { SOLIDS } from "../lib/gameLogic";
 import { PlayerName } from "./PlayerName";
+import { WinsTodayChip } from "./WinsTodayChip";
 
 export const BALL_COLORS: Record<number, string> = {
   1: "#FDD307", 2: "#1F4E9E", 3: "#C3342B", 4: "#5B247A",
@@ -205,6 +205,7 @@ export default function StatsHero({
           <div className="stats-hero-header">
             <div className="stats-hero-player">
               <div className="stats-hero-name-row">
+                <WinsTodayChip winsToday={stats.winsToday ?? 0} />
                 <span className="stats-hero-name text-[28px]">
                   <PlayerName name={screenName} admin={adminName ?? false} />
                 </span>
@@ -228,23 +229,9 @@ export default function StatsHero({
         {screenName && (
           <div className="stats-hero-player" ref={playerRef}>
             <div className="stats-hero-name-row">
-              {stats.topBalls.length > 0 && (() => {
-                const top = stats.topBalls[0].ball;
-                const chipClass =
-                  top === 8
-                    ? "hud-chip-eight"
-                    : SOLIDS.includes(top)
-                      ? "hud-chip-solid"
-                      : "hud-chip-stripe";
-                return (
-                  <span
-                    className={`hud-chip ${chipClass}`}
-                    data-number={top}
-                    style={{ "--chip-color": BALL_COLORS[top] } as React.CSSProperties}
-                    aria-label={`Most-played ball ${top}`}
-                  />
-                );
-              })()}
+              {isPersonal && (
+                <WinsTodayChip winsToday={stats.winsToday ?? 0} />
+              )}
               <span className="stats-hero-name text-[28px]">
                 {isPersonal
                   ? <PlayerName name={screenName} admin={adminName ?? false} />

@@ -5,6 +5,7 @@ import type { LeaderboardRow, GetLeaderboardWindow } from "@workspace/api-client
 import Navbar from "./Navbar";
 import { useAuth } from "../lib/authClient";
 import { THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
+import { WinsTodayChip } from "./WinsTodayChip";
 
 const PAGE_SIZE = 50;
 const WIDGET_SIZE = 10;
@@ -68,20 +69,23 @@ function LeaderboardRowCard({
         {rankBadge(row.rank)}
       </span>
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-        <span
-          style={{
-            fontFamily: "VT323",
-            fontSize: 20,
-            lineHeight: 1,
-            color: "#f4f4dc",
-            textShadow: "1px 1px 0 #042414",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {row.screenName}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+          <WinsTodayChip winsToday={row.winsToday ?? 0} />
+          <span
+            style={{
+              fontFamily: "VT323",
+              fontSize: 20,
+              lineHeight: 1,
+              color: "#f4f4dc",
+              textShadow: "1px 1px 0 #042414",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {row.screenName}
+          </span>
+        </div>
         {row.sharkLevel != null && row.sharkLevel > 0 && (
           <span
             style={{

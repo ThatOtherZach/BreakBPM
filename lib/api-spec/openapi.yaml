@@ -1145,7 +1145,7 @@ components:
 
     Account:
       type: object
-      required: [id, screenName, createdAt, profileTheme, profileBackground]
+      required: [id, screenName, createdAt, profileTheme, profileBackground, winsToday]
       properties:
         id: { type: string }
         screenName: { type: string }
@@ -1165,6 +1165,10 @@ components:
         profileBackground:
           type: ["string", "null"]
           enum: [shark, pool-player, hustler]
+        # 8-ball wins in the last 24 hours (winner = caller's display name;
+        # excludes Shark/Chaos games). Drives the wins-today ball chip on the
+        # Account identity card. Always 0 for non-personal contexts.
+        winsToday: { type: integer, default: 0 }
 
     PassSummary:
       type: object
@@ -2222,6 +2226,7 @@ components:
           trend,
           sharkLevel,
           chaosWinRecent,
+          winsToday,
         ]
       properties:
         # The caller's resolved entitlement tier.
@@ -2315,10 +2320,13 @@ components:
         # Drives the rainbow AVG-BPM flourish on the Stats hero. Always false in
         # global scope.
         chaosWinRecent: { type: boolean }
+        # 8-ball wins in the last 24 hours for this player (personal scope only;
+        # 0 for global scope). Drives the wins-today ball chip on the hero.
+        winsToday: { type: integer, default: 0 }
 
     LeaderboardRow:
       type: object
-      required: [rank, screenName, bpm, accuracy, gamesPlayed, sharkLevel, profileBackground]
+      required: [rank, screenName, bpm, accuracy, gamesPlayed, sharkLevel, profileBackground, winsToday]
       properties:
         # 1-indexed standing within the ranking (after sorting by bpm desc).
         rank: { type: integer }
@@ -2342,6 +2350,9 @@ components:
         profileBackground:
           type: ["string", "null"]
           enum: [shark, pool-player, hustler]
+        # 8-ball wins in the last 24 hours for this player. Drives the
+        # wins-today ball chip on each leaderboard card.
+        winsToday: { type: integer, default: 0 }
 
     LeaderboardResult:
       type: object

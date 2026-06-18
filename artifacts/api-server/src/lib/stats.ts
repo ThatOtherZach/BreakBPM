@@ -91,6 +91,9 @@ export interface StatsCore {
   // 10 most-recent completed games (window-independent). Cosmetic only — drives
   // the rainbow AVG-BPM flourish on the Stats hero. Always false for global scope.
   chaosWinRecent: boolean;
+  // 8-ball wins in the last 24 hours for this user (personal scope only; 0 for
+  // global scope). Drives the wins-today ball chip on the hero and Account card.
+  winsToday: number;
   computedAt: number;
 }
 
@@ -215,8 +218,41 @@ function emptyCore(): StatsCore {
     sharkGames: 0,
     sharkLevel: null,
     chaosWinRecent: false,
+    winsToday: 0,
     computedAt: Date.now(),
   };
+}
+
+/**
+ * Count the number of completed standard 8-ball wins for a user in the last
+ * 24 hours. "Win" means the game's `winner` column matches the user's
+ * `displayName` in that game. Shark and Chaos games are excluded (they are
+ * flagged by top-level keys in the gameState JSONB). Used by personal stats,
+ * leaderboard rows, and the GetMe Account object to drive the wins-today chip.
+ */
+export async function countEightBallWinsToday(userId: string): Promise<number> {
+  const cutoff = windowCutoff("24h") as Date;
+  const rows = await db
+    .select({ c: count() })
+    .from(gamesTable)
+    .innerJoin(
+      gameParticipantsTable,
+      and(
+        eq(gameParticipantsTable.gameId, gamesTable.id),
+        eq(gameParticipantsTable.userId, userId),
+      ),
+    )
+    .where(
+      and(
+        isNotNull(gamesTable.endedAt),
+        gte(gamesTable.endedAt, cutoff),
+        eq(gamesTable.gameType, "8ball"),
+        sql`${gamesTable.gameState} ->> 'sharkAggression' IS NULL`,
+        sql`${gamesTable.gameState} ->> 'chaosMode' IS NULL`,
+        sql`${gamesTable.winner} = ${gameParticipantsTable.displayName}`,
+      ),
+    );
+  return Number(rows[0]?.c ?? 0);
 }
 
 function rollUpPlayTime(
@@ -468,6 +504,11 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
     (r) => r.chaosMode != null && r.winner != null && r.winner === r.displayName,
   );
 
+  // Wins-today (window-independent, always 24h). Computed before the
+  // rows-empty guard so the chip shows even when no games fall in the
+  // selected window (e.g. the fixed-24h /watch hero with a 30d stats view).
+  core.winsToday = await countEightBallWinsToday(userId);
+
   if (rows.length === 0) return core;
   core.gamesPlayed = rows.length;
 
@@ -700,6 +741,8 @@ export interface LeaderboardRow {
   // The player's resolved profile theme/background (same resolution the watch
   // profile uses), so the client can tint the leaderboard card. Null = no theme.
   profileBackground: BackgroundVariant | null;
+  // 8-ball wins in the last 24 hours for this player. Drives the wins-today chip.
+  winsToday: number;
 }
 
 /** Defensive cap on eligible game rows parsed in one ranking pass (cached). */
@@ -870,6 +913,31 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
     }
   }
 
+  // 24h 8-ball win count per ranked user (grouped query, one round-trip).
+  const winsTodayByUser = new Map<string, number>();
+  if (rankedUserIds.length > 0) {
+    const cutoff = windowCutoff("24h") as Date;
+    const winCounts = await db
+      .select({ userId: gameParticipantsTable.userId, c: count() })
+      .from(gameParticipantsTable)
+      .innerJoin(gamesTable, eq(gameParticipantsTable.gameId, gamesTable.id))
+      .where(
+        and(
+          inArray(gameParticipantsTable.userId, rankedUserIds),
+          isNotNull(gamesTable.endedAt),
+          gte(gamesTable.endedAt, cutoff),
+          eq(gamesTable.gameType, "8ball"),
+          sql`${gamesTable.gameState} ->> 'sharkAggression' IS NULL`,
+          sql`${gamesTable.gameState} ->> 'chaosMode' IS NULL`,
+          sql`${gamesTable.winner} = ${gameParticipantsTable.displayName}`,
+        ),
+      )
+      .groupBy(gameParticipantsTable.userId);
+    for (const wc of winCounts) {
+      if (wc.userId) winsTodayByUser.set(wc.userId, Number(wc.c));
+    }
+  }
+
   // Resolve each ranked player's themed profile background — the SAME resolution
   // the public /watch profile uses — so the client can tint the leaderboard card
   // to the player's theme color. Fully batched: one query for the resolution
@@ -904,6 +972,7 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
     gamesPlayed: r.gamesPlayed,
     sharkLevel: sharkByUser.get(r.userId) ?? 0,
     profileBackground: bgByUser.get(r.userId) ?? null,
+    winsToday: winsTodayByUser.get(r.userId) ?? 0,
   }));
   // Rank by score (bpm) desc; tie-break by accuracy desc then name for stability.
   result.sort(

@@ -41,6 +41,7 @@ import GameHistoryCard, { fmtDate } from "./GameHistoryCard";
 import LuckyBreakReveal from "./LuckyBreakReveal";
 import AdminSalesPanel from "./AdminSalesPanel";
 import AdminVenuesPanel from "./AdminVenuesPanel";
+import { WinsTodayChip } from "./WinsTodayChip";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // The rack tumbles for at least this long so a seeded Lucky Break draw always
@@ -507,20 +508,23 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     {standing ? `🌎#${standing.rank}` : "🌎—"}
                   </span>
                   <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-                    <span
-                      style={{
-                        fontFamily: "VT323",
-                        fontSize: 22,
-                        lineHeight: 1,
-                        color: "#f4f4dc",
-                        textShadow: "1px 1px 0 #042414",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {account.screenName}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+                      <WinsTodayChip winsToday={account.winsToday ?? 0} />
+                      <span
+                        style={{
+                          fontFamily: "VT323",
+                          fontSize: 22,
+                          lineHeight: 1,
+                          color: "#f4f4dc",
+                          textShadow: "1px 1px 0 #042414",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {account.screenName}
+                      </span>
+                    </div>
                     {account.email && (
                       <span
                         style={{

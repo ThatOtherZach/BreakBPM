@@ -63,4 +63,5 @@ export interface StatsResult {
   /** @nullable */
   sharkLevel: number | null;
   chaosWinRecent: boolean;
+  winsToday: number;
 }

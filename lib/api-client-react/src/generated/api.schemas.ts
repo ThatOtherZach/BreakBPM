@@ -50,6 +50,7 @@ export interface Account {
   profileTheme: AccountProfileTheme;
   /** @nullable */
   profileBackground: AccountProfileBackground;
+  winsToday: number;
 }
 
 export type PassSummaryKind = typeof PassSummaryKind[keyof typeof PassSummaryKind];
@@ -511,6 +512,7 @@ export interface LeaderboardRow {
   sharkLevel: number;
   /** @nullable */
   profileBackground: LeaderboardRowProfileBackground;
+  winsToday: number;
 }
 
 export interface MeResponse {
@@ -1233,6 +1235,7 @@ export interface StatsResult {
   /** @nullable */
   sharkLevel: number | null;
   chaosWinRecent: boolean;
+  winsToday: number;
 }
 
 export interface PublicProfileResult {

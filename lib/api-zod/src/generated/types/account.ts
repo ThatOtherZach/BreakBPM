@@ -17,4 +17,5 @@ export interface Account {
   profileTheme: AccountProfileTheme;
   /** @nullable */
   profileBackground: AccountProfileBackground;
+  winsToday: number;
 }

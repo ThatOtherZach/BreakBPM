@@ -30,6 +30,9 @@ export const GetAppConfigResponse = zod.object({
 /**
  * @summary Current account state (or null if signed-out)
  */
+export const getMeResponseAccountWinsTodayDefault = 0;
+export const getMeResponseGlobalStandingWinsTodayDefault = 0;
+
 export const GetMeResponse = zod.object({
   "signedIn": zod.boolean(),
   "needsOnboarding": zod.boolean(),
@@ -39,7 +42,8 @@ export const GetMeResponse = zod.object({
   "email": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler']),
-  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable()
+  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
+  "winsToday": zod.number().default(getMeResponseAccountWinsTodayDefault)
 }).optional(),
   "entitlement": zod.object({
   "tier": zod.enum(['public', 'account', 'pass']),
@@ -72,7 +76,8 @@ export const GetMeResponse = zod.object({
   "accuracy": zod.number().nullable(),
   "gamesPlayed": zod.number(),
   "sharkLevel": zod.number(),
-  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable()
+  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
+  "winsToday": zod.number().default(getMeResponseGlobalStandingWinsTodayDefault)
 }).optional()
 })
 
@@ -88,13 +93,16 @@ export const UpdateScreenNameBody = zod.object({
   "screenName": zod.string().min(1).max(updateScreenNameBodyScreenNameMax)
 })
 
+export const updateScreenNameResponseWinsTodayDefault = 0;
+
 export const UpdateScreenNameResponse = zod.object({
   "id": zod.string(),
   "screenName": zod.string(),
   "email": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler']),
-  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable()
+  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
+  "winsToday": zod.number().default(updateScreenNameResponseWinsTodayDefault)
 })
 
 
@@ -107,13 +115,16 @@ export const UpdateProfileThemeBody = zod.object({
   "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler'])
 })
 
+export const updateProfileThemeResponseWinsTodayDefault = 0;
+
 export const UpdateProfileThemeResponse = zod.object({
   "id": zod.string(),
   "screenName": zod.string(),
   "email": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "profileTheme": zod.enum(['auto', 'none', 'shark', 'pool-player', 'hustler']),
-  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable()
+  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
+  "winsToday": zod.number().default(updateProfileThemeResponseWinsTodayDefault)
 })
 
 
@@ -678,6 +689,8 @@ export const GetPublicProfileQueryParams = zod.object({
   "name": zod.coerce.string().min(1).max(getPublicProfileQueryNameMax)
 })
 
+export const getPublicProfileResponseStatsOneWinsTodayDefault = 0;
+
 export const GetPublicProfileResponse = zod.object({
   "found": zod.boolean(),
   "reason": zod.enum(['not_found', 'rate_limited']).optional(),
@@ -758,7 +771,8 @@ export const GetPublicProfileResponse = zod.object({
   "sharkWinRate": zod.number().nullish(),
   "sharkGames": zod.number().optional(),
   "sharkLevel": zod.number().nullable(),
-  "chaosWinRecent": zod.boolean()
+  "chaosWinRecent": zod.boolean(),
+  "winsToday": zod.number().default(getPublicProfileResponseStatsOneWinsTodayDefault)
 }),zod.null()]).optional()
 })
 
@@ -977,6 +991,8 @@ export const GetStatsQueryParams = zod.object({
   "gameMode": zod.enum(['all', '8ball', '9ball', 'practice', 'shark']).default(getStatsQueryGameModeDefault).describe('Filter stats to a single game mode. Pass holders only — callers without a pass are forced to \"all\". \"shark\" covers solo 8-ball-vs-AI games; \"8ball\" covers standard 8-ball games excluding shark.\n')
 })
 
+export const getStatsResponseWinsTodayDefault = 0;
+
 export const GetStatsResponse = zod.object({
   "tier": zod.enum(['public', 'account', 'pass']),
   "scope": zod.enum(['personal', 'global']),
@@ -1025,7 +1041,8 @@ export const GetStatsResponse = zod.object({
   "sharkWinRate": zod.number().nullish(),
   "sharkGames": zod.number().optional(),
   "sharkLevel": zod.number().nullable(),
-  "chaosWinRecent": zod.boolean()
+  "chaosWinRecent": zod.boolean(),
+  "winsToday": zod.number().default(getStatsResponseWinsTodayDefault)
 })
 
 
@@ -1048,6 +1065,8 @@ export const GetLeaderboardQueryParams = zod.object({
   "pageSize": zod.coerce.number().min(1).max(getLeaderboardQueryPageSizeMax).default(getLeaderboardQueryPageSizeDefault)
 })
 
+export const getLeaderboardResponseRowsItemWinsTodayDefault = 0;
+
 export const GetLeaderboardResponse = zod.object({
   "window": zod.enum(['30d', '90d', 'all']),
   "page": zod.number(),
@@ -1061,7 +1080,8 @@ export const GetLeaderboardResponse = zod.object({
   "accuracy": zod.number().nullable(),
   "gamesPlayed": zod.number(),
   "sharkLevel": zod.number(),
-  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable()
+  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
+  "winsToday": zod.number().default(getLeaderboardResponseRowsItemWinsTodayDefault)
 }))
 })
 

@@ -17,4 +17,5 @@ export interface LeaderboardRow {
   sharkLevel: number;
   /** @nullable */
   profileBackground: LeaderboardRowProfileBackground;
+  winsToday: number;
 }
