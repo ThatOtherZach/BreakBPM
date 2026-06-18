@@ -327,9 +327,9 @@ export default function StatsHero({
             >
               <QRCodeSVG
                 value={`${window.location.origin}/watch/${encodeURIComponent(screenName)}`}
-                size={48}
+                size={64}
                 bgColor="transparent"
-                fgColor="#00ff41"
+                fgColor="#ffffff"
                 level="L"
               />
             </a>
