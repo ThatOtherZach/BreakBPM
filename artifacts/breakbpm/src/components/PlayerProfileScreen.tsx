@@ -3,6 +3,7 @@ import Navbar from "./Navbar";
 import GameHistoryCard from "./GameHistoryCard";
 import StatsHero from "./StatsHero";
 import { PlayerName } from "./PlayerName";
+import { LeaderboardWidget } from "./LeaderboardScreen";
 import { useAuth } from "../lib/authClient";
 import { useGetPublicProfile, getGetPublicProfileQueryKey } from "@workspace/api-client-react";
 import { VARIANT_IMAGE_URLS, type BackgroundVariant } from "../lib/backgroundVariants";
@@ -129,6 +130,10 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
                 </div>
               </div>
             )}
+
+            {/* When there's no recent activity, fill the space with the
+                global leaderboard so the page has something to show. */}
+            {!stats && <LeaderboardWidget />}
 
             {/* Recent games — same cards as the account page */}
             <div className="panel panel--wood">
