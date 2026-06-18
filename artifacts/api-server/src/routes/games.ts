@@ -38,7 +38,7 @@ import {
 } from "@workspace/api-zod";
 import { getOrCreateUser, getVerifiedSubject } from "../lib/auth";
 import { computeEntitlement, getActivePasses, getActiveSubscription } from "../lib/entitlement";
-import { resolveStats, resolveLeaderboard, clearUserStatsCache, windowCutoff, FREE_TIER_WINDOW, type StatScope, type StatWindow, type StatGameMode, type LeaderboardWindow } from "../lib/stats";
+import { resolveStats, resolveLeaderboard, clearUserStatsCache, clearLeaderboardCache, windowCutoff, FREE_TIER_WINDOW, type StatScope, type StatWindow, type StatGameMode, type LeaderboardWindow } from "../lib/stats";
 import { sweepStaleGames, finalizeGameIfStale, INACTIVITY_FORFEIT_MS, MAX_GAME_DURATION_MS } from "../lib/forfeit";
 import { newId } from "../lib/ids";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
@@ -948,6 +948,7 @@ async function bustGameStatsCache(gameId: string): Promise<void> {
   for (const p of parts) {
     if (p.userId) clearUserStatsCache(p.userId);
   }
+  clearLeaderboardCache();
 }
 
 /**
@@ -2607,8 +2608,9 @@ router.delete("/games/data", async (req, res): Promise<void> => {
     return { deletedGames, anonymizedGames };
   });
 
-  // Bust the user's cached personal stats so /stats recomputes now.
+  // Bust the user's cached personal stats and leaderboard so both recompute now.
   clearUserStatsCache(user.id);
+  clearLeaderboardCache();
 
   req.log.info(
     { userId: user.id, ...result },
@@ -2896,6 +2898,7 @@ router.delete("/mentions/:id", async (req, res): Promise<void> => {
       await tx.delete(gameMentionsTable).where(eq(gameMentionsTable.id, id));
     });
     clearUserStatsCache(user.id);
+    clearLeaderboardCache();
     await bustGameStatsCache(inv.gameId);
   } else {
     await db.delete(gameMentionsTable).where(eq(gameMentionsTable.id, id));
