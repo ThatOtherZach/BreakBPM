@@ -333,7 +333,6 @@ export default function StatsHero({
                 level="L"
               />
             </a>
-            <span className="stats-hero-side-label" style={{ color: "#fff" }}>PROFILE QR</span>
           </div>
         )}
       </div>
