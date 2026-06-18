@@ -615,9 +615,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
               </>
             )}
             {!editing && (
-              <div
-                style={{ fontSize: 11, color: "#444", marginTop: 1 }}
-                className="text-center font-semibold mb-[1px] mt-[0px] text-[14px]">
+              <div style={{ fontSize: 14, color: "#444", marginTop: 1 }}>
                 📺{" "}
                 <a
                   href={`/watch/${encodeURIComponent(account.screenName)}`}
