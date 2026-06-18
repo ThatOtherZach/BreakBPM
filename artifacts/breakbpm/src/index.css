@@ -574,6 +574,19 @@ html, #root {
   .rainbow-name { animation: none; }
   .rainbow-cue::before { animation: none; }
 }
+/* On felt cards (account identity card, leaderboard rows) render the name in
+   the normal cream colour with an animated rainbow outline instead of a
+   rainbow fill. Technique: keep the rainbow gradient background (inherited
+   from .rainbow-name) and let it bleed through a transparent text-stroke
+   ring, then paint the cream fill on top so only the stroke border shows the
+   rainbow. paint-order:stroke fill keeps the cream fill above the stroke so
+   the glyph interior stays solid. */
+.felt-name .rainbow-name {
+  -webkit-text-fill-color: #f4f4dc;
+  color: #f4f4dc;
+  -webkit-text-stroke: 2px transparent;
+  paint-order: stroke fill;
+}
 .about-markdown blockquote {
   border-left: 3px solid var(--navy);
   padding-left: 10px;
