@@ -285,7 +285,7 @@ export default function StatsHero({
                   <span className="stats-hero-legend-swatch cyan" aria-hidden="true" />ACCURACY
                 </span>
               </div>
-              <span className="stats-hero-graph-label">
+              <span className="stats-hero-graph-label" style={{ color: "#00ff41" }}>
                 {(() => {
                   const n = stats.trend.length;
                   // The trend's granularity tracks the window: per-game at 24h,
