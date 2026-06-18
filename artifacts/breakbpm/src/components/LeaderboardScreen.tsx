@@ -4,7 +4,7 @@ import { useGetLeaderboard, useGetMe } from "@workspace/api-client-react";
 import type { LeaderboardRow, GetLeaderboardWindow } from "@workspace/api-client-react";
 import Navbar from "./Navbar";
 import { useAuth } from "../lib/authClient";
-import { THEME_ACCENT, THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
+import { THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
 
 const PAGE_SIZE = 50;
 const WIDGET_SIZE = 10;
@@ -41,8 +41,7 @@ function LeaderboardRowCard({
   // standing reads as that player's own table — same felt palette as the HUD.
   // Overriding only the base color + inner rail leaves the .fpp-card crosshatch
   // weave (rgba overlays) and the wooden outset rail intact for every theme.
-  const themeColor = themeColorOf(row.profileBackground);
-  const felt = THEME_FELT[themeColor];
+  const felt = THEME_FELT[themeColorOf(row.profileBackground)];
   return (
     <div
       className="fpp-card history-card"
@@ -54,20 +53,6 @@ function LeaderboardRowCard({
         boxShadow: `inset 0 0 0 2px ${felt.feltShadow}, inset 0 2px 6px rgba(0, 0, 0, 0.35)`,
       }}
     >
-      {/* A vivid accent bar in the same theme color, a brighter shade than the
-          felt so it still reads as a highlight against the tinted table. A
-          separate element rather than a border so it doesn't fight the card's
-          beveled wooden rail. */}
-      <span
-        aria-hidden
-        style={{
-          alignSelf: "stretch",
-          width: 4,
-          borderRadius: 2,
-          flexShrink: 0,
-          background: THEME_ACCENT[themeColor],
-        }}
-      />
       <span
         style={{
           fontFamily: "VT323",
