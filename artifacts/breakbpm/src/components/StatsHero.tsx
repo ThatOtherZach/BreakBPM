@@ -254,7 +254,7 @@ export default function StatsHero({
               const isBelow =
                 avgBpm != null && globalAvgBpm != null && avgBpm < globalAvgBpm;
               return (
-                <span style={{ color: isBelow ? "#ff4444" : "#00cc44", fontSize: "0.5em", marginRight: 3, textShadow: "none", verticalAlign: "middle" }}>
+                <span style={{ color: isBelow ? "#ff4444" : "#00cc44", fontSize: "0.5em", marginRight: 3, textShadow: "none", verticalAlign: "top" }}>
                   {isBelow ? "▼" : "▲"}
                 </span>
               );
