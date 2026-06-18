@@ -9,7 +9,7 @@ import {
   UpdateProfileThemeResponse,
 } from "@workspace/api-zod";
 import { getVerifiedSubject, getOrCreateUser, needsOnboarding } from "../lib/auth";
-import { computeEntitlement, getActivePasses } from "../lib/entitlement";
+import { computeEntitlement, getActivePasses, isRainbowEligible } from "../lib/entitlement";
 import { normalizeProfileTheme } from "../lib/profileBackground";
 import { resolveUserProfileBackground } from "../lib/userProfileBackground";
 import { resolveLeaderboard, clearLeaderboardCache, countEightBallWinsToday } from "../lib/stats";
@@ -192,7 +192,12 @@ router.patch("/auth/profile-theme", async (req, res): Promise<void> => {
     }
   } else {
     const entitlement = await computeEntitlement(user);
-    if (entitlement.tier !== "pass") {
+    const eligible = isRainbowEligible({
+      email: user.email,
+      hasActivePass: entitlement.hasActivePass,
+      hasActiveSubscription: !!entitlement.activeSubscription,
+    });
+    if (!eligible) {
       res.status(403).json({
         error: "Profile themes are a pass perk. Buy a pass to customise.",
       });

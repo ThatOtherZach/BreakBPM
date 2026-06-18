@@ -10,6 +10,7 @@ import {
   type User,
 } from "@workspace/db";
 import { isAdminEmail } from "./config";
+import { normalizeProfileTheme } from "./profileBackground";
 
 export type Tier = "public" | "account" | "pass";
 
@@ -177,4 +178,46 @@ export async function computeEntitlement(user: User | null): Promise<Entitlement
     ...(subscription ? { activeSubscription: subscription } : {}),
     isAdmin: false,
   };
+}
+
+/** A user's paid/admin status, expressed as the raw inputs to the rainbow-name
+ * rule. `email` feeds the admin allowlist check; the two booleans say whether an
+ * active one-time pass and/or an active subscription is present. */
+export interface RainbowEligibilityInput {
+  email: string | null | undefined;
+  hasActivePass: boolean;
+  hasActiveSubscription: boolean;
+}
+
+/**
+ * The single source of truth for who qualifies for the rainbow screen-name
+ * flair: an admin (effective Lifetime) OR any holder of an active paid
+ * entitlement — an active one-time pass OR an active subscription. This is the
+ * gate enforced on PATCH /auth/profile-theme for the name-only "rainbow" pick.
+ * Keep every rainbow call site on this helper (and `resolveRainbowName`) so the
+ * rule cannot silently drift between routes.
+ */
+export function isRainbowEligible(input: RainbowEligibilityInput): boolean {
+  return (
+    isAdminEmail(input.email) ||
+    input.hasActivePass ||
+    input.hasActiveSubscription
+  );
+}
+
+/**
+ * Whether the rainbow screen name should actually render for a user: admins
+ * always (effective Lifetime, regardless of stored theme); otherwise a
+ * rainbow-eligible (paid) user who has selected the "rainbow" theme. Used by
+ * /games/state (per participant) and /games/profile (host) so the displayed
+ * rule stays identical to the auth-route gate.
+ */
+export function resolveRainbowName(
+  input: RainbowEligibilityInput & { profileTheme: string | null | undefined },
+): boolean {
+  if (isAdminEmail(input.email)) return true;
+  return (
+    isRainbowEligible(input) &&
+    normalizeProfileTheme(input.profileTheme) === "rainbow"
+  );
 }
