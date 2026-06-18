@@ -42,8 +42,9 @@ function LeaderboardRowCard({
       style={{ display: "flex", alignItems: "center", gap: 8 }}
     >
       {/* A vertical accent bar tinted to the player's profile theme color
-          (shark→blue, hustler→red, else green). A separate element rather than
-          a border so it doesn't fight the card's beveled wooden rail. */}
+          (shark→blue, hustler→red, pool-player→purple, else green). A separate
+          element rather than a border so it doesn't fight the card's beveled
+          wooden rail. */}
       <span
         aria-hidden
         style={{

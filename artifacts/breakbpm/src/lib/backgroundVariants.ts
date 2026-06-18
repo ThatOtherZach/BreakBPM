@@ -30,17 +30,20 @@ export const VARIANT_IMAGE_URLS: Record<BackgroundVariant, string> = {
  * through `themeColorOf` so the three never drift.
  *
  * Mapping: The Shark (shark) → blue, The Hustler (hustler) → red, The Kid
- * (pool-player) / None / no theme → green (the felt's existing default).
+ * (pool-player) → purple, None / no theme → green (the felt's existing
+ * default). Purple gives The Kid its own identity so it no longer looks
+ * identical to an unthemed (green) table.
  */
-export type ThemeColor = "blue" | "red" | "green";
+export type ThemeColor = "blue" | "red" | "green" | "purple";
 
 /** Map an effective theme/background value to its themed color. Accepts a raw
  * string (any of the generated background/theme union types) so callers don't
- * fight cross-package literal-union typing; anything that isn't shark/hustler
- * falls back to green. */
+ * fight cross-package literal-union typing; anything unrecognized (incl.
+ * "none") falls back to green. */
 export function themeColorOf(bg: string | null | undefined): ThemeColor {
   if (bg === "shark") return "blue";
   if (bg === "hustler") return "red";
+  if (bg === "pool-player") return "purple";
   return "green";
 }
 
@@ -53,6 +56,9 @@ export const THEME_FELT: Record<ThemeColor, { felt: string; feltShadow: string }
   // maroon 7/15 #6B1F2A) so the rack chips' black rim + white number circle
   // stay legible on the felt.
   red: { felt: "#54151d", feltShadow: "#3d0f15" },
+  // Deep violet kept darker than the purple 4/12 ball (#5B247A) for the same
+  // reason as the burgundy felt, so the rack chips stay legible.
+  purple: { felt: "#3d2154", feltShadow: "#2a1640" },
 };
 
 /** Vivid accent per theme color — used for the leaderboard card stripe and the
@@ -61,6 +67,7 @@ export const THEME_ACCENT: Record<ThemeColor, string> = {
   green: "#37d67a",
   blue: "#3ba7ff",
   red: "#ff5a5f",
+  purple: "#a06bff",
 };
 
 /** Colored-circle glyph per theme color for native <option> labels (native
@@ -69,4 +76,5 @@ export const THEME_DOT: Record<ThemeColor, string> = {
   green: "🟢",
   blue: "🔵",
   red: "🔴",
+  purple: "🟣",
 };
