@@ -1,6 +1,6 @@
 import { and, count, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
 import { db, gamesTable, gameParticipantsTable, usersTable } from "@workspace/db";
-import { resolveUserProfileBackground } from "./userProfileBackground";
+import { resolveUserProfileBackgrounds } from "./userProfileBackground";
 import type { BackgroundVariant } from "./profileBackground";
 
 /**
@@ -851,11 +851,12 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
 
   // Resolve each ranked player's themed profile background — the SAME resolution
   // the public /watch profile uses — so the client can tint the leaderboard card
-  // to the player's theme color. One batched query pulls the resolution inputs
-  // (email + stored theme); the shared helper then does the per-user pass/card
-  // lookup. Bounded by the ranked set and the 1-hour leaderboard cache, so the
-  // per-user lookups run at most once per window per hour.
-  const bgByUser = new Map<string, BackgroundVariant | null>();
+  // to the player's theme color. Fully batched: one query for the resolution
+  // inputs (email + stored theme), then the batched resolver runs one `passes`
+  // query and one `discount_codes` query for the whole ranked set (no per-user
+  // N+1). Output is identical to the per-user path; bounded further by the
+  // 1-hour leaderboard cache.
+  let bgByUser = new Map<string, BackgroundVariant | null>();
   if (rankedUserIds.length > 0) {
     const metaRows = await db
       .select({
@@ -866,15 +867,12 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
       .from(usersTable)
       .where(inArray(usersTable.id, rankedUserIds));
     const metaById = new Map(metaRows.map((m) => [m.id, m]));
-    for (const userId of rankedUserIds) {
-      const m = metaById.get(userId);
-      const bg = await resolveUserProfileBackground({
-        userId,
-        email: m?.email,
-        profileTheme: m?.profileTheme,
-      });
-      bgByUser.set(userId, bg);
-    }
+    bgByUser = await resolveUserProfileBackgrounds(
+      rankedUserIds.map((userId) => {
+        const m = metaById.get(userId);
+        return { userId, email: m?.email, profileTheme: m?.profileTheme };
+      }),
+    );
   }
 
   const result: LeaderboardRow[] = ranked.map((r) => ({
