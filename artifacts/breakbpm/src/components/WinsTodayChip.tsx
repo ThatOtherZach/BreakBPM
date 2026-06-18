@@ -9,7 +9,7 @@ const BALL_COLORS: Record<number, string> = {
 const SOLIDS = [1, 2, 3, 4, 5, 6, 7];
 
 function winLabel(n: number) {
-  return `${n} 8-Ball Win${n !== 1 ? "s" : ""} Today`;
+  return `${n} 8-Ball Win${n !== 1 ? "s" : ""}`;
 }
 
 /**
