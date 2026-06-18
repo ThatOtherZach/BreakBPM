@@ -554,48 +554,31 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                       )}
                     </div>
                   </div>
-                  {standing != null && (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-                      <span
-                        style={{
-                          fontFamily: "VT323",
-                          fontSize: 22,
-                          lineHeight: 1,
-                          color: "#ffe98a",
-                          textShadow: "1px 1px 0 #042414",
-                        }}
-                      >
-                        {standing.bpm.toFixed(1)} BPM
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "VT323",
-                          fontSize: 16,
-                          lineHeight: 1,
-                          color: standing.accuracy != null ? "#b9e6c4" : "#8aa593",
-                          textShadow: "1px 1px 0 #042414",
-                        }}
-                      >
-                        {standing.accuracy != null ? `${standing.accuracy}% ACC` : "—% ACC"}
-                      </span>
-                    </div>
-                  )}
-                  {canEditName && (
-                    <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                      <button
-                        className="btn"
-                        disabled={updateTheme.isPending}
-                        title="Cycle theme"
-                        onClick={() => {
-                          const idx = THEME_CYCLE.indexOf(effectiveTheme as (typeof THEME_CYCLE)[number]);
-                          handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length] as AccountProfileTheme);
-                        }}
-                      >
-                        {THEME_DOT[themeColorOf(effectiveTheme)]}
-                      </button>
-                      <button className="btn" onClick={() => setEditing(true)}>Edit</button>
-                    </div>
-                  )}
+                  <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                    <button
+                      className="btn"
+                      title="View watch profile"
+                      onClick={() => setLocation(`/watch/${encodeURIComponent(account.screenName)}`)}
+                    >
+                      👁
+                    </button>
+                    {canEditName && (
+                      <>
+                        <button
+                          className="btn"
+                          disabled={updateTheme.isPending}
+                          title="Cycle theme"
+                          onClick={() => {
+                            const idx = THEME_CYCLE.indexOf(effectiveTheme as (typeof THEME_CYCLE)[number]);
+                            handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length] as AccountProfileTheme);
+                          }}
+                        >
+                          {THEME_DOT[themeColorOf(effectiveTheme)]}
+                        </button>
+                        <button className="btn" onClick={() => setEditing(true)}>Edit</button>
+                      </>
+                    )}
+                  </div>
                 </div>
                 {!canEditName && (
                   <div style={{ fontSize: 11, color: "#444" }}>
