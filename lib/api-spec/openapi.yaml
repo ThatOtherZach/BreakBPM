@@ -775,6 +775,17 @@ paths:
           description: >
             Bypass and repopulate the cache for the requested key. Honored
             only for pass holders; ignored otherwise.
+        - name: gameMode
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, 8ball, 9ball, practice, shark]
+            default: all
+          description: >
+            Filter stats to a single game mode. Pass holders only — callers
+            without a pass are forced to "all". "shark" covers solo 8-ball-vs-AI
+            games; "8ball" covers standard 8-ball games excluding shark.
       responses:
         "200":
           description: OK

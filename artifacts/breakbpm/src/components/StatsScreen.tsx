@@ -134,6 +134,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
 
   const [window, setWindow] = useState<"24h" | "30d" | "365d" | "all">("24h");
   const [scope, setScope] = useState<"personal" | "global">("personal");
+  const [gameMode, setGameMode] = useState<"all" | "8ball" | "9ball" | "practice" | "shark">("all");
   const [refreshing, setRefreshing] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -192,7 +193,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
 
   // `refresh` is intentionally left out of the query key so cache-busting is
   // an explicit user action (handleRefresh) rather than part of normal reads.
-  const params: GetStatsParams = { window, scope };
+  const params: GetStatsParams = { window, scope, gameMode };
   const statsQuery = useGetStats(params);
   const stats = statsQuery.data as StatsResult | undefined;
 
@@ -200,7 +201,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
     if (refreshing) return;
     setRefreshing(true);
     try {
-      const fresh = await getStats({ window, scope, refresh: true });
+      const fresh = await getStats({ window, scope, gameMode, refresh: true });
       qc.setQueryData(getGetStatsQueryKey(params), fresh);
     } catch {
       // Surface nothing — the existing snapshot stays on screen.
@@ -282,6 +283,22 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   );
                 })}
             </div>
+
+            {/* Game mode filter — pass holders only; non-pass always shows "All Modes" */}
+            {canChooseWindow && (
+              <select
+                className="btn"
+                style={{ width: "100%", paddingTop: 6, paddingBottom: 6 }}
+                value={gameMode}
+                onChange={(e) => setGameMode(e.target.value as typeof gameMode)}
+              >
+                <option value="all">All Modes</option>
+                <option value="8ball">8-Ball</option>
+                <option value="9ball">9-Ball</option>
+                <option value="practice">Practice</option>
+                <option value="shark">🦈 Shark Mode</option>
+              </select>
+            )}
 
             {(canRefresh || isAuthenticated) && (
               <div style={{ display: "flex", gap: 6, marginTop: 6 }}>

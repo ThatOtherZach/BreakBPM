@@ -23,6 +23,7 @@ import type { BackgroundVariant } from "./profileBackground";
 
 export type StatWindow = "24h" | "30d" | "365d" | "all";
 export type StatScope = "personal" | "global";
+export type StatGameMode = "all" | "8ball" | "9ball" | "practice" | "shark";
 
 /**
  * The single stats/export window granted to the free (account) tier. Both the
@@ -299,10 +300,15 @@ function buildWindowedTrend(
     }));
 }
 
-async function computeGlobalStats(window: StatWindow): Promise<StatsCore> {
+async function computeGlobalStats(window: StatWindow, gameMode: StatGameMode): Promise<StatsCore> {
   const cutoff = windowCutoff(window);
   const conds = [isNotNull(gamesTable.endedAt)];
   if (cutoff) conds.push(gte(gamesTable.endedAt, cutoff));
+  // SQL-side game type filter. Shark and 8ball both fetch "8ball" rows and are
+  // discriminated in-loop (shark detection requires parsing the gameState JSONB).
+  if (gameMode === "9ball") conds.push(eq(gamesTable.gameType, "9ball"));
+  else if (gameMode === "practice") conds.push(eq(gamesTable.gameType, "practice"));
+  else if (gameMode === "8ball" || gameMode === "shark") conds.push(eq(gamesTable.gameType, "8ball"));
   const rows = (await db
     .select({
       gameType: gamesTable.gameType,
@@ -333,7 +339,10 @@ async function computeGlobalStats(window: StatWindow): Promise<StatsCore> {
   let eightClean = 0;
 
   for (const r of rows) {
-    const { shotLog, undoCount } = parseGameState(r.gameState);
+    const { shotLog, undoCount, isShark } = parseGameState(r.gameState);
+    // Shark/8ball in-loop discrimination (SQL can only filter by gameType "8ball").
+    if (gameMode === "8ball" && isShark) continue;
+    if (gameMode === "shark" && !isShark) continue;
     // Completion vs abandonment (forfeit / inactivity-expiry).
     if (r.outcome === "won" || r.outcome === "lost" || r.outcome === "completed") finished += 1;
     // Pace + accuracy from denormalized columns.
@@ -387,7 +396,7 @@ async function computeGlobalStats(window: StatWindow): Promise<StatsCore> {
   return core;
 }
 
-async function computePersonalStats(userId: string, window: StatWindow): Promise<StatsCore> {
+async function computePersonalStats(userId: string, window: StatWindow, gameMode: StatGameMode): Promise<StatsCore> {
   const cutoff = windowCutoff(window);
   const parts = await db
     .select({
@@ -406,6 +415,11 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
   const ids = parts.map((p) => p.gameId);
   const conds = [inArray(gamesTable.id, ids), isNotNull(gamesTable.endedAt)];
   if (cutoff) conds.push(gte(gamesTable.endedAt, cutoff));
+  // SQL-side game type filter. Shark and 8ball both fetch "8ball" rows and are
+  // discriminated in-loop (shark detection requires parsing the gameState JSONB).
+  if (gameMode === "9ball") conds.push(eq(gamesTable.gameType, "9ball"));
+  else if (gameMode === "practice") conds.push(eq(gamesTable.gameType, "practice"));
+  else if (gameMode === "8ball" || gameMode === "shark") conds.push(eq(gamesTable.gameType, "8ball"));
   const rows = (await db
     .select({
       id: gamesTable.id,
@@ -478,6 +492,9 @@ async function computePersonalStats(userId: string, window: StatWindow): Promise
     const startMs = part?.statsStartAt ? part.statsStartAt.getTime() : -Infinity;
     const leftMs = part?.leftAt ? part.leftAt.getTime() : Infinity;
     const { shotLog, players, undoCount, isShark } = parseGameState(r.gameState);
+    // Shark/8ball in-loop discrimination (SQL can only filter by gameType "8ball").
+    if (gameMode === "8ball" && isShark) continue;
+    if (gameMode === "shark" && !isShark) continue;
 
     // The caller's own shots within their participation window.
     const mine = shotLog.filter(
@@ -620,8 +637,12 @@ export async function resolveStats(
   window: StatWindow,
   userId: string | null,
   refresh: boolean,
+  gameMode: StatGameMode = "all",
 ): Promise<{ core: StatsCore; cached: boolean }> {
-  const key = scope === "global" ? `global:${window}` : `personal:${userId}:${window}`;
+  const key =
+    scope === "global"
+      ? `global:${window}:${gameMode}`
+      : `personal:${userId}:${window}:${gameMode}`;
   const now = Date.now();
   if (!refresh) {
     const hit = statsCache.get(key);
@@ -629,8 +650,8 @@ export async function resolveStats(
   }
   const core =
     scope === "global"
-      ? await computeGlobalStats(window)
-      : await computePersonalStats(userId as string, window);
+      ? await computeGlobalStats(window, gameMode)
+      : await computePersonalStats(userId as string, window, gameMode);
   statsCache.set(key, { core, expiresAt: now + STATS_CACHE_TTL_MS });
   return { core, cached: false };
 }

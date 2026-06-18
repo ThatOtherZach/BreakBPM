@@ -38,7 +38,7 @@ import {
 } from "@workspace/api-zod";
 import { getOrCreateUser, getVerifiedSubject } from "../lib/auth";
 import { computeEntitlement, getActivePasses, getActiveSubscription } from "../lib/entitlement";
-import { resolveStats, resolveLeaderboard, clearUserStatsCache, windowCutoff, FREE_TIER_WINDOW, type StatScope, type StatWindow, type LeaderboardWindow } from "../lib/stats";
+import { resolveStats, resolveLeaderboard, clearUserStatsCache, windowCutoff, FREE_TIER_WINDOW, type StatScope, type StatWindow, type StatGameMode, type LeaderboardWindow } from "../lib/stats";
 import { sweepStaleGames, finalizeGameIfStale, INACTIVITY_FORFEIT_MS, MAX_GAME_DURATION_MS } from "../lib/forfeit";
 import { newId } from "../lib/ids";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
@@ -2198,7 +2198,7 @@ router.get("/stats", async (req, res): Promise<void> => {
     res.status(400).json({ error: "invalid_query" });
     return;
   }
-  const { window, scope, refresh } = parsed.data;
+  const { window, scope, refresh, gameMode } = parsed.data;
 
   const user = await getOrCreateUser(req);
   const entitlement = await computeEntitlement(user);
@@ -2221,20 +2221,23 @@ router.get("/stats", async (req, res): Promise<void> => {
     appliedWindow = window;
   }
 
+  // Game mode filter — pass holders only; everyone else is forced to "all".
+  const appliedGameMode: StatGameMode = isPass ? ((gameMode ?? "all") as StatGameMode) : "all";
+
   const effectiveRefresh = isPass && refresh;
   const { core, cached } = await resolveStats(
     appliedScope,
     appliedWindow,
     user?.id ?? null,
     effectiveRefresh,
+    appliedGameMode,
   );
 
-  // For personal stats, fetch the global 24h average so the hero can show an
-  // above/below-average arrow. Global scope needs no comparison. Global stats
-  // are cached so this adds negligible overhead.
+  // For personal stats, fetch the global 24h average (same mode) so the hero
+  // can show an above/below-average arrow. Global scope needs no comparison.
   let globalAvgBpm: number | null = null;
   if (appliedScope === "personal") {
-    const { core: globalCore } = await resolveStats("global", "24h", null, false);
+    const { core: globalCore } = await resolveStats("global", "24h", null, false, appliedGameMode);
     globalAvgBpm = globalCore.avgBpm ?? null;
   }
 

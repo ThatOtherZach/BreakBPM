@@ -84,6 +84,7 @@ export * from './getGameStateByCodeParams';
 export * from './getLeaderboardParams';
 export * from './getLeaderboardWindow';
 export * from './getPublicProfileParams';
+export * from './getStatsGameMode';
 export * from './getStatsParams';
 export * from './getStatsScope';
 export * from './getStatsWindow';

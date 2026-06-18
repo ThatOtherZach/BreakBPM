@@ -5,6 +5,7 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { GetStatsGameMode } from './getStatsGameMode';
 import type { GetStatsScope } from './getStatsScope';
 import type { GetStatsWindow } from './getStatsWindow';
 
@@ -24,4 +25,9 @@ scope?: GetStatsScope;
 
  */
 refresh?: boolean;
+/**
+ * Filter stats to a single game mode. Pass holders only — callers without a pass are forced to "all". "shark" covers solo 8-ball-vs-AI games; "8ball" covers standard 8-ball games excluding shark.
+
+ */
+gameMode?: GetStatsGameMode;
 };

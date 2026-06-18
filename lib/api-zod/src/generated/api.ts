@@ -968,11 +968,13 @@ export const RemoveInviteResponse = zod.object({
 export const getStatsQueryWindowDefault = `24h`;
 export const getStatsQueryScopeDefault = `personal`;
 export const getStatsQueryRefreshDefault = false;
+export const getStatsQueryGameModeDefault = `all`;
 
 export const GetStatsQueryParams = zod.object({
   "window": zod.enum(['24h', '30d', '365d', 'all']).default(getStatsQueryWindowDefault).describe('Time window anchored on each game\'s endedAt. Clamped to 24h for callers without a pass.\n'),
   "scope": zod.enum(['personal', 'global']).default(getStatsQueryScopeDefault).describe('personal = games the caller participated in; global = aggregate across all users. Anonymous callers are forced to global; no-pass callers are forced to personal.\n'),
-  "refresh": zod.coerce.boolean().default(getStatsQueryRefreshDefault).describe('Bypass and repopulate the cache for the requested key. Honored only for pass holders; ignored otherwise.\n')
+  "refresh": zod.coerce.boolean().default(getStatsQueryRefreshDefault).describe('Bypass and repopulate the cache for the requested key. Honored only for pass holders; ignored otherwise.\n'),
+  "gameMode": zod.enum(['all', '8ball', '9ball', 'practice', 'shark']).default(getStatsQueryGameModeDefault).describe('Filter stats to a single game mode. Pass holders only — callers without a pass are forced to \"all\". \"shark\" covers solo 8-ball-vs-AI games; \"8ball\" covers standard 8-ball games excluding shark.\n')
 })
 
 export const GetStatsResponse = zod.object({

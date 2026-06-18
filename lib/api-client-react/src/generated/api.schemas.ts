@@ -1554,6 +1554,11 @@ scope?: GetStatsScope;
 
  */
 refresh?: boolean;
+/**
+ * Filter stats to a single game mode. Pass holders only — callers without a pass are forced to "all". "shark" covers solo 8-ball-vs-AI games; "8ball" covers standard 8-ball games excluding shark.
+
+ */
+gameMode?: GetStatsGameMode;
 };
 
 export type GetStatsWindow = typeof GetStatsWindow[keyof typeof GetStatsWindow];
@@ -1572,6 +1577,17 @@ export type GetStatsScope = typeof GetStatsScope[keyof typeof GetStatsScope];
 export const GetStatsScope = {
   personal: 'personal',
   global: 'global',
+} as const;
+
+export type GetStatsGameMode = typeof GetStatsGameMode[keyof typeof GetStatsGameMode];
+
+
+export const GetStatsGameMode = {
+  all: 'all',
+  '8ball': '8ball',
+  '9ball': '9ball',
+  practice: 'practice',
+  shark: 'shark',
 } as const;
 
 export type GetLeaderboardParams = {
