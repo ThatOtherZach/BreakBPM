@@ -306,7 +306,7 @@ export default function StatsHero({
       <div className="stats-hero-side">
         <div className="stats-hero-side-item">
           <span className="stats-hero-side-val">{fmtInt(stats.gamesPlayed)}</span>
-          <span className="stats-hero-side-label">GAMES</span>
+          <span className="stats-hero-side-label" style={{ color: "#fff" }}>GAMES</span>
         </div>
         <div className="stats-hero-side-item">
           <span className="stats-hero-side-val green">{fmtPct(rateValue)}</span>
