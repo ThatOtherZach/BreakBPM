@@ -575,6 +575,19 @@ html, #root {
   .rainbow-name { animation: none; }
   .rainbow-cue::before { animation: none; }
 }
+/* The account "Identity" preview shows the player's name over a busy, tinted
+   felt card. A bare rainbow gradient muddies into that felt, so here (and only
+   here) we wrap the glyphs in a crisp dark outline so the rainbow reads cleanly
+   on any felt color. Scoped to .identity-name so the HUD/OBS rainbow look is
+   untouched. */
+.identity-name .rainbow-name {
+  text-shadow:
+    1px 1px 0 #042414,
+    -1px 1px 0 #042414,
+    1px -1px 0 #042414,
+    -1px -1px 0 #042414,
+    0 2px 3px rgba(0, 0, 0, 0.55);
+}
 .about-markdown blockquote {
   border-left: 3px solid var(--navy);
   padding-left: 10px;
