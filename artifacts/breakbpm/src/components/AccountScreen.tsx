@@ -602,9 +602,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     className="btn"
                     title="View watch profile"
                     onClick={() => setLocation(`/watch/${encodeURIComponent(account.screenName)}`)}
-                  >
-                    👁
-                  </button>
+                  >👁 View</button>
                   {canEditName && (
                     <>
                       <button
