@@ -16,12 +16,19 @@ const SOLIDS = [1, 2, 3, 4, 5, 6, 7];
  *   0 wins   → plain white cue ball  (.cue-ball-icon--chip)
  *   1–15     → numbered ball chip    (solid 1–7, 8-ball for 8, stripe 9–15)
  *   16+      → spinning rainbow cue  (.rainbow-cue scaled to chip size)
+ *
+ * Pass `small` to render at ~85% size (22px instead of 26px), for use next
+ * to smaller labels like the shark count.
  */
-export function WinsTodayChip({ winsToday }: { winsToday: number }): React.ReactElement {
+export function WinsTodayChip({ winsToday, small }: { winsToday: number; small?: boolean }): React.ReactElement {
+  const chipSize = small ? "22px" : "26px";
+  const iconSize = small ? 22 : 26;
+
   if (winsToday <= 0) {
     return (
       <span
         className="cue-ball-icon cue-ball-icon--chip"
+        style={{ "--chip-size": chipSize } as React.CSSProperties}
         aria-label="0 wins today"
         title="0 wins today"
       />
@@ -32,7 +39,7 @@ export function WinsTodayChip({ winsToday }: { winsToday: number }): React.React
     return (
       <span
         className="rainbow-cue"
-        style={{ fontSize: 26, verticalAlign: "baseline" }}
+        style={{ fontSize: iconSize, verticalAlign: "baseline" }}
         aria-label={`${winsToday} wins today`}
         title={`${winsToday} wins today`}
       />
@@ -51,7 +58,7 @@ export function WinsTodayChip({ winsToday }: { winsToday: number }): React.React
     <span
       className={`hud-chip ${chipClass}`}
       data-number={ball}
-      style={{ "--chip-color": BALL_COLORS[ball] } as React.CSSProperties}
+      style={{ "--chip-color": BALL_COLORS[ball], "--chip-size": chipSize } as React.CSSProperties}
       aria-label={`${ball} win${ball !== 1 ? "s" : ""} today`}
       title={`${winsToday} win${winsToday !== 1 ? "s" : ""} today`}
     />

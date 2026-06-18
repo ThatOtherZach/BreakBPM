@@ -86,7 +86,7 @@ function LeaderboardRowCard({
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <WinsTodayChip winsToday={row.winsToday ?? 0} />
+          <WinsTodayChip winsToday={row.winsToday ?? 0} small />
           {row.sharkLevel != null && row.sharkLevel > 0 && (
             <span
               style={{

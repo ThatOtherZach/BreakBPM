@@ -538,7 +538,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                       </span>
                     )}
                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <WinsTodayChip winsToday={account.winsToday ?? 0} />
+                      <WinsTodayChip winsToday={account.winsToday ?? 0} small />
                       {standing != null && standing.sharkLevel > 0 && (
                         <span
                           style={{
