@@ -509,7 +509,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                   </span>
                   <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
-                      <WinsTodayChip winsToday={account.winsToday ?? 0} />
                       <span
                         style={{
                           fontFamily: "VT323",
@@ -538,19 +537,22 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                         {account.email}
                       </span>
                     )}
-                    {standing != null && standing.sharkLevel > 0 && (
-                      <span
-                        style={{
-                          fontFamily: "VT323",
-                          fontSize: 14,
-                          lineHeight: 1,
-                          color: "#9fc6ff",
-                          textShadow: "1px 1px 0 #042414",
-                        }}
-                      >
-                        🦈{standing.sharkLevel}
-                      </span>
-                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <WinsTodayChip winsToday={account.winsToday ?? 0} />
+                      {standing != null && standing.sharkLevel > 0 && (
+                        <span
+                          style={{
+                            fontFamily: "VT323",
+                            fontSize: 14,
+                            lineHeight: 1,
+                            color: "#9fc6ff",
+                            textShadow: "1px 1px 0 #042414",
+                          }}
+                        >
+                          🦈{standing.sharkLevel}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {standing != null && (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>

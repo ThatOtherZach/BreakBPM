@@ -70,7 +70,6 @@ function LeaderboardRowCard({
       </span>
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
-          <WinsTodayChip winsToday={row.winsToday ?? 0} />
           <span
             style={{
               fontFamily: "VT323",
@@ -86,19 +85,22 @@ function LeaderboardRowCard({
             {row.screenName}
           </span>
         </div>
-        {row.sharkLevel != null && row.sharkLevel > 0 && (
-          <span
-            style={{
-              fontFamily: "VT323",
-              fontSize: 14,
-              lineHeight: 1,
-              color: "#9fc6ff",
-              textShadow: "1px 1px 0 #042414",
-            }}
-            className="font-normal">
-            🦈{row.sharkLevel}
-          </span>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <WinsTodayChip winsToday={row.winsToday ?? 0} />
+          {row.sharkLevel != null && row.sharkLevel > 0 && (
+            <span
+              style={{
+                fontFamily: "VT323",
+                fontSize: 14,
+                lineHeight: 1,
+                color: "#9fc6ff",
+                textShadow: "1px 1px 0 #042414",
+              }}
+              className="font-normal">
+              🦈{row.sharkLevel}
+            </span>
+          )}
+        </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
         <span
