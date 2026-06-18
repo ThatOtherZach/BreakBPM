@@ -25,7 +25,7 @@ import {
 import { ObsIdle } from './ObsOverlay';
 import { PlayerName } from './PlayerName';
 import { useAuth } from '../lib/authClient';
-import { THEME_FELT, themeColorOf } from '../lib/backgroundVariants';
+import { THEME_FELT, THEME_ACCENT, themeColorOf } from '../lib/backgroundVariants';
 
 const BALL_COLORS: Record<number, string> = {
   1: '#FDD307', 2: '#1F4E9E', 3: '#C3342B', 4: '#5B247A',
@@ -289,7 +289,16 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
   // the same themed table the host does. The host's resolved theme rides the
   // /games/state snapshot; map it through the shared THEME_FELT table (shark →
   // blue, hustler → red, else the default green).
-  const felt = THEME_FELT[themeColorOf(snap.data?.hostTheme)];
+  const themeColor = themeColorOf(snap.data?.hostTheme);
+  const felt = THEME_FELT[themeColor];
+
+  // Carry the host's theme accent into the per-player scoreboard rows so the
+  // whole spectator HUD reads as one themed surface (matching the felt above).
+  // No theme (green) keeps the original purple scoreboard look; any real theme
+  // tints the row borders + active highlight to its shared THEME_ACCENT.
+  const board = themeColor === 'green'
+    ? { border: '#5a2a8a', activeBorder: '#d8b4ff', text: '#d8b4ff' }
+    : { border: `${THEME_ACCENT[themeColor]}80`, activeBorder: THEME_ACCENT[themeColor], text: THEME_ACCENT[themeColor] };
 
   const sunk = state?.sunkBalls ?? [];
   // Practice can use the 8-ball (1–15) or 9-ball (1–9) rack; every other mode's
@@ -475,9 +484,9 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
             <div key={p.id} style={{
               display: 'flex', flexDirection: 'column', gap: 2,
               padding: '3px 8px', marginTop: 3,
-              background: '#1a0a2e', border: '1px solid #5a2a8a',
-              borderColor: active ? '#d8b4ff' : '#5a2a8a',
-              fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
+              background: '#1a0a2e', border: `1px solid ${board.border}`,
+              borderColor: active ? board.activeBorder : board.border,
+              fontFamily: "'VT323',monospace", fontSize: 14, color: board.text,
               opacity: roster?.hasLeft ? 0.55 : 1,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -512,8 +521,8 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
             <div key={`roster-${rp.slotIndex}`} style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '4px 8px', marginTop: 4,
-              background: '#1a0a2e', border: '1px dashed #5a2a8a',
-              fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
+              background: '#1a0a2e', border: `1px dashed ${board.border}`,
+              fontFamily: "'VT323',monospace", fontSize: 14, color: board.text,
               opacity: rp.hasLeft ? 0.55 : 0.9,
             }}>
               <span style={{ minWidth: 12 }} aria-hidden="true" />
