@@ -302,45 +302,44 @@ export default function StatsHero({
           </div>
         )}
       </div>
-      <div
-        className="stats-hero-side"
-        style={screenName ? { gridTemplateColumns: "repeat(4, 1fr)" } : undefined}
-      >
-        <div className="stats-hero-side-item">
-          <span className="stats-hero-side-val">{fmtInt(stats.gamesPlayed)}</span>
-          <span className="stats-hero-side-label" style={{ color: "#fff" }}>GAMES</span>
-        </div>
-        <div className="stats-hero-side-item">
-          <span className="stats-hero-side-val green">{fmtPct(rateValue)}</span>
-          <span className="stats-hero-side-label" style={{ color: "#00ff41" }}>{rateLabel}</span>
-        </div>
-        <div className="stats-hero-side-item">
-          <span className="stats-hero-side-val">{stats.accuracy == null ? "--" : `${stats.accuracy}%`}</span>
-          <span className="stats-hero-side-label" style={{ color: "#fff" }}>AVG ACCURACY</span>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", paddingTop: 10 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+          <div className="stats-hero-side" style={{ paddingTop: 0 }}>
+            <div className="stats-hero-side-item">
+              <span className="stats-hero-side-val">{fmtInt(stats.gamesPlayed)}</span>
+              <span className="stats-hero-side-label" style={{ color: "#fff" }}>GAMES</span>
+            </div>
+            <div className="stats-hero-side-item">
+              <span className="stats-hero-side-val green">{fmtPct(rateValue)}</span>
+              <span className="stats-hero-side-label" style={{ color: "#00ff41" }}>{rateLabel}</span>
+            </div>
+            <div className="stats-hero-side-item">
+              <span className="stats-hero-side-val">{stats.accuracy == null ? "--" : `${stats.accuracy}%`}</span>
+              <span className="stats-hero-side-label" style={{ color: "#fff" }}>AVG ACCURACY</span>
+            </div>
+          </div>
+          {joinedAt && (
+            <p style={{ fontSize: 11, color: "#d8b4ff", textAlign: "center", margin: 0 }}>
+              Joined: {new Date(joinedAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+            </p>
+          )}
         </div>
         {screenName && (
-          <div className="stats-hero-side-item">
-            <a
-              href={`/watch/${encodeURIComponent(screenName)}`}
-              title={`Watch ${screenName}`}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none" }}
-            >
-              <QRCodeSVG
-                value={`${window.location.origin}/watch/${encodeURIComponent(screenName)}`}
-                size={64}
-                bgColor="transparent"
-                fgColor="#ffffff"
-                level="L"
-              />
-            </a>
-          </div>
+          <a
+            href={`/watch/${encodeURIComponent(screenName)}`}
+            title={`Watch ${screenName}`}
+            style={{ display: "flex", alignItems: "center", textDecoration: "none", flexShrink: 0 }}
+          >
+            <QRCodeSVG
+              value={`${window.location.origin}/watch/${encodeURIComponent(screenName)}`}
+              size={64}
+              bgColor="transparent"
+              fgColor="#ffffff"
+              level="L"
+            />
+          </a>
         )}
       </div>
-      {joinedAt && (
-        <p style={{ fontSize: 11, color: "#d8b4ff", textAlign: "left", margin: "8px 0 0" }}>
-          Joined: {new Date(joinedAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
-        </p>
-      )}
     </div>
   );
 }
