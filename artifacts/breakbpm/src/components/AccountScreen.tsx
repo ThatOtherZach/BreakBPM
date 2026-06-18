@@ -12,6 +12,7 @@ import {
 } from "../lib/redeemCard";
 import type { BackgroundVariant } from "../lib/backgroundVariants";
 import { THEME_DOT, THEME_FELT, RAINBOW_DOT, themeColorOf } from "../lib/backgroundVariants";
+import { PlayerName } from "./PlayerName";
 import {
   useGetMe,
   useUpdateScreenName,
@@ -556,7 +557,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {account.screenName}
+                        <PlayerName name={account.screenName} rainbow={effectiveTheme === "rainbow"} />
                       </span>
                     </div>
                     {account.email && (
