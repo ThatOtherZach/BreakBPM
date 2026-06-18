@@ -1999,6 +1999,13 @@ router.get("/games/profile", async (req, res): Promise<void> => {
     hasActiveSubscription: hostActiveSubscription !== null,
   });
 
+  // This player's own row in the all-time global BPM ranking, so the profile
+  // can render the same single standing card the owner sees on their account
+  // page (shares the 1-hour leaderboard cache). Screen names are canonical +
+  // unique, so they key a row to a single user. Omitted when unranked.
+  const globalRanking = await resolveLeaderboard("all");
+  const globalStanding = globalRanking.find((r) => r.screenName === host.screenName);
+
   res.json(
     GetPublicProfileResponse.parse({
       found: true,
@@ -2012,6 +2019,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
       profileBackground,
       games,
       stats,
+      ...(globalStanding ? { globalStanding } : {}),
     }),
   );
 });

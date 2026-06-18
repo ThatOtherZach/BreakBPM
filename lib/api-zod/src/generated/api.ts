@@ -692,6 +692,7 @@ export const GetPublicProfileQueryParams = zod.object({
 })
 
 export const getPublicProfileResponseStatsOneWinsTodayDefault = 0;
+export const getPublicProfileResponseGlobalStandingWinsTodayDefault = 0;
 
 export const GetPublicProfileResponse = zod.object({
   "found": zod.boolean(),
@@ -776,7 +777,18 @@ export const GetPublicProfileResponse = zod.object({
   "sharkLevel": zod.number().nullable(),
   "chaosWinRecent": zod.boolean(),
   "winsToday": zod.number().default(getPublicProfileResponseStatsOneWinsTodayDefault)
-}),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "globalStanding": zod.object({
+  "rank": zod.number(),
+  "screenName": zod.string(),
+  "bpm": zod.number(),
+  "accuracy": zod.number().nullable(),
+  "gamesPlayed": zod.number(),
+  "sharkLevel": zod.number(),
+  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
+  "winsToday": zod.number().default(getPublicProfileResponseGlobalStandingWinsTodayDefault),
+  "rainbowName": zod.boolean()
+}).optional()
 })
 
 

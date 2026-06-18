@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { GameHistoryEntry } from './gameHistoryEntry';
+import type { LeaderboardRow } from './leaderboardRow';
 import type { PublicProfileResultProfileBackground } from './publicProfileResultProfileBackground';
 import type { PublicProfileResultReason } from './publicProfileResultReason';
 import type { StatsResult } from './statsResult';
@@ -29,4 +30,5 @@ export interface PublicProfileResult {
   profileBackground?: PublicProfileResultProfileBackground;
   games: GameHistoryEntry[];
   stats?: StatsResult | null;
+  globalStanding?: LeaderboardRow;
 }

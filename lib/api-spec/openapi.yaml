@@ -2183,6 +2183,11 @@ components:
           oneOf:
             - { $ref: "#/components/schemas/StatsResult" }
             - { type: "null" }
+        # This player's own row in the all-time global BPM ranking, so the
+        # profile can render the same single standing card the owner sees on
+        # their account page. Omitted when the player has too few qualifying
+        # ranked games to appear in the leaderboard.
+        globalStanding: { $ref: "#/components/schemas/LeaderboardRow" }
 
     StatBall:
       type: object

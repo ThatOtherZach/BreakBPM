@@ -3,7 +3,7 @@ import Navbar from "./Navbar";
 import GameHistoryCard from "./GameHistoryCard";
 import StatsHero from "./StatsHero";
 import { PlayerName } from "./PlayerName";
-import { LeaderboardWidget } from "./LeaderboardScreen";
+import { LeaderboardRowCard } from "./LeaderboardScreen";
 import { useAuth } from "../lib/authClient";
 import { useGetPublicProfile, getGetPublicProfileQueryKey } from "@workspace/api-client-react";
 import { VARIANT_IMAGE_URLS, type BackgroundVariant } from "../lib/backgroundVariants";
@@ -131,9 +131,23 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
               </div>
             )}
 
-            {/* When the player has no activity in the last 24h, fill the
-                space with the global leaderboard instead of an empty panel. */}
-            {(stats?.gamesPlayed ?? 0) === 0 && <LeaderboardWidget />}
+            {/* When the player has no activity in the last 24h, fill the space
+                with their own global standing card (the same single felt-tinted
+                leaderboard row the owner sees on their account page) instead of
+                an empty panel. Hidden when they aren't ranked yet. */}
+            {(stats?.gamesPlayed ?? 0) === 0 && profile.data.globalStanding && (
+              <div className="panel panel--wood">
+                <div className="panel-header">
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🏆</span>
+                    Global Standing
+                  </span>
+                </div>
+                <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                  <LeaderboardRowCard row={profile.data.globalStanding} />
+                </div>
+              </div>
+            )}
 
             {/* Recent games — same cards as the account page */}
             <div className="panel panel--wood">

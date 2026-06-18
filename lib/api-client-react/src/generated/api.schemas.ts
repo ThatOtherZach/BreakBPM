@@ -1261,6 +1261,7 @@ export interface PublicProfileResult {
   profileBackground?: PublicProfileResultProfileBackground;
   games: GameHistoryEntry[];
   stats?: StatsResult | null;
+  globalStanding?: LeaderboardRow;
 }
 
 export type LeaderboardResultWindow = typeof LeaderboardResultWindow[keyof typeof LeaderboardResultWindow];

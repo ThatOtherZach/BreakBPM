@@ -31,12 +31,12 @@ function rankBadge(rank: number): string {
  * BPM / accuracy hero on the right, and a "Who?" jump to the player's live
  * profile.
  */
-function LeaderboardRowCard({
+export function LeaderboardRowCard({
   row,
   onWho,
 }: {
   row: LeaderboardRow;
-  onWho: (name: string) => void;
+  onWho?: (name: string) => void;
 }) {
   // Tint the whole card's pool-table felt to the player's profile theme
   // (shark→blue, hustler→red, pool-player→purple, else green) so each
@@ -128,9 +128,11 @@ function LeaderboardRowCard({
           {row.accuracy != null ? `${row.accuracy}% ACC` : "—% ACC"}
         </span>
       </div>
-      <button className="btn" style={{ flexShrink: 0 }} onClick={() => onWho(row.screenName)}>
-        Who?
-      </button>
+      {onWho && (
+        <button className="btn" style={{ flexShrink: 0 }} onClick={() => onWho(row.screenName)}>
+          Who?
+        </button>
+      )}
     </div>
   );
 }

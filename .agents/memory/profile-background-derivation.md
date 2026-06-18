@@ -3,6 +3,18 @@ name: Watch-profile background (stored-at-mint artwork)
 description: How a /watch profile's splash artwork is chosen — stored on the redeem code at admin mint time, mapped via the pass sourceRef. NO hashing.
 ---
 
+> **⚠️ CURRENTLY REGRESSED (verify before trusting this note).** As of the
+> auto-earn rewrite (commit `a70908b`, "earn profile themes via game history"),
+> `resolveUserProfileBackground` / `resolveUserProfileBackgrounds` no longer query
+> `discount_codes.background_variant` at all — they only honour an explicit
+> `profileTheme` override, then fall through to **auto-earn from game history**.
+> The stored-card-variant lookup described below was dropped, so a redeemed card's
+> artwork no longer shows on `auto`/NULL. This leaves 3 tests red in
+> `games-profile.test.ts` (expecting the stored variant). Unclear whether the owner
+> intended auto-earn to *replace* card artwork or whether card-variant should sit as
+> a precedence step ABOVE auto-earn. Restore order is most likely: explicit theme →
+> active card stored variant → auto-earn → null.
+
 A `/watch/<name>` profile's splash artwork (shark / pool-player / hustler) is
 **chosen and stored when an admin mints the redeem card**, never derived from the
 code string. The DB-aware resolver (`resolveUserProfileBackground` in
