@@ -38,6 +38,10 @@ function fmtNum(v: number | null | undefined): string {
   if (v == null) return "—";
   return String(Math.ceil(v * 2) / 2);
 }
+function fmtCeil(v: number | null | undefined): string {
+  if (v == null) return "—";
+  return String(Math.ceil(v));
+}
 function fmtWhen(iso: string | undefined): string {
   if (!iso) return "";
   try {
@@ -478,8 +482,8 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     {isAuthenticated && (
                       <div className="stats-card-grid">
                         <StatCard emoji="❌" value={fmtNum(stats.avgMissesPerGame)} label="MISSES" sub="per game" />
-                        <StatCard emoji={<span className="cue-ball-icon" style={{ fontSize: 21, verticalAlign: "baseline" }} />} value={fmtNum(stats.avgFoulsPerGame)} label="FOULS" sub="per game" />
-                        <StatCard emoji="🛡️" value={fmtNum(stats.avgSafetiesPerGame)} label="SAFETIES" sub="per game" />
+                        <StatCard emoji={<span className="cue-ball-icon" style={{ fontSize: 21, verticalAlign: "baseline" }} />} value={fmtCeil(stats.avgFoulsPerGame)} label="FOULS" sub="per game" />
+                        <StatCard emoji="🛡️" value={fmtCeil(stats.avgSafetiesPerGame)} label="SAFETIES" sub="per game" />
                         <StatCard emoji="↩️" value={fmtInt(stats.totalUndos)} label="TIMES NO ONE SAW THAT (UNDOS)" />
                       </div>
                     )}
