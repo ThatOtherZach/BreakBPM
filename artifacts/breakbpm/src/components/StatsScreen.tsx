@@ -33,6 +33,14 @@ const WINDOW_LABEL: Record<string, string> = {
   all: "ALL",
 };
 const WINDOWS: Array<"24h" | "30d" | "365d" | "all"> = ["24h", "30d", "365d", "all"];
+const GAME_MODES: Array<"all" | "8ball" | "9ball" | "practice" | "shark"> = ["all", "8ball", "9ball", "practice", "shark"];
+const GAME_MODE_LABEL: Record<string, string> = {
+  all: "All Modes",
+  "8ball": "8-Ball",
+  "9ball": "9-Ball",
+  practice: "Practice",
+  shark: "🦈 Shark",
+};
 
 function fmtNum(v: number | null | undefined): string {
   if (v == null) return "—";
@@ -278,21 +286,19 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
               )}
             </div>
 
-            {/* Game mode filter + Refresh on the same row (pass holders only) */}
+            {/* Game mode cycle + Refresh on the same row (pass holders only) */}
             {canChooseWindow && (
               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <select
-                  className="btn"
-                  style={{ flex: 1, paddingTop: 6, paddingBottom: 6 }}
-                  value={gameMode}
-                  onChange={(e) => setGameMode(e.target.value as typeof gameMode)}
+                <button
+                  className="btn btn-primary"
+                  style={{ flex: 1 }}
+                  onClick={() => {
+                    const idx = GAME_MODES.indexOf(gameMode);
+                    setGameMode(GAME_MODES[(idx + 1) % GAME_MODES.length]);
+                  }}
                 >
-                  <option value="all">All Modes</option>
-                  <option value="8ball">8-Ball</option>
-                  <option value="9ball">9-Ball</option>
-                  <option value="practice">Practice</option>
-                  <option value="shark">🦈 Shark Mode</option>
-                </select>
+                  {GAME_MODE_LABEL[gameMode]} ▸
+                </button>
                 {canRefresh && (
                   <button
                     className="btn"
