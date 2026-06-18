@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { GameStateSnapshotGameType } from './gameStateSnapshotGameType';
+import type { GameStateSnapshotHostTheme } from './gameStateSnapshotHostTheme';
 import type { GameStateSnapshotParticipantsItem } from './gameStateSnapshotParticipantsItem';
 
 export interface GameStateSnapshot {
@@ -16,5 +17,7 @@ export interface GameStateSnapshot {
   startedAt?: Date;
   lastActivityAt?: Date;
   gameState?: unknown;
+  /** @nullable */
+  hostTheme?: GameStateSnapshotHostTheme;
   participants?: GameStateSnapshotParticipantsItem[];
 }

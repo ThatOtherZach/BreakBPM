@@ -33,6 +33,8 @@ vi.mock("../lib/auth", () => {
 });
 
 import gamesRouter from "./games";
+import { db, usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import {
   createUser,
   seedPass,
@@ -369,6 +371,26 @@ describe("GET /games/state", () => {
       (p: { slotIndex: number }) => p.slotIndex === 0,
     );
     expect(host0.isHost).toBe(true);
+    // A default ("auto") unpaid host carries no theme → spectators fall back
+    // to the default green felt.
+    expect(res.body.hostTheme).toBeNull();
+  });
+
+  it("carries the host's explicit theme override to spectators", async () => {
+    const host = await createUser();
+    await db
+      .update(usersTable)
+      .set({ profileTheme: "shark" })
+      .where(eq(usersTable.id, host.id));
+    const game = await seedGame(host.id, { maxPlayers: 2, hostName: "Hosty" });
+
+    const res = await request(app)
+      .get("/api/games/state")
+      .set("X-Forwarded-For", freshIp())
+      .query({ code: game.shareCode });
+
+    expect(res.status).toBe(200);
+    expect(res.body.hostTheme).toBe("shark");
   });
 });
 

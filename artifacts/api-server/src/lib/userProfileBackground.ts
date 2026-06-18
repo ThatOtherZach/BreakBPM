@@ -85,3 +85,27 @@ export async function resolveUserProfileBackground(args: {
     cardVariant,
   });
 }
+
+/**
+ * Resolve a host's *effective* profile theme — the value that gameplay
+ * surfaces (the HUD felt) tint through. Mirrors the client's effective-theme
+ * rule used on the host's own GameScreen: an explicit Theme override
+ * (`shark`/`hustler`/`pool-player`/`none`) pins that value, while "auto"
+ * (the default, stored NULL) derives the resolved background from the pass's
+ * redeem card. Returns null for "none"/unpaid/no-card so the consumer falls
+ * back to the default green felt. Carried to joiners/spectators on the
+ * `/games/state` snapshot (`hostTheme`).
+ */
+export async function resolveUserEffectiveTheme(args: {
+  userId: string;
+  email: string | null | undefined;
+  profileTheme: string | null | undefined;
+}): Promise<BackgroundVariant | null> {
+  const theme = args.profileTheme ?? "auto";
+  if (theme !== "auto") {
+    // Explicit override: "none" → plain (null); otherwise the chosen variant.
+    return coerceBackgroundVariant(theme);
+  }
+  // "auto" → derive from the pass's redeem card (same as the watch profile).
+  return resolveUserProfileBackground(args);
+}

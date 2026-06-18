@@ -43,7 +43,10 @@ import { sweepStaleGames, finalizeGameIfStale, INACTIVITY_FORFEIT_MS, MAX_GAME_D
 import { newId } from "../lib/ids";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
 import { isAdminEmail } from "../lib/config";
-import { resolveUserProfileBackground } from "../lib/userProfileBackground";
+import {
+  resolveUserProfileBackground,
+  resolveUserEffectiveTheme,
+} from "../lib/userProfileBackground";
 
 const router: IRouter = Router();
 
@@ -1558,6 +1561,22 @@ router.get("/games/state", async (req, res): Promise<void> => {
     .leftJoin(usersTable, eq(usersTable.id, gameParticipantsTable.userId))
     .where(eq(gameParticipantsTable.gameId, fresh.id))
     .orderBy(gameParticipantsTable.slotIndex);
+  // Resolve the host's effective profile theme so joiners/spectators can tint
+  // the view-only HUD felt to match the host's table (the host's own GameScreen
+  // tints the same way). The host is the game's owner (`fresh.userId`).
+  const hostUserRows = await db
+    .select({ email: usersTable.email, profileTheme: usersTable.profileTheme })
+    .from(usersTable)
+    .where(eq(usersTable.id, fresh.userId))
+    .limit(1);
+  const hostUser = hostUserRows[0];
+  const hostTheme = hostUser
+    ? await resolveUserEffectiveTheme({
+        userId: fresh.userId,
+        email: hostUser.email,
+        profileTheme: hostUser.profileTheme,
+      })
+    : null;
   res.json(
     GetGameStateByCodeResponse.parse({
       found: true,
@@ -1567,6 +1586,7 @@ router.get("/games/state", async (req, res): Promise<void> => {
       startedAt: fresh.startedAt.toISOString(),
       lastActivityAt: fresh.lastActivityAt.toISOString(),
       gameState: (fresh.gameState as unknown) ?? {},
+      hostTheme,
       participants: parts.map((p) => ({
         slotIndex: p.slotIndex,
         displayName: p.displayName,

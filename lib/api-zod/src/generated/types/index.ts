@@ -74,6 +74,7 @@ export * from './gameSaveInputOutcome';
 export * from './gameSaveInputParticipantAccuraciesItem';
 export * from './gameStateSnapshot';
 export * from './gameStateSnapshotGameType';
+export * from './gameStateSnapshotHostTheme';
 export * from './gameStateSnapshotParticipantsItem';
 export * from './generatedDiscountCode';
 export * from './generatedDiscountCodeGrantsPassKind';

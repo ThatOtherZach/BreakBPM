@@ -992,6 +992,19 @@ export const GameStateSnapshotGameType = {
   practice: 'practice',
 } as const;
 
+/**
+ * @nullable
+ */
+export type GameStateSnapshotHostTheme = typeof GameStateSnapshotHostTheme[keyof typeof GameStateSnapshotHostTheme] | null;
+
+
+export const GameStateSnapshotHostTheme = {
+  shark: 'shark',
+  'pool-player': 'pool-player',
+  hustler: 'hustler',
+  none: 'none',
+} as const;
+
 export type GameStateSnapshotParticipantsItem = {
   slotIndex: number;
   displayName: string;
@@ -1009,6 +1022,8 @@ export interface GameStateSnapshot {
   startedAt?: string;
   lastActivityAt?: string;
   gameState?: unknown;
+  /** @nullable */
+  hostTheme?: GameStateSnapshotHostTheme;
   participants?: GameStateSnapshotParticipantsItem[];
 }
 

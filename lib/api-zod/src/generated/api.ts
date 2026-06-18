@@ -623,6 +623,7 @@ export const GetGameStateByCodeResponse = zod.object({
   "startedAt": zod.coerce.date().optional(),
   "lastActivityAt": zod.coerce.date().optional(),
   "gameState": zod.unknown().optional(),
+  "hostTheme": zod.enum(['shark', 'pool-player', 'hustler', 'none']).nullish(),
   "participants": zod.array(zod.object({
   "slotIndex": zod.number(),
   "displayName": zod.string(),

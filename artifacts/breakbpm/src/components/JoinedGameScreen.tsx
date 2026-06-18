@@ -25,6 +25,7 @@ import {
 import { ObsIdle } from './ObsOverlay';
 import { PlayerName } from './PlayerName';
 import { useAuth } from '../lib/authClient';
+import { THEME_FELT, themeColorOf } from '../lib/backgroundVariants';
 
 const BALL_COLORS: Record<number, string> = {
   1: '#FDD307', 2: '#1F4E9E', 3: '#C3342B', 4: '#5B247A',
@@ -284,6 +285,12 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
     );
   }
 
+  // Tint the view-only HUD felt to the host's profile theme so spectators see
+  // the same themed table the host does. The host's resolved theme rides the
+  // /games/state snapshot; map it through the shared THEME_FELT table (shark →
+  // blue, hustler → red, else the default green).
+  const felt = THEME_FELT[themeColorOf(snap.data?.hostTheme)];
+
   const sunk = state?.sunkBalls ?? [];
   // Practice can use the 8-ball (1–15) or 9-ball (1–9) rack; every other mode's
   // rack is fixed by game type. Default to the 8-ball rack when no state yet.
@@ -435,7 +442,10 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
             the right with the 8-ball centered between them; 9-ball (and the
             9-ball practice rack) shows a single line of 1–9.
             A ball drains to an empty socket once it's pocketed. */}
-        <div className="hud-terminal">
+        <div
+          className="hud-terminal"
+          style={{ '--felt-color': felt.felt, '--felt-shadow': felt.feltShadow } as React.CSSProperties}
+        >
           {state?.gameType === '9ball' || (state?.gameType === 'practice' && state?.practiceRack === '9ball') ? (
             <div className="rack-line">{allBalls.map(rackChip)}</div>
           ) : (

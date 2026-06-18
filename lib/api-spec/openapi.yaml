@@ -2050,6 +2050,14 @@ components:
         startedAt: { type: string, format: date-time }
         lastActivityAt: { type: string, format: date-time }
         gameState: {}
+        # The host's resolved profile theme/background, so joiners and
+        # spectators can tint the view-only HUD felt to match the host's
+        # table (shark → blue, hustler → red, else the default green).
+        # "auto" hosts derive it from their pass's redeem card; an explicit
+        # Theme override pins one. Null/"none"/unpaid → default green felt.
+        hostTheme:
+          type: ["string", "null"]
+          enum: [shark, pool-player, hustler, none]
         participants:
           type: array
           items:
