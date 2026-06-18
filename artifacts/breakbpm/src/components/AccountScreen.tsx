@@ -534,6 +534,19 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                         🦈{standing.sharkLevel}
                       </span>
                     )}
+                    {account.email && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: "#a9c9b3",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {account.email}
+                      </span>
+                    )}
                   </div>
                   {standing != null && (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
@@ -617,11 +630,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
               </div>
             )}
             {error && <div style={{ color: "#c00", fontSize: 12 }}>{error}</div>}
-            {account.email && (
-              <div style={{ fontSize: 11, color: "#444" }}>
-                EMAIL — <span style={{ color: "#000" }}>{account.email}</span>
-              </div>
-            )}
           </div>
         </div>
 
