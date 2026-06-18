@@ -266,6 +266,11 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   // enough qualifying ranked games to appear in the leaderboard.
   const standing = me.data.globalStanding ?? null;
   const identityFelt = THEME_FELT[themeColorOf(account.profileBackground)];
+  // Theme cycle for the identity card toggle button (same order as the old select).
+  const THEME_CYCLE = ["shark", "pool-player", "hustler", "none"] as const;
+  const effectiveTheme = (account.profileTheme === "auto"
+    ? (account.profileBackground ?? "none")
+    : account.profileTheme) as AccountProfileTheme;
 
   async function handleSaveName() {
     setError("");
@@ -557,7 +562,20 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     </div>
                   )}
                   {canEditName && (
-                    <button className="btn" style={{ flexShrink: 0 }} onClick={() => setEditing(true)}>Edit</button>
+                    <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                      <button
+                        className="btn"
+                        disabled={updateTheme.isPending}
+                        title="Cycle theme"
+                        onClick={() => {
+                          const idx = THEME_CYCLE.indexOf(effectiveTheme as (typeof THEME_CYCLE)[number]);
+                          handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length] as AccountProfileTheme);
+                        }}
+                      >
+                        {THEME_DOT[themeColorOf(effectiveTheme)]}
+                      </button>
+                      <button className="btn" onClick={() => setEditing(true)}>Edit</button>
+                    </div>
                   )}
                 </div>
                 {!canEditName && (
@@ -596,26 +614,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 >
                   breakbpm.com/watch/{account.screenName}
                 </a>
-              </div>
-            )}
-            {!editing && canEditName && (
-              <div style={{ fontSize: 11, color: "#444", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
-                <span>🎨 Theme</span>
-                <select
-                  value={
-                    account.profileTheme === "auto"
-                      ? (account.profileBackground ?? "none")
-                      : account.profileTheme
-                  }
-                  disabled={updateTheme.isPending}
-                  onChange={(e) => handleChangeTheme(e.target.value as AccountProfileTheme)}
-                  style={{ fontFamily: "inherit", fontSize: 11, padding: "1px 2px" }}
-                >
-                  <option value="shark">{THEME_DOT[themeColorOf("shark")]} The Shark</option>
-                  <option value="pool-player">{THEME_DOT[themeColorOf("pool-player")]} The Kid</option>
-                  <option value="hustler">{THEME_DOT[themeColorOf("hustler")]} The Hustler</option>
-                  <option value="none">{THEME_DOT[themeColorOf("none")]} None</option>
-                </select>
               </div>
             )}
             {error && <div style={{ color: "#c00", fontSize: 12 }}>{error}</div>}
