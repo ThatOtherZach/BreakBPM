@@ -36,7 +36,7 @@ const WINDOWS: Array<"24h" | "30d" | "365d" | "all"> = ["24h", "30d", "365d", "a
 
 function fmtNum(v: number | null | undefined): string {
   if (v == null) return "—";
-  return String(v);
+  return String(Math.ceil(v * 2) / 2);
 }
 function fmtWhen(iso: string | undefined): string {
   if (!iso) return "";
