@@ -554,31 +554,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                       )}
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                    <button
-                      className="btn"
-                      title="View watch profile"
-                      onClick={() => setLocation(`/watch/${encodeURIComponent(account.screenName)}`)}
-                    >
-                      👁
-                    </button>
-                    {canEditName && (
-                      <>
-                        <button
-                          className="btn"
-                          disabled={updateTheme.isPending}
-                          title="Cycle theme"
-                          onClick={() => {
-                            const idx = THEME_CYCLE.indexOf(effectiveTheme as (typeof THEME_CYCLE)[number]);
-                            handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length] as AccountProfileTheme);
-                          }}
-                        >
-                          {THEME_DOT[themeColorOf(effectiveTheme)]}
-                        </button>
-                        <button className="btn" onClick={() => setEditing(true)}>Edit</button>
-                      </>
-                    )}
-                  </div>
                 </div>
                 {!canEditName && (
                   <div style={{ fontSize: 11, color: "#444" }}>
@@ -604,19 +579,46 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
               </>
             )}
             {!editing && (
-              <div style={{ fontSize: 14, color: "#444", marginTop: 1, textAlign: "center" }}>
-                📺{" "}
-                <a
-                  href={`/watch/${encodeURIComponent(account.screenName)}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setLocation(`/watch/${encodeURIComponent(account.screenName)}`);
-                  }}
-                  style={{ color: "#000080" }}
-                >
-                  breakbpm.com/watch/{account.screenName}
-                </a>
-              </div>
+              <>
+                <div style={{ fontSize: 14, color: "#444", marginTop: 1, textAlign: "center" }}>
+                  📺{" "}
+                  <a
+                    href={`/watch/${encodeURIComponent(account.screenName)}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setLocation(`/watch/${encodeURIComponent(account.screenName)}`);
+                    }}
+                    style={{ color: "#000080" }}
+                  >
+                    breakbpm.com/watch/{account.screenName}
+                  </a>
+                </div>
+                <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 6 }}>
+                  <button
+                    className="btn"
+                    title="View watch profile"
+                    onClick={() => setLocation(`/watch/${encodeURIComponent(account.screenName)}`)}
+                  >
+                    👁
+                  </button>
+                  {canEditName && (
+                    <>
+                      <button
+                        className="btn"
+                        disabled={updateTheme.isPending}
+                        title="Cycle theme"
+                        onClick={() => {
+                          const idx = THEME_CYCLE.indexOf(effectiveTheme as (typeof THEME_CYCLE)[number]);
+                          handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length] as AccountProfileTheme);
+                        }}
+                      >
+                        {THEME_DOT[themeColorOf(effectiveTheme)]}
+                      </button>
+                      <button className="btn" onClick={() => setEditing(true)}>Edit</button>
+                    </>
+                  )}
+                </div>
+              </>
             )}
             {error && <div style={{ color: "#c00", fontSize: 12 }}>{error}</div>}
           </div>
