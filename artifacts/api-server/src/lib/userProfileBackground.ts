@@ -14,20 +14,33 @@
  * path.
  *
  * Auto-earn: any user (including free/account) can earn a themed profile by
- * playing mostly one mode in their last 10 completed games within the past 10
- * days. A simple majority (> 50%) of those games must be the same category:
+ * playing in their recent completed game history:
+ *
  *   Shark mode        → "shark"       (8-ball solo: gameType==="8ball" && maxPlayers===1)
- *   8-Ball (standard) → "hustler"     (gameType==="8ball" && maxPlayers>1 && no chaos)
+ *                       Earn: simple majority (> 50%) of the last 10 completed games
+ *                       are Shark mode, and the most recent Shark game was within 10 days.
+ *
  *   Practice / Chaos  → "pool-player" (all practice games; 8-ball with chaosMode set)
- * Additionally, the most recent game in the winning category must have ended
- * within the last 10 days — otherwise the theme lapses and null is returned.
+ *                       Earn: simple majority (> 50%) of the last 10 completed games
+ *                       are Practice/Chaos, and the most recent such game was within 10 days.
+ *
+ *   8-Ball (standard) → "hustler"     (gameType==="8ball" && maxPlayers>1 && no chaos)
+ *                       Earn: at least 10 wins in standard 8-ball across the last 50
+ *                       completed games, with the most recent win within 10 days.
+ *                       A "win" means the host's display name matches the stored winner.
+ *
+ *   9-ball (any)      → no theme earned
+ *
+ * Shark and pool-player are checked first (majority of 10). Hustler is the
+ * fallback if neither of those applies.
  *
  * Resolution order:
- *   1. Pass holder / admin with an explicit variant theme → that variant (permanent while pass active).
- *   2. Anyone (incl. pass holder with auto/none) → auto-earn helper result.
- *   3. Null → green default.
+ *   1. Pass holder / admin with an explicit variant theme → return it directly
+ *      (no time limit; persists for the life of the pass / admin status).
+ *   2. Fall through to auto-earn (applies to everyone: free, account, pass-with-auto/none).
+ *   3. Null → caller renders the default green felt.
  */
-import { db, passesTable, gamesTable } from "@workspace/db";
+import { db, passesTable, gamesTable, gameParticipantsTable } from "@workspace/db";
 import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { isAdminEmail } from "./config";
 import {
@@ -47,11 +60,15 @@ export type ClassifiedGame = {
   maxPlayers: number;
   chaosMode: string | null;
   endedAt: Date;
+  /** The winner's display name as stored on the games row (null if no winner). */
+  winner: string | null;
+  /** The host's display name from game_participants (null if the row is absent). */
+  hostDisplayName: string | null;
 };
 
 /**
  * Classify one completed game into the auto-earn bucket that should receive
- * credit. Returns null for game types that don't map to any earneable theme
+ * credit. Returns null for game types that don't map to any earnable theme
  * (e.g. 9-ball).
  *
  * - Shark        (8-ball solo, maxPlayers===1) → "shark"
@@ -63,25 +80,28 @@ function classifyGame(g: ClassifiedGame): BackgroundVariant | null {
   if (g.gameType === "8ball" && g.maxPlayers === 1) return "shark";
   if (g.gameType === "practice") return "pool-player";
   if (g.gameType === "8ball") {
-    // Chaos / no-teams formats carry a chaosMode value in gameState; standard
-    // team play leaves it absent (null from the SQL extraction).
     if (g.chaosMode !== null) return "pool-player";
     return "hustler";
   }
-  return null; // 9-ball and any future types do not earn a theme
+  return null;
 }
 
 /**
- * Given a pre-fetched slice of up to 10 completed games (newest-first), return
+ * Given a pre-fetched slice of up to 50 completed games (newest-first), return
  * the auto-earned BackgroundVariant or null. Pure — no DB access; split out so
  * the batched path can share the logic without re-querying.
  *
- * Rules:
- * - One category must hold a **simple majority** (strictly more than 50%).
+ * Shark / pool-player rules (checked first):
+ * - One of these two categories must hold a **simple majority** (strictly > 50%)
+ *   of the first 10 games in the slice.
  * - The most recent game belonging to the winning category must have ended
- *   within the last 10 days (freshness scoped to the winning mode — a stale
- *   dominant mode is not rescued by recent games in other modes).
- * - Ties → null (green default).
+ *   within the last 10 days.
+ * - Ties → null.
+ *
+ * Hustler rule (fallback — checked only when no shark/pool-player majority):
+ * - At least 10 standard-8-ball **wins** (winner === hostDisplayName) across
+ *   all games in the slice (up to 50).
+ * - The most recent win must have ended within the last 10 days.
  */
 export function computeAutoEarnedVariantFromGames(
   games: ClassifiedGame[],
@@ -89,35 +109,52 @@ export function computeAutoEarnedVariantFromGames(
   if (games.length === 0) return null;
 
   const now = Date.now();
+
+  // --- Shark / pool-player: majority of the first 10 completed games ---
+  // Hustler is excluded from this path; it earns via the win-count rule below.
+  const first10 = games.slice(0, 10);
   const counts = new Map<BackgroundVariant, number>();
-  // Rows are newest-first; the first game seen per category is its most recent.
+  // Rows are newest-first; the first entry per category is the most recent.
   const latestAt = new Map<BackgroundVariant, Date>();
 
-  for (const g of games) {
+  for (const g of first10) {
     const variant = classifyGame(g);
-    if (!variant) continue;
+    if (!variant || variant === "hustler") continue;
     counts.set(variant, (counts.get(variant) ?? 0) + 1);
     if (!latestAt.has(variant)) latestAt.set(variant, g.endedAt);
   }
 
-  if (counts.size === 0) return null;
-
-  const total = games.length;
-  // Simple majority: strictly more than half of the qualifying set.
-  let winner: BackgroundVariant | null = null;
+  const total = first10.length;
   for (const [variant, count] of counts) {
     if (count * 2 > total) {
-      winner = variant;
-      break;
+      const latest = latestAt.get(variant)!;
+      if (latest.getTime() >= now - TEN_DAYS_MS) return variant;
     }
   }
-  if (!winner) return null;
 
-  // Freshness gate: the most recent game in the winning category must be recent.
-  const latest = latestAt.get(winner)!;
-  if (latest.getTime() < now - TEN_DAYS_MS) return null;
+  // --- Hustler: 10 wins in standard 8-ball (across up to 50 games) ---
+  let hustlerWins = 0;
+  let mostRecentHustlerWin: Date | null = null;
+  for (const g of games) {
+    if (classifyGame(g) !== "hustler") continue;
+    if (
+      g.winner !== null &&
+      g.hostDisplayName !== null &&
+      g.winner === g.hostDisplayName
+    ) {
+      hustlerWins++;
+      if (mostRecentHustlerWin === null) mostRecentHustlerWin = g.endedAt; // newest-first
+    }
+  }
+  if (
+    hustlerWins >= 10 &&
+    mostRecentHustlerWin !== null &&
+    mostRecentHustlerWin.getTime() >= now - TEN_DAYS_MS
+  ) {
+    return "hustler";
+  }
 
-  return winner;
+  return null;
 }
 
 async function computeAutoEarnedVariant(userId: string): Promise<BackgroundVariant | null> {
@@ -127,11 +164,20 @@ async function computeAutoEarnedVariant(userId: string): Promise<BackgroundVaria
       maxPlayers: gamesTable.maxPlayers,
       endedAt: gamesTable.endedAt,
       chaosMode: sql<string | null>`${gamesTable.gameState}->>'chaosMode'`,
+      winner: gamesTable.winner,
+      hostDisplayName: gameParticipantsTable.displayName,
     })
     .from(gamesTable)
+    .leftJoin(
+      gameParticipantsTable,
+      and(
+        eq(gameParticipantsTable.gameId, gamesTable.id),
+        eq(gameParticipantsTable.isHost, true),
+      ),
+    )
     .where(and(eq(gamesTable.userId, userId), isNotNull(gamesTable.endedAt)))
     .orderBy(desc(gamesTable.endedAt))
-    .limit(10);
+    .limit(50);
 
   return computeAutoEarnedVariantFromGames(
     rows.map((r) => ({ ...r, endedAt: r.endedAt as Date })),
@@ -252,7 +298,7 @@ export async function resolveUserProfileBackgrounds(
     activeByUser.set(p.userId, arr);
   }
 
-  // Fetch last-10 completed games for ALL users — paid users with auto/none also
+  // Fetch last 50 completed games for ALL users — paid users with auto/none also
   // fall through to auto-earn, so we can't skip them.
   const gameRows = await db
     .select({
@@ -261,16 +307,25 @@ export async function resolveUserProfileBackgrounds(
       maxPlayers: gamesTable.maxPlayers,
       endedAt: gamesTable.endedAt,
       chaosMode: sql<string | null>`${gamesTable.gameState}->>'chaosMode'`,
+      winner: gamesTable.winner,
+      hostDisplayName: gameParticipantsTable.displayName,
     })
     .from(gamesTable)
+    .leftJoin(
+      gameParticipantsTable,
+      and(
+        eq(gameParticipantsTable.gameId, gamesTable.id),
+        eq(gameParticipantsTable.isHost, true),
+      ),
+    )
     .where(and(inArray(gamesTable.userId, userIds), isNotNull(gamesTable.endedAt)))
     .orderBy(desc(gamesTable.endedAt));
 
-  // Bucket games by user, keeping only the 10 most recent per user.
+  // Bucket games by user, keeping only the 50 most recent per user.
   const gamesByUser = new Map<string, ClassifiedGame[]>();
   for (const r of gameRows) {
     const arr = gamesByUser.get(r.userId) ?? [];
-    if (arr.length < 10) {
+    if (arr.length < 50) {
       arr.push({ ...r, endedAt: r.endedAt as Date });
       gamesByUser.set(r.userId, arr);
     }
