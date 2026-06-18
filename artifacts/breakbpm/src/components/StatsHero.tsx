@@ -247,7 +247,6 @@ export default function StatsHero({
           </div>
         )}
         <div className={`stats-hero-main${bpmWrapped ? " stats-hero-main--wrapped" : ""}`} ref={mainRef}>
-          <span className="stats-hero-label">AVG BPM</span>
           <span className={`stats-hero-value${stats.avgBpm == null ? " dim" : ""}`}>
             {(() => {
               const { avgBpm, globalAvgBpm } = stats;
