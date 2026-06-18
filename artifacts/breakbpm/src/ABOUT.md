@@ -87,7 +87,9 @@ The Stats page shows your shooting over time, including relative accuracy, pace,
 
 Sign in to save and view your own, as well as a free 24-hour global view. Use a pass to unlock your full game history to compare against everyone; data export included.
 
-Who's fastest? Use the **Leaderboard** to see your rank by BPM across recent 8-ball singles games (time weighted average). Pass holders can switch the ranking window to 90 days or all-time. Sign in to open the full leaderboard. 
+Who's fastest? Use **[the Leaderboard](https://breakbpm.com/leaderboard)** to see your rank by BPM across recent 8-ball singles games (time weighted average). Pass holders can switch the ranking window to 90 days or all-time. Sign in to open the full leaderboard. 
+
+![Leaderboard example](leaderboard-example.png)
 
 ## Passes
 
@@ -102,7 +104,7 @@ Pass Unlocks:
 - **Full stats** Switch between 24-hour, 30-day, 365-day, and all-time windows, and refresh on demand. Free accounts see personal stats for the last 24 hours only.
 - **Full data export** Download every game and shot you've ever played and export it. Free accounts can only export the last 24 hours only.
 - **Custom screen name** — *Lifetime only:* Pick your own display name instead of the auto-assigned one.
-- **Custom profile theme** — *Lifetime only:* Choose which splash artwork appears behind your public watch profile, or turn it off. Pass holders get an artwork automatically; Lifetime holders can override it.
+- **Custom profile theme** — *Lifetime only:* Choose which artwork appears behind your public watch profile and the color of the felt! Free users can unlock the felt colors, but they are only applied temporarily. 
 
 Passes can be purchased on-chain with crypto from your account page or redeemed with a code. Crypto passes are applied automatically on purchase once payment is confirmed.
 
