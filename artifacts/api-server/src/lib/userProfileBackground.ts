@@ -16,13 +16,15 @@
  * Auto-earn: any user (including free/account) can earn a themed profile by
  * playing in their recent completed game history:
  *
- *   Shark mode        → "shark"       (8-ball solo: gameType==="8ball" && maxPlayers===1)
- *                       Earn: simple majority (> 50%) of the last 10 completed games
- *                       are Shark mode, and the most recent Shark game was within 10 days.
- *
  *   Practice / Chaos  → "pool-player" (all practice games; 8-ball with chaosMode set)
  *                       Earn: simple majority (> 50%) of the last 10 completed games
  *                       are Practice/Chaos, and the most recent such game was within 10 days.
+ *
+ *   Shark mode        → "shark"       (8-ball solo: gameType==="8ball" && maxPlayers===1)
+ *                       Earn: at least 5 wins in Shark mode across the last 50 completed
+ *                       games, with the most recent win within 10 days.
+ *                       A "win" means the host's display name matches the stored winner
+ *                       (i.e. the player beat the 🦈 Shark AI).
  *
  *   8-Ball (standard) → "hustler"     (gameType==="8ball" && maxPlayers>1 && no chaos)
  *                       Earn: at least 10 wins in standard 8-ball across the last 50
@@ -31,8 +33,8 @@
  *
  *   9-ball (any)      → no theme earned
  *
- * Shark and pool-player are checked first (majority of 10). Hustler is the
- * fallback if neither of those applies.
+ * Pool-player majority is checked first. Shark (5 wins) is checked second.
+ * Hustler (10 wins) is the final fallback.
  *
  * Resolution order:
  *   1. Pass holder / admin with an explicit variant theme → return it directly
@@ -91,14 +93,17 @@ function classifyGame(g: ClassifiedGame): BackgroundVariant | null {
  * the auto-earned BackgroundVariant or null. Pure — no DB access; split out so
  * the batched path can share the logic without re-querying.
  *
- * Shark / pool-player rules (checked first):
- * - One of these two categories must hold a **simple majority** (strictly > 50%)
+ * Pool-player rule (checked first):
+ * - Practice/Chaos games must hold a **simple majority** (strictly > 50%)
  *   of the first 10 games in the slice.
- * - The most recent game belonging to the winning category must have ended
- *   within the last 10 days.
- * - Ties → null.
+ * - The most recent pool-player game must have ended within the last 10 days.
  *
- * Hustler rule (fallback — checked only when no shark/pool-player majority):
+ * Shark rule (checked second):
+ * - At least 5 Shark-mode **wins** (winner === hostDisplayName) across all
+ *   games in the slice (up to 50).
+ * - The most recent win must have ended within the last 10 days.
+ *
+ * Hustler rule (final fallback):
  * - At least 10 standard-8-ball **wins** (winner === hostDisplayName) across
  *   all games in the slice (up to 50).
  * - The most recent win must have ended within the last 10 days.
@@ -110,8 +115,8 @@ export function computeAutoEarnedVariantFromGames(
 
   const now = Date.now();
 
-  // --- Shark / pool-player: majority of the first 10 completed games ---
-  // Hustler is excluded from this path; it earns via the win-count rule below.
+  // --- Pool-player: majority of the first 10 completed games ---
+  // Shark and hustler are excluded from this path; both earn via win-count below.
   const first10 = games.slice(0, 10);
   const counts = new Map<BackgroundVariant, number>();
   // Rows are newest-first; the first entry per category is the most recent.
@@ -119,7 +124,7 @@ export function computeAutoEarnedVariantFromGames(
 
   for (const g of first10) {
     const variant = classifyGame(g);
-    if (!variant || variant === "hustler") continue;
+    if (variant !== "pool-player") continue;
     counts.set(variant, (counts.get(variant) ?? 0) + 1);
     if (!latestAt.has(variant)) latestAt.set(variant, g.endedAt);
   }
@@ -130,6 +135,29 @@ export function computeAutoEarnedVariantFromGames(
       const latest = latestAt.get(variant)!;
       if (latest.getTime() >= now - TEN_DAYS_MS) return variant;
     }
+  }
+
+  // --- Shark: 5 wins in Shark mode (across up to 50 games) ---
+  // A "win" means the host beat the 🦈 Shark AI: winner === hostDisplayName.
+  let sharkWins = 0;
+  let mostRecentSharkWin: Date | null = null;
+  for (const g of games) {
+    if (classifyGame(g) !== "shark") continue;
+    if (
+      g.winner !== null &&
+      g.hostDisplayName !== null &&
+      g.winner === g.hostDisplayName
+    ) {
+      sharkWins++;
+      if (mostRecentSharkWin === null) mostRecentSharkWin = g.endedAt; // newest-first
+    }
+  }
+  if (
+    sharkWins >= 5 &&
+    mostRecentSharkWin !== null &&
+    mostRecentSharkWin.getTime() >= now - TEN_DAYS_MS
+  ) {
+    return "shark";
   }
 
   // --- Hustler: 10 wins in standard 8-ball (across up to 50 games) ---
