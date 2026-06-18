@@ -315,7 +315,7 @@ export default function StatsHero({
             </div>
             <div className="stats-hero-side-item">
               <span className="stats-hero-side-val">{stats.accuracy == null ? "--" : `${stats.accuracy}%`}</span>
-              <span className="stats-hero-side-label" style={{ color: "#fff" }}>AVG ACCURACY</span>
+              <span className="stats-hero-side-label" style={{ color: "#fff" }}>ACCURACY</span>
             </div>
           </div>
           {joinedAt && (
