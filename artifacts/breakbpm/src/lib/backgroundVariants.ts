@@ -22,3 +22,51 @@ export const VARIANT_IMAGE_URLS: Record<BackgroundVariant, string> = {
   "pool-player": poolPlayerUrl,
   hustler: hustlerUrl,
 };
+
+/**
+ * The themed UI color a profile theme projects onto gameplay surfaces (the HUD
+ * pool-table felt and the leaderboard card accent). SINGLE SOURCE OF TRUTH —
+ * the HUD, the Account theme picker dots, and the leaderboard cards all map
+ * through `themeColorOf` so the three never drift.
+ *
+ * Mapping: The Shark (shark) → blue, The Hustler (hustler) → red, The Kid
+ * (pool-player) / None / no theme → green (the felt's existing default).
+ */
+export type ThemeColor = "blue" | "red" | "green";
+
+/** Map an effective theme/background value to its themed color. Accepts a raw
+ * string (any of the generated background/theme union types) so callers don't
+ * fight cross-package literal-union typing; anything that isn't shark/hustler
+ * falls back to green. */
+export function themeColorOf(bg: string | null | undefined): ThemeColor {
+  if (bg === "shark") return "blue";
+  if (bg === "hustler") return "red";
+  return "green";
+}
+
+/** Pool-table felt shades per theme color: the baize `felt` base and the
+ * `feltShadow` used for the inset rail. Green reproduces the current default. */
+export const THEME_FELT: Record<ThemeColor, { felt: string; feltShadow: string }> = {
+  green: { felt: "#0f5a2e", feltShadow: "#0a4322" },
+  blue: { felt: "#0e3a6e", feltShadow: "#0a2a52" },
+  // Burgundy kept deliberately dark — darker than every ball fill (incl. the
+  // maroon 7/15 #6B1F2A) so the rack chips' black rim + white number circle
+  // stay legible on the felt.
+  red: { felt: "#54151d", feltShadow: "#3d0f15" },
+};
+
+/** Vivid accent per theme color — used for the leaderboard card stripe and the
+ * theme-picker dots, so it reads clearly against the dark felt cards. */
+export const THEME_ACCENT: Record<ThemeColor, string> = {
+  green: "#37d67a",
+  blue: "#3ba7ff",
+  red: "#ff5a5f",
+};
+
+/** Colored-circle glyph per theme color for native <option> labels (native
+ * dropdown options can't be reliably color-styled, so the dot lives in text). */
+export const THEME_DOT: Record<ThemeColor, string> = {
+  green: "🟢",
+  blue: "🔵",
+  red: "🔴",
+};

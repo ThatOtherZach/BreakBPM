@@ -94,6 +94,7 @@ export * from './joinGameResultRole';
 export * from './leaderboardResult';
 export * from './leaderboardResultWindow';
 export * from './leaderboardRow';
+export * from './leaderboardRowProfileBackground';
 export * from './leaveGameInput';
 export * from './leaveGameResult';
 export * from './listAdminSalesFormat';

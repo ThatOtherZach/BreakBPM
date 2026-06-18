@@ -4,6 +4,7 @@ import { useGetLeaderboard, useGetMe } from "@workspace/api-client-react";
 import type { LeaderboardRow, GetLeaderboardWindow } from "@workspace/api-client-react";
 import Navbar from "./Navbar";
 import { useAuth } from "../lib/authClient";
+import { THEME_ACCENT, themeColorOf } from "../lib/backgroundVariants";
 
 const PAGE_SIZE = 50;
 const WIDGET_SIZE = 10;
@@ -40,6 +41,19 @@ function LeaderboardRowCard({
       className="fpp-card history-card"
       style={{ display: "flex", alignItems: "center", gap: 8 }}
     >
+      {/* A vertical accent bar tinted to the player's profile theme color
+          (shark→blue, hustler→red, else green). A separate element rather than
+          a border so it doesn't fight the card's beveled wooden rail. */}
+      <span
+        aria-hidden
+        style={{
+          alignSelf: "stretch",
+          width: 4,
+          borderRadius: 2,
+          flexShrink: 0,
+          background: THEME_ACCENT[themeColorOf(row.profileBackground)],
+        }}
+      />
       <span
         style={{
           fontFamily: "VT323",

@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type CSSProperties } from 'react';
 import type { GameState, ShotLogEntry, RematchConfig } from '../lib/gameLogic';
+import { THEME_FELT, themeColorOf } from '../lib/backgroundVariants';
 import Navbar from './Navbar';
 import {
   getLegalBalls, getRemainingBalls, getAllBalls, checkSinkResult,
@@ -91,6 +92,15 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const me = useGetMe();
   const hasActivePass = me.data?.entitlement?.hasActivePass ?? false;
   const spectatingEnabled = me.data?.entitlement?.tier === 'pass';
+  // Tint the pool-table HUD felt to the signed-in player's profile theme. The
+  // effective theme mirrors the Account picker: "auto" resolves to the stored
+  // background, anything else uses the explicit choice; absent/"none" → green.
+  const acct = me.data?.account;
+  const effectiveTheme =
+    acct?.profileTheme === 'auto'
+      ? (acct.profileBackground ?? 'none')
+      : (acct?.profileTheme ?? 'none');
+  const felt = THEME_FELT[themeColorOf(effectiveTheme)];
   const savedRef = useRef(false);
   const forfeitedRef = useRef(false);
   const [state, setState] = useState<GameState>(initialState);
@@ -1004,7 +1014,10 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             8-ball centered between them as the special winning ball; 9-ball
             (and the 9-ball practice rack) shows a single line of 1–9.
             A ball drains to an empty socket once it's pocketed. */}
-        <div className="hud-terminal">
+        <div
+          className="hud-terminal"
+          style={{ '--felt-color': felt.felt, '--felt-shadow': felt.feltShadow } as CSSProperties}
+        >
           {state.gameType === '9ball' || (state.gameType === 'practice' && state.practiceRack === '9ball') ? (
             <div className="rack-line">{allBalls.map(rackChip)}</div>
           ) : (

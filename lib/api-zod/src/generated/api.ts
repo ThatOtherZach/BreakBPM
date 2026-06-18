@@ -1043,7 +1043,8 @@ export const GetLeaderboardResponse = zod.object({
   "bpm": zod.number(),
   "accuracy": zod.number().nullable(),
   "gamesPlayed": zod.number(),
-  "sharkLevel": zod.number()
+  "sharkLevel": zod.number(),
+  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable()
 }))
 })
 

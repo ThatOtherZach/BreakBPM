@@ -5,6 +5,7 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { LeaderboardRowProfileBackground } from './leaderboardRowProfileBackground';
 
 export interface LeaderboardRow {
   rank: number;
@@ -14,4 +15,6 @@ export interface LeaderboardRow {
   accuracy: number | null;
   gamesPlayed: number;
   sharkLevel: number;
+  /** @nullable */
+  profileBackground: LeaderboardRowProfileBackground;
 }

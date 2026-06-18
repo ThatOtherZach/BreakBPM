@@ -1436,11 +1436,15 @@ html, #root {
   position: relative;
   overflow: hidden;
   border: 3px outset #7a4a22;
-  background-color: #0f5a2e;
+  /* Felt baize + inset rail tint to the signed-in player's profile theme via
+     CSS vars set on the element (GameScreen.tsx → THEME_FELT). Defaults
+     reproduce the original green so untinted contexts (e.g. the joined-game
+     mirror) are unchanged. */
+  background-color: var(--felt-color, #0f5a2e);
   background-image:
     repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.10) 0 2px, transparent 2px 4px),
     repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 4px);
-  box-shadow: inset 0 0 0 2px #0a4322, inset 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 0 0 2px var(--felt-shadow, #0a4322), inset 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 /* The rack tray clusters solids on the left and stripes on the right

@@ -2279,7 +2279,7 @@ components:
 
     LeaderboardRow:
       type: object
-      required: [rank, screenName, bpm, accuracy, gamesPlayed, sharkLevel]
+      required: [rank, screenName, bpm, accuracy, gamesPlayed, sharkLevel, profileBackground]
       properties:
         # 1-indexed standing within the ranking (after sorting by bpm desc).
         rank: { type: integer }
@@ -2297,6 +2297,12 @@ components:
         # Shark in, not every Shark game played (window-independent), matching
         # the profile `sharkLevel`. 0 when they have none.
         sharkLevel: { type: integer }
+        # The player's resolved profile theme/background (same resolution the
+        # watch profile uses), so the client can tint the leaderboard card to
+        # their theme color. Null = no theme (unpaid / "none") → green default.
+        profileBackground:
+          type: ["string", "null"]
+          enum: [shark, pool-player, hustler]
 
     LeaderboardResult:
       type: object

@@ -1,5 +1,7 @@
 import { and, count, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
 import { db, gamesTable, gameParticipantsTable, usersTable } from "@workspace/db";
+import { resolveUserProfileBackground } from "./userProfileBackground";
+import type { BackgroundVariant } from "./profileBackground";
 
 /**
  * Server-side statistics aggregation for the /stats endpoint.
@@ -674,6 +676,9 @@ export interface LeaderboardRow {
   // All-time completed Shark-mode game count (window-independent), mirroring
   // the profile `sharkLevel`. 0 when the player has no Shark games.
   sharkLevel: number;
+  // The player's resolved profile theme/background (same resolution the watch
+  // profile uses), so the client can tint the leaderboard card. Null = no theme.
+  profileBackground: BackgroundVariant | null;
 }
 
 /** Defensive cap on eligible game rows parsed in one ranking pass (cached). */
@@ -844,6 +849,34 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
     }
   }
 
+  // Resolve each ranked player's themed profile background — the SAME resolution
+  // the public /watch profile uses — so the client can tint the leaderboard card
+  // to the player's theme color. One batched query pulls the resolution inputs
+  // (email + stored theme); the shared helper then does the per-user pass/card
+  // lookup. Bounded by the ranked set and the 1-hour leaderboard cache, so the
+  // per-user lookups run at most once per window per hour.
+  const bgByUser = new Map<string, BackgroundVariant | null>();
+  if (rankedUserIds.length > 0) {
+    const metaRows = await db
+      .select({
+        id: usersTable.id,
+        email: usersTable.email,
+        profileTheme: usersTable.profileTheme,
+      })
+      .from(usersTable)
+      .where(inArray(usersTable.id, rankedUserIds));
+    const metaById = new Map(metaRows.map((m) => [m.id, m]));
+    for (const userId of rankedUserIds) {
+      const m = metaById.get(userId);
+      const bg = await resolveUserProfileBackground({
+        userId,
+        email: m?.email,
+        profileTheme: m?.profileTheme,
+      });
+      bgByUser.set(userId, bg);
+    }
+  }
+
   const result: LeaderboardRow[] = ranked.map((r) => ({
     rank: 0,
     screenName: r.screenName,
@@ -851,6 +884,7 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
     accuracy: r.accuracy,
     gamesPlayed: r.gamesPlayed,
     sharkLevel: sharkByUser.get(r.userId) ?? 0,
+    profileBackground: bgByUser.get(r.userId) ?? null,
   }));
   // Rank by score (bpm) desc; tie-break by accuracy desc then name for stability.
   result.sort(

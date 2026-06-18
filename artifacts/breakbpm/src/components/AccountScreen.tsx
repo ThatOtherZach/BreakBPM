@@ -11,6 +11,7 @@ import {
   cardFilename,
 } from "../lib/redeemCard";
 import type { BackgroundVariant } from "../lib/backgroundVariants";
+import { THEME_DOT, themeColorOf } from "../lib/backgroundVariants";
 import {
   useGetMe,
   useUpdateScreenName,
@@ -519,10 +520,10 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                   onChange={(e) => handleChangeTheme(e.target.value as AccountProfileTheme)}
                   style={{ fontFamily: "inherit", fontSize: 11, padding: "1px 2px" }}
                 >
-                  <option value="shark">The Shark</option>
-                  <option value="pool-player">The Kid</option>
-                  <option value="hustler">The Hustler</option>
-                  <option value="none">None</option>
+                  <option value="shark">{THEME_DOT[themeColorOf("shark")]} The Shark</option>
+                  <option value="pool-player">{THEME_DOT[themeColorOf("pool-player")]} The Kid</option>
+                  <option value="hustler">{THEME_DOT[themeColorOf("hustler")]} The Hustler</option>
+                  <option value="none">{THEME_DOT[themeColorOf("none")]} None</option>
                 </select>
               </div>
             )}

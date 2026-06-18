@@ -1198,6 +1198,18 @@ export interface PublicProfileResult {
   stats?: StatsResult | null;
 }
 
+/**
+ * @nullable
+ */
+export type LeaderboardRowProfileBackground = typeof LeaderboardRowProfileBackground[keyof typeof LeaderboardRowProfileBackground] | null;
+
+
+export const LeaderboardRowProfileBackground = {
+  shark: 'shark',
+  'pool-player': 'pool-player',
+  hustler: 'hustler',
+} as const;
+
 export interface LeaderboardRow {
   rank: number;
   screenName: string;
@@ -1206,6 +1218,8 @@ export interface LeaderboardRow {
   accuracy: number | null;
   gamesPlayed: number;
   sharkLevel: number;
+  /** @nullable */
+  profileBackground: LeaderboardRowProfileBackground;
 }
 
 export type LeaderboardResultWindow = typeof LeaderboardResultWindow[keyof typeof LeaderboardResultWindow];
