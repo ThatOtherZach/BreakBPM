@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { StatsResult } from "@workspace/api-client-react";
+import { QRCodeSVG } from "qrcode.react";
 import { PlayerName } from "./PlayerName";
 import { WinsTodayChip } from "./WinsTodayChip";
 
@@ -301,7 +302,10 @@ export default function StatsHero({
           </div>
         )}
       </div>
-      <div className="stats-hero-side">
+      <div
+        className="stats-hero-side"
+        style={screenName ? { gridTemplateColumns: "repeat(4, 1fr)" } : undefined}
+      >
         <div className="stats-hero-side-item">
           <span className="stats-hero-side-val">{fmtInt(stats.gamesPlayed)}</span>
           <span className="stats-hero-side-label" style={{ color: "#fff" }}>GAMES</span>
@@ -314,6 +318,24 @@ export default function StatsHero({
           <span className="stats-hero-side-val">{stats.accuracy == null ? "--" : `${stats.accuracy}%`}</span>
           <span className="stats-hero-side-label" style={{ color: "#fff" }}>AVG ACCURACY</span>
         </div>
+        {screenName && (
+          <div className="stats-hero-side-item">
+            <a
+              href={`/watch/${encodeURIComponent(screenName)}`}
+              title={`Watch ${screenName}`}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none" }}
+            >
+              <QRCodeSVG
+                value={`${window.location.origin}/watch/${encodeURIComponent(screenName)}`}
+                size={48}
+                bgColor="transparent"
+                fgColor="#00ff41"
+                level="L"
+              />
+            </a>
+            <span className="stats-hero-side-label" style={{ color: "#fff" }}>PROFILE QR</span>
+          </div>
+        )}
       </div>
       {joinedAt && (
         <p style={{ fontSize: 11, color: "#d8b4ff", textAlign: "center", margin: "8px 0 0" }}>
