@@ -2037,7 +2037,7 @@ html, #root {
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   padding-top: 10px;
-  border-top: 1px solid #1a5a1a;
+
 }
 
 .stats-hero-side-item {
