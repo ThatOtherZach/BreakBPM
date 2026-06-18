@@ -487,31 +487,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     breakbpm.com/watch/{account.screenName}
                   </a>
                 </div>
-                <div style={{ display: "flex", gap: 4, justifyContent: "center", marginBottom: 4 }}>
-                  <button
-                    className="btn"
-                    title="View watch profile"
-                    onClick={() => setLocation(`/watch/${encodeURIComponent(account.screenName)}`)}
-                  >
-                    👁
-                  </button>
-                  {canEditName && (
-                    <>
-                      <button
-                        className="btn"
-                        disabled={updateTheme.isPending}
-                        title="Cycle theme"
-                        onClick={() => {
-                          const idx = THEME_CYCLE.indexOf(effectiveTheme as (typeof THEME_CYCLE)[number]);
-                          handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length] as AccountProfileTheme);
-                        }}
-                      >
-                        {THEME_DOT[themeColorOf(effectiveTheme)]}
-                      </button>
-                      <button className="btn" onClick={() => setEditing(true)}>Edit</button>
-                    </>
-                  )}
-                </div>
                 {/* Styled like a leaderboard standing (fpp-card history-card):
                     felt tinted to the player's theme, global rank on the left,
                     name in the middle, and the player's all-time BPM/accuracy
@@ -614,6 +589,31 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     {" with a Lifetime Pass."}
                   </div>
                 )}
+                <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 4 }}>
+                  <button
+                    className="btn"
+                    title="View watch profile"
+                    onClick={() => setLocation(`/watch/${encodeURIComponent(account.screenName)}`)}
+                  >
+                    👁
+                  </button>
+                  {canEditName && (
+                    <>
+                      <button
+                        className="btn"
+                        disabled={updateTheme.isPending}
+                        title="Cycle theme"
+                        onClick={() => {
+                          const idx = THEME_CYCLE.indexOf(effectiveTheme as (typeof THEME_CYCLE)[number]);
+                          handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length] as AccountProfileTheme);
+                        }}
+                      >
+                        {THEME_DOT[themeColorOf(effectiveTheme)]}
+                      </button>
+                      <button className="btn" onClick={() => setEditing(true)}>Edit</button>
+                    </>
+                  )}
+                </div>
               </>
             )}
             {error && <div style={{ color: "#c00", fontSize: 12 }}>{error}</div>}
