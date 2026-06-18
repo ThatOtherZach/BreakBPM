@@ -337,7 +337,7 @@ export default function StatsHero({
         )}
       </div>
       {joinedAt && (
-        <p style={{ fontSize: 11, color: "#d8b4ff", textAlign: "center", margin: "8px 0 0" }}>
+        <p style={{ fontSize: 11, color: "#d8b4ff", textAlign: "left", margin: "8px 0 0" }}>
           Joined: {new Date(joinedAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
         </p>
       )}
