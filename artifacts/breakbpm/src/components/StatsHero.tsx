@@ -268,7 +268,7 @@ export default function StatsHero({
             )}
             <span className="stats-hero-unit" style={{ color: "#00ff41" }}>BPM</span>
           </span>
-          <span className="stats-hero-sub font-bold">
+          <span className="stats-hero-sub font-bold text-[12px]">
             BEST {stats.bestBpm == null ? "--" : stats.bestBpm.toFixed(1)}
           </span>
         </div>
