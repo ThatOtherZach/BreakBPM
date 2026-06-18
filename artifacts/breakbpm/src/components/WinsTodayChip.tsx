@@ -8,6 +8,10 @@ const BALL_COLORS: Record<number, string> = {
 };
 const SOLIDS = [1, 2, 3, 4, 5, 6, 7];
 
+function winLabel(n: number) {
+  return `${n} 8-Ball Win${n !== 1 ? "s" : ""} Today`;
+}
+
 /**
  * Wins-today ball chip — shows how many standard 8-ball games the player won
  * in the last 24 hours, rendered as a billiard ball whose number IS the win
@@ -23,14 +27,15 @@ const SOLIDS = [1, 2, 3, 4, 5, 6, 7];
 export function WinsTodayChip({ winsToday, small }: { winsToday: number; small?: boolean }): React.ReactElement {
   const chipSize = small ? "22px" : "26px";
   const iconSize = small ? 22 : 26;
+  const label = winLabel(winsToday);
 
   if (winsToday <= 0) {
     return (
       <span
         className="cue-ball-icon cue-ball-icon--chip"
         style={{ "--chip-size": chipSize } as React.CSSProperties}
-        aria-label="0 wins today"
-        title="0 wins today"
+        aria-label={label}
+        title={label}
       />
     );
   }
@@ -40,8 +45,8 @@ export function WinsTodayChip({ winsToday, small }: { winsToday: number; small?:
       <span
         className="rainbow-cue"
         style={{ fontSize: iconSize, verticalAlign: "baseline" }}
-        aria-label={`${winsToday} wins today`}
-        title={`${winsToday} wins today`}
+        aria-label={label}
+        title={label}
       />
     );
   }
@@ -59,8 +64,8 @@ export function WinsTodayChip({ winsToday, small }: { winsToday: number; small?:
       className={`hud-chip ${chipClass}`}
       data-number={ball}
       style={{ "--chip-color": BALL_COLORS[ball], "--chip-size": chipSize } as React.CSSProperties}
-      aria-label={`${ball} win${ball !== 1 ? "s" : ""} today`}
-      title={`${winsToday} win${winsToday !== 1 ? "s" : ""} today`}
+      aria-label={label}
+      title={label}
     />
   );
 }
