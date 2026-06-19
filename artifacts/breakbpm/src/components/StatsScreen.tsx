@@ -599,7 +599,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                                 <span style={{ fontFamily: "VT323", fontSize: 16, color: "#f4f4dc", textShadow: "1px 1px 0 #042414", lineHeight: 1 }}>
                                   {MODE_LABELS[s.gameType] ?? s.gameType.toUpperCase()}{" "}
                                   <span style={{ color: MODE_COLORS[s.gameType] ?? "#f4f4dc" }}>{pct}%</span>
-                                  {" "}<span style={{ color: "#a9c9b3" }}>({s.gameCount})</span>
+                                  {" "}<span style={{ color: "#fff" }}>({s.gameCount})</span>
                                 </span>
                               </div>
                             );
