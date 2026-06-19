@@ -580,7 +580,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     return `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
                   };
                   return (
-                    <div className="stats-hero">
+                    <div className="stats-hero" style={{ overflow: "hidden" }}>
                       <SectionHeader emoji="📊" title="Game Modes" />
                       <div className="panel-body" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
                         <svg width="160" height="160" viewBox="0 0 160 160" style={{ flexShrink: 0 }}>
