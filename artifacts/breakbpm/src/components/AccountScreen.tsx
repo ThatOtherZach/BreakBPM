@@ -653,16 +653,11 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     {" with a Lifetime Pass."}
                   </div>
                 )}
-                <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: -4 }}>
-                  <button
-                    className="btn"
-                    title="View watch profile"
-                    onClick={() => setLocation(`/watch/${encodeURIComponent(account.screenName)}`)}
-                  >👁 View</button>
-                  {canEditName && (
+                {canEditName && (
+                  <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: -4 }}>
                     <button className="btn" onClick={() => setEditing(true)}>Edit</button>
-                  )}
-                </div>
+                  </div>
+                )}
               </>
             )}
             {error && <div style={{ color: "#c00", fontSize: 12 }}>{error}</div>}
