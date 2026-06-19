@@ -153,14 +153,18 @@ function resolveSubjectResult(
 
   let opponent: string | null = null;
   if (!sharkMode) {
-    if (subjectWon) {
-      // Prefer a player on the opposing team; otherwise any other slot.
-      opponent =
-        players.find((p, i) => {
-          if (i === subjectIdx || !p.name) return false;
-          if (subjectTeam && p.team) return p.team !== subjectTeam;
-          return true;
-        })?.name ?? null;
+    if (subjectTeam) {
+      // Team game (2P or 4P 8-ball both assign solids/stripes): "vs." the whole
+      // opposing team — every player whose team isn't the subject's. For 2P this
+      // is the single other player; for 4P it reads "X & Y". This is the same
+      // regardless of win/loss — the opponent is always the other side.
+      const opponentNames = players
+        .filter((p) => p.name && p.team && p.team !== subjectTeam)
+        .map((p) => p.name);
+      opponent = opponentNames.length > 0 ? opponentNames.join(" & ") : null;
+    } else if (subjectWon) {
+      // Non-team game (Chaos/None, or teams never assigned): show any other slot.
+      opponent = players.find((p, i) => i !== subjectIdx && !!p.name)?.name ?? null;
     } else {
       opponent = winner;
     }
