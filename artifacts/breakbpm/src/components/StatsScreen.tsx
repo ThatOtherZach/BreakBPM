@@ -591,7 +591,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           <rect width="160" height="160" fill="url(#gm-scan)" opacity={0.12} style={{ pointerEvents: "none" }} />
                         </svg>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {slices.map((s) => {
+                          {[...slices].sort((a, b) => b.gameCount - a.gameCount).map((s) => {
                             const pct = Math.round((s.gameCount / total) * 100);
                             return (
                               <div key={s.gameType} style={{ display: "flex", alignItems: "center", gap: 6 }}>
