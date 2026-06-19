@@ -1648,10 +1648,18 @@ html, #root {
 
 /* Win flash inside HUD */
 @keyframes hud-marquee {
-  0%    { transform: translateY(-50%) translateX(100vw); }
-  90%   { transform: translateY(-50%) translateX(-100%); }
-  90.1% { transform: translateY(-50%) translateX(100vw); }
-  100%  { transform: translateY(-50%) translateX(100vw); }
+  /* scroll in from the right, stop centered */
+  0%   { transform: translateY(-50%) translateX(100vw); opacity: 1; }
+  22%  { transform: translateY(-50%) translateX(-50%); opacity: 1; }
+  /* flash twice while centered */
+  30%  { opacity: 0; }
+  38%  { opacity: 1; }
+  46%  { opacity: 0; }
+  54%  { opacity: 1; }
+  /* hold, then scroll out to the left */
+  62%  { transform: translateY(-50%) translateX(-50%); opacity: 1; }
+  92%  { transform: translateY(-50%) translateX(-100vw); opacity: 1; }
+  100% { transform: translateY(-50%) translateX(-100vw); opacity: 1; }
 }
 
 .hud-winner {
@@ -1680,8 +1688,9 @@ html, #root {
   gap: 6px;
   position: absolute;
   top: 50%;
+  left: 50%;
   transform: translateY(-50%);
-  animation: hud-marquee 8s linear infinite;
+  animation: hud-marquee 6s linear infinite;
 }
 
 .hud-winner-sub {
