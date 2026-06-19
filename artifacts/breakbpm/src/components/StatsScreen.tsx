@@ -604,7 +604,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                               </div>
                             );
                           })}
-                          <span style={{ fontFamily: "VT323", fontSize: 14, color: "#a9c9b3", textShadow: "1px 1px 0 #042414", marginTop: 2 }}>
+                          <span style={{ fontFamily: "VT323", fontSize: 14, color: "#f4f4dc", textShadow: "1px 1px 0 #042414", marginTop: 2 }}>
                             {total} TOTAL
                           </span>
                         </div>
