@@ -595,7 +595,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                             const pct = Math.round((s.gameCount / total) * 100);
                             return (
                               <div key={s.gameType} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <span style={{ width: 10, height: 10, background: MODE_COLORS[s.gameType] ?? "#888", display: "inline-block", flexShrink: 0, border: "1px solid #042414", boxShadow: `0 0 4px ${MODE_COLORS[s.gameType] ?? "#888"}` }} />
+                                <span style={{ width: 10, height: 10, background: MODE_COLORS[s.gameType] ?? "#888", display: "inline-block", flexShrink: 0, border: "1px solid #042414" }} />
                                 <span style={{ fontFamily: "VT323", fontSize: 16, color: "#f4f4dc", textShadow: "1px 1px 0 #042414", lineHeight: 1 }}>
                                   {MODE_LABELS[s.gameType] ?? s.gameType.toUpperCase()}{" "}
                                   <span style={{ color: MODE_COLORS[s.gameType] ?? "#f4f4dc" }}>{pct}%</span>
