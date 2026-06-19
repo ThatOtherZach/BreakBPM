@@ -10,7 +10,7 @@
  *
  * Free / account / expired-pass users auto-earn a theme when one game mode
  * forms a plurality of their last 10 completed games AND the most recent such
- * game was within the past 10 days. See `computeAutoEarnedVariantFromGames` in
+ * game was within the past 30 days. See `computeAutoEarnedVariantFromGames` in
  * `userProfileBackground.ts` for the earn logic.
  *
  * LOCKSTEP: `BACKGROUND_VARIANTS` order is mirrored client-side in
@@ -62,7 +62,7 @@ export function normalizeProfileTheme(raw: string | null | undefined): ProfileTh
  *
  * Paid users (active pass / admin):
  * - Explicit variant override → that variant, permanent while the pass is
- *   active. The 10-day game-history window never overrides a paid manual pick.
+ *   active. The 30-day game-history window never overrides a paid manual pick.
  * - `none` → null (plain default background).
  * - `auto` → the artwork stamped on the pass's redeem card (`cardVariant`); when
  *   the pass carried no card (crypto / grant / admin effective-Lifetime) it falls
@@ -71,7 +71,7 @@ export function normalizeProfileTheme(raw: string | null | undefined): ProfileTh
  *
  * Unpaid users (free / account tier, or a user whose pass has since expired):
  * - `earnedVariant` → a variant auto-earned by game-history majority rule,
- *   subject to a 10-day recency window. Returns null when not currently earned.
+ *   subject to a 30-day recency window. Returns null when not currently earned.
  *   The stored `profileTheme` preference is ignored for unpaid callers — the
  *   picker is Lifetime/admin-only, so any stored value is stale from a
  *   now-expired pass.

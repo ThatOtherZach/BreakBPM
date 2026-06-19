@@ -230,6 +230,7 @@ export async function seedGame(
     shotLog?: Array<Record<string, unknown>>;
     endedAt?: Date | null;
     startedAt?: Date;
+    winner?: string | null;
   } = {},
 ): Promise<Game> {
   const id = rid();
@@ -255,6 +256,7 @@ export async function seedGame(
       lastActivityAt: startedAt,
       endedAt: opts.endedAt ?? null,
       outcome: opts.endedAt ? "completed" : null,
+      winner: opts.winner ?? null,
     })
     .returning();
   createdGameIds.push(id);

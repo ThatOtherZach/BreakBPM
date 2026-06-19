@@ -12,7 +12,14 @@ vi.mock("../lib/auth", () => ({
 }));
 
 import gamesRouter from "./games";
-import { createUser, seedPass, seedDiscountCode, cleanup } from "../test/factories";
+import {
+  createUser,
+  seedPass,
+  seedDiscountCode,
+  seedGame,
+  seedParticipant,
+  cleanup,
+} from "../test/factories";
 
 function makeApp(): Express {
   const app = express();
@@ -167,5 +174,81 @@ describe("GET /games/profile — profileBackground wiring", () => {
       expect(res.status).toBe(200);
       expect(res.body.profileBackground).toBe("shark");
     });
+  });
+});
+
+describe("GET /games/profile — auto-earned theme from joined games", () => {
+  const DAY = 24 * 60 * 60 * 1000;
+
+  it("a registered player earns hustler from games they JOINED (not hosted) and won", async () => {
+    const host = await createUser();
+    const joiner = await createUser();
+    const joinerName = "Joiner";
+    // 10 completed standard 8-ball games hosted by someone else; the joiner took
+    // a non-host seat and won every one. They hosted none of them — earning here
+    // proves participation (joins), not just hosting, accrues toward the theme.
+    for (let i = 0; i < 10; i++) {
+      const g = await seedGame(host.id, {
+        gameType: "8ball",
+        maxPlayers: 2,
+        hostName: "Host",
+        winner: joinerName,
+        endedAt: new Date(Date.now() - (i + 1) * DAY),
+      });
+      await seedParticipant(g.id, 1, {
+        userId: joiner.id,
+        displayName: joinerName,
+      });
+    }
+
+    const res = await fetchProfile(joiner.screenName);
+
+    expect(res.status).toBe(200);
+    expect(res.body.found).toBe(true);
+    expect(res.body.profileBackground).toBe("hustler");
+  });
+
+  it("a registered host still earns hustler from games they HOSTED and won", async () => {
+    const host = await createUser();
+    const hostName = "Champ";
+    for (let i = 0; i < 10; i++) {
+      await seedGame(host.id, {
+        gameType: "8ball",
+        maxPlayers: 2,
+        hostName,
+        winner: hostName,
+        endedAt: new Date(Date.now() - (i + 1) * DAY),
+      });
+    }
+
+    const res = await fetchProfile(host.screenName);
+
+    expect(res.status).toBe(200);
+    expect(res.body.found).toBe(true);
+    expect(res.body.profileBackground).toBe("hustler");
+  });
+
+  it("does not earn when the joined wins are all older than the 30-day window", async () => {
+    const host = await createUser();
+    const joiner = await createUser();
+    const joinerName = "StaleJoiner";
+    for (let i = 0; i < 10; i++) {
+      const g = await seedGame(host.id, {
+        gameType: "8ball",
+        maxPlayers: 2,
+        hostName: "Host",
+        winner: joinerName,
+        endedAt: new Date(Date.now() - (i + 31) * DAY), // 31–40 days ago
+      });
+      await seedParticipant(g.id, 1, {
+        userId: joiner.id,
+        displayName: joinerName,
+      });
+    }
+
+    const res = await fetchProfile(joiner.screenName);
+
+    expect(res.status).toBe(200);
+    expect(res.body.profileBackground).toBeNull();
   });
 });

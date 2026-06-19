@@ -18,29 +18,29 @@ function game(
     chaosMode: null,
     endedAt: new Date(NOW - daysAgo * DAY),
     winner: null,
-    hostDisplayName: null,
+    subjectDisplayName: null,
     ...rest,
   };
 }
 
-/** Shark (solo 8-ball) win — host beat the AI. */
-function sharkWin(daysAgo = 1, hostName = "Alice"): ClassifiedGame {
-  return game({ gameType: "8ball", maxPlayers: 1, daysAgo, winner: hostName, hostDisplayName: hostName });
+/** Shark (solo 8-ball) win — the player beat the AI. */
+function sharkWin(daysAgo = 1, playerName = "Alice"): ClassifiedGame {
+  return game({ gameType: "8ball", maxPlayers: 1, daysAgo, winner: playerName, subjectDisplayName: playerName });
 }
 
 /** Shark (solo 8-ball) loss — the 🦈 AI won. */
-function sharkLoss(daysAgo = 1, hostName = "Alice"): ClassifiedGame {
-  return game({ gameType: "8ball", maxPlayers: 1, daysAgo, winner: "🦈 Shark", hostDisplayName: hostName });
+function sharkLoss(daysAgo = 1, playerName = "Alice"): ClassifiedGame {
+  return game({ gameType: "8ball", maxPlayers: 1, daysAgo, winner: "🦈 Shark", subjectDisplayName: playerName });
 }
 
-/** Standard 8-ball win for the host. */
-function hustlerWin(daysAgo = 1, hostName = "Alice"): ClassifiedGame {
-  return game({ daysAgo, winner: hostName, hostDisplayName: hostName });
+/** Standard 8-ball win for the subject player (hosted or joined). */
+function hustlerWin(daysAgo = 1, playerName = "Alice"): ClassifiedGame {
+  return game({ daysAgo, winner: playerName, subjectDisplayName: playerName });
 }
 
-/** Standard 8-ball loss for the host (opponent won). */
-function hustlerLoss(daysAgo = 1, hostName = "Alice"): ClassifiedGame {
-  return game({ daysAgo, winner: "Bob", hostDisplayName: hostName });
+/** Standard 8-ball loss for the subject player (opponent won). */
+function hustlerLoss(daysAgo = 1, playerName = "Alice"): ClassifiedGame {
+  return game({ daysAgo, winner: "Bob", subjectDisplayName: playerName });
 }
 
 /** Practice game. */
@@ -62,7 +62,7 @@ describe("computeAutoEarnedVariantFromGames — shark (5-win threshold)", () => 
     expect(computeAutoEarnedVariantFromGames([])).toBeNull();
   });
 
-  it("earns shark with exactly 5 wins, most recent within 10 days", () => {
+  it("earns shark with exactly 5 wins, most recent within 30 days", () => {
     const games = Array.from({ length: 5 }, (_, i) => sharkWin(i + 1));
     expect(computeAutoEarnedVariantFromGames(games)).toBe("shark");
   });
@@ -88,21 +88,21 @@ describe("computeAutoEarnedVariantFromGames — shark (5-win threshold)", () => 
     expect(computeAutoEarnedVariantFromGames(games)).toBe("shark");
   });
 
-  it("does NOT earn shark when the most recent win is older than 10 days", () => {
-    const games = Array.from({ length: 5 }, (_, i) => sharkWin(i + 11)); // newest=11d
+  it("does NOT earn shark when the most recent win is older than 30 days", () => {
+    const games = Array.from({ length: 5 }, (_, i) => sharkWin(i + 31)); // newest=31d
     expect(computeAutoEarnedVariantFromGames(games)).toBeNull();
   });
 
-  it("earns shark when the most recent win is exactly 9 days ago", () => {
-    const games = Array.from({ length: 5 }, (_, i) => sharkWin(i + 9)); // newest=9d
+  it("earns shark when the most recent win is exactly 29 days ago", () => {
+    const games = Array.from({ length: 5 }, (_, i) => sharkWin(i + 29)); // newest=29d
     expect(computeAutoEarnedVariantFromGames(games)).toBe("shark");
   });
 
   it("counts shark wins across up to 50 games (beyond the first 10)", () => {
-    // 5 wins spread across games 11–15 — all older than 10 days → freshness fails
+    // 5 wins spread across games 31–35 — all older than 30 days → freshness fails
     const games = [
       ...Array.from({ length: 10 }, (_, i) => sharkLoss(i + 1)),
-      ...Array.from({ length: 5 }, (_, i) => sharkWin(i + 11)),
+      ...Array.from({ length: 5 }, (_, i) => sharkWin(i + 31)),
     ];
     expect(computeAutoEarnedVariantFromGames(games)).toBeNull();
   });
@@ -118,14 +118,14 @@ describe("computeAutoEarnedVariantFromGames — shark (5-win threshold)", () => 
 
   it("does NOT earn shark when winner is null (AI not beaten / no winner set)", () => {
     const games = Array.from({ length: 5 }, (_, i) =>
-      game({ gameType: "8ball", maxPlayers: 1, daysAgo: i + 1, winner: null, hostDisplayName: "Alice" }),
+      game({ gameType: "8ball", maxPlayers: 1, daysAgo: i + 1, winner: null, subjectDisplayName: "Alice" }),
     );
     expect(computeAutoEarnedVariantFromGames(games)).toBeNull();
   });
 
-  it("does NOT earn shark when hostDisplayName is null (participant row missing)", () => {
+  it("does NOT earn shark when subjectDisplayName is null (participant row missing)", () => {
     const games = Array.from({ length: 5 }, (_, i) =>
-      game({ gameType: "8ball", maxPlayers: 1, daysAgo: i + 1, winner: "Alice", hostDisplayName: null }),
+      game({ gameType: "8ball", maxPlayers: 1, daysAgo: i + 1, winner: "Alice", subjectDisplayName: null }),
     );
     expect(computeAutoEarnedVariantFromGames(games)).toBeNull();
   });
@@ -136,7 +136,7 @@ describe("computeAutoEarnedVariantFromGames — shark (5-win threshold)", () => 
 // ---------------------------------------------------------------------------
 
 describe("computeAutoEarnedVariantFromGames — hustler (10-win threshold)", () => {
-  it("earns hustler with exactly 10 wins, most recent within 10 days", () => {
+  it("earns hustler with exactly 10 wins, most recent within 30 days", () => {
     const games = Array.from({ length: 10 }, (_, i) => hustlerWin(i + 1));
     expect(computeAutoEarnedVariantFromGames(games)).toBe("hustler");
   });
@@ -162,19 +162,19 @@ describe("computeAutoEarnedVariantFromGames — hustler (10-win threshold)", () 
     expect(computeAutoEarnedVariantFromGames(games)).toBe("hustler");
   });
 
-  it("does NOT earn hustler when the most recent win is older than 10 days", () => {
-    const games = Array.from({ length: 10 }, (_, i) => hustlerWin(i + 11));
+  it("does NOT earn hustler when the most recent win is older than 30 days", () => {
+    const games = Array.from({ length: 10 }, (_, i) => hustlerWin(i + 31));
     expect(computeAutoEarnedVariantFromGames(games)).toBeNull();
   });
 
-  it("earns hustler when the most recent win is exactly 9 days ago", () => {
-    const games = Array.from({ length: 10 }, (_, i) => hustlerWin(i + 9));
+  it("earns hustler when the most recent win is exactly 29 days ago", () => {
+    const games = Array.from({ length: 10 }, (_, i) => hustlerWin(i + 29));
     expect(computeAutoEarnedVariantFromGames(games)).toBe("hustler");
   });
 
   it("does NOT earn hustler from Chaos 8-ball wins — they earn pool-player via majority instead", () => {
     const games = Array.from({ length: 10 }, (_, i) =>
-      game({ daysAgo: i + 1, chaosMode: "chaos", winner: "Alice", hostDisplayName: "Alice" }),
+      game({ daysAgo: i + 1, chaosMode: "chaos", winner: "Alice", subjectDisplayName: "Alice" }),
     );
     expect(computeAutoEarnedVariantFromGames(games)).toBe("pool-player");
   });
@@ -187,14 +187,14 @@ describe("computeAutoEarnedVariantFromGames — hustler (10-win threshold)", () 
 
   it("does NOT earn hustler when winner is null", () => {
     const games = Array.from({ length: 10 }, (_, i) =>
-      game({ daysAgo: i + 1, winner: null, hostDisplayName: "Alice" }),
+      game({ daysAgo: i + 1, winner: null, subjectDisplayName: "Alice" }),
     );
     expect(computeAutoEarnedVariantFromGames(games)).toBeNull();
   });
 
-  it("does NOT earn hustler when hostDisplayName is null", () => {
+  it("does NOT earn hustler when subjectDisplayName is null", () => {
     const games = Array.from({ length: 10 }, (_, i) =>
-      game({ daysAgo: i + 1, winner: "Alice", hostDisplayName: null }),
+      game({ daysAgo: i + 1, winner: "Alice", subjectDisplayName: null }),
     );
     expect(computeAutoEarnedVariantFromGames(games)).toBeNull();
   });
@@ -204,7 +204,7 @@ describe("computeAutoEarnedVariantFromGames — hustler (10-win threshold)", () 
     const games = [
       ...Array.from({ length: 5 }, (_, i) => hustlerWin(i + 1)),
       ...Array.from({ length: 5 }, (_, i) =>
-        game({ gameType: "9ball", daysAgo: i + 6, winner: "Alice", hostDisplayName: "Alice" }),
+        game({ gameType: "9ball", daysAgo: i + 6, winner: "Alice", subjectDisplayName: "Alice" }),
       ),
     ];
     expect(computeAutoEarnedVariantFromGames(games)).toBe("hustler");
@@ -212,14 +212,14 @@ describe("computeAutoEarnedVariantFromGames — hustler (10-win threshold)", () 
 
   it("earns hustler from 10 pure 9-ball wins", () => {
     const games = Array.from({ length: 10 }, (_, i) =>
-      game({ gameType: "9ball", daysAgo: i + 1, winner: "Alice", hostDisplayName: "Alice" }),
+      game({ gameType: "9ball", daysAgo: i + 1, winner: "Alice", subjectDisplayName: "Alice" }),
     );
     expect(computeAutoEarnedVariantFromGames(games)).toBe("hustler");
   });
 
   it("does NOT earn hustler from 9-ball losses", () => {
     const games = Array.from({ length: 10 }, (_, i) =>
-      game({ gameType: "9ball", daysAgo: i + 1, winner: "Bob", hostDisplayName: "Alice" }),
+      game({ gameType: "9ball", daysAgo: i + 1, winner: "Bob", subjectDisplayName: "Alice" }),
     );
     expect(computeAutoEarnedVariantFromGames(games)).toBeNull();
   });
@@ -230,7 +230,7 @@ describe("computeAutoEarnedVariantFromGames — hustler (10-win threshold)", () 
 // ---------------------------------------------------------------------------
 
 describe("computeAutoEarnedVariantFromGames — pool-player (majority of first 10)", () => {
-  it("earns pool-player when >50% of first 10 are practice, within 10 days", () => {
+  it("earns pool-player when >50% of first 10 are practice, within 30 days", () => {
     const games = [
       ...Array.from({ length: 7 }, (_, i) => practiceGame(i + 1)),
       ...Array.from({ length: 3 }, (_, i) => nineBallGame(i + 8)),
@@ -238,10 +238,10 @@ describe("computeAutoEarnedVariantFromGames — pool-player (majority of first 1
     expect(computeAutoEarnedVariantFromGames(games)).toBe("pool-player");
   });
 
-  it("does NOT earn pool-player when most recent practice game is >10 days old", () => {
+  it("does NOT earn pool-player when most recent practice game is >30 days old", () => {
     const games = [
       ...Array.from({ length: 4 }, (_, i) => nineBallGame(i + 1)),
-      ...Array.from({ length: 6 }, (_, i) => practiceGame(i + 11)),
+      ...Array.from({ length: 6 }, (_, i) => practiceGame(i + 31)),
     ];
     expect(computeAutoEarnedVariantFromGames(games)).toBeNull();
   });

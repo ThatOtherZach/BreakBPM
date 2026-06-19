@@ -4,7 +4,14 @@ import {
   resolveUserProfileBackgrounds,
 } from "./userProfileBackground";
 import type { BackgroundVariant } from "./profileBackground";
-import { createUser, seedPass, seedDiscountCode, cleanup } from "../test/factories";
+import {
+  createUser,
+  seedPass,
+  seedDiscountCode,
+  seedGame,
+  seedParticipant,
+  cleanup,
+} from "../test/factories";
 
 // The leaderboard (batched) and the public /watch profile (single-user) paths
 // MUST resolve every player's theme background identically. These tests pin the
@@ -153,5 +160,41 @@ describe("resolveUserProfileBackgrounds (batched) ↔ resolveUserProfileBackgrou
   it("returns an empty map for an empty input set", async () => {
     const batched = await resolveUserProfileBackgrounds([]);
     expect(batched.size).toBe(0);
+  });
+
+  it("credits a registered player's JOINED wins on both paths (auto-earned hustler)", async () => {
+    // A player who HOSTED nothing but JOINED and won 10 recent standard 8-ball
+    // games must auto-earn 'hustler' — and the batched leaderboard path must
+    // agree with the single-user /watch path. This locks the participation-based
+    // query (was host-only) on the batched resolver too.
+    const host = await createUser();
+    const joiner = await createUser();
+    const joinerName = "BatchJoiner";
+    for (let i = 0; i < 10; i++) {
+      const g = await seedGame(host.id, {
+        gameType: "8ball",
+        maxPlayers: 2,
+        hostName: "Host",
+        winner: joinerName,
+        endedAt: new Date(Date.now() - (i + 1) * DAY),
+      });
+      await seedParticipant(g.id, 1, {
+        userId: joiner.id,
+        displayName: joinerName,
+      });
+    }
+
+    const single = await resolveUserProfileBackground({
+      userId: joiner.id,
+      email: joiner.email,
+      profileTheme: null,
+    });
+    const batched = await resolveUserProfileBackgrounds([
+      { userId: joiner.id, email: joiner.email, profileTheme: null },
+    ]);
+
+    expect(single).toBe("hustler");
+    expect(batched.get(joiner.id)).toBe("hustler");
+    expect(batched.get(joiner.id)).toBe(single);
   });
 });
