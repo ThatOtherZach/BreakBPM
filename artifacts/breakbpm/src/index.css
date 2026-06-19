@@ -1698,6 +1698,7 @@ html, #root {
   font-size: 10px;
   color: #5a9a5a;
   letter-spacing: 0.5px;
+  text-align: center;
 }
 
 /* ── Menu section labels (PC-98 style) ── */
