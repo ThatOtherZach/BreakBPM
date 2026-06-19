@@ -572,7 +572,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   return (
                     <div className="panel panel--wood">
                       <SectionHeader emoji="📊" title="Game Modes" />
-                      <div className="panel-body" style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                      <div className="panel-body" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
                         <svg width="160" height="160" viewBox="0 0 160 160" style={{ flexShrink: 0 }}>
                           <defs>
                             <pattern id="gm-scan" width="1" height="3" patternUnits="userSpaceOnUse">
