@@ -653,21 +653,21 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     {" with a Lifetime Pass."}
                   </div>
                 )}
-                {canEditName && (
-                  <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: -4 }}>
-                    <button className="btn" onClick={() => setEditing(true)}>Edit</button>
-                  </div>
-                )}
               </>
             )}
             {error && <div style={{ color: "#c00", fontSize: 12 }}>{error}</div>}
-            <button
-              className="btn w-full"
-              style={{ marginTop: 8 }}
-              onClick={handleSignOut}
-            >
-              Sign Out
-            </button>
+            <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
+              <button
+                className="btn"
+                style={{ flex: 1 }}
+                onClick={handleSignOut}
+              >
+                Sign Out
+              </button>
+              {canEditName && (
+                <button className="btn" onClick={() => setEditing(true)}>Edit</button>
+              )}
+            </div>
           </div>
         </div>
 
