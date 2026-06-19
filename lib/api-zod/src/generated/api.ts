@@ -762,7 +762,7 @@ export const GetPublicProfileResponse = zod.object({
   "accuracy": zod.number().nullable()
 })),
   "playTimeByType": zod.array(zod.object({
-  "gameType": zod.enum(['8ball', '9ball', 'practice']),
+  "gameType": zod.enum(['8ball', '9ball', 'practice', 'shark']),
   "avgDurationMs": zod.number(),
   "gameCount": zod.number()
 })),
@@ -1043,7 +1043,7 @@ export const GetStatsResponse = zod.object({
   "accuracy": zod.number().nullable()
 })),
   "playTimeByType": zod.array(zod.object({
-  "gameType": zod.enum(['8ball', '9ball', 'practice']),
+  "gameType": zod.enum(['8ball', '9ball', 'practice', 'shark']),
   "avgDurationMs": zod.number(),
   "gameCount": zod.number()
 })),

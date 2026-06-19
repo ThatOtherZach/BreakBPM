@@ -81,7 +81,7 @@ export interface StatsCore {
   avgBpm: number | null;
   bestBpm: number | null;
   trend: Array<{ bpm: number | null; accuracy: number | null }>;
-  playTimeByType: Array<{ gameType: "8ball" | "9ball" | "practice"; avgDurationMs: number; gameCount: number }>;
+  playTimeByType: Array<{ gameType: "8ball" | "9ball" | "practice" | "shark"; avgDurationMs: number; gameCount: number }>;
   topBalls: Array<{ ball: number; count: number }>;
   solidsCount: number;
   stripesCount: number;
@@ -259,7 +259,7 @@ export async function countEightBallWinsToday(userId: string): Promise<number> {
 function rollUpPlayTime(
   byType: Map<string, { total: number; count: number }>,
 ): StatsCore["playTimeByType"] {
-  const order: Array<"8ball" | "9ball" | "practice"> = ["8ball", "9ball", "practice"];
+  const order: Array<"8ball" | "9ball" | "practice" | "shark"> = ["8ball", "9ball", "practice", "shark"];
   const out: StatsCore["playTimeByType"] = [];
   for (const gt of order) {
     const agg = byType.get(gt);
@@ -390,11 +390,13 @@ async function computeGlobalStats(window: StatWindow, gameMode: StatGameMode): P
     // One aligned trend point per game with any data (lockstep across series).
     if ((gameBpm != null || gameAccuracy != null) && r.endedAt)
       trend.push({ endedAt: r.endedAt.getTime(), bpm: gameBpm, accuracy: gameAccuracy });
-    // Play time grouped by type.
-    const agg = byType.get(r.gameType) ?? { total: 0, count: 0 };
+    // Play time grouped by type. Shark games are stored as "8ball" but bucket
+    // under their own "shark" slice so the Game Modes breakdown shows them.
+    const playTimeKey = isShark ? "shark" : r.gameType;
+    const agg = byType.get(playTimeKey) ?? { total: 0, count: 0 };
     agg.total += r.durationMs;
     agg.count += 1;
-    byType.set(r.gameType, agg);
+    byType.set(playTimeKey, agg);
     // Event counts (all players) from the shot log.
     for (const e of shotLog) {
       if (isShot(e)) core.totalShots += 1;
@@ -578,11 +580,13 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
     }
     core.totalUndos += undoCount;
 
-    // Play time grouped by type (whole-game duration).
-    const agg = byType.get(r.gameType) ?? { total: 0, count: 0 };
+    // Play time grouped by type (whole-game duration). Shark games are stored as
+    // "8ball" but bucket under their own "shark" slice in the Game Modes breakdown.
+    const playTimeKey = isShark ? "shark" : r.gameType;
+    const agg = byType.get(playTimeKey) ?? { total: 0, count: 0 };
     agg.total += r.durationMs;
     agg.count += 1;
-    byType.set(r.gameType, agg);
+    byType.set(playTimeKey, agg);
 
     // Win/Loss — non-practice only.
     if (r.gameType !== "practice") {

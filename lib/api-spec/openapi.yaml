@@ -2200,7 +2200,7 @@ components:
       type: object
       required: [gameType, avgDurationMs, gameCount]
       properties:
-        gameType: { type: string, enum: [8ball, 9ball, practice] }
+        gameType: { type: string, enum: [8ball, 9ball, practice, shark] }
         avgDurationMs: { type: integer }
         gameCount: { type: integer }
 

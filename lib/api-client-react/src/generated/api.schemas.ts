@@ -1177,6 +1177,7 @@ export const StatPlayTimeGameType = {
   '8ball': '8ball',
   '9ball': '9ball',
   practice: 'practice',
+  shark: 'shark',
 } as const;
 
 export interface StatPlayTime {

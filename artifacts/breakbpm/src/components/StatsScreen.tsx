@@ -544,11 +544,13 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     "8ball": "#00ff41",
                     "9ball": "#ffd700",
                     practice: "#00e5ff",
+                    shark: "#ff5cf0",
                   };
                   const MODE_LABELS: Record<string, string> = {
                     "8ball": "8-BALL",
                     "9ball": "9-BALL",
                     practice: "PRACTICE",
+                    shark: "🦈 SHARK",
                   };
                   const cx = 80, cy = 80, r = 68;
                   let angle = -Math.PI / 2;
