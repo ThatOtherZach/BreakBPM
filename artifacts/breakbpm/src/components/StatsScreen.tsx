@@ -16,6 +16,7 @@ import Navbar from "./Navbar";
 import { useAuth } from "../lib/authClient";
 import { SOLIDS } from "../lib/gameLogic";
 import StatsHero, { BALL_COLORS, fmtInt, fmtPct } from "./StatsHero";
+import { THEME_FELT, THEME_ACCENT } from "../lib/backgroundVariants";
 
 interface Props {
   onBack: () => void;
@@ -541,10 +542,19 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   const total = stats.playTimeByType.reduce((s, p) => s + p.gameCount, 0);
                   if (total === 0) return null;
                   const MODE_COLORS: Record<string, string> = {
-                    "8ball": "#00ff41",
+                    "8ball": THEME_FELT.green.felt,
                     "9ball": "#ffd700",
-                    practice: "#00e5ff",
-                    shark: "#ff5cf0",
+                    practice: THEME_FELT.purple.felt,
+                    shark: THEME_FELT.blue.felt,
+                  };
+                  // Felt shades are deliberately dark (they read as table felt in
+                  // the swatch + pie); for the % text on the dark wood panel we use
+                  // the vivid same-hue accent so it stays legible.
+                  const MODE_PCT_COLORS: Record<string, string> = {
+                    "8ball": THEME_ACCENT.green,
+                    "9ball": "#ffd700",
+                    practice: THEME_ACCENT.purple,
+                    shark: THEME_ACCENT.blue,
                   };
                   const MODE_LABELS: Record<string, string> = {
                     "8ball": "8-BALL",
@@ -606,7 +616,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                                 <span style={{ width: 10, height: 10, background: MODE_COLORS[s.gameType] ?? "#888", display: "inline-block", flexShrink: 0, border: "1px solid #042414" }} />
                                 <span style={{ fontFamily: "VT323", fontSize: 16, color: "#f4f4dc", textShadow: "1px 1px 0 #042414", lineHeight: 1 }}>
                                   {MODE_LABELS[s.gameType] ?? s.gameType.toUpperCase()}{" "}
-                                  <span style={{ color: MODE_COLORS[s.gameType] ?? "#f4f4dc" }}>{pct}%</span>
+                                  <span style={{ color: MODE_PCT_COLORS[s.gameType] ?? "#f4f4dc" }}>{pct}%</span>
                                   {" "}<span style={{ color: "#fff" }}>({s.gameCount})</span>
                                   {" "}<span style={{ color: "#a9c9b3" }}>🕐{fmtHHMM(s.avgDurationMs * s.gameCount)}</span>
                                 </span>
