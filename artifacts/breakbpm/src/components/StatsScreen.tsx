@@ -545,6 +545,83 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   </div>
                 </div>
 
+                {/* ── Game Modes pie ── */}
+                {isAuthenticated && stats.playTimeByType.length > 0 && (() => {
+                  const total = stats.playTimeByType.reduce((s, p) => s + p.gameCount, 0);
+                  if (total === 0) return null;
+                  const MODE_COLORS: Record<string, string> = {
+                    "8ball": "#00ff41",
+                    "9ball": "#ffd700",
+                    practice: "#00e5ff",
+                  };
+                  const MODE_LABELS: Record<string, string> = {
+                    "8ball": "8-BALL",
+                    "9ball": "9-BALL",
+                    practice: "PRACTICE",
+                  };
+                  const cx = 80, cy = 80, r = 68;
+                  let angle = -Math.PI / 2;
+                  const slices = stats.playTimeByType.map((p) => {
+                    const sweep = (p.gameCount / total) * 2 * Math.PI;
+                    const start = angle;
+                    angle += sweep;
+                    return { ...p, start, sweep };
+                  });
+                  const arcPath = (start: number, sweep: number) => {
+                    if (sweep >= 2 * Math.PI - 0.001) {
+                      return `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx - 0.001} ${cy - r} Z`;
+                    }
+                    const x1 = cx + r * Math.cos(start);
+                    const y1 = cy + r * Math.sin(start);
+                    const x2 = cx + r * Math.cos(start + sweep);
+                    const y2 = cy + r * Math.sin(start + sweep);
+                    const large = sweep > Math.PI ? 1 : 0;
+                    return `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
+                  };
+                  return (
+                    <div className="panel panel--wood">
+                      <SectionHeader emoji="📊" title="Game Modes" />
+                      <div className="panel-body" style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                        <svg width="160" height="160" viewBox="0 0 160 160" style={{ flexShrink: 0 }}>
+                          <defs>
+                            <pattern id="gm-scan" width="1" height="3" patternUnits="userSpaceOnUse">
+                              <rect width="1" height="1" fill="#000" />
+                            </pattern>
+                          </defs>
+                          {slices.map((s) => (
+                            <path
+                              key={s.gameType}
+                              d={arcPath(s.start, s.sweep)}
+                              fill={MODE_COLORS[s.gameType] ?? "#888"}
+                              stroke="#042414"
+                              strokeWidth={2}
+                            />
+                          ))}
+                          <rect width="160" height="160" fill="url(#gm-scan)" opacity={0.12} style={{ pointerEvents: "none" }} />
+                        </svg>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {slices.map((s) => {
+                            const pct = Math.round((s.gameCount / total) * 100);
+                            return (
+                              <div key={s.gameType} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span style={{ width: 10, height: 10, background: MODE_COLORS[s.gameType] ?? "#888", display: "inline-block", flexShrink: 0, border: "1px solid #042414", boxShadow: `0 0 4px ${MODE_COLORS[s.gameType] ?? "#888"}` }} />
+                                <span style={{ fontFamily: "VT323", fontSize: 16, color: "#f4f4dc", textShadow: "1px 1px 0 #042414", lineHeight: 1 }}>
+                                  {MODE_LABELS[s.gameType] ?? s.gameType.toUpperCase()}{" "}
+                                  <span style={{ color: MODE_COLORS[s.gameType] ?? "#f4f4dc" }}>{pct}%</span>
+                                  {" "}<span style={{ color: "#a9c9b3" }}>({s.gameCount})</span>
+                                </span>
+                              </div>
+                            );
+                          })}
+                          <span style={{ fontFamily: "VT323", fontSize: 14, color: "#a9c9b3", textShadow: "1px 1px 0 #042414", marginTop: 2 }}>
+                            {total} TOTAL
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* ── Patterns — personal scope only ── */}
                 {isPersonal && (
                   <div className="panel panel--wood">
