@@ -26,6 +26,8 @@ vi.mock("../lib/auth", () => ({
 
 vi.mock("../lib/stats", () => ({
   resolveLeaderboard: vi.fn(async () => mocks.ranking),
+  clearLeaderboardCache: vi.fn(() => {}),
+  countEightBallWinsToday: vi.fn(async () => 0),
 }));
 
 import authRouter from "./auth";
@@ -51,6 +53,8 @@ function row(over: Partial<LeaderboardRow> & Pick<LeaderboardRow, "rank" | "scre
     gamesPlayed: 5,
     sharkLevel: 0,
     profileBackground: null,
+    winsToday: 0,
+    rainbowName: false,
     ...over,
   };
 }
