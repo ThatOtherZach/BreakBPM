@@ -135,7 +135,7 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
                 with their own global standing card (the same single felt-tinted
                 leaderboard row the owner sees on their account page) instead of
                 an empty panel. Hidden when they aren't ranked yet. */}
-            {(stats?.gamesPlayed ?? 0) === 0 && profile.data.globalStanding && (
+            {profile.data.globalStanding && (
               <div className="panel panel--wood">
                 <div className="panel-header">
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
