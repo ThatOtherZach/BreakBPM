@@ -574,8 +574,34 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                         {account.email}
                       </span>
                     )}
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <WinsTodayChip winsToday={account.winsToday ?? 0} small />
+                      {standing != null && (
+                        <span
+                          style={{
+                            fontFamily: "VT323",
+                            fontSize: 16,
+                            lineHeight: 1,
+                            color: "#ffe98a",
+                            textShadow: "1px 1px 0 #042414",
+                          }}
+                        >
+                          {standing.bpm.toFixed(1)} BPM
+                        </span>
+                      )}
+                      {standing != null && (
+                        <span
+                          style={{
+                            fontFamily: "VT323",
+                            fontSize: 16,
+                            lineHeight: 1,
+                            color: standing.accuracy != null ? "#b9e6c4" : "#8aa593",
+                            textShadow: "1px 1px 0 #042414",
+                          }}
+                        >
+                          {standing.accuracy != null ? `${standing.accuracy}% ACC` : "—% ACC"}
+                        </span>
+                      )}
                       {standing != null && standing.sharkLevel > 0 && (
                         <span
                           style={{
