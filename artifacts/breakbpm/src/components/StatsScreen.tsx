@@ -610,7 +610,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                                   {MODE_LABELS[s.gameType] ?? s.gameType.toUpperCase()}{" "}
                                   <span style={{ color: MODE_PCT_COLORS[s.gameType] ?? "#f4f4dc" }}>{pct}%</span>
                                   {" "}<span style={{ color: "#fff" }}>({s.gameCount})</span>
-                                  {" "}<span style={{ color: "#a9c9b3" }}>🕐{fmtHHMM(s.avgDurationMs * s.gameCount)}</span>
+                                  {" "}<span style={{ color: "#a9c9b3" }}>{fmtHHMM(s.avgDurationMs * s.gameCount)}</span>
                                 </span>
                               </div>
                             );
