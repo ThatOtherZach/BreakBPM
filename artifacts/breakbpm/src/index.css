@@ -1649,8 +1649,8 @@ html, #root {
 /* Win flash inside HUD */
 @keyframes hud-marquee {
   0%    { transform: translateY(-50%) translateX(100vw); }
-  65%   { transform: translateY(-50%) translateX(-100%); }
-  65.1% { transform: translateY(-50%) translateX(100vw); }
+  90%   { transform: translateY(-50%) translateX(-100%); }
+  90.1% { transform: translateY(-50%) translateX(100vw); }
   100%  { transform: translateY(-50%) translateX(100vw); }
 }
 
@@ -1681,7 +1681,7 @@ html, #root {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  animation: hud-marquee 10s linear infinite;
+  animation: hud-marquee 8s linear infinite;
 }
 
 .hud-winner-sub {
