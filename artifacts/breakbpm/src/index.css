@@ -1648,8 +1648,8 @@ html, #root {
 
 /* Win flash inside HUD */
 @keyframes hud-marquee {
-  0%   { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
+  0%   { transform: translateY(-50%) translateX(100vw); }
+  100% { transform: translateY(-50%) translateX(-100%); }
 }
 
 .hud-winner {
@@ -1663,6 +1663,8 @@ html, #root {
 .hud-winner-scroll {
   overflow: hidden;
   width: 100%;
+  position: relative;
+  height: 40px;
 }
 
 .hud-winner-text {
@@ -1674,7 +1676,10 @@ html, #root {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  animation: hud-marquee 5s linear infinite;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  animation: hud-marquee 6s linear infinite;
 }
 
 .hud-winner-sub {
