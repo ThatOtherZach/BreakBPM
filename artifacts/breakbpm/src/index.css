@@ -755,9 +755,7 @@ html, #root {
 /* Wood-themed sections (Results, Shooting, Pace, Ball Patterns): the panel
    background becomes a tiled wood texture while the silver header bar stays. */
 .panel--wood {
-  background-image: url("./assets/wood-panel.png");
-  background-repeat: repeat;
-  background-size: 220px auto;
+  background: #000;
 }
 
 .panel--wood .panel-body {
