@@ -140,7 +140,7 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
                 <div className="panel-header">
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                     <span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🏆</span>
-                    Global Standing
+                    Global Rank
                   </span>
                 </div>
                 <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
