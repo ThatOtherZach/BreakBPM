@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 
-const COLOURS = [
+export const COLOURS = [
   "Crimson", "Scarlet", "Ruby", "Coral", "Salmon", "Amber", "Saffron", "Gold",
   "Lemon", "Lime", "Olive", "Emerald", "Mint", "Teal", "Aqua", "Cyan",
   "Azure", "Cobalt", "Navy", "Indigo", "Violet", "Magenta", "Plum", "Orchid",
@@ -11,7 +11,7 @@ const COLOURS = [
   "Peach", "Tangerine",
 ];
 
-const ADJECTIVES = [
+export const ADJECTIVES = [
   "Swift", "Sly", "Bold", "Brave", "Calm", "Clever", "Crafty", "Cunning",
   "Daring", "Eager", "Fierce", "Gentle", "Grand", "Happy", "Lucky", "Mighty",
   "Nimble", "Noble", "Proud", "Quick", "Quiet", "Rapid", "Royal", "Sharp",
@@ -21,7 +21,7 @@ const ADJECTIVES = [
   "Epic", "Prime",
 ];
 
-const NOUNS = [
+export const NOUNS = [
   "Cue", "Break", "Rack", "Pocket", "Bank", "Spin", "Chalk", "Felt",
   "Stripe", "Solid", "Shark", "Hawk", "Fox", "Wolf", "Lion", "Tiger",
   "Bear", "Eagle", "Falcon", "Raven", "Otter", "Lynx", "Panda", "Jaguar",
