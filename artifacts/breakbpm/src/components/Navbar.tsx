@@ -26,7 +26,7 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlay
   const showHamburger = !!(onAbout || onAccount || onStats || onFindPlayers || onSignIn);
 
   return (
-    <>
+    <div className="navbar-wrapper">
       {/* Always-present anchors for crawler discovery — visually hidden, not interactive */}
       <div style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
         <a href="/pool-stats-app">Pool Stats App</a>
@@ -106,6 +106,6 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlay
           </SignedOut>
         </div>
       )}
-    </>
+    </div>
   );
 }

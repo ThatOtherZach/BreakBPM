@@ -69,9 +69,10 @@ html, #root {
   overscroll-behavior: auto;
   padding-bottom: calc(32px + env(safe-area-inset-bottom));
 }
-.app-window.app-window--page .navbar {
+.app-window.app-window--page .navbar-wrapper {
   position: sticky;
   top: 0;
+  z-index: 100;
 }
 /* Pin the statusbar to the viewport bottom on page-scroll screens.
    `margin-top: auto` pushes it to the end of the flex column
