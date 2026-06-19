@@ -478,7 +478,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   };
                   return (
                     <div className="panel" style={{ background: "#0a1a0a", backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.16) 2px, rgba(0,0,0,0.16) 4px)" }}>
-                      <SectionHeader emoji="📊" title="Game Modes" />
+                      <SectionHeader emoji="📊" title="Game Types" />
                       <div className="panel-body" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
                         <svg width="160" height="160" viewBox="0 0 160 160" style={{ flexShrink: 0 }}>
                           <defs>
