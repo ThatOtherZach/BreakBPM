@@ -1647,6 +1647,11 @@ html, #root {
 }
 
 /* Win flash inside HUD */
+@keyframes hud-marquee {
+  0%   { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
 .hud-winner {
   border-top: 1px solid #1a4a0a;
   padding: 8px 12px;
@@ -1655,12 +1660,21 @@ html, #root {
   gap: 3px;
 }
 
+.hud-winner-scroll {
+  overflow: hidden;
+  width: 100%;
+}
+
 .hud-winner-text {
   font-family: 'VT323', 'Courier New', monospace;
   font-size: 36px;
   color: var(--amber);
   line-height: 1;
-  animation: blink 1s step-end infinite;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  animation: hud-marquee 5s linear infinite;
 }
 
 .hud-winner-sub {

@@ -1109,15 +1109,17 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
         {/* Win/Loss flash — inside HUD */}
         {state.phase === 'ended' && (
-          <div className="hud-winner text-center justify-center items-center">
-            <span className="hud-winner-text" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              {state.winner ? (
-                <>
-                  ★ {state.winner === SHARK_PLAYER_NAME && <SharkIcon size={21} />}
-                  <PlayerName name={state.winner} rainbow={isRainbowName(state.winner)} upper /> WINS
-                </>
-              ) : 'GAME OVER'}
-            </span>
+          <div className="hud-winner">
+            <div className="hud-winner-scroll">
+              <span className="hud-winner-text">
+                {state.winner ? (
+                  <>
+                    ★ {state.winner === SHARK_PLAYER_NAME && <SharkIcon size={21} />}
+                    <PlayerName name={state.winner} rainbow={isRainbowName(state.winner)} upper /> WINS
+                  </>
+                ) : 'GAME OVER'}
+              </span>
+            </div>
             <span className="hud-winner-sub text-[#00ff41] border-t-[#00ff41] border-r-[#00ff41] border-b-[#00ff41] border-l-[#00ff41]">{state.winMessage}</span>
           </div>
         )}
