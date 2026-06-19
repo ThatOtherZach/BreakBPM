@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, type CSSProperties } from 'react';
+import { useState, useEffect, useRef, useCallback, Fragment, type CSSProperties } from 'react';
 import type { GameState, ShotLogEntry, RematchConfig } from '../lib/gameLogic';
 import { THEME_FELT, themeColorOf } from '../lib/backgroundVariants';
 import Navbar from './Navbar';
@@ -911,6 +911,17 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     );
   };
 
+  // Winner(s): for team games (4P), the whole winning team shares the star and
+  // the "X & X WINS" callout. Non-team games (2P/Shark/9-ball/practice) → just
+  // the single winner.
+  const winnerPlayer = state.winner ? state.players.find(p => p.name === state.winner) : undefined;
+  const winningNames: string[] = state.winner
+    ? (winnerPlayer?.team
+        ? state.players.filter(p => p.team === winnerPlayer.team).map(p => p.name)
+        : [state.winner])
+    : [];
+  const winningNameSet = new Set(winningNames);
+
   return (
     <div className="app-window">
       <Navbar onAbout={onAbout} onAccount={onAccount} onStats={onStats} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
@@ -1072,7 +1083,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                         {active ? <span className="cue-ball-icon" /> : null}
                       </span>
                       <span style={{ fontSize: 16, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {state.phase === 'ended' && state.winner === p.name && <span style={{ color: 'var(--amber)' }}>★ </span>}
+                        {state.phase === 'ended' && winningNameSet.has(p.name) && <span style={{ color: 'var(--amber)' }}>★ </span>}
                         <PlayerName name={p.name} rainbow={rainbowBySlot.get(i) ?? isRainbowName(p.name)} />
                       </span>
                       {teamLabel && (
@@ -1116,7 +1127,12 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 {state.winner ? (
                   <>
                     ★ {state.winner === SHARK_PLAYER_NAME && <SharkIcon size={21} />}
-                    <PlayerName name={state.winner} rainbow={isRainbowName(state.winner)} upper /> WINS
+                    {winningNames.map((name, idx) => (
+                      <Fragment key={name}>
+                        {idx > 0 && ' & '}
+                        <PlayerName name={name} rainbow={isRainbowName(name)} upper />
+                      </Fragment>
+                    ))} WINS
                   </>
                 ) : 'GAME OVER'}
               </span>
