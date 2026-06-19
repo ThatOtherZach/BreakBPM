@@ -1555,8 +1555,8 @@ html, #root {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 14px;
-  height: 14px;
+  width: 12.6px;
+  height: 12.6px;
   background: #fffef2;
   border: 1.5px solid var(--chip-ink);
   border-radius: 50%;
