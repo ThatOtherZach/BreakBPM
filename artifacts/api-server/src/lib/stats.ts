@@ -756,9 +756,9 @@ export interface LeaderboardRow {
 /** Defensive cap on eligible game rows parsed in one ranking pass (cached). */
 const LEADERBOARD_MAX_ROWS = 20000;
 /** Minimum qualifying games before a player is ranked at all. */
-const LEADERBOARD_MIN_GAMES = 3;
+const LEADERBOARD_MIN_GAMES = 2;
 /** Number of a player's best games averaged into their score. */
-const LEADERBOARD_BEST_N = 3;
+const LEADERBOARD_BEST_N = 2;
 /**
  * Upper bound on a plausible per-game BPM. A sustained pace above this implies
  * sub-second sinks (mis-logged timestamps), so the game is dropped as an
