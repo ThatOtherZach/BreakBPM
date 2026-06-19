@@ -57,7 +57,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
   // Screen names are canonical + unique, so they key a row to a single user.
   // Omitted when the caller has too few qualifying games to be ranked.
   const [globalRanking, winsToday] = await Promise.all([
-    resolveLeaderboard("all"),
+    resolveLeaderboard("8ball", "all"),
     countEightBallWinsToday(user.id),
   ]);
   const globalStanding = globalRanking.find((r) => r.screenName === user.screenName);

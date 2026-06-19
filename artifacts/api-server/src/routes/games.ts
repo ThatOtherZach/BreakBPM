@@ -43,7 +43,7 @@ import {
   getActiveSubscription,
   resolveRainbowName,
 } from "../lib/entitlement";
-import { resolveStats, resolveLeaderboard, clearUserStatsCache, clearLeaderboardCache, windowCutoff, FREE_TIER_WINDOW, type StatScope, type StatWindow, type StatGameMode, type LeaderboardWindow } from "../lib/stats";
+import { resolveStats, resolveLeaderboard, clearUserStatsCache, clearLeaderboardCache, windowCutoff, FREE_TIER_WINDOW, type StatScope, type StatWindow, type StatGameMode, type LeaderboardMode, type LeaderboardWindow } from "../lib/stats";
 import { sweepStaleGames, finalizeGameIfStale, INACTIVITY_FORFEIT_MS, MAX_GAME_DURATION_MS } from "../lib/forfeit";
 import { newId } from "../lib/ids";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
@@ -2007,7 +2007,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
   // can render the same single standing card the owner sees on their account
   // page (shares the 1-hour leaderboard cache). Screen names are canonical +
   // unique, so they key a row to a single user. Omitted when unranked.
-  const globalRanking = await resolveLeaderboard("all");
+  const globalRanking = await resolveLeaderboard("8ball", "all");
   const globalStanding = globalRanking.find((r) => r.screenName === host.screenName);
 
   res.json(
@@ -2363,7 +2363,7 @@ router.get("/leaderboard", async (req, res): Promise<void> => {
     res.status(400).json({ error: "invalid_query" });
     return;
   }
-  const { window, page, pageSize } = parsed.data;
+  const { mode, window, page, pageSize } = parsed.data;
 
   const user = await getOrCreateUser(req);
   const entitlement = await computeEntitlement(user);
@@ -2375,7 +2375,7 @@ router.get("/leaderboard", async (req, res): Promise<void> => {
     return;
   }
 
-  const all = await resolveLeaderboard(window as LeaderboardWindow);
+  const all = await resolveLeaderboard(mode as LeaderboardMode, window as LeaderboardWindow);
   const totalPlayers = all.length;
   const totalPages = Math.max(1, Math.ceil(totalPlayers / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
@@ -2384,6 +2384,7 @@ router.get("/leaderboard", async (req, res): Promise<void> => {
 
   res.json(
     GetLeaderboardResponse.parse({
+      mode,
       window,
       page: safePage,
       pageSize,

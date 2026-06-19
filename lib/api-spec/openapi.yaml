@@ -801,12 +801,23 @@ paths:
       tags: [games]
       summary: Balls-Per-Minute leaderboard
       description: >
-        Ranking of registered players by their typical recent pace. The 30-day
+        Ranking of registered players by a composite skill measure (recent pace
+        scaled by accuracy, with games against registered opponents weighted
+        above games against anonymous guests). 8-ball and 9-ball are ranked as
+        separate boards selected by `mode` — they are never merged. The 30-day
         window is public (so the signed-out home-page widget works); the 90-day
-        and all-time windows require a pass and are enforced server-side.
-        Results are computed once per window and cached for one hour, then
-        paginated from the cache.
+        and all-time windows require a pass and are enforced server-side. Each
+        (mode, window) ranking is computed once and cached for one hour, then
+        paginated from the cache. BPM and accuracy are reported per row for
+        display; the composite score itself is intentionally not exposed.
       parameters:
+        - name: mode
+          in: query
+          required: false
+          schema: { type: string, enum: [8ball, 9ball], default: 8ball }
+          description: >
+            Which board to rank: standard 1-on-1 8-ball or 9-ball. Defaults to
+            8ball.
         - name: window
           in: query
           required: false
@@ -1117,6 +1128,39 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AdminSalesResponse" }
 
+  /admin/leaderboard:
+    get:
+      operationId: listAdminLeaderboard
+      tags: [admin]
+      summary: Leaderboard with hidden anti-cheat signals (admin only)
+      description: >
+        Admin-only. Returns the SAME ordered ranking the public /leaderboard
+        shows for the given mode+window, but exposes the signals the public row
+        intentionally strips: the composite `score` actually ranked on, how many
+        of each player's qualifying games were between two registered players
+        (`trustedGames`), and a `provisional` thin-sample flag. Lets an admin
+        eyeball suspicious early ranks (e.g. a top spot built entirely on guest
+        games). 403s for non-admins.
+      parameters:
+        - name: mode
+          in: query
+          required: false
+          schema: { type: string, enum: [8ball, 9ball], default: 8ball }
+          description: Which board to inspect. Defaults to 8ball.
+        - name: window
+          in: query
+          required: false
+          schema: { type: string, enum: [30d, 90d, all], default: all }
+          description: Ranking window. Defaults to all-time for the admin view.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminLeaderboardResponse" }
+        "403":
+          description: Admins only.
+
 components:
   schemas:
     HealthStatus:
@@ -1327,6 +1371,40 @@ components:
         page: { type: integer }
         limit: { type: integer }
         total: { type: integer }
+
+    AdminLeaderboardRow:
+      type: object
+      required: [rank, screenName, score, bpm, accuracy, gamesPlayed, trustedGames, provisional]
+      properties:
+        rank: { type: integer }
+        screenName: { type: string }
+        # The composite value the board is actually ranked on: recent pace scaled
+        # by accuracy and discounted for games against anonymous guests. Hidden
+        # from the public leaderboard; admin-only.
+        score: { type: number }
+        # Display pace (average BPM of the player's best qualifying games).
+        bpm: { type: number }
+        # Display accuracy (0–100) across those same games; null when none had a
+        # usable accuracy.
+        accuracy: { type: ["number", "null"] }
+        # Count of the player's qualifying games in this mode+window.
+        gamesPlayed: { type: integer }
+        # Of those qualifying games, how many had two registered participants
+        # (vs one registered player against an anonymous guest seat).
+        trustedGames: { type: integer }
+        # True when the player has too few qualifying games to be "established"
+        # — a thin-sample warning so admins can scrutinize early ranks.
+        provisional: { type: boolean }
+
+    AdminLeaderboardResponse:
+      type: object
+      required: [mode, window, rows]
+      properties:
+        mode: { type: string, enum: [8ball, 9ball] }
+        window: { type: string, enum: [30d, 90d, all] }
+        rows:
+          type: array
+          items: { $ref: "#/components/schemas/AdminLeaderboardRow" }
 
     Plan:
       type: object
@@ -2375,12 +2453,14 @@ components:
 
     LeaderboardResult:
       type: object
-      required: [window, page, pageSize, totalPlayers, totalPages, rows]
+      required: [mode, window, page, pageSize, totalPlayers, totalPages, rows]
       properties:
+        # Which board these rows rank (echoes the request; defaults to 8ball).
+        mode: { type: string, enum: [8ball, 9ball] }
         window: { type: string, enum: [30d, 90d, all] }
         page: { type: integer }
         pageSize: { type: integer }
-        # Total number of ranked players for this window (across all pages).
+        # Total number of ranked players for this mode+window (across all pages).
         totalPlayers: { type: integer }
         totalPages: { type: integer }
         # The requested page of ranked players, in rank order.

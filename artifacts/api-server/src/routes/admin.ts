@@ -1,9 +1,19 @@
 import { Router, type IRouter } from "express";
 import { db, saleEventsTable, usersTable } from "@workspace/db";
 import { and, desc, eq, gte, lt, sql, type SQL } from "drizzle-orm";
-import { ListAdminSalesResponse, ListAdminSalesQueryParams } from "@workspace/api-zod";
+import {
+  ListAdminSalesResponse,
+  ListAdminSalesQueryParams,
+  ListAdminLeaderboardResponse,
+  ListAdminLeaderboardQueryParams,
+} from "@workspace/api-zod";
 import { getOrCreateUser } from "../lib/auth";
 import { isAdminEmail } from "../lib/config";
+import {
+  resolveAdminLeaderboard,
+  type LeaderboardMode,
+  type LeaderboardWindow,
+} from "../lib/stats";
 
 const router: IRouter = Router();
 
@@ -181,6 +191,46 @@ router.get("/admin/sales", async (req, res): Promise<void> => {
       page,
       limit,
       total: totals.rowCount,
+    }),
+  );
+});
+
+/**
+ * Admin-only leaderboard view (403 for everyone else). Returns the SAME ordered
+ * ranking the public board shows for a given mode+window, but exposes the hidden
+ * anti-cheat signals the public row strips: the composite `score` ranked on, how
+ * many of each player's qualifying games were between two registered players
+ * (`trustedGames`), and the `provisional` thin-sample flag. Lets an admin eyeball
+ * suspicious early ranks (e.g. a top spot built entirely on guest games).
+ */
+router.get("/admin/leaderboard", async (req, res): Promise<void> => {
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Sign in to view the leaderboard" });
+    return;
+  }
+  if (!isAdminEmail(user.email)) {
+    res.status(403).json({ error: "Admins only" });
+    return;
+  }
+
+  const parsed = ListAdminLeaderboardQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { mode, window } = parsed.data;
+
+  const rows = await resolveAdminLeaderboard(
+    mode as LeaderboardMode,
+    window as LeaderboardWindow,
+  );
+
+  res.json(
+    ListAdminLeaderboardResponse.parse({
+      mode,
+      window,
+      rows,
     }),
   );
 });

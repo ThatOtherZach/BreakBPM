@@ -27,6 +27,7 @@ import type {
   AdminCodeInput,
   AdminCodeList,
   AdminCodeResult,
+  AdminLeaderboardResponse,
   AdminSalesResponse,
   AppConfig,
   CancelFindPlayerPostInput,
@@ -62,6 +63,7 @@ import type {
   LeaderboardResult,
   LeaveGameInput,
   LeaveGameResult,
+  ListAdminLeaderboardParams,
   ListAdminSalesParams,
   ListFindPlayerPostsParams,
   ListOsmVenuesParams,
@@ -3077,7 +3079,7 @@ export const getGetLeaderboardUrl = (params?: GetLeaderboardParams,) => {
 }
 
 /**
- * Ranking of registered players by their typical recent pace. The 30-day window is public (so the signed-out home-page widget works); the 90-day and all-time windows require a pass and are enforced server-side. Results are computed once per window and cached for one hour, then paginated from the cache.
+ * Ranking of registered players by a composite skill measure (recent pace scaled by accuracy, with games against registered opponents weighted above games against anonymous guests). 8-ball and 9-ball are ranked as separate boards selected by `mode` — they are never merged. The 30-day window is public (so the signed-out home-page widget works); the 90-day and all-time windows require a pass and are enforced server-side. Each (mode, window) ranking is computed once and cached for one hour, then paginated from the cache. BPM and accuracy are reported per row for display; the composite score itself is intentionally not exposed.
 
  * @summary Balls-Per-Minute leaderboard
  */
@@ -3995,6 +3997,92 @@ export function useListAdminSales<TData = Awaited<ReturnType<typeof listAdminSal
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListAdminSalesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListAdminLeaderboardUrl = (params?: ListAdminLeaderboardParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/leaderboard?${stringifiedParams}` : `/api/admin/leaderboard`
+}
+
+/**
+ * Admin-only. Returns the SAME ordered ranking the public /leaderboard shows for the given mode+window, but exposes the signals the public row intentionally strips: the composite `score` actually ranked on, how many of each player's qualifying games were between two registered players (`trustedGames`), and a `provisional` thin-sample flag. Lets an admin eyeball suspicious early ranks (e.g. a top spot built entirely on guest games). 403s for non-admins.
+
+ * @summary Leaderboard with hidden anti-cheat signals (admin only)
+ */
+export const listAdminLeaderboard = async (params?: ListAdminLeaderboardParams, options?: RequestInit): Promise<AdminLeaderboardResponse> => {
+
+  return customFetch<AdminLeaderboardResponse>(getListAdminLeaderboardUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminLeaderboardQueryKey = (params?: ListAdminLeaderboardParams,) => {
+    return [
+    `/api/admin/leaderboard`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminLeaderboardQueryOptions = <TData = Awaited<ReturnType<typeof listAdminLeaderboard>>, TError = ErrorType<void>>(params?: ListAdminLeaderboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminLeaderboardQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminLeaderboard>>> = ({ signal }) => listAdminLeaderboard(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminLeaderboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminLeaderboardQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminLeaderboard>>>
+export type ListAdminLeaderboardQueryError = ErrorType<void>
+
+
+/**
+ * @summary Leaderboard with hidden anti-cheat signals (admin only)
+ */
+
+export function useListAdminLeaderboard<TData = Awaited<ReturnType<typeof listAdminLeaderboard>>, TError = ErrorType<void>>(
+ params?: ListAdminLeaderboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminLeaderboardQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

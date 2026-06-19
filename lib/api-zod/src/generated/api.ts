@@ -1062,10 +1062,11 @@ export const GetStatsResponse = zod.object({
 
 
 /**
- * Ranking of registered players by their typical recent pace. The 30-day window is public (so the signed-out home-page widget works); the 90-day and all-time windows require a pass and are enforced server-side. Results are computed once per window and cached for one hour, then paginated from the cache.
+ * Ranking of registered players by a composite skill measure (recent pace scaled by accuracy, with games against registered opponents weighted above games against anonymous guests). 8-ball and 9-ball are ranked as separate boards selected by `mode` — they are never merged. The 30-day window is public (so the signed-out home-page widget works); the 90-day and all-time windows require a pass and are enforced server-side. Each (mode, window) ranking is computed once and cached for one hour, then paginated from the cache. BPM and accuracy are reported per row for display; the composite score itself is intentionally not exposed.
 
  * @summary Balls-Per-Minute leaderboard
  */
+export const getLeaderboardQueryModeDefault = `8ball`;
 export const getLeaderboardQueryWindowDefault = `30d`;
 export const getLeaderboardQueryPageDefault = 1;
 
@@ -1075,6 +1076,7 @@ export const getLeaderboardQueryPageSizeMax = 50;
 
 
 export const GetLeaderboardQueryParams = zod.object({
+  "mode": zod.enum(['8ball', '9ball']).default(getLeaderboardQueryModeDefault).describe('Which board to rank: standard 1-on-1 8-ball or 9-ball. Defaults to 8ball.\n'),
   "window": zod.enum(['30d', '90d', 'all']).default(getLeaderboardQueryWindowDefault).describe('Ranking window. 30d is public; 90d and all require a pass.\n'),
   "page": zod.coerce.number().min(1).default(getLeaderboardQueryPageDefault),
   "pageSize": zod.coerce.number().min(1).max(getLeaderboardQueryPageSizeMax).default(getLeaderboardQueryPageSizeDefault)
@@ -1083,6 +1085,7 @@ export const GetLeaderboardQueryParams = zod.object({
 export const getLeaderboardResponseRowsItemWinsTodayDefault = 0;
 
 export const GetLeaderboardResponse = zod.object({
+  "mode": zod.enum(['8ball', '9ball']),
   "window": zod.enum(['30d', '90d', 'all']),
   "page": zod.number(),
   "pageSize": zod.number(),
@@ -1524,6 +1527,35 @@ export const ListAdminSalesResponse = zod.object({
   "page": zod.number(),
   "limit": zod.number(),
   "total": zod.number()
+})
+
+
+/**
+ * Admin-only. Returns the SAME ordered ranking the public /leaderboard shows for the given mode+window, but exposes the signals the public row intentionally strips: the composite `score` actually ranked on, how many of each player's qualifying games were between two registered players (`trustedGames`), and a `provisional` thin-sample flag. Lets an admin eyeball suspicious early ranks (e.g. a top spot built entirely on guest games). 403s for non-admins.
+
+ * @summary Leaderboard with hidden anti-cheat signals (admin only)
+ */
+export const listAdminLeaderboardQueryModeDefault = `8ball`;
+export const listAdminLeaderboardQueryWindowDefault = `all`;
+
+export const ListAdminLeaderboardQueryParams = zod.object({
+  "mode": zod.enum(['8ball', '9ball']).default(listAdminLeaderboardQueryModeDefault).describe('Which board to inspect. Defaults to 8ball.'),
+  "window": zod.enum(['30d', '90d', 'all']).default(listAdminLeaderboardQueryWindowDefault).describe('Ranking window. Defaults to all-time for the admin view.')
+})
+
+export const ListAdminLeaderboardResponse = zod.object({
+  "mode": zod.enum(['8ball', '9ball']),
+  "window": zod.enum(['30d', '90d', 'all']),
+  "rows": zod.array(zod.object({
+  "rank": zod.number(),
+  "screenName": zod.string(),
+  "score": zod.number(),
+  "bpm": zod.number(),
+  "accuracy": zod.number().nullable(),
+  "gamesPlayed": zod.number(),
+  "trustedGames": zod.number(),
+  "provisional": zod.boolean()
+}))
 })
 
 

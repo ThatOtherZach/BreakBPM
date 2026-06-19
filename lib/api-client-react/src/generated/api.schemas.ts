@@ -237,6 +237,41 @@ export interface AdminSalesResponse {
   total: number;
 }
 
+export interface AdminLeaderboardRow {
+  rank: number;
+  screenName: string;
+  score: number;
+  bpm: number;
+  /** @nullable */
+  accuracy: number | null;
+  gamesPlayed: number;
+  trustedGames: number;
+  provisional: boolean;
+}
+
+export type AdminLeaderboardResponseMode = typeof AdminLeaderboardResponseMode[keyof typeof AdminLeaderboardResponseMode];
+
+
+export const AdminLeaderboardResponseMode = {
+  '8ball': '8ball',
+  '9ball': '9ball',
+} as const;
+
+export type AdminLeaderboardResponseWindow = typeof AdminLeaderboardResponseWindow[keyof typeof AdminLeaderboardResponseWindow];
+
+
+export const AdminLeaderboardResponseWindow = {
+  '30d': '30d',
+  '90d': '90d',
+  all: 'all',
+} as const;
+
+export interface AdminLeaderboardResponse {
+  mode: AdminLeaderboardResponseMode;
+  window: AdminLeaderboardResponseWindow;
+  rows: AdminLeaderboardRow[];
+}
+
 export type PlanId = typeof PlanId[keyof typeof PlanId];
 
 
@@ -1265,6 +1300,14 @@ export interface PublicProfileResult {
   globalStanding?: LeaderboardRow;
 }
 
+export type LeaderboardResultMode = typeof LeaderboardResultMode[keyof typeof LeaderboardResultMode];
+
+
+export const LeaderboardResultMode = {
+  '8ball': '8ball',
+  '9ball': '9ball',
+} as const;
+
 export type LeaderboardResultWindow = typeof LeaderboardResultWindow[keyof typeof LeaderboardResultWindow];
 
 
@@ -1275,6 +1318,7 @@ export const LeaderboardResultWindow = {
 } as const;
 
 export interface LeaderboardResult {
+  mode: LeaderboardResultMode;
   window: LeaderboardResultWindow;
   page: number;
   pageSize: number;
@@ -1602,6 +1646,11 @@ export const GetStatsGameMode = {
 
 export type GetLeaderboardParams = {
 /**
+ * Which board to rank: standard 1-on-1 8-ball or 9-ball. Defaults to 8ball.
+
+ */
+mode?: GetLeaderboardMode;
+/**
  * Ranking window. 30d is public; 90d and all require a pass.
 
  */
@@ -1616,6 +1665,14 @@ page?: number;
  */
 pageSize?: number;
 };
+
+export type GetLeaderboardMode = typeof GetLeaderboardMode[keyof typeof GetLeaderboardMode];
+
+
+export const GetLeaderboardMode = {
+  '8ball': '8ball',
+  '9ball': '9ball',
+} as const;
 
 export type GetLeaderboardWindow = typeof GetLeaderboardWindow[keyof typeof GetLeaderboardWindow];
 
@@ -1709,5 +1766,33 @@ export type ListAdminSalesFormat = typeof ListAdminSalesFormat[keyof typeof List
 export const ListAdminSalesFormat = {
   json: 'json',
   csv: 'csv',
+} as const;
+
+export type ListAdminLeaderboardParams = {
+/**
+ * Which board to inspect. Defaults to 8ball.
+ */
+mode?: ListAdminLeaderboardMode;
+/**
+ * Ranking window. Defaults to all-time for the admin view.
+ */
+window?: ListAdminLeaderboardWindow;
+};
+
+export type ListAdminLeaderboardMode = typeof ListAdminLeaderboardMode[keyof typeof ListAdminLeaderboardMode];
+
+
+export const ListAdminLeaderboardMode = {
+  '8ball': '8ball',
+  '9ball': '9ball',
+} as const;
+
+export type ListAdminLeaderboardWindow = typeof ListAdminLeaderboardWindow[keyof typeof ListAdminLeaderboardWindow];
+
+
+export const ListAdminLeaderboardWindow = {
+  '30d': '30d',
+  '90d': '90d',
+  all: 'all',
 } as const;
 

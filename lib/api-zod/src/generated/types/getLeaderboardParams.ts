@@ -5,9 +5,15 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { GetLeaderboardMode } from './getLeaderboardMode';
 import type { GetLeaderboardWindow } from './getLeaderboardWindow';
 
 export type GetLeaderboardParams = {
+/**
+ * Which board to rank: standard 1-on-1 8-ball or 9-ball. Defaults to 8ball.
+
+ */
+mode?: GetLeaderboardMode;
 /**
  * Ranking window. 30d is public; 90d and all require a pass.
 

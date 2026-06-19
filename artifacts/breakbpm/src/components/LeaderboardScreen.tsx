@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useGetLeaderboard, useGetMe } from "@workspace/api-client-react";
-import type { LeaderboardRow, GetLeaderboardWindow } from "@workspace/api-client-react";
+import type { LeaderboardRow, GetLeaderboardWindow, GetLeaderboardMode } from "@workspace/api-client-react";
 import Navbar from "./Navbar";
 import { useAuth } from "../lib/authClient";
 import { THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
@@ -17,6 +17,12 @@ const WINDOW_LABEL: Record<GetLeaderboardWindow, string> = {
   all: "ALL",
 };
 const WINDOWS: GetLeaderboardWindow[] = ["30d", "90d", "all"];
+
+const MODE_LABEL: Record<GetLeaderboardMode, string> = {
+  "8ball": "8-BALL",
+  "9ball": "9-BALL",
+};
+const MODES: GetLeaderboardMode[] = ["8ball", "9ball"];
 
 function rankBadge(rank: number): string {
   if (rank === 1) return "🥇";
@@ -201,19 +207,25 @@ export default function LeaderboardScreen({
   const me = useGetMe();
   const isPass = me.data?.entitlement?.tier === "pass";
 
+  const [mode, setMode] = useState<GetLeaderboardMode>("8ball");
   const [window, setWindow] = useState<GetLeaderboardWindow>("30d");
   const [page, setPage] = useState(1);
 
   // The query always runs, but its result is only rendered for signed-in
   // callers (see the `isAuthenticated` gates below). The default window is the
   // public 30d, so an anonymous fetch never 403s.
-  const q = useGetLeaderboard({ window, page, pageSize: PAGE_SIZE });
+  const q = useGetLeaderboard({ mode, window, page, pageSize: PAGE_SIZE });
   const data = q.data;
   const rows = data?.rows ?? [];
 
   function chooseWindow(w: GetLeaderboardWindow) {
     if (w !== "30d" && !isPass) return;
     setWindow(w);
+    setPage(1);
+  }
+
+  function chooseMode(m: GetLeaderboardMode) {
+    setMode(m);
     setPage(1);
   }
 
@@ -238,7 +250,24 @@ export default function LeaderboardScreen({
             )}
           </div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <p style={{ fontSize: 11, color: "#444", margin: 0, lineHeight: 1.4 }}>Fastest by BPM, recent 8-ball 1-on-1 games only.</p>
+            <p style={{ fontSize: 11, color: "#444", margin: 0, lineHeight: 1.4 }}>
+              Top pace &amp; accuracy, recent {MODE_LABEL[mode].toLowerCase()} 1-on-1 games only.
+            </p>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              {MODES.map((m) => {
+                const active = mode === m;
+                return (
+                  <button
+                    key={m}
+                    className={`btn${active ? " btn-primary" : ""}`}
+                    style={{ flex: 1, padding: "6px 4px" }}
+                    onClick={() => chooseMode(m)}
+                  >
+                    {MODE_LABEL[m]}
+                  </button>
+                );
+              })}
+            </div>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               {WINDOWS.map((w) => {
                 const active = window === w;

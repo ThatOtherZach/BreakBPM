@@ -5,10 +5,12 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { LeaderboardResultMode } from './leaderboardResultMode';
 import type { LeaderboardResultWindow } from './leaderboardResultWindow';
 import type { LeaderboardRow } from './leaderboardRow';
 
 export interface LeaderboardResult {
+  mode: LeaderboardResultMode;
   window: LeaderboardResultWindow;
   page: number;
   pageSize: number;

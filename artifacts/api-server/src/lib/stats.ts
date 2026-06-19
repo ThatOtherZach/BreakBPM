@@ -734,6 +734,13 @@ export function clearUserStatsCache(userId: string): void {
 
 export type LeaderboardWindow = "30d" | "90d" | "all";
 
+/**
+ * Which game pool a leaderboard ranks. 8-ball and 9-ball each rank their own
+ * separate pool with the same balancing rules — they are NEVER merged into one
+ * combined list.
+ */
+export type LeaderboardMode = "8ball" | "9ball";
+
 export interface LeaderboardRow {
   rank: number;
   screenName: string;
@@ -753,12 +760,55 @@ export interface LeaderboardRow {
   rainbowName: boolean;
 }
 
+/**
+ * Admin-only view of a ranked player. Carries everything the public row hides:
+ * the composite `score` actually ranked on, how many of the player's qualifying
+ * games were between two registered players (`trustedGames`), and whether the
+ * player is on a thin sample (`provisional`). NEVER returned on any public
+ * leaderboard/profile response — admin tooling only, for eyeballing suspicious
+ * early ranks.
+ */
+export interface AdminLeaderboardRow {
+  rank: number;
+  screenName: string;
+  /** Composite ranking value: accuracy-weighted, trust-weighted effective pace. */
+  score: number;
+  bpm: number;
+  accuracy: number | null;
+  gamesPlayed: number;
+  /** Of the qualifying games, how many had two registered participants. */
+  trustedGames: number;
+  /** True when the player has too few qualifying games to be "established". */
+  provisional: boolean;
+}
+
 /** Defensive cap on eligible game rows parsed in one ranking pass (cached). */
 const LEADERBOARD_MAX_ROWS = 20000;
-/** Minimum qualifying games before a player is ranked at all. */
+/** Minimum qualifying games before a player is ranked at all (the reward floor). */
 const LEADERBOARD_MIN_GAMES = 2;
+/**
+ * Qualifying-game count at/above which a ranked player is "established"; below
+ * it they are flagged `provisional` (a hidden, admin-only signal — never shown
+ * to players). The rank-appears floor stays at LEADERBOARD_MIN_GAMES.
+ */
+const LEADERBOARD_ESTABLISHED_GAMES = 5;
 /** Number of a player's best games averaged into their score. */
 const LEADERBOARD_BEST_N = 2;
+/**
+ * Trust weight applied to a qualifying game's score contribution when the game
+ * had only ONE registered player (the opponent was an anonymous guest). Games
+ * between two registered accounts get full weight (1.0); guest games are
+ * discounted so beating a real, named opponent counts for more than padding a
+ * score against an honor-system guest seat.
+ */
+const LEADERBOARD_GUEST_WEIGHT = 0.85;
+/**
+ * Minimum balls a player must have pocketed in a 9-ball game for it to count
+ * toward their score. 9-ball allows combo / 9-on-the-break wins that pocket a
+ * single ball almost instantly, producing a tiny-but-extreme BPM; this floor
+ * (on top of the BPM outlier cap) keeps those pace-padding flukes off the board.
+ */
+const LEADERBOARD_MIN_BALLS_9BALL = 3;
 /**
  * Upper bound on a plausible per-game BPM. A sustained pace above this implies
  * sub-second sinks (mis-logged timestamps), so the game is dropped as an
@@ -793,16 +843,26 @@ function leaderboardCutoff(window: LeaderboardWindow): Date | null {
   }
 }
 
-async function computeLeaderboard(window: LeaderboardWindow): Promise<LeaderboardRow[]> {
+async function computeLeaderboard(
+  mode: LeaderboardMode,
+  window: LeaderboardWindow,
+): Promise<RankedEntry[]> {
   const cutoff = leaderboardCutoff(window);
+  // Both modes require a standard 1-on-1 game (no teams, no shark/chaos). The
+  // 8-ball-only `ruleSet` grandfather gate keeps post-cutoff "None"/manual-team
+  // 2-player 8-ball off the board; 9-ball has no teams so it doesn't apply.
   const conds = [
     isNotNull(gamesTable.endedAt),
-    eq(gamesTable.gameType, "8ball"),
+    eq(gamesTable.gameType, mode),
     eq(gamesTable.maxPlayers, 2),
-    sql`(${gamesTable.gameState} ->> 'ruleSet' = 'open-through-break' OR (${gamesTable.gameState} ->> 'ruleSet' IS NULL AND ${gamesTable.endedAt} < ${LEADERBOARD_NULL_RULESET_CUTOFF}))`,
     sql`${gamesTable.gameState} ->> 'sharkAggression' IS NULL`,
     sql`${gamesTable.gameState} ->> 'chaosMode' IS NULL`,
   ];
+  if (mode === "8ball") {
+    conds.push(
+      sql`(${gamesTable.gameState} ->> 'ruleSet' = 'open-through-break' OR (${gamesTable.gameState} ->> 'ruleSet' IS NULL AND ${gamesTable.endedAt} < ${LEADERBOARD_NULL_RULESET_CUTOFF}))`,
+    );
+  }
   if (cutoff) conds.push(gte(gamesTable.endedAt, cutoff));
 
   const rows = await db
@@ -842,16 +902,26 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
     partsByGame.set(p.gameId, arr);
   }
 
-  // Per-user accumulation of qualifying per-game {bpm, accuracy}. Keyed by
-  // userId so the same player across renames stays one entry.
+  // Per-user accumulation of qualifying per-game records. Keyed by userId so the
+  // same player across renames stays one entry. `contribution` is the composite
+  // ranked on (accuracy-weighted, trust-weighted effective pace); `bpm` and
+  // `accuracy` are retained for separate display. `trusted` marks a game between
+  // two registered players (vs one registered vs an anonymous guest).
   const byUser = new Map<
     string,
-    { screenName: string; games: Array<{ bpm: number; accuracy: number | null }> }
+    {
+      screenName: string;
+      games: Array<{ bpm: number; accuracy: number | null; trusted: boolean; contribution: number }>;
+    }
   >();
 
   for (const r of rows) {
     const ps = partsByGame.get(r.id);
     if (!ps) continue;
+    // Trust signal: two registered participants present (guests have null userId
+    // and are excluded by the inner join, so they never appear in `ps`). One
+    // registered participant means the opponent was an anonymous guest seat.
+    const trusted = ps.length >= 2;
     const { shotLog } = parseGameState(r.gameState);
     for (const p of ps) {
       if (!p.userId) continue;
@@ -868,29 +938,59 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
       // Drop games with no usable pace or an implausible (outlier) one.
       if (bpm == null || bpm <= 0 || bpm > LEADERBOARD_MAX_PLAUSIBLE_BPM) continue;
       const { made, attempts } = accuracyCounts(mine);
+      // 9-ball pace-padding guard: a combo / 9-on-the-break win pockets just a
+      // ball or two almost instantly. Require a floor of pocketed balls so such
+      // tiny-but-extreme-BPM games don't pad a 9-ball score. 8-ball is unaffected.
+      if (mode === "9ball" && made < LEADERBOARD_MIN_BALLS_9BALL) continue;
       const accuracy = attempts > 0 ? Math.round((made / attempts) * 100) : null;
+      // Effective clean pace: pace scaled by accuracy so winning on rushing
+      // alone no longer tops the board. Null accuracy degrades to raw pace
+      // (factor 1) rather than dropping the game — in practice a non-null BPM
+      // implies attempts > 0, so this is just a defensive fallback.
+      const accFactor = accuracy != null ? Math.max(0, Math.min(100, accuracy)) / 100 : 1;
+      const trustFactor = trusted ? 1 : LEADERBOARD_GUEST_WEIGHT;
+      const contribution = bpm * accFactor * trustFactor;
       const entry = byUser.get(p.userId) ?? { screenName: p.screenName, games: [] };
-      entry.games.push({ bpm, accuracy });
+      entry.games.push({ bpm, accuracy, trusted, contribution });
       byUser.set(p.userId, entry);
     }
   }
 
   // Qualifying players (>= min games), keeping userId so we can attach each
-  // one's all-time Shark-mode count below.
+  // one's all-time Shark-mode count below. Score is the average of the best
+  // games by composite contribution; bpm/accuracy are averaged over that same
+  // best set for display. `provisional` is a hidden, admin-only thin-sample flag.
   const ranked: Array<{
     userId: string;
     screenName: string;
+    score: number;
     bpm: number;
     accuracy: number | null;
     gamesPlayed: number;
+    trustedGames: number;
+    provisional: boolean;
   }> = [];
   for (const [userId, entry] of byUser.entries()) {
     if (entry.games.length < LEADERBOARD_MIN_GAMES) continue;
-    const best = [...entry.games].sort((a, b) => b.bpm - a.bpm).slice(0, LEADERBOARD_BEST_N);
+    const best = [...entry.games]
+      .sort((a, b) => b.contribution - a.contribution)
+      .slice(0, LEADERBOARD_BEST_N);
+    const score = round1(best.reduce((s, g) => s + g.contribution, 0) / best.length);
     const avgBpm = round1(best.reduce((s, g) => s + g.bpm, 0) / best.length);
     const accs = best.map((g) => g.accuracy).filter((a): a is number => a != null);
     const accuracy = accs.length > 0 ? Math.round(accs.reduce((s, a) => s + a, 0) / accs.length) : null;
-    ranked.push({ userId, screenName: entry.screenName, bpm: avgBpm, accuracy, gamesPlayed: entry.games.length });
+    const trustedGames = entry.games.filter((g) => g.trusted).length;
+    const provisional = entry.games.length < LEADERBOARD_ESTABLISHED_GAMES;
+    ranked.push({
+      userId,
+      screenName: entry.screenName,
+      score,
+      bpm: avgBpm,
+      accuracy,
+      gamesPlayed: entry.games.length,
+      trustedGames,
+      provisional,
+    });
   }
 
   // All-time Shark-mode WIN count per ranked user (window-independent),
@@ -921,7 +1021,9 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
     }
   }
 
-  // 24h 8-ball win count per ranked user (grouped query, one round-trip).
+  // 24h win count per ranked user, for the SAME mode this board ranks (grouped
+  // query, one round-trip). An 8-ball board counts 8-ball wins, a 9-ball board
+  // counts 9-ball wins.
   const winsTodayByUser = new Map<string, number>();
   if (rankedUserIds.length > 0) {
     const cutoff = windowCutoff("24h") as Date;
@@ -934,7 +1036,7 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
           inArray(gameParticipantsTable.userId, rankedUserIds),
           isNotNull(gamesTable.endedAt),
           gte(gamesTable.endedAt, cutoff),
-          eq(gamesTable.gameType, "8ball"),
+          eq(gamesTable.gameType, mode),
           sql`${gamesTable.gameState} ->> 'sharkAggression' IS NULL`,
           sql`${gamesTable.gameState} ->> 'chaosMode' IS NULL`,
           sql`${gamesTable.winner} = ${gameParticipantsTable.displayName}`,
@@ -1001,7 +1103,7 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
     }
   }
 
-  const result: LeaderboardRow[] = ranked.map((r) => {
+  const result: RankedEntry[] = ranked.map((r) => {
     const meta = metaById.get(r.userId);
     const isAdmin = isAdminEmail(meta?.email ?? "");
     const isPaid = paidUserIds.has(r.userId);
@@ -1009,19 +1111,23 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
     return {
       rank: 0,
       screenName: r.screenName,
+      score: r.score,
       bpm: r.bpm,
       accuracy: r.accuracy,
       gamesPlayed: r.gamesPlayed,
+      trustedGames: r.trustedGames,
+      provisional: r.provisional,
       sharkLevel: sharkByUser.get(r.userId) ?? 0,
       profileBackground: bgByUser.get(r.userId) ?? null,
       winsToday: winsTodayByUser.get(r.userId) ?? 0,
       rainbowName,
     };
   });
-  // Rank by score (bpm) desc; tie-break by accuracy desc then name for stability.
+  // Rank by composite score desc; tie-break by accuracy desc then name for
+  // stability. (Score already folds in pace, accuracy, and trust weighting.)
   result.sort(
     (a, b) =>
-      b.bpm - a.bpm ||
+      b.score - a.score ||
       (b.accuracy ?? -1) - (a.accuracy ?? -1) ||
       a.screenName.localeCompare(b.screenName),
   );
@@ -1031,14 +1137,26 @@ async function computeLeaderboard(window: LeaderboardWindow): Promise<Leaderboar
   return result;
 }
 
+/**
+ * Internal ranked row: the public {@link LeaderboardRow} plus the hidden
+ * ranking/anti-cheat signals (`score`, `trustedGames`, `provisional`). Cached as
+ * the single source of truth; public resolvers strip the hidden fields, the
+ * admin resolver keeps them.
+ */
+interface RankedEntry extends LeaderboardRow {
+  score: number;
+  trustedGames: number;
+  provisional: boolean;
+}
+
 interface LeaderboardCacheEntry {
-  rows: LeaderboardRow[];
+  rows: RankedEntry[];
   expiresAt: number;
 }
 const leaderboardCache = new Map<string, LeaderboardCacheEntry>();
 
 /**
- * Drop all cached leaderboard windows. Call after any change that affects
+ * Drop all cached leaderboard windows/modes. Call after any change that affects
  * a player's ranking appearance (e.g. profile-theme update) so the next
  * request recomputes with the fresh data rather than serving a stale card.
  */
@@ -1047,16 +1165,69 @@ export function clearLeaderboardCache(): void {
 }
 
 /**
- * Resolve the full ranking for a window, using the 1-hour cache. The route
- * paginates / slices the returned array; the whole ranking is computed once per
- * window so per-page and widget reads are cheap.
+ * Resolve the full internal ranking for a mode+window, using the 1-hour cache.
+ * Each (mode, window) pair caches independently; the 8-ball and 9-ball boards
+ * are never merged.
  */
-export async function resolveLeaderboard(window: LeaderboardWindow): Promise<LeaderboardRow[]> {
-  const key = `leaderboard:${window}`;
+async function resolveRanked(
+  mode: LeaderboardMode,
+  window: LeaderboardWindow,
+): Promise<RankedEntry[]> {
+  const key = `leaderboard:${mode}:${window}`;
   const now = Date.now();
   const hit = leaderboardCache.get(key);
   if (hit && hit.expiresAt > now) return hit.rows;
-  const rows = await computeLeaderboard(window);
+  const rows = await computeLeaderboard(mode, window);
   leaderboardCache.set(key, { rows, expiresAt: now + STATS_CACHE_TTL_MS });
   return rows;
+}
+
+/** Strip the hidden ranking signals — the public leaderboard row only. */
+function toPublicRow(e: RankedEntry): LeaderboardRow {
+  return {
+    rank: e.rank,
+    screenName: e.screenName,
+    bpm: e.bpm,
+    accuracy: e.accuracy,
+    gamesPlayed: e.gamesPlayed,
+    sharkLevel: e.sharkLevel,
+    profileBackground: e.profileBackground,
+    winsToday: e.winsToday,
+    rainbowName: e.rainbowName,
+  };
+}
+
+/**
+ * Resolve the public ranking for a mode+window (1-hour cache). The route
+ * paginates / slices the returned array; the whole ranking is computed once per
+ * (mode, window) so per-page and widget reads are cheap. Hidden ranking signals
+ * (score/trust/provisional) are stripped — use {@link resolveAdminLeaderboard}
+ * for those.
+ */
+export async function resolveLeaderboard(
+  mode: LeaderboardMode,
+  window: LeaderboardWindow,
+): Promise<LeaderboardRow[]> {
+  return (await resolveRanked(mode, window)).map(toPublicRow);
+}
+
+/**
+ * Admin-only ranking for a mode+window: the public ordering plus the hidden
+ * composite `score`, `trustedGames`, and `provisional` flag. Same cache as the
+ * public resolver. Callers MUST enforce the admin allowlist before exposing it.
+ */
+export async function resolveAdminLeaderboard(
+  mode: LeaderboardMode,
+  window: LeaderboardWindow,
+): Promise<AdminLeaderboardRow[]> {
+  return (await resolveRanked(mode, window)).map((e) => ({
+    rank: e.rank,
+    screenName: e.screenName,
+    score: e.score,
+    bpm: e.bpm,
+    accuracy: e.accuracy,
+    gamesPlayed: e.gamesPlayed,
+    trustedGames: e.trustedGames,
+    provisional: e.provisional,
+  }));
 }
