@@ -552,6 +552,12 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     practice: "PRACTICE",
                     shark: "🦈 SHARK",
                   };
+                  const fmtHHMM = (ms: number) => {
+                    const totalMin = Math.floor(ms / 60000);
+                    const hh = Math.floor(totalMin / 60);
+                    const mm = totalMin % 60;
+                    return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+                  };
                   const cx = 80, cy = 80, r = 68;
                   let angle = -Math.PI / 2;
                   const slices = stats.playTimeByType.map((p) => {
@@ -602,6 +608,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                                   {MODE_LABELS[s.gameType] ?? s.gameType.toUpperCase()}{" "}
                                   <span style={{ color: MODE_COLORS[s.gameType] ?? "#f4f4dc" }}>{pct}%</span>
                                   {" "}<span style={{ color: "#fff" }}>({s.gameCount})</span>
+                                  {" "}<span style={{ color: "#a9c9b3" }}>🕐{fmtHHMM(s.avgDurationMs * s.gameCount)}</span>
                                 </span>
                               </div>
                             );
