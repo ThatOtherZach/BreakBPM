@@ -87,8 +87,30 @@ export function LeaderboardRowCard({
             <PlayerName name={row.screenName} rainbow={row.rainbowName ?? false} />
           </span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <WinsTodayChip winsToday={row.winsToday ?? 0} small />
+          <span
+            style={{
+              fontFamily: "VT323",
+              fontSize: 16,
+              lineHeight: 1,
+              color: "#ffe98a",
+              textShadow: "1px 1px 0 #042414",
+            }}
+          >
+            {row.bpm.toFixed(1)} BPM
+          </span>
+          <span
+            style={{
+              fontFamily: "VT323",
+              fontSize: 16,
+              lineHeight: 1,
+              color: row.accuracy != null ? "#b9e6c4" : "#8aa593",
+              textShadow: "1px 1px 0 #042414",
+            }}
+          >
+            {row.accuracy != null ? `${row.accuracy}% ACC` : "—% ACC"}
+          </span>
           {row.sharkLevel != null && row.sharkLevel > 0 && (
             <span
               style={{
@@ -103,30 +125,6 @@ export function LeaderboardRowCard({
             </span>
           )}
         </div>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-        <span
-          style={{
-            fontFamily: "VT323",
-            fontSize: 22,
-            lineHeight: 1,
-            color: "#ffe98a",
-            textShadow: "1px 1px 0 #042414",
-          }}
-        >
-          {row.bpm.toFixed(1)} BPM
-        </span>
-        <span
-          style={{
-            fontFamily: "VT323",
-            fontSize: 16,
-            lineHeight: 1,
-            color: row.accuracy != null ? "#b9e6c4" : "#8aa593",
-            textShadow: "1px 1px 0 #042414",
-          }}
-        >
-          {row.accuracy != null ? `${row.accuracy}% ACC` : "—% ACC"}
-        </span>
       </div>
       {onWho && (
         <button className="btn" style={{ flexShrink: 0 }} onClick={() => onWho(row.screenName)}>
