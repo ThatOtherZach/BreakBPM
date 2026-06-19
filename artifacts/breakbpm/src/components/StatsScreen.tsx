@@ -16,7 +16,7 @@ import Navbar from "./Navbar";
 import { useAuth } from "../lib/authClient";
 import { SOLIDS } from "../lib/gameLogic";
 import StatsHero, { BALL_COLORS, fmtInt, fmtPct } from "./StatsHero";
-import { THEME_FELT, THEME_ACCENT } from "../lib/backgroundVariants";
+import { THEME_ACCENT } from "../lib/backgroundVariants";
 
 interface Props {
   onBack: () => void;
@@ -542,20 +542,12 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   const total = stats.playTimeByType.reduce((s, p) => s + p.gameCount, 0);
                   if (total === 0) return null;
                   const MODE_COLORS: Record<string, string> = {
-                    "8ball": THEME_FELT.green.felt,
-                    "9ball": "#ffd700",
-                    practice: THEME_FELT.purple.felt,
-                    shark: THEME_FELT.blue.felt,
-                  };
-                  // Felt shades are deliberately dark (they read as table felt in
-                  // the swatch + pie); for the % text on the dark wood panel we use
-                  // the vivid same-hue accent so it stays legible.
-                  const MODE_PCT_COLORS: Record<string, string> = {
                     "8ball": THEME_ACCENT.green,
                     "9ball": "#ffd700",
                     practice: THEME_ACCENT.purple,
                     shark: THEME_ACCENT.blue,
                   };
+                  const MODE_PCT_COLORS = MODE_COLORS;
                   const MODE_LABELS: Record<string, string> = {
                     "8ball": "8-BALL",
                     "9ball": "9-BALL",
