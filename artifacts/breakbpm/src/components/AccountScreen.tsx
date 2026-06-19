@@ -666,6 +666,13 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
               </>
             )}
             {error && <div style={{ color: "#c00", fontSize: 12 }}>{error}</div>}
+            <button
+              className="btn w-full"
+              style={{ marginTop: 8 }}
+              onClick={handleSignOut}
+            >
+              Sign Out
+            </button>
           </div>
         </div>
 
@@ -1161,13 +1168,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
           </div>
         </div>
 
-        <button
-          className="btn btn-big w-full"
-          style={{ marginTop: 8, marginBottom: 16 }}
-          onClick={handleSignOut}
-        >
-          Sign Out
-        </button>
       </div>
       {revealState !== "idle" && (
         <LuckyBreakReveal
