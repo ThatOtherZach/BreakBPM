@@ -665,7 +665,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 Sign Out
               </button>
               {canEditName && (
-                <button className="btn" onClick={() => setEditing(true)}>Edit</button>
+                <button className="btn" style={{ flex: 1 }} onClick={() => setEditing(true)}>Edit</button>
               )}
             </div>
           </div>
