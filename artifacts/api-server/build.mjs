@@ -19,6 +19,13 @@ async function buildAll() {
     platform: "node",
     bundle: true,
     format: "esm",
+    // Split shared/dynamically-imported code into separate chunks. index.ts
+    // dynamically imports ./app, so the heavy app graph (Clerk, Stripe, viem,
+    // stripe-replit-sync) lands in its own chunk that V8 only parses AFTER the
+    // tiny entry has already bound the port. Without this, Node has to parse
+    // the entire multi-MB single bundle before our first line runs, which makes
+    // time-to-listen lose the deploy startup-probe race.
+    splitting: true,
     outdir: distDir,
     outExtension: { ".js": ".mjs" },
     logLevel: "info",
