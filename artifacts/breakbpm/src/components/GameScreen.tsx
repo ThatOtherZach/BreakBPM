@@ -1072,6 +1072,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                         {active ? <span className="cue-ball-icon" /> : null}
                       </span>
                       <span style={{ fontSize: 16, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {state.phase === 'ended' && state.winner === p.name && <span style={{ color: 'var(--amber)' }}>★ </span>}
                         <PlayerName name={p.name} rainbow={rainbowBySlot.get(i) ?? isRainbowName(p.name)} />
                       </span>
                       {teamLabel && (
