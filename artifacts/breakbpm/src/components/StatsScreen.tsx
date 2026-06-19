@@ -452,15 +452,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         tone="cyan"
                       />
                     )}
-                    {(stats.eightBallDecidedGames ?? 0) > 0 && (
-                      <PixelMeter
-                        label="8-BALL SINK RATE"
-                        emoji="🎱"
-                        pct={stats.eightBallSinkRate == null ? null : stats.eightBallSinkRate * 100}
-                        display={fmtPct(stats.eightBallSinkRate)}
-                        tone="amber"
-                      />
-                    )}
                   </div>
                 </div>
 
