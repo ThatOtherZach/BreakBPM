@@ -63,7 +63,7 @@ The aggression setting determines when the Shark pockets a ball. It is an honor 
 
 ## Play Anywhere, With Anyone
 
-![BreakBPM live game scoreboard — balls-per-minute, accuracy, and the rack](/screenshot-home.jpg)
+![BreakBPM live game scoreboard — balls-per-minute, accuracy, and the rack](/screenshot-home.gif)
 
 One device keeps score and acts as host for other players to join using a **5-character share code**. You can copy the code with the 📋 icon, or click-and-hold to reveal a QR code to scan and join. 
 
