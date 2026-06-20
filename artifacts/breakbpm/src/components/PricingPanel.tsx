@@ -129,18 +129,19 @@ export default function PricingPanel({
                   </span>
                 </div>
                 <div style={{ fontSize: 11, color: "#444" }}>{plan.description}</div>
-                {showBuyButtons && (
-                  <button
-                    className="btn btn-primary w-full"
-                    onClick={onBuy}
-                    style={{ marginTop: 2 }}
-                  >
-                    Buy
-                  </button>
-                )}
               </div>
             ))}
           </div>
+        )}
+
+        {showBuyButtons && (
+          <button
+            className="btn btn-primary w-full"
+            onClick={onBuy}
+            style={{ marginTop: 2 }}
+          >
+            Buy a Pass →
+          </button>
         )}
 
         {footer}
