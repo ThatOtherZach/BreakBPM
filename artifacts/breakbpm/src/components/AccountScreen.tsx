@@ -511,18 +511,36 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                   border: "1px solid #ccc",
                   borderRadius: 3,
                   padding: "5px 10px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
                 }}>
-                  📺{" "}
-                  <a
-                    href={`/watch/${encodeURIComponent(account.screenName)}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setLocation(`/watch/${encodeURIComponent(account.screenName)}`);
-                    }}
-                    style={{ color: "#000080" }}
-                  >
-                    breakbpm.com/watch/{account.screenName}
-                  </a>
+                  <div>
+                    📺{" "}
+                    <a
+                      href={`/watch/${encodeURIComponent(account.screenName)}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setLocation(`/watch/${encodeURIComponent(account.screenName)}`);
+                      }}
+                      style={{ color: "#000080" }}
+                    >
+                      breakbpm.com/watch/{account.screenName}
+                    </a>
+                  </div>
+                  {account.email && (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        color: "#000000",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      📮 {account.email}
+                    </span>
+                  )}
                 </div>
                 {/* Styled like a leaderboard standing (fpp-card history-card):
                     felt tinted to the player's theme, global rank on the left,
@@ -575,19 +593,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                         <PlayerName name={account.screenName} rainbow={effectiveTheme === "rainbow"} />
                       </span>
                     </div>
-                    {account.email && (
-                      <span
-                        style={{
-                          fontSize: 10,
-                          color: "#000000",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        📮 {account.email}
-                      </span>
-                    )}
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <WinsTodayChip winsToday={account.winsToday ?? 0} small />
                       {standing != null && (
