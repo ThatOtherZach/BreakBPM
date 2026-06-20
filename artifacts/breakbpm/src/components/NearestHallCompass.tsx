@@ -214,7 +214,7 @@ export default function NearestHallCompass({
   return (
     <div className="fpp-compass">
       <div className="fpp-compass-head">
-        <span className="fpp-compass-title">🎱 NEAREST HALL</span>
+        <span className="fpp-compass-title">NEAREST HALL</span>
       </div>
       {phase === "idle" && (
         <div className="fpp-compass-body">
