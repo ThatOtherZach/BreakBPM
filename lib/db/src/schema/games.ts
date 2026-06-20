@@ -1,7 +1,96 @@
+import { sql } from "drizzle-orm";
 import { pgTable, text, timestamp, integer, jsonb, boolean, index, uniqueIndex, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
+
+/**
+ * Bump when the stored summary shape changes incompatibly. Parsers treat a
+ * blob without a matching `v` as "no summary" and fall back / skip, so old
+ * rows are never mis-read after a shape change (re-run the backfill to lift
+ * them to the new version).
+ */
+export const GAME_SUMMARY_VERSION = 1;
+
+/**
+ * Game-level distilled summary, stored on `games.summary` and computed once at
+ * finalize (see `gameSummary.ts`). Carries every game-wide number the read
+ * paths need so stats/leaderboard/history stop parsing the heavy
+ * `gameState.shotLog` JSONB: ALL-players totals (so global stats can sum across
+ * every shooter, including the invisible Shark), the slot-ordered player
+ * snapshot (names + teams — for the viewer-relative outcome), and a compact
+ * pocket sequence for the history mini-log. Empty `{}` until finalize.
+ */
+export interface GameSummary {
+  /** Summary schema version (see GAME_SUMMARY_VERSION). */
+  v: number;
+  /** ALL-players "shot" count (pocket / miss / foul / safety). */
+  totalShots: number;
+  totalMisses: number;
+  totalFouls: number;
+  totalSafeties: number;
+  /** Undo count carried from gameState (drives the global undos stat). */
+  undoCount: number;
+  /** True when an 8-ball game was decided on the 8 by any player. */
+  eightDecided: boolean;
+  /** True when that deciding 8-ball was a clean win (not a scratch/lose). */
+  eightClean: boolean;
+  /** Slot-ordered player snapshot for viewer-relative outcome resolution. */
+  players: Array<{ name: string; team: string | null }>;
+  /**
+   * Balls in pocket order (any entry that sank a ball — sinks plus a terminal
+   * win/lose that pocketed; INCLUDES the terminal lose, matching the legacy
+   * history mini-log). `player` is who sank it.
+   */
+  pocketSequence: Array<{ ball: number; player: string }>;
+}
+
+/**
+ * Per-participant distilled summary, stored on `game_participants.summary` and
+ * computed once at finalize. Two windows are stored because the read paths use
+ * different ones and collapsing them would regress a participant who left
+ * mid-game:
+ *  - STATS window `[statsStartAt, leftAt]`, attributed by `displayName` — the
+ *    window personal stats AND the leaderboard use.
+ *  - HISTORY window `[statsStartAt, +inf)`, attributed by the slot's player
+ *    name — the window the per-game history pace uses.
+ * Empty `{}` until finalize.
+ */
+export interface ParticipantSummary {
+  /** Summary schema version (see GAME_SUMMARY_VERSION). */
+  v: number;
+  // ── stats window [statsStartAt, leftAt], by displayName ──
+  /** Per-game BPM × 10 (null = no pockets, 0 = sub-ms). MEAN-aggregated. */
+  statsBpmX10: number | null;
+  /** Pocketed balls (accuracy numerator). */
+  made: number;
+  /** Qualifying attempts (pocket + miss + foul). Pooled for the accuracy %. */
+  attempts: number;
+  /** "Shot" count (pocket / miss / foul / safety). */
+  shotCount: number;
+  missCount: number;
+  foulCount: number;
+  safetyCount: number;
+  /** This player's locked-in 8-ball group ("solids" | "stripes" | null). */
+  team: string | null;
+  /** Sink/win pocket histogram by ball (EXCLUDES terminal lose) for top-balls. */
+  ballCounts: Record<string, number>;
+  /** This participant decided an 8-ball game on the 8 (own terminal attempt). */
+  eightDecided: boolean;
+  eightClean: boolean;
+  // ── history window [statsStartAt, +inf), by slot player name ──
+  /** History-card BPM × 10 (null = no pockets, 0 = sub-ms). */
+  historyBpmX10: number | null;
+  /** History-card sunk-ball count (any entry that pocketed). */
+  historySunk: number;
+  /**
+   * Count of this slot's attributable entries in the history window. Lets the
+   * read path distinguish "no attributable shots" (→ host falls back to the
+   * row-level bpm/sunk) from "shot but sank nothing" (→ genuine null/0), exactly
+   * as the legacy `resolveParticipantPace` did.
+   */
+  historyShots: number;
+}
 
 /**
  * Persisted games. Created at /games/start with `endedAt = null` (in-progress)
@@ -38,6 +127,28 @@ export const gamesTable = pgTable(
       .defaultNow(),
     /** Null while the game is in-progress. */
     endedAt: timestamp("ended_at", { withTimezone: true }),
+    // ── Finalize-time denormalized discriminators (promoted out of gameState
+    // so stats/leaderboard SQL filters never parse the JSONB). Null on
+    // in-progress rows; populated at every finalize path + the backfill. ──
+    /** gameState.sharkAggression ("normal"|"hard"); NULL = not a Shark game. */
+    sharkAggression: text("shark_aggression"),
+    /**
+     * gameState.chaosMode ("eight-last"|"anything-goes"|"none"); NULL =
+     * team/normal. MUST stay nullable — the leaderboard grandfathers pre-cutoff
+     * games on a genuine NULL.
+     */
+    chaosMode: text("chaos_mode"),
+    /** gameState.ruleSet (e.g. "open-through-break"); NULL = legacy. MUST stay nullable. */
+    ruleSet: text("rule_set"),
+    /** Host's frozen felt theme (gameState.hostTheme). NULL = default green. */
+    hostTheme: text("host_theme"),
+    /**
+     * Why a row was force-closed (gameState.forfeitReason):
+     * "max_duration_60min" | "inactivity_60min" | "all_left". NULL = natural finish.
+     */
+    endReason: text("end_reason"),
+    /** Game-level distilled summary (see GameSummary). Empty `{}` until finalize. */
+    summary: jsonb("summary").$type<GameSummary>().notNull().default(sql`'{}'::jsonb`),
   },
   (t) => [
     index("games_user_ended_idx").on(t.userId, t.endedAt),
@@ -90,6 +201,8 @@ export const gameParticipantsTable = pgTable(
      * authenticate via Clerk.
      */
     guestToken: text("guest_token"),
+    /** Per-participant distilled summary (see ParticipantSummary). Empty `{}` until finalize. */
+    summary: jsonb("summary").$type<ParticipantSummary>().notNull().default(sql`'{}'::jsonb`),
   },
   (t) => [
     primaryKey({ columns: [t.gameId, t.slotIndex] }),

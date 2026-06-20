@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { eq, inArray } from "drizzle-orm";
+import { writeFinalizedSummary } from "../lib/gameSummaryWriter";
 import {
   db,
   usersTable,
@@ -270,6 +271,19 @@ export async function seedGame(
     statsStartAt: startedAt,
   });
   return row;
+}
+
+/**
+ * Distill a fully-assembled finished game into its authoritative summaries +
+ * discriminator columns, exactly as production does at finalize. Call this AFTER
+ * a finished game's gameState, ruleSet, and ALL participants are in place — the
+ * summary-backed read paths (leaderboard, stats) skip rows whose summary is
+ * still empty, so a seeded finished game must be finalized to be ranked. Thin
+ * wrapper over the production `writeFinalizedSummary` (re-reads the committed
+ * gameState), so tests stay faithful to the real finalize math.
+ */
+export async function finalizeSeededGame(gameId: string): Promise<void> {
+  await writeFinalizedSummary(gameId);
 }
 
 /** Insert a (non-host) participant row into an existing game. */

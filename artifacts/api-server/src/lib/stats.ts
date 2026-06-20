@@ -1,25 +1,28 @@
-import { and, count, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNotNull, isNull, lt, ne, or } from "drizzle-orm";
 import { db, gamesTable, gameParticipantsTable, usersTable, passesTable, subscriptionsTable } from "@workspace/db";
 import { resolveUserProfileBackgrounds } from "./userProfileBackground";
 import type { BackgroundVariant } from "./profileBackground";
 import { isAdminEmail } from "./config";
+import { logger } from "./logger";
+import { readGameSummary, readParticipantSummary } from "./gameSummary";
 
 /**
  * Server-side statistics aggregation for the /stats endpoint.
  *
- * Personal stats can't use the denormalized `games.bpm` / `games.accuracy`
- * columns — those are whole-game/host-centric, not the calling user's — and
- * there is no per-participant BPM column. So personal stats are recomputed
- * per game from the `gameState.shotLog`, attributed to the caller's
- * `game_participants.displayName` and bounded by their `statsStartAt`/`leftAt`
- * window. Global stats lean on SQL-friendly denormalized columns where
- * possible and parse the shot log only for event-count breakdowns.
+ * These aggregations NEVER parse the heavy `gameState.shotLog`. Every finished
+ * game carries an authoritative distilled summary written once at finalize: a
+ * game-level `games.summary` (ALL-players totals + 8-ball terminal flags) and a
+ * per-slot `game_participants.summary` (per-window BPM / accuracy / event counts
+ * / ball histogram). The bulk read paths here select those summary columns plus
+ * the denormalized scalar columns (bpm / accuracy / durationMs / outcome) and
+ * the promoted discriminator columns (sharkAggression / chaosMode / ruleSet),
+ * so a stats/leaderboard pass is pure column reads. A row whose summary is
+ * absent or a stale version (`readGameSummary`/`readParticipantSummary` → null)
+ * is skipped, never mis-read ("absent not corrupt").
  *
- * The per-player BPM / accuracy math intentionally mirrors
- * `artifacts/breakbpm/src/lib/gameLogic.ts` (`calculatePlayerBPM`,
- * `playerAccuracyCounts`). It is duplicated here rather than imported because
- * the two live in separate workspace artifacts that must not import each
- * other. Keep the two definitions in lockstep if the scoring rules change.
+ * The per-player BPM / accuracy math lives in the shared pure module
+ * `gameSummary.ts` (which mirrors `gameLogic.ts`); it runs at finalize, not
+ * here. Keep `gameSummary.ts` and `gameLogic.ts` in lockstep if scoring changes.
  */
 
 export type StatWindow = "24h" | "30d" | "365d" | "all";
@@ -33,33 +36,13 @@ export type StatGameMode = "all" | "8ball" | "9ball" | "practice" | "shark";
  */
 export const FREE_TIER_WINDOW: StatWindow = "24h";
 
-const EIGHT_BALL = 8;
 const SHARK_PLAYER_NAME = "Shark";
 
 /** 1-hour cache TTL — global + free-personal snapshots may be up to an hour stale. */
 const STATS_CACHE_TTL_MS = 60 * 60 * 1000;
 
-/** Defensive upper bound on rows parsed in one pass (cached, so cheap amortized). */
-const MAX_ROWS = 5000;
-
 /** Cap on the BPM trend sparkline series (last N games, oldest→newest). */
 const TREND_MAX = 24;
-
-/** Minimal shot-log entry shape parsed out of the gameState JSONB. */
-interface ShotEntry {
-  type?: string;
-  playerName?: string;
-  ball?: number;
-  isFoul?: boolean;
-  timestamp?: number;
-}
-
-interface ParsedGameState {
-  shotLog: ShotEntry[];
-  players: Array<{ name?: string; team?: string }>;
-  undoCount: number;
-  isShark: boolean;
-}
 
 export interface StatsCore {
   gamesPlayed: number;
@@ -120,65 +103,13 @@ export function windowCutoff(window: StatWindow): Date | null {
   }
 }
 
-function parseGameState(raw: unknown): ParsedGameState {
-  const gs = (raw ?? {}) as Record<string, unknown>;
-  const shotLog = Array.isArray(gs["shotLog"]) ? (gs["shotLog"] as ShotEntry[]) : [];
-  const players = Array.isArray(gs["players"])
-    ? (gs["players"] as Array<{ name?: string; team?: string }>)
-    : [];
-  const undoCount = typeof gs["undoCount"] === "number" ? (gs["undoCount"] as number) : 0;
-  const isShark = gs["sharkAggression"] !== undefined && gs["sharkAggression"] !== null;
-  return { shotLog, players, undoCount, isShark };
-}
-
-/** True for any entry that pocketed a ball (sink, or a terminal win/lose that pocketed). */
-function isPocket(e: ShotEntry): boolean {
-  return typeof e.ball === "number";
-}
-/** True for any entry that counts as a "shot" (excludes the Shark-wins 'lose' marker). */
-function isShot(e: ShotEntry): boolean {
-  return isPocket(e) || e.type === "miss" || e.type === "foul" || e.type === "safety" || e.isFoul === true;
-}
-
 /**
- * Per-player BPM over an ordered, already-player-filtered entry list. Mirrors
- * `calculatePlayerBPM`: anchored at the player's first pocket, measured to
- * their latest entry. Returns null with no pockets, 0 for sub-millisecond.
+ * The summary-bearing column shape every bulk read selects. NEVER includes
+ * `gameState` — the whole point is that aggregations read the distilled
+ * `summary` (+ the denormalized scalar/discriminator columns) instead of
+ * parsing the heavy shot log. `summary` is read through `readGameSummary`;
+ * `sharkAggression` is the promoted discriminator (non-null ⇒ Shark game).
  */
-function playerBpm(entries: ShotEntry[]): number | null {
-  if (entries.length === 0) return null;
-  const sinks = entries.filter(isPocket);
-  if (sinks.length === 0) return null;
-  const firstSinkAt = sinks[0].timestamp ?? 0;
-  const lastAt = entries[entries.length - 1].timestamp ?? firstSinkAt;
-  const elapsed = (lastAt - firstSinkAt) / 60000;
-  if (elapsed < 0.001) return 0;
-  return round1(sinks.length / elapsed);
-}
-
-/** Per-player {made, attempts}. Mirrors `playerAccuracyCounts`. */
-function accuracyCounts(entries: ShotEntry[]): { made: number; attempts: number } {
-  const made = entries.filter(isPocket).length;
-  const attempts = entries.filter(
-    (e) => isPocket(e) || e.type === "miss" || e.type === "foul" || e.isFoul === true,
-  ).length;
-  return { made, attempts };
-}
-
-/** Find this game's terminal 8-ball shot (if any), restricted to `player` when given. */
-function eightBallTerminal(
-  shotLog: ShotEntry[],
-  player: string | null,
-): { decided: boolean; clean: boolean } {
-  for (const e of shotLog) {
-    if (e.ball !== EIGHT_BALL) continue;
-    if (e.type !== "win" && e.type !== "lose") continue;
-    if (player !== null && e.playerName !== player) continue;
-    return { decided: true, clean: e.type === "win" };
-  }
-  return { decided: false, clean: false };
-}
-
 interface RowLike {
   gameType: string;
   durationMs: number;
@@ -186,7 +117,8 @@ interface RowLike {
   winner: string | null;
   bpm: number | null;
   accuracy: number | null;
-  gameState: unknown;
+  sharkAggression: string | null;
+  summary: unknown;
   endedAt: Date | null;
 }
 
@@ -248,9 +180,9 @@ export async function countEightBallWinsToday(userId: string): Promise<number> {
         isNotNull(gamesTable.endedAt),
         gte(gamesTable.endedAt, cutoff),
         eq(gamesTable.gameType, "8ball"),
-        sql`${gamesTable.gameState} ->> 'sharkAggression' IS NULL`,
-        sql`${gamesTable.gameState} ->> 'chaosMode' IS NULL`,
-        sql`${gamesTable.winner} = ${gameParticipantsTable.displayName}`,
+        isNull(gamesTable.sharkAggression),
+        isNull(gamesTable.chaosMode),
+        eq(gamesTable.winner, gameParticipantsTable.displayName),
       ),
     );
   return Number(rows[0]?.c ?? 0);
@@ -342,7 +274,7 @@ async function computeGlobalStats(window: StatWindow, gameMode: StatGameMode): P
   const conds = [isNotNull(gamesTable.endedAt)];
   if (cutoff) conds.push(gte(gamesTable.endedAt, cutoff));
   // SQL-side game type filter. Shark and 8ball both fetch "8ball" rows and are
-  // discriminated in-loop (shark detection requires parsing the gameState JSONB).
+  // discriminated in-loop via the promoted `sharkAggression` discriminator column.
   if (gameMode === "9ball") conds.push(eq(gamesTable.gameType, "9ball"));
   else if (gameMode === "practice") conds.push(eq(gamesTable.gameType, "practice"));
   else if (gameMode === "8ball" || gameMode === "shark") conds.push(eq(gamesTable.gameType, "8ball"));
@@ -354,17 +286,16 @@ async function computeGlobalStats(window: StatWindow, gameMode: StatGameMode): P
       winner: gamesTable.winner,
       bpm: gamesTable.bpm,
       accuracy: gamesTable.accuracy,
-      gameState: gamesTable.gameState,
+      sharkAggression: gamesTable.sharkAggression,
+      summary: gamesTable.summary,
       endedAt: gamesTable.endedAt,
     })
     .from(gamesTable)
     .where(and(...conds))
-    .orderBy(desc(gamesTable.endedAt))
-    .limit(MAX_ROWS)) as RowLike[];
+    .orderBy(desc(gamesTable.endedAt))) as RowLike[];
 
   const core = emptyCore();
   if (rows.length === 0) return core;
-  core.gamesPlayed = rows.length;
 
   const byType = new Map<string, { total: number; count: number }>();
   const bpms: number[] = [];
@@ -374,12 +305,29 @@ async function computeGlobalStats(window: StatWindow, gameMode: StatGameMode): P
   let finished = 0;
   let eightDecided = 0;
   let eightClean = 0;
+  // Rows skipped because their summary is absent / a stale version. These are
+  // excluded from BOTH the numerator and the denominator ("absent not corrupt"),
+  // so a transient finalize miss (or a future summary-version bump before the
+  // backfill reruns) cleanly omits the row instead of skewing the averages.
+  // Discriminated-out games (shark/8ball) are NOT skipped here — they `continue`
+  // before the summary read and stay in `gamesPlayed`, matching legacy.
+  let summaryless = 0;
 
   for (const r of rows) {
-    const { shotLog, undoCount, isShark } = parseGameState(r.gameState);
-    // Shark/8ball in-loop discrimination (SQL can only filter by gameType "8ball").
+    // Shark/8ball in-loop discrimination — the promoted discriminator column
+    // (SQL can only filter by gameType "8ball"). Done BEFORE the summary read so
+    // a discriminated-out game never reads its summary (matches legacy ordering).
+    const isShark = r.sharkAggression != null;
     if (gameMode === "8ball" && isShark) continue;
     if (gameMode === "shark" && !isShark) continue;
+    // Authoritative distilled summary — never parse the shot log. Absent / stale
+    // version → skip + log ("absent not corrupt"); never happens on finalized rows.
+    const gsum = readGameSummary(r.summary);
+    if (!gsum) {
+      summaryless += 1;
+      logger.warn({ gameType: r.gameType }, "global stats: skipping game with missing summary");
+      continue;
+    }
     // Completion vs abandonment (forfeit / inactivity-expiry).
     if (r.outcome === "won" || r.outcome === "lost" || r.outcome === "completed") finished += 1;
     // Pace + accuracy from denormalized columns.
@@ -397,25 +345,25 @@ async function computeGlobalStats(window: StatWindow, gameMode: StatGameMode): P
     agg.total += r.durationMs;
     agg.count += 1;
     byType.set(playTimeKey, agg);
-    // Event counts (all players) from the shot log.
-    for (const e of shotLog) {
-      if (isShot(e)) core.totalShots += 1;
-      if (e.type === "miss") core.totalMisses += 1;
-      if (e.type === "foul" || e.isFoul === true) core.totalFouls += 1;
-      if (e.type === "safety") core.totalSafeties += 1;
-    }
-    core.totalUndos += undoCount;
-    // 8-ball decided-on-the-8 rate.
-    if (r.gameType === "8ball") {
-      const t = eightBallTerminal(shotLog, null);
-      if (t.decided) {
-        eightDecided += 1;
-        if (t.clean) eightClean += 1;
-      }
+    // Event counts (all players) from the game-level summary.
+    core.totalShots += gsum.totalShots;
+    core.totalMisses += gsum.totalMisses;
+    core.totalFouls += gsum.totalFouls;
+    core.totalSafeties += gsum.totalSafeties;
+    core.totalUndos += gsum.undoCount;
+    // 8-ball decided-on-the-8 rate (game-level terminal, all players).
+    if (r.gameType === "8ball" && gsum.eightDecided) {
+      eightDecided += 1;
+      if (gsum.eightClean) eightClean += 1;
     }
   }
 
-  core.finishRate = round3(finished / core.gamesPlayed);
+  // Denominator = rows actually aggregated. Equals legacy `rows.length` whenever
+  // every row carries a summary (the steady state after backfill); only a
+  // genuinely summaryless row is dropped from it.
+  core.gamesPlayed = rows.length - summaryless;
+  const gp = core.gamesPlayed;
+  core.finishRate = gp > 0 ? round3(finished / gp) : null;
   core.winRate = null; // meaningless globally
   core.eightBallDecidedGames = eightDecided;
   core.eightBallSinkRate = eightDecided > 0 ? round3(eightClean / eightDecided) : null;
@@ -425,10 +373,10 @@ async function computeGlobalStats(window: StatWindow, gameMode: StatGameMode): P
   core.bestBpm = bpms.length > 0 ? round1(Math.max(...bpms)) : null;
   // Bucket the raw samples into per-period points sized to the window.
   core.trend = buildWindowedTrend(trend, window);
-  core.avgShotsPerGame = round1(core.totalShots / core.gamesPlayed);
-  core.avgMissesPerGame = round1(core.totalMisses / core.gamesPlayed);
-  core.avgFoulsPerGame = round1(core.totalFouls / core.gamesPlayed);
-  core.avgSafetiesPerGame = round1(core.totalSafeties / core.gamesPlayed);
+  core.avgShotsPerGame = gp > 0 ? round1(core.totalShots / gp) : 0;
+  core.avgMissesPerGame = gp > 0 ? round1(core.totalMisses / gp) : 0;
+  core.avgFoulsPerGame = gp > 0 ? round1(core.totalFouls / gp) : 0;
+  core.avgSafetiesPerGame = gp > 0 ? round1(core.totalSafeties / gp) : 0;
   core.playTimeByType = rollUpPlayTime(byType);
   // Ball patterns + solids/stripes + shark are personal-only — left at defaults.
   core.computedAt = Date.now();
@@ -441,8 +389,7 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
     .select({
       gameId: gameParticipantsTable.gameId,
       displayName: gameParticipantsTable.displayName,
-      statsStartAt: gameParticipantsTable.statsStartAt,
-      leftAt: gameParticipantsTable.leftAt,
+      summary: gameParticipantsTable.summary,
     })
     .from(gameParticipantsTable)
     .where(eq(gameParticipantsTable.userId, userId));
@@ -455,7 +402,7 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
   const conds = [inArray(gamesTable.id, ids), isNotNull(gamesTable.endedAt)];
   if (cutoff) conds.push(gte(gamesTable.endedAt, cutoff));
   // SQL-side game type filter. Shark and 8ball both fetch "8ball" rows and are
-  // discriminated in-loop (shark detection requires parsing the gameState JSONB).
+  // discriminated in-loop via the promoted `sharkAggression` discriminator column.
   if (gameMode === "9ball") conds.push(eq(gamesTable.gameType, "9ball"));
   else if (gameMode === "practice") conds.push(eq(gamesTable.gameType, "practice"));
   else if (gameMode === "8ball" || gameMode === "shark") conds.push(eq(gamesTable.gameType, "8ball"));
@@ -468,21 +415,21 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
       winner: gamesTable.winner,
       bpm: gamesTable.bpm,
       accuracy: gamesTable.accuracy,
-      gameState: gamesTable.gameState,
+      sharkAggression: gamesTable.sharkAggression,
+      summary: gamesTable.summary,
       endedAt: gamesTable.endedAt,
     })
     .from(gamesTable)
     .where(and(...conds))
-    .orderBy(desc(gamesTable.endedAt))
-    .limit(MAX_ROWS)) as Array<RowLike & { id: string }>;
+    .orderBy(desc(gamesTable.endedAt))) as Array<RowLike & { id: string }>;
 
   // Recent-chaos-win flag (cosmetic — drives the rainbow AVG-BPM flourish).
   // Computed BEFORE the empty-window early return because it is
   // window-independent: it looks at the caller's 10 most-recent COMPLETED games
   // overall (not the selected window), so a user with no games in the current
   // window can still be eligible (e.g. the fixed-24h /watch profile, or a 24h
-  // /stats request after an idle day). Chaos games are flagged by a top-level
-  // `chaosMode` key in the gameState JSONB; a win is the game's `winner`
+  // /stats request after an idle day). Chaos games are flagged by the promoted
+  // `chaosMode` discriminator column; a win is the game's `winner`
   // matching the caller's slot name (same convention as the Shark win count).
   // The Chaos `none` variant and ties store `winner = null`, so they correctly
   // never trigger it.
@@ -490,7 +437,7 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
     .select({
       winner: gamesTable.winner,
       displayName: gameParticipantsTable.displayName,
-      chaosMode: sql<string | null>`${gamesTable.gameState} ->> 'chaosMode'`,
+      chaosMode: gamesTable.chaosMode,
     })
     .from(gamesTable)
     .innerJoin(
@@ -513,7 +460,6 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
   core.winsToday = await countEightBallWinsToday(userId);
 
   if (rows.length === 0) return core;
-  core.gamesPlayed = rows.length;
 
   const byType = new Map<string, { total: number; count: number }>();
   const bpms: number[] = [];
@@ -529,32 +475,39 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
   let eightDecided = 0;
   let eightClean = 0;
   let sharkWins = 0;
+  // Rows skipped because a summary (per-slot or game-level) is absent / a stale
+  // version. Excluded from BOTH numerator and denominator ("absent not corrupt").
+  // Discriminated-out games (shark/8ball) are NOT counted here — they `continue`
+  // before the summary read and stay in `gamesPlayed`, matching legacy.
+  let summaryless = 0;
 
   for (const r of rows) {
-    const part = partByGame.get(r.id);
-    const displayName = part?.displayName ?? "";
-    const startMs = part?.statsStartAt ? part.statsStartAt.getTime() : -Infinity;
-    const leftMs = part?.leftAt ? part.leftAt.getTime() : Infinity;
-    const { shotLog, players, undoCount, isShark } = parseGameState(r.gameState);
-    // Shark/8ball in-loop discrimination (SQL can only filter by gameType "8ball").
+    // Shark/8ball in-loop discrimination — the promoted discriminator column
+    // (SQL can only filter by gameType "8ball"). Done BEFORE the summary read so
+    // a discriminated-out game never reads its summary (matches legacy ordering).
+    const isShark = r.sharkAggression != null;
     if (gameMode === "8ball" && isShark) continue;
     if (gameMode === "shark" && !isShark) continue;
 
-    // The caller's own shots within their participation window.
-    const mine = shotLog.filter(
-      (e) =>
-        e.playerName === displayName &&
-        typeof e.timestamp === "number" &&
-        e.timestamp >= startMs &&
-        e.timestamp <= leftMs,
-    );
+    // Authoritative per-slot + game-level summaries — never parse the shot log.
+    // Absent / stale version → skip + log; never happens on finalized rows.
+    const part = partByGame.get(r.id);
+    const displayName = part?.displayName ?? "";
+    const psum = readParticipantSummary(part?.summary);
+    const gsum = readGameSummary(r.summary);
+    if (!psum || !gsum) {
+      summaryless += 1;
+      logger.warn({ gameId: r.id }, "personal stats: skipping game with missing summary");
+      continue;
+    }
 
-    // Pace (recomputed — no per-participant BPM column).
-    const bpm = playerBpm(mine);
+    // Pace (per-participant stats window, from the slot summary).
+    const bpm = psum.statsBpmX10 != null ? psum.statsBpmX10 / 10 : null;
     if (bpm != null) bpms.push(bpm);
 
-    // Accuracy (aggregate ratio + per-game best).
-    const { made, attempts } = accuracyCounts(mine);
+    // Accuracy (pooled ratio + per-game best).
+    const made = psum.made;
+    const attempts = psum.attempts;
     totalMade += made;
     totalAttempts += attempts;
     const gameAccuracy = attempts > 0 ? Math.round((made / attempts) * 100) : null;
@@ -567,18 +520,17 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
     if ((bpm != null || gameAccuracy != null) && r.endedAt)
       trend.push({ endedAt: r.endedAt.getTime(), bpm, accuracy: gameAccuracy });
 
-    // Event counts (own shots only).
-    for (const e of mine) {
-      if (isShot(e)) core.totalShots += 1;
-      if (e.type === "miss") core.totalMisses += 1;
-      if (e.type === "foul" || e.isFoul === true) core.totalFouls += 1;
-      if (e.type === "safety") core.totalSafeties += 1;
-      // Top balls — pockets only (sink / terminal win), not lose.
-      if (typeof e.ball === "number" && (e.type === "sink" || e.type === "win")) {
-        ballCounts.set(e.ball, (ballCounts.get(e.ball) ?? 0) + 1);
-      }
+    // Event counts (own shots only) from the per-slot summary.
+    core.totalShots += psum.shotCount;
+    core.totalMisses += psum.missCount;
+    core.totalFouls += psum.foulCount;
+    core.totalSafeties += psum.safetyCount;
+    // Top balls — pockets only (sink / terminal win), keyed by ball number.
+    for (const [ball, c] of Object.entries(psum.ballCounts)) {
+      const n = Number(ball);
+      ballCounts.set(n, (ballCounts.get(n) ?? 0) + c);
     }
-    core.totalUndos += undoCount;
+    core.totalUndos += gsum.undoCount;
 
     // Play time grouped by type (whole-game duration). Shark games are stored as
     // "8ball" but bucket under their own "shark" slice in the Game Modes breakdown.
@@ -594,17 +546,15 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
       if (r.winner != null && r.winner === displayName) wins += 1;
     }
 
-    // 8-ball decided-on-the-8 (own attempts only).
+    // 8-ball decided-on-the-8 (own attempts only) + solids/stripes.
     if (r.gameType === "8ball") {
-      const t = eightBallTerminal(mine, displayName);
-      if (t.decided) {
+      if (psum.eightDecided) {
         eightDecided += 1;
-        if (t.clean) eightClean += 1;
+        if (psum.eightClean) eightClean += 1;
       }
       // Solids vs stripes — only when a group was locked in for this player.
-      const me = players.find((p) => p.name === displayName);
-      if (me?.team === "solids") core.solidsCount += 1;
-      else if (me?.team === "stripes") core.stripesCount += 1;
+      if (psum.team === "solids") core.solidsCount += 1;
+      else if (psum.team === "stripes") core.stripesCount += 1;
     }
 
     // Shark mode — solo, the caller is the lone human.
@@ -620,10 +570,15 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
   core.bestBpm = bpms.length > 0 ? round1(Math.max(...bpms)) : null;
   // Bucket the raw samples into per-period points sized to the window.
   core.trend = buildWindowedTrend(trend, window);
-  core.avgShotsPerGame = round1(core.totalShots / core.gamesPlayed);
-  core.avgMissesPerGame = round1(core.totalMisses / core.gamesPlayed);
-  core.avgFoulsPerGame = round1(core.totalFouls / core.gamesPlayed);
-  core.avgSafetiesPerGame = round1(core.totalSafeties / core.gamesPlayed);
+  // Denominator = rows actually aggregated. Equals legacy `rows.length` whenever
+  // every row carries a summary (the steady state after backfill); only a
+  // genuinely summaryless row is dropped from it.
+  core.gamesPlayed = rows.length - summaryless;
+  const gp = core.gamesPlayed;
+  core.avgShotsPerGame = gp > 0 ? round1(core.totalShots / gp) : 0;
+  core.avgMissesPerGame = gp > 0 ? round1(core.totalMisses / gp) : 0;
+  core.avgFoulsPerGame = gp > 0 ? round1(core.totalFouls / gp) : 0;
+  core.avgSafetiesPerGame = gp > 0 ? round1(core.totalSafeties / gp) : 0;
   core.winRate = nonPracticeGames > 0 ? round3(wins / nonPracticeGames) : null;
   core.finishRate = null; // global-only
   core.eightBallDecidedGames = eightDecided;
@@ -637,8 +592,8 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
 
   // Shark Level is the user's ALL-TIME count of Shark-mode WINS — only games
   // the caller actually beat the Shark in, not every Shark game played
-  // (window-independent, unlike sharkGames above). Shark games are flagged by a
-  // top-level `sharkAggression` key in the gameState JSONB; a win is the game's
+  // (window-independent, unlike sharkGames above). Shark games are flagged by
+  // the promoted `sharkAggression` discriminator column; a win is the game's
   // `winner` matching the caller's slot name. Count in SQL across every game the
   // caller participated in, regardless of the window.
   const sharkRows = await db
@@ -655,9 +610,9 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
       and(
         inArray(gamesTable.id, ids),
         isNotNull(gamesTable.endedAt),
-        sql`${gamesTable.gameState} ->> 'sharkAggression' IS NOT NULL`,
-        sql`${gamesTable.winner} = ${gameParticipantsTable.displayName}`,
-        sql`${gamesTable.winner} <> ${SHARK_PLAYER_NAME}`,
+        isNotNull(gamesTable.sharkAggression),
+        eq(gamesTable.winner, gameParticipantsTable.displayName),
+        ne(gamesTable.winner, SHARK_PLAYER_NAME),
       ),
     );
   core.sharkLevel = Number(sharkRows[0]?.c ?? 0);
@@ -782,8 +737,6 @@ export interface AdminLeaderboardRow {
   provisional: boolean;
 }
 
-/** Defensive cap on eligible game rows parsed in one ranking pass (cached). */
-const LEADERBOARD_MAX_ROWS = 20000;
 /** Minimum qualifying games before a player is ranked at all (the reward floor). */
 const LEADERBOARD_MIN_GAMES = 2;
 /**
@@ -855,22 +808,29 @@ async function computeLeaderboard(
     isNotNull(gamesTable.endedAt),
     eq(gamesTable.gameType, mode),
     eq(gamesTable.maxPlayers, 2),
-    sql`${gamesTable.gameState} ->> 'sharkAggression' IS NULL`,
-    sql`${gamesTable.gameState} ->> 'chaosMode' IS NULL`,
+    isNull(gamesTable.sharkAggression),
+    isNull(gamesTable.chaosMode),
   ];
   if (mode === "8ball") {
+    // ruleSet grandfather, EXACTLY mirroring the legacy JSONB filter: a real
+    // 'open-through-break', OR a NULL ruleSet only for games that ended before
+    // the cutoff. `ruleSet` MUST be a true-NULL column so this distinction holds.
     conds.push(
-      sql`(${gamesTable.gameState} ->> 'ruleSet' = 'open-through-break' OR (${gamesTable.gameState} ->> 'ruleSet' IS NULL AND ${gamesTable.endedAt} < ${LEADERBOARD_NULL_RULESET_CUTOFF}))`,
+      or(
+        eq(gamesTable.ruleSet, "open-through-break"),
+        and(isNull(gamesTable.ruleSet), lt(gamesTable.endedAt, LEADERBOARD_NULL_RULESET_CUTOFF)),
+      )!,
     );
   }
   if (cutoff) conds.push(gte(gamesTable.endedAt, cutoff));
 
+  // Only the eligible game IDs are needed — all pace/accuracy comes from each
+  // participant's stored summary, never the shot log.
   const rows = await db
-    .select({ id: gamesTable.id, gameState: gamesTable.gameState })
+    .select({ id: gamesTable.id })
     .from(gamesTable)
     .where(and(...conds))
-    .orderBy(desc(gamesTable.endedAt))
-    .limit(LEADERBOARD_MAX_ROWS);
+    .orderBy(desc(gamesTable.endedAt));
   if (rows.length === 0) return [];
 
   const gameIds = rows.map((r) => r.id);
@@ -881,10 +841,8 @@ async function computeLeaderboard(
     .select({
       gameId: gameParticipantsTable.gameId,
       userId: gameParticipantsTable.userId,
-      displayName: gameParticipantsTable.displayName,
-      statsStartAt: gameParticipantsTable.statsStartAt,
-      leftAt: gameParticipantsTable.leftAt,
       screenName: usersTable.screenName,
+      summary: gameParticipantsTable.summary,
     })
     .from(gameParticipantsTable)
     .innerJoin(usersTable, eq(gameParticipantsTable.userId, usersTable.id))
@@ -922,22 +880,20 @@ async function computeLeaderboard(
     // and are excluded by the inner join, so they never appear in `ps`). One
     // registered participant means the opponent was an anonymous guest seat.
     const trusted = ps.length >= 2;
-    const { shotLog } = parseGameState(r.gameState);
     for (const p of ps) {
       if (!p.userId) continue;
-      const startMs = p.statsStartAt ? p.statsStartAt.getTime() : -Infinity;
-      const leftMs = p.leftAt ? p.leftAt.getTime() : Infinity;
-      const mine = shotLog.filter(
-        (e) =>
-          e.playerName === p.displayName &&
-          typeof e.timestamp === "number" &&
-          e.timestamp >= startMs &&
-          e.timestamp <= leftMs,
-      );
-      const bpm = playerBpm(mine);
+      // Pace + accuracy from the per-slot summary (stats window) — never the shot
+      // log. Absent / stale version → skip + log ("absent not corrupt").
+      const psum = readParticipantSummary(p.summary);
+      if (!psum) {
+        logger.warn({ gameId: r.id }, "leaderboard: skipping participant with missing summary");
+        continue;
+      }
+      const bpm = psum.statsBpmX10 != null ? psum.statsBpmX10 / 10 : null;
       // Drop games with no usable pace or an implausible (outlier) one.
       if (bpm == null || bpm <= 0 || bpm > LEADERBOARD_MAX_PLAUSIBLE_BPM) continue;
-      const { made, attempts } = accuracyCounts(mine);
+      const made = psum.made;
+      const attempts = psum.attempts;
       // 9-ball pace-padding guard: a combo / 9-on-the-break win pockets just a
       // ball or two almost instantly. Require a floor of pocketed balls so such
       // tiny-but-extreme-BPM games don't pad a 9-ball score. 8-ball is unaffected.
@@ -996,7 +952,7 @@ async function computeLeaderboard(
   // All-time Shark-mode WIN count per ranked user (window-independent),
   // matching how the profile derives `sharkLevel` — only games the user beat
   // the Shark in, not every Shark game played. Shark games are solo and flagged
-  // by a top-level `sharkAggression` key in the gameState JSONB; a win is the
+  // by the promoted `sharkAggression` discriminator column; a win is the
   // game's `winner` matching the user's slot name. One grouped count covers
   // every ranked user.
   const sharkByUser = new Map<string, number>();
@@ -1010,9 +966,9 @@ async function computeLeaderboard(
         and(
           inArray(gameParticipantsTable.userId, rankedUserIds),
           isNotNull(gamesTable.endedAt),
-          sql`${gamesTable.gameState} ->> 'sharkAggression' IS NOT NULL`,
-          sql`${gamesTable.winner} = ${gameParticipantsTable.displayName}`,
-          sql`${gamesTable.winner} <> ${SHARK_PLAYER_NAME}`,
+          isNotNull(gamesTable.sharkAggression),
+          eq(gamesTable.winner, gameParticipantsTable.displayName),
+          ne(gamesTable.winner, SHARK_PLAYER_NAME),
         ),
       )
       .groupBy(gameParticipantsTable.userId);
@@ -1037,9 +993,9 @@ async function computeLeaderboard(
           isNotNull(gamesTable.endedAt),
           gte(gamesTable.endedAt, cutoff),
           eq(gamesTable.gameType, mode),
-          sql`${gamesTable.gameState} ->> 'sharkAggression' IS NULL`,
-          sql`${gamesTable.gameState} ->> 'chaosMode' IS NULL`,
-          sql`${gamesTable.winner} = ${gameParticipantsTable.displayName}`,
+          isNull(gamesTable.sharkAggression),
+          isNull(gamesTable.chaosMode),
+          eq(gamesTable.winner, gameParticipantsTable.displayName),
         ),
       )
       .groupBy(gameParticipantsTable.userId);

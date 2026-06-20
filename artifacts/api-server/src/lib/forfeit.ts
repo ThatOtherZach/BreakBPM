@@ -1,6 +1,8 @@
 import { and, eq, isNull, lt, ne, or } from "drizzle-orm";
 import { db, gamesTable, gameParticipantsTable } from "@workspace/db";
 import { clearUserStatsCache } from "./stats";
+import { writeFinalizedSummary } from "./gameSummaryWriter";
+import { logger } from "./logger";
 
 /**
  * Inactivity cutoff — versus games auto-forfeit after this much idle
@@ -62,6 +64,14 @@ async function finalizeStaleRow(row: GameRow, reason: string, now: Date): Promis
   // cached personal stats lets live views (the /watch/{name} profile header)
   // reflect the just-expired game on their next poll.
   if (finalized.length > 0) {
+    // Distill the now-finalized game into its authoritative summaries.
+    // Best-effort: the idempotent backfill can repair a miss, and reads treat
+    // an empty summary as "absent", so never let this block the sweep.
+    try {
+      await writeFinalizedSummary(row.id);
+    } catch (err) {
+      logger.warn({ gameId: row.id, err }, "Failed to write game summary");
+    }
     const parts = await db
       .select({ userId: gameParticipantsTable.userId })
       .from(gameParticipantsTable)

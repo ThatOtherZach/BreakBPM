@@ -17,7 +17,13 @@ vi.mock("../lib/auth", () => ({
 
 import gamesRouter from "./games";
 import { clearLeaderboardCache } from "../lib/stats";
-import { createUser, seedGame, seedParticipant, cleanup } from "../test/factories";
+import {
+  createUser,
+  seedGame,
+  seedParticipant,
+  finalizeSeededGame,
+  cleanup,
+} from "../test/factories";
 
 function makeApp(): Express {
   const app = express();
@@ -62,6 +68,9 @@ async function seedQualifyingGame(hostId: string, hostName: string): Promise<voi
     .where(eq(gamesTable.id, g.id));
   const opp = await createUser();
   await seedParticipant(g.id, 1, { userId: opp.id, displayName: `Opp_${opp.id.slice(0, 6)}` });
+  // Distill the fully-assembled game into its authoritative summaries +
+  // discriminator columns (the leaderboard reads those, not the shotLog).
+  await finalizeSeededGame(g.id);
 }
 
 afterEach(async () => {

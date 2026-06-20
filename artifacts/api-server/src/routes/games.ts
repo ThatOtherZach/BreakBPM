@@ -53,6 +53,13 @@ import {
   resolveUserEffectiveTheme,
 } from "../lib/userProfileBackground";
 import { coerceBackgroundVariant, type BackgroundVariant } from "../lib/profileBackground";
+import { writeFinalizedSummary } from "../lib/gameSummaryWriter";
+import {
+  readGameSummary,
+  readParticipantSummary,
+  type GameSummary,
+  type ParticipantSummary,
+} from "../lib/gameSummary";
 
 const router: IRouter = Router();
 
@@ -109,18 +116,23 @@ function resolveSubjectResult(
   g: GameRow,
   gs: Record<string, unknown> | null,
   subject: { slot: number | null; name: string | null },
+  summary: GameSummary | null,
 ): { outcome: string; opponent: string | null } {
   const storedOutcome = g.outcome ?? "completed";
   const winner = g.winner;
   const sharkMode = !!(gs && gs["sharkAggression"]);
 
-  const rawPlayers = Array.isArray(gs?.["players"])
-    ? (gs!["players"] as Array<Record<string, unknown>>)
-    : [];
-  const players = rawPlayers.map((p) => ({
-    name: typeof p["name"] === "string" ? (p["name"] as string) : "",
-    team: typeof p["team"] === "string" ? (p["team"] as string) : undefined,
-  }));
+  // Prefer the authoritative slot-ordered player snapshot from the game summary;
+  // fall back to parsing gameState for un-backfilled / pre-summary rows.
+  const players = summary
+    ? summary.players.map((p) => ({ name: p.name, team: p.team ?? undefined }))
+    : (Array.isArray(gs?.["players"])
+        ? (gs!["players"] as Array<Record<string, unknown>>)
+        : []
+      ).map((p) => ({
+        name: typeof p["name"] === "string" ? (p["name"] as string) : "",
+        team: typeof p["team"] === "string" ? (p["team"] as string) : undefined,
+      }));
   const teamOf = (name: string): string | undefined =>
     players.find((p) => p.name === name)?.team;
 
@@ -198,6 +210,7 @@ interface PaceShot {
 function resolveParticipantPace(
   g: GameRow,
   subject: { slot: number | null; statsStartAt: Date | null; isHost: boolean; known: boolean },
+  partSummary: ParticipantSummary | null = null,
 ): { bpm: number | null; sunkBallsCount: number } {
   const fallback = {
     bpm: g.bpm == null ? null : g.bpm / 10,
@@ -205,6 +218,22 @@ function resolveParticipantPace(
   };
   // No participant row at all (legacy) → row-level host values.
   if (!subject.known) return fallback;
+
+  // Prefer the authoritative per-slot history-window pace (slot player name,
+  // [statsStartAt, +inf)); fall back to recomputing from gameState for
+  // un-backfilled / pre-summary rows. `historyShots === 0` means none of this
+  // slot's own entries were attributable — the host keeps the row-level values
+  // (legacy / name-mismatch safety), a joiner genuinely has none. This mirrors
+  // the gameState recompute below exactly.
+  if (partSummary) {
+    if (partSummary.historyShots === 0) {
+      return subject.isHost ? fallback : { bpm: null, sunkBallsCount: 0 };
+    }
+    return {
+      bpm: partSummary.historyBpmX10 == null ? null : partSummary.historyBpmX10 / 10,
+      sunkBallsCount: partSummary.historySunk,
+    };
+  }
 
   const gs = g.gameState as Record<string, unknown> | null;
   const players = Array.isArray(gs?.["players"])
@@ -287,6 +316,7 @@ function toHistoryEntry(
   accuracy: number | null,
   subject: { slot: number | null; name: string | null },
   pace: { bpm: number | null; sunkBallsCount: number },
+  summary: GameSummary | null = null,
 ) {
   const gs = g.gameState as Record<string, unknown> | null;
   // Host theme snapshotted onto gameState at /games/start (see return field).
@@ -295,18 +325,22 @@ function toHistoryEntry(
     gs && typeof gs["forfeitReason"] === "string" ? (gs["forfeitReason"] as string) : undefined;
   const endReason =
     rawReason === "max_duration_60min" || rawReason === "inactivity_60min" ? rawReason : undefined;
-  const shotLog = Array.isArray(gs?.["shotLog"])
-    ? (gs!["shotLog"] as Array<Record<string, unknown>>)
-    : [];
-  // Pocketing events only — any shot-log entry that actually sank a ball
-  // (sinks plus a terminal win/lose that pocketed). Order is preserved.
-  const pocketSequence = shotLog
-    .filter((e) => typeof e["ball"] === "number")
-    .map((e) => ({
-      ball: e["ball"] as number,
-      player: typeof e["playerName"] === "string" ? (e["playerName"] as string) : "",
-    }));
-  const { outcome, opponent } = resolveSubjectResult(g, gs, subject);
+  // Pocketing events only — any entry that actually sank a ball (sinks plus a
+  // terminal win/lose that pocketed). Order is preserved. Prefer the
+  // authoritative summary sequence; fall back to deriving from the shot log for
+  // un-backfilled / pre-summary rows.
+  const pocketSequence = summary
+    ? summary.pocketSequence.map((p) => ({ ball: p.ball, player: p.player }))
+    : (Array.isArray(gs?.["shotLog"])
+        ? (gs!["shotLog"] as Array<Record<string, unknown>>)
+        : []
+      )
+        .filter((e) => typeof e["ball"] === "number")
+        .map((e) => ({
+          ball: e["ball"] as number,
+          player: typeof e["playerName"] === "string" ? (e["playerName"] as string) : "",
+        }));
+  const { outcome, opponent } = resolveSubjectResult(g, gs, subject, summary);
   return {
     id: g.id,
     gameType: g.gameType,
@@ -814,7 +848,18 @@ router.post("/games/save", async (req, res): Promise<void> => {
     }
   }
 
-  if (id) await bustGameStatsCache(id);
+  if (id) {
+    // Distill the finalized game into its authoritative summaries (re-reads the
+    // just-committed gameState, with the host-theme snapshot re-applied).
+    // Best-effort: an empty summary is treated as "absent" by reads and the
+    // idempotent backfill can repair it, so never fail the (succeeded) save.
+    try {
+      await writeFinalizedSummary(id);
+    } catch (err) {
+      req.log.warn({ userId: user.id, gameId: id, err }, "Failed to write game summary");
+    }
+    await bustGameStatsCache(id);
+  }
   req.log.info({ userId: user.id, gameId: id, outcome: parsed.data.outcome }, "Game saved");
   res.json(SaveGameResponse.parse({ saved: true, gameId: id, message: "Game saved" }));
 });
@@ -904,6 +949,11 @@ router.post("/games/abandon", async (req, res): Promise<void> => {
       }),
     );
     return;
+  }
+  try {
+    await writeFinalizedSummary(parsed.data.gameId);
+  } catch (err) {
+    req.log.warn({ userId: user.id, gameId: parsed.data.gameId, err }, "Failed to write game summary");
   }
   await bustGameStatsCache(parsed.data.gameId);
   req.log.info({ userId: user.id, gameId: parsed.data.gameId }, "Game abandoned");
@@ -1868,6 +1918,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
         winner: gamesTable.winner,
         outcome: gamesTable.outcome,
         gameState: gamesTable.gameState,
+        summary: gamesTable.summary,
       })
       .from(gamesTable)
       .where(and(inArray(gamesTable.id, ids), isNotNull(gamesTable.endedAt)));
@@ -1896,6 +1947,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
           g as GameRow,
           gs,
           { slot, name: host.screenName },
+          readGameSummary(g.summary),
         );
         if (outcome === "won") wins++;
       }
@@ -1923,6 +1975,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
               slotIndex: gameParticipantsTable.slotIndex,
               statsStartAt: gameParticipantsTable.statsStartAt,
               isHost: gameParticipantsTable.isHost,
+              summary: gameParticipantsTable.summary,
             })
             .from(gameParticipantsTable)
             .where(
@@ -1935,17 +1988,22 @@ router.get("/games/profile", async (req, res): Promise<void> => {
     const partByGame = new Map(parts.map((p) => [p.gameId, p]));
     games = visible.map((g) => {
       const part = partByGame.get(g.id);
-      const pace = resolveParticipantPace(g, {
-        slot: part?.slotIndex ?? null,
-        statsStartAt: part?.statsStartAt ?? null,
-        isHost: part?.isHost ?? false,
-        known: part !== undefined,
-      });
+      const pace = resolveParticipantPace(
+        g,
+        {
+          slot: part?.slotIndex ?? null,
+          statsStartAt: part?.statsStartAt ?? null,
+          isHost: part?.isHost ?? false,
+          known: part !== undefined,
+        },
+        part ? readParticipantSummary(part.summary) : null,
+      );
       return toHistoryEntry(
         g,
         part ? (part.accuracy ?? null) : (g.accuracy ?? null),
         { slot: part?.slotIndex ?? null, name: host.screenName },
         pace,
+        readGameSummary(g.summary),
       );
     });
   }
@@ -2109,7 +2167,14 @@ router.post("/games/leave", async (req, res): Promise<void> => {
       .returning({ id: gamesTable.id });
     gameEnded = closed.length > 0;
   }
-  if (gameEnded) await bustGameStatsCache(parsed.data.gameId);
+  if (gameEnded) {
+    try {
+      await writeFinalizedSummary(parsed.data.gameId);
+    } catch (err) {
+      req.log.warn({ gameId: parsed.data.gameId, err }, "Failed to write game summary");
+    }
+    await bustGameStatsCache(parsed.data.gameId);
+  }
   res.json(LeaveGameResponse.parse({ left: true, gameEnded }));
 });
 
@@ -2220,6 +2285,7 @@ router.get("/games/history", async (req, res): Promise<void> => {
             slotIndex: gameParticipantsTable.slotIndex,
             statsStartAt: gameParticipantsTable.statsStartAt,
             isHost: gameParticipantsTable.isHost,
+            summary: gameParticipantsTable.summary,
           })
           .from(gameParticipantsTable)
           .where(
@@ -2233,17 +2299,22 @@ router.get("/games/history", async (req, res): Promise<void> => {
 
   const games = visible.map((g) => {
     const part = myPartByGame.get(g.id);
-    const pace = resolveParticipantPace(g, {
-      slot: part?.slotIndex ?? null,
-      statsStartAt: part?.statsStartAt ?? null,
-      isHost: part?.isHost ?? false,
-      known: part !== undefined,
-    });
+    const pace = resolveParticipantPace(
+      g,
+      {
+        slot: part?.slotIndex ?? null,
+        statsStartAt: part?.statsStartAt ?? null,
+        isHost: part?.isHost ?? false,
+        known: part !== undefined,
+      },
+      part ? readParticipantSummary(part.summary) : null,
+    );
     return toHistoryEntry(
       g,
       part ? (part.accuracy ?? null) : (g.accuracy ?? null),
       { slot: part?.slotIndex ?? null, name: user.screenName },
       pace,
+      readGameSummary(g.summary),
     );
   });
 
@@ -2808,6 +2879,7 @@ router.get("/mentions", async (req, res): Promise<void> => {
             accuracy: gameParticipantsTable.accuracy,
             slotIndex: gameParticipantsTable.slotIndex,
             statsStartAt: gameParticipantsTable.statsStartAt,
+            summary: gameParticipantsTable.summary,
           })
           .from(gameParticipantsTable)
           .where(
@@ -2822,12 +2894,18 @@ router.get("/mentions", async (req, res): Promise<void> => {
   const invites = rows.map((r) => {
     const part = partByGame.get(r.game.id);
     const slot = part?.slotIndex ?? r.slotIndex;
-    const pace = resolveParticipantPace(r.game, {
-      slot,
-      statsStartAt: part?.statsStartAt ?? r.game.startedAt,
-      isHost: false,
-      known: true,
-    });
+    // A pending invite has no participant row yet, so there's no per-slot
+    // summary — `resolveParticipantPace` falls back to the gameState recompute.
+    const pace = resolveParticipantPace(
+      r.game,
+      {
+        slot,
+        statsStartAt: part?.statsStartAt ?? r.game.startedAt,
+        isHost: false,
+        known: true,
+      },
+      part ? readParticipantSummary(part.summary) : null,
+    );
     return {
       id: r.mentionId,
       status: r.status,
@@ -2838,6 +2916,7 @@ router.get("/mentions", async (req, res): Promise<void> => {
         part ? (part.accuracy ?? null) : null,
         { slot, name: user.screenName },
         pace,
+        readGameSummary(r.game.summary),
       ),
     };
   });

@@ -11,6 +11,7 @@ import {
   createUser,
   seedGame,
   seedParticipant,
+  finalizeSeededGame,
   cleanup,
 } from "../test/factories";
 
@@ -92,6 +93,9 @@ async function seedRankedGame(
     const opp = await createUser();
     await seedParticipant(g.id, 1, { userId: opp.id, displayName: `Opp_${opp.id.slice(0, 6)}` });
   }
+  // Distill the fully-assembled game into its authoritative summaries +
+  // discriminator columns (the leaderboard reads those, not the shotLog).
+  await finalizeSeededGame(g.id);
 }
 
 beforeEach(() => {
