@@ -611,7 +611,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           <line x1={bandL} y1={halfY} x2={bandR} y2={halfY} stroke="#ff3b30" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
                           <line x1={bandL} y1={halfY - 4} x2={bandL} y2={halfY + 4} stroke="#ff3b30" strokeWidth={1.5} opacity={0.85} />
                           <line x1={bandR} y1={halfY - 4} x2={bandR} y2={halfY + 4} stroke="#ff3b30" strokeWidth={1.5} opacity={0.85} />
-                          <text x={cx} y={halfY + 13} textAnchor="middle" fontFamily="VT323" fontSize={10} fill="#ff7b73" opacity={0.9}>TYPICAL</text>
+                          <text x={W - padX} y={halfY - 5} textAnchor="end" fontFamily="VT323" fontSize={10} fill="#ff7b73" opacity={0.9}>TYPICAL</text>
                           {/* player marker — the cue ball */}
                           <line x1={px} y1={baseY} x2={px} y2={py} stroke="#ffffff" strokeWidth={1.5} strokeDasharray="2 2" opacity={0.7} />
                           <foreignObject x={px - 7} y={py - 7} width={14} height={14} style={{ overflow: "visible" }}>
