@@ -656,7 +656,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 </div>
                 {!canEditName && (
                   <div style={{ fontSize: 11, color: "#444", textAlign: "center" }}>
-                    {"Set a custom screen name with a "}
+                    {"Set a custom username and theme with a "}
                     <button
                       className="link-btn"
                       onClick={onPasses}
