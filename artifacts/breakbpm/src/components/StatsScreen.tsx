@@ -16,7 +16,7 @@ import Navbar from "./Navbar";
 import { useAuth } from "../lib/authClient";
 import { SOLIDS } from "../lib/gameLogic";
 import StatsHero, { BALL_COLORS, fmtInt, fmtPct } from "./StatsHero";
-import { THEME_ACCENT } from "../lib/backgroundVariants";
+import { THEME_ACCENT, THEME_FELT, VARIANT_IMAGE_URLS, themeColorOf, type BackgroundVariant } from "../lib/backgroundVariants";
 
 interface Props {
   onBack: () => void;
@@ -744,8 +744,43 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                 </div>
 
                 {/* ── Patterns — personal scope only ── */}
-                {isPersonal && (
-                  <div className="panel panel--wood">
+                {isPersonal && (() => {
+                  // Wear the player's applied profile theme as the panel
+                  // background. A concrete artwork variant (or the one resolved
+                  // under "auto") shows its splash image behind a dark tint +
+                  // scanlines, just like the StatsHero card; otherwise we fall
+                  // back to the theme's felt color. The panel keeps `panel--wood`
+                  // only for its light-on-dark text rules, which stay legible on
+                  // every (dark) theme background.
+                  const account = meQuery.data?.account;
+                  const rawTheme = account?.profileTheme ?? "none";
+                  const artworkVariant: BackgroundVariant | null =
+                    rawTheme === "shark" || rawTheme === "pool-player" || rawTheme === "hustler"
+                      ? rawTheme
+                      : rawTheme === "auto"
+                        ? (account?.profileBackground ?? null)
+                        : null;
+                  const feltTheme =
+                    rawTheme === "auto" || rawTheme === "rainbow"
+                      ? (account?.profileBackground ?? "none")
+                      : rawTheme;
+                  const felt = THEME_FELT[themeColorOf(feltTheme)];
+                  const artworkUrl = artworkVariant ? VARIANT_IMAGE_URLS[artworkVariant] : null;
+                  const themedPanelStyle: React.CSSProperties = artworkUrl
+                    ? {
+                        backgroundColor: felt.felt,
+                        backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.16) 2px, rgba(0,0,0,0.16) 4px), linear-gradient(rgba(8,18,10,0.78), rgba(8,18,10,0.85)), url(${artworkUrl})`,
+                        backgroundSize: "auto, auto, cover",
+                        backgroundPosition: "center, center, center",
+                        backgroundRepeat: "repeat, no-repeat, no-repeat",
+                      }
+                    : {
+                        backgroundColor: felt.felt,
+                        backgroundImage:
+                          "repeating-linear-gradient(45deg, rgba(0,0,0,0.10) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 4px)",
+                      };
+                  return (
+                  <div className="panel panel--wood" style={themedPanelStyle}>
                     <SectionHeader emoji="🎱" title="Ball Patterns" />
                     <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       {/* Solids vs stripes split */}
@@ -829,7 +864,8 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       </p>
                     </div>
                   </div>
-                )}
+                  );
+                })()}
               </>
             )}
 
