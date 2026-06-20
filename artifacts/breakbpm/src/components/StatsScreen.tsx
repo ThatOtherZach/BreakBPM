@@ -527,6 +527,104 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   );
                 })()}
 
+                {/* ── Over / Under (personal pace vs global average) ── */}
+                {isPersonal && stats.avgBpm != null && stats.globalAvgBpm != null && stats.globalAvgBpm > 0 && (() => {
+                  const you = stats.avgBpm;
+                  const avg = stats.globalAvgBpm;
+                  const delta = you - avg;
+                  const pct = (delta / avg) * 100;
+                  // Heuristic spread: assume a ~35% coefficient of variation
+                  // around the global mean so a typical player lands inside the
+                  // visible bell. Purely cosmetic placement — every number in
+                  // the readout is the real, measured value.
+                  const sigmaRatio = 0.35;
+                  const z = (you / avg - 1) / sigmaRatio;
+                  const zClamped = Math.max(-2.6, Math.min(2.6, z));
+
+                  // ── Graph geometry ──
+                  const W = 240, H = 150;
+                  const padX = 14, padT = 12, padB = 12;
+                  const cx = W / 2;            // mean → chart center (x)
+                  const cyMid = H / 2;         // horizontal crosshair (y)
+                  const peakY = padT + 8;
+                  const baseY = H - padB;
+                  const sx = (W / 2 - padX) / 2.8; // px per z unit (fit ±2.8)
+                  const bell = (zz: number) => baseY - Math.exp(-0.5 * zz * zz) * (baseY - peakY);
+                  const pts: Array<[number, number]> = [];
+                  for (let i = 0; i <= 64; i++) {
+                    const zz = -3 + (6 * i) / 64;
+                    pts.push([cx + zz * sx, bell(zz)]);
+                  }
+                  const curve = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ");
+                  const area = `${curve} L ${pts[pts.length - 1][0].toFixed(1)} ${baseY} L ${pts[0][0].toFixed(1)} ${baseY} Z`;
+                  const px = cx + zClamped * sx;
+                  const py = bell(zClamped);
+
+                  const status = Math.abs(pct) < 1 ? "EVEN" : pct > 0 ? "OVER" : "UNDER";
+                  const statusColor = status === "OVER" ? THEME_ACCENT.green : status === "UNDER" ? "#ff5b4d" : "#f4f4dc";
+                  const sign = delta >= 0 ? "+" : "−";
+                  const ABS = Math.abs;
+
+                  const Cell = ({ label, value, color }: { label: string; value: string; color?: string }) => (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 1, padding: "4px 6px", border: "1px solid rgba(57,255,20,0.18)", background: "rgba(0,0,0,0.25)" }}>
+                      <span style={{ fontFamily: "VT323", fontSize: 12, color: "#7fae8c", letterSpacing: 0.5, lineHeight: 1 }}>{label}</span>
+                      <span style={{ fontFamily: "VT323", fontSize: 22, color: color ?? "#f4f4dc", textShadow: "1px 1px 0 #042414", lineHeight: 1 }}>{value}</span>
+                    </div>
+                  );
+
+                  return (
+                    <div className="panel" style={{ background: "#06140a", backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.16) 2px, rgba(0,0,0,0.16) 4px)" }}>
+                      <SectionHeader emoji="📈" title="Over / Under" />
+                      <div className="panel-body" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 14 }}>
+                        {/* Graphing-calculator screen */}
+                        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ flexShrink: 0, background: "#08210f", border: "2px solid #0c3a1c", boxShadow: "inset 0 0 14px rgba(0,0,0,0.6)" }}>
+                          <defs>
+                            <pattern id="bc-grid-min" width="10" height="10" patternUnits="userSpaceOnUse">
+                              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(57,255,20,0.10)" strokeWidth={1} />
+                            </pattern>
+                            <pattern id="bc-grid-maj" width="40" height="40" patternUnits="userSpaceOnUse">
+                              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(57,255,20,0.18)" strokeWidth={1} />
+                            </pattern>
+                            <linearGradient id="bc-fill" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={THEME_ACCENT.green} stopOpacity={0.35} />
+                              <stop offset="100%" stopColor={THEME_ACCENT.green} stopOpacity={0.02} />
+                            </linearGradient>
+                          </defs>
+                          {/* graph paper */}
+                          <rect width={W} height={H} fill="url(#bc-grid-min)" />
+                          <rect width={W} height={H} fill="url(#bc-grid-maj)" />
+                          {/* bell curve */}
+                          <path d={area} fill="url(#bc-fill)" />
+                          <path d={curve} fill="none" stroke={THEME_ACCENT.green} strokeWidth={2} style={{ filter: "drop-shadow(0 0 3px rgba(57,255,20,0.6))" }} />
+                          {/* red crosshair through the middle (the mean line) */}
+                          <line x1={cx} y1={0} x2={cx} y2={H} stroke="#ff3b30" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
+                          <line x1={0} y1={cyMid} x2={W} y2={cyMid} stroke="#ff3b30" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
+                          {/* player marker */}
+                          <line x1={px} y1={baseY} x2={px} y2={py} stroke="var(--amber)" strokeWidth={1.5} strokeDasharray="2 2" />
+                          <circle cx={px} cy={py} r={4.5} fill="var(--amber)" stroke="#042414" strokeWidth={1.5} style={{ filter: "drop-shadow(0 0 4px var(--amber))" }} />
+                          {/* axis tick labels */}
+                          <text x={cx} y={H - 2} textAnchor="middle" fontFamily="VT323" fontSize={11} fill="#ff7b73">AVG</text>
+                          <text x={padX} y={H - 2} textAnchor="start" fontFamily="VT323" fontSize={11} fill="#5f8a6c">SLOW</text>
+                          <text x={W - padX} y={H - 2} textAnchor="end" fontFamily="VT323" fontSize={11} fill="#5f8a6c">FAST</text>
+                        </svg>
+                        {/* Readout legend — two columns */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 150 }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                            <Cell label="YOUR BPM" value={you.toFixed(1)} color="var(--amber)" />
+                            <Cell label="GLOBAL AVG" value={avg.toFixed(1)} color="#ff7b73" />
+                            <Cell label="DELTA" value={`${sign}${ABS(delta).toFixed(1)}`} color={statusColor} />
+                            <Cell label="OVER/UNDER" value={`${sign}${ABS(pct).toFixed(0)}%`} color={statusColor} />
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "5px 8px", border: `1px solid ${statusColor}`, background: "rgba(0,0,0,0.3)" }}>
+                            <span style={{ fontFamily: "VT323", fontSize: 12, color: "#7fae8c", letterSpacing: 0.5 }}>STATUS</span>
+                            <span style={{ fontFamily: "VT323", fontSize: 20, color: statusColor, textShadow: "1px 1px 0 #042414", letterSpacing: 1 }}>{status}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* ── Results ── */}
                 <div className="panel panel--wood">
                   <SectionHeader emoji="🏆" title="Results" />
