@@ -707,7 +707,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                 </div>
 
                 {/* ── Pace ── */}
-                <div className="panel panel--wood">
+                <div className="panel">
                   <SectionHeader emoji="⚡" title="Pace" />
                   <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     <div style={{ display: "flex", gap: 8 }}>
@@ -735,7 +735,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       const avgPerGameMin = totalGames > 0 ? totalMs / totalGames / 60_000 : 0;
                       return (
                         <p
-                          style={{ fontSize: 12, color: "#fff", textShadow: "0 1px 1px rgba(0,0,0,0.7)", margin: 0 }}
+                          style={{ fontSize: 12, color: "#000", margin: 0 }}
                           className="text-center font-semibold">🕐 {totalHours.toFixed(1)} Hours Played - {avgPerGameMin.toFixed(1)} Min Per Game (Average)
                                                                             </p>
                       );
