@@ -527,7 +527,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   );
                 })()}
 
-                {/* ── Over / Under (personal pace vs global average) ── */}
+                {/* ── Skill Bell Curve (personal pace vs global average) ── */}
                 {isPersonal && stats.avgBpm != null && stats.globalAvgBpm != null && stats.globalAvgBpm > 0 && (() => {
                   const you = stats.avgBpm;
                   const avg = stats.globalAvgBpm;
@@ -574,7 +574,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
 
                   return (
                     <div className="panel" style={{ background: "#06140a", backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.16) 2px, rgba(0,0,0,0.16) 4px)" }}>
-                      <SectionHeader emoji="📈" title="Over / Under" />
+                      <SectionHeader emoji="📈" title="Skill Bell Curve" />
                       <div className="panel-body" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 14 }}>
                         {/* Graphing-calculator screen */}
                         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ flexShrink: 0, background: "#08210f", border: "2px solid #0c3a1c", boxShadow: "inset 0 0 14px rgba(0,0,0,0.6)" }}>
