@@ -681,7 +681,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           <div
                             style={{
                               display: "grid",
-                              gridTemplateColumns: isPersonal ? "14px 26px 4ch auto auto" : "14px 26px 4ch",
+                              gridTemplateColumns: isPersonal ? "14px 26px 4ch auto" : "14px 26px 4ch",
                               columnGap: 8,
                               rowGap: 9,
                               alignItems: "center",
@@ -699,10 +699,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                                   {/* High-contrast percentage, right-aligned for a clean column */}
                                   <span style={{ fontSize: 18, fontWeight: 700, color: "#fffef2", textAlign: "right", lineHeight: 1 }}>{pct}%</span>
                                   {isPersonal && (
-                                    <>
-                                      <span style={{ fontSize: 16, color: "#a9c9b3", textAlign: "right", lineHeight: 1 }}>{s.gameCount} games</span>
-                                      <span style={{ fontSize: 16, color: "#a9c9b3", textAlign: "right", lineHeight: 1 }}>{fmtHHMM(s.avgDurationMs * s.gameCount)}</span>
-                                    </>
+                                    <span style={{ fontSize: 16, color: "#a9c9b3", textAlign: "right", lineHeight: 1 }}>{fmtHHMM(s.avgDurationMs * s.gameCount)}</span>
                                   )}
                                 </Fragment>
                               );
