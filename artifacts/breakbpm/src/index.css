@@ -2714,6 +2714,11 @@ html, #root {
   justify-content: space-between;
   gap: 8px;
 }
+.fpp-compass-head-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .fpp-compass-title {
   font-family: 'VT323', monospace;
   font-size: 22px;
