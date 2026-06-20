@@ -492,12 +492,11 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                   <span
                     style={{
                       fontSize: 10,
-                      color: "#a9c9b3",
+                      color: "#000000",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
-                    }}
-                    className="text-[#000000] border-t-[#000000] border-r-[#000000] border-b-[#000000] border-l-[#000000]">
+                    }}>
                     📮 {account.email}
                   </span>
                 )}
