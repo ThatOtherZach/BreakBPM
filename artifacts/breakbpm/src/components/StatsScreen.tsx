@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
   useGetStats,
   getStats,
@@ -594,7 +594,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     practice: THEME_ACCENT.purple,
                     shark: THEME_ACCENT.blue,
                   };
-                  const MODE_PCT_COLORS = MODE_COLORS;
                   const MODE_LABELS: Record<string, string> = {
                     "8ball": "8-BALL",
                     "9ball": "9-BALL",
@@ -630,6 +629,24 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     const large = sweep > Math.PI ? 1 : 0;
                     return `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
                   };
+                  // Per-mode glyph: ball chips for 8/9-ball, the shark emoji,
+                  // and the rainbow cue for practice. Falls back to a text label.
+                  const modeGlyph = (gameType: string): React.ReactNode => {
+                    if (gameType === "8ball" || gameType === "9ball") {
+                      const ball = gameType === "8ball" ? 8 : 9;
+                      return (
+                        <span
+                          className={`hud-chip hud-chip-sm ${ball === 8 ? "hud-chip-eight" : "hud-chip-stripe"}`}
+                          data-number={ball}
+                          style={{ "--chip-color": BALL_COLORS[ball] } as React.CSSProperties}
+                          aria-label={ball === 8 ? "8-ball" : "9-ball"}
+                        />
+                      );
+                    }
+                    if (gameType === "shark") return <span aria-label="Shark">🦈</span>;
+                    if (gameType === "practice") return <span className="rainbow-cue" aria-label="Practice" />;
+                    return <>{MODE_LABELS[gameType] ?? String(gameType).toUpperCase()}</>;
+                  };
                   return (
                     <div className="panel" style={{ background: "#0a1a0a", backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.16) 2px, rgba(0,0,0,0.16) 4px)" }}>
                       <SectionHeader emoji="📊" title="Game Types" />
@@ -651,40 +668,40 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           ))}
                           <rect width="160" height="160" fill="url(#gm-scan)" opacity={0.12} style={{ pointerEvents: "none" }} />
                         </svg>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {slices.map((s) => {
-                            const pct = Math.round((s.gameCount / total) * 100);
-                            return (
-                              <div key={s.gameType} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <span style={{ width: 10, height: 10, background: MODE_COLORS[s.gameType] ?? "#888", display: "inline-block", flexShrink: 0, border: "1px solid #042414" }} />
-                                <span style={{ fontFamily: "VT323", fontSize: 16, color: "#f4f4dc", textShadow: "1px 1px 0 #042414", lineHeight: 1 }}>
-                                  {s.gameType === "8ball" || s.gameType === "9ball" ? (() => {
-                                    const ball = s.gameType === "8ball" ? 8 : 9;
-                                    return (
-                                      <span
-                                        className={`hud-chip hud-chip-sm ${ball === 8 ? "hud-chip-eight" : "hud-chip-stripe"}`}
-                                        data-number={ball}
-                                        style={{ "--chip-color": BALL_COLORS[ball], verticalAlign: "middle" } as React.CSSProperties}
-                                        aria-label={ball === 8 ? "8-ball" : "9-ball"}
-                                      />
-                                    );
-                                  })() : s.gameType === "shark" ? "🦈" : s.gameType === "practice" ? (
-                                    <span className="rainbow-cue" aria-label="Practice" />
-                                  ) : (MODE_LABELS[s.gameType] ?? String(s.gameType).toUpperCase())}{" "}
-                                  <span style={{ color: MODE_PCT_COLORS[s.gameType] ?? "#f4f4dc" }}>{pct}%</span>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10, fontFamily: "VT323", textShadow: "1px 1px 0 #042414" }}>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: isPersonal ? "14px 26px 4ch auto auto" : "14px 26px 4ch",
+                              columnGap: 8,
+                              rowGap: 9,
+                              alignItems: "center",
+                            }}>
+                            {slices.map((s) => {
+                              const pct = Math.round((s.gameCount / total) * 100);
+                              return (
+                                <Fragment key={s.gameType}>
+                                  {/* Pie-color link (solid block reads clearly on the dark felt) */}
+                                  <span style={{ width: 14, height: 14, background: MODE_COLORS[s.gameType] ?? "#888", display: "inline-block", flexShrink: 0, border: "1px solid #042414", borderRadius: 2 }} />
+                                  {/* Mode glyph, centered in its column */}
+                                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 17, color: "#f4f4dc", lineHeight: 1 }}>
+                                    {modeGlyph(s.gameType)}
+                                  </span>
+                                  {/* High-contrast percentage, right-aligned for a clean column */}
+                                  <span style={{ fontSize: 18, fontWeight: 700, color: "#fffef2", textAlign: "right", lineHeight: 1 }}>{pct}%</span>
                                   {isPersonal && (
                                     <>
-                                      {" "}<span style={{ color: "#fff" }}>({s.gameCount})</span>
-                                      {" "}<span style={{ color: "#a9c9b3" }}>{fmtHHMM(s.avgDurationMs * s.gameCount)}</span>
+                                      <span style={{ fontSize: 16, color: "#a9c9b3", textAlign: "right", lineHeight: 1 }}>{s.gameCount} games</span>
+                                      <span style={{ fontSize: 16, color: "#a9c9b3", textAlign: "right", lineHeight: 1 }}>{fmtHHMM(s.avgDurationMs * s.gameCount)}</span>
                                     </>
                                   )}
-                                </span>
-                              </div>
-                            );
-                          })}
+                                </Fragment>
+                              );
+                            })}
+                          </div>
                           {isPersonal && (
-                            <span style={{ fontFamily: "VT323", fontSize: 14, color: "#f4f4dc", textShadow: "1px 1px 0 #042414", marginTop: 2 }}>
-                              {total} TOTAL
+                            <span style={{ fontSize: 15, color: "#f4f4dc", letterSpacing: 0.5 }}>
+                              {total} GAMES TOTAL
                             </span>
                           )}
                         </div>
