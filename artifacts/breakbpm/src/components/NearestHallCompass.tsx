@@ -214,6 +214,11 @@ export default function NearestHallCompass({
   return (
     <div className="fpp-compass">
       <div className="fpp-compass-head">
+        <span
+          className="hud-chip hud-chip-eight"
+          data-number="8"
+          aria-hidden="true"
+        />
         <span className="fpp-compass-title">NEAREST HALL</span>
       </div>
       {phase === "idle" && (
