@@ -556,7 +556,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           <text x={W - padX} y={H - 2} textAnchor="end" fontFamily="VT323" fontSize={11} fill="#00ff41">FAST</text>
                         </svg>
                         {/* Readout legend — two columns */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 150 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, width: W, flexShrink: 0 }}>
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, padding: "5px 8px", border: `1px solid ${statusColor}`, background: "rgba(0,0,0,0.3)" }}>
                             <span style={{ fontFamily: "VT323", fontSize: 20, color: statusColor, textShadow: "1px 1px 0 #042414", letterSpacing: 1, lineHeight: 1 }}>{status}</span>
                             <span style={{ fontFamily: "VT323", fontSize: 11, color: "#ffffff", letterSpacing: 0.5, lineHeight: 1 }}>{inBand ? "TYPICAL BPM" : "OUTLIER BPM"}</span>
@@ -569,8 +569,8 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           </div>
                         </div>
                       </div>
-                      <div className="panel-body" style={{ paddingTop: 0 }}>
-                        <button className="btn w-full" onClick={onLeaderboard}>🏆 View Leaderboard</button>
+                      <div className="panel-body" style={{ paddingTop: 0, display: "flex", justifyContent: "center" }}>
+                        <button className="btn" style={{ width: W }} onClick={onLeaderboard}>🏆 View Leaderboard</button>
                       </div>
                     </div>
                   );
