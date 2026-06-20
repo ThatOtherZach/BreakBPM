@@ -496,8 +496,9 @@ router.post("/admin/ads", async (req, res): Promise<void> => {
 
 /**
  * POST /admin/ads/:id/approve — approve a pending user-bought ad: set
- * status=approved and open its live window (startAt=now, expiryAt=now+days) so
- * it enters the HUD rotation for exactly the purchased run length. Admin-only.
+ * status=approved and open its live window (startAt=now, expiryAt=now+days+1 —
+ * the buyer's chosen days plus a one-day grace) so it enters the HUD rotation
+ * for the purchased run length. Admin-only.
  * 200 + success:false/reason on a missing or non-pending ad.
  */
 router.post("/admin/ads/:id/approve", async (req, res): Promise<void> => {
@@ -533,7 +534,8 @@ router.post("/admin/ads/:id/approve", async (req, res): Promise<void> => {
 
   const now = new Date();
   const days = ad.days ?? 1;
-  const expiryAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+  // Buyer's chosen days plus a one-day grace (spec: expiry = approval + days + 1).
+  const expiryAt = new Date(now.getTime() + (days + 1) * 24 * 60 * 60 * 1000);
   const [row] = await db
     .update(adsTable)
     .set({ status: "approved", startAt: now, expiryAt })

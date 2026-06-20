@@ -16,17 +16,29 @@ const LIMIT = 10;
 const HEADLINE_MAX = 60;
 const TAGLINE_MAX = 120;
 
-const STATUS_LABEL: Record<AdminAd["status"], string> = {
+/** Display state incl. a derived "expired" (the API keeps status "approved"). */
+type DisplayStatus = AdminAd["status"] | "expired";
+
+const STATUS_LABEL: Record<DisplayStatus, string> = {
   pending_review: "In review",
   approved: "Live",
   denied: "Declined",
+  expired: "Expired",
 };
 
-const STATUS_COLOR: Record<AdminAd["status"], string> = {
+const STATUS_COLOR: Record<DisplayStatus, string> = {
   pending_review: "#9a7a00",
   approved: "#006400",
   denied: "#a00",
+  expired: "#666",
 };
+
+function displayStatus(ad: AdminAd): DisplayStatus {
+  if (ad.status === "approved" && ad.expiryAt && new Date(ad.expiryAt) <= new Date()) {
+    return "expired";
+  }
+  return ad.status;
+}
 
 /**
  * Admin-only panel to manage the in-game HUD text ads. Add an ad (headline +
@@ -214,7 +226,9 @@ export default function AdminAdsPanel() {
             </p>
           ) : (
             <ul className="avp-list">
-              {ads.map((ad) => (
+              {ads.map((ad) => {
+                const ds = displayStatus(ad);
+                return (
                 <li key={ad.id} className="avp-row">
                   <div className="avp-row-main">
                     <span className="avp-row-name">{ad.headline}</span>
@@ -225,7 +239,7 @@ export default function AdminAdsPanel() {
                         : `${ad.ownerScreenName ?? ad.ownerEmail ?? "User"}${
                             ad.days ? ` · ${ad.days} ${ad.days === 1 ? "day" : "days"}` : ""
                           }${
-                            ad.expiryAt && ad.status === "approved"
+                            ad.expiryAt && ds === "approved"
                               ? ` · until ${new Date(ad.expiryAt).toLocaleDateString()}`
                               : ""
                           }`}
@@ -240,10 +254,10 @@ export default function AdminAdsPanel() {
                         style={{
                           fontSize: 11,
                           fontWeight: "bold",
-                          color: STATUS_COLOR[ad.status],
+                          color: STATUS_COLOR[ds],
                         }}
                       >
-                        {STATUS_LABEL[ad.status]}
+                        {STATUS_LABEL[ds]}
                       </span>
                     )}
                     <div style={{ display: "flex", gap: 4 }}>
@@ -275,7 +289,8 @@ export default function AdminAdsPanel() {
                     </div>
                   </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
           {totalPages > 1 && (

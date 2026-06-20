@@ -63,17 +63,34 @@ function amountValue(displayAmount: string): string {
   return displayAmount.split(" ")[0] ?? displayAmount;
 }
 
-const STATUS_LABEL: Record<MyAd["status"], string> = {
+/** Buyer-facing display state, including a derived "expired" the API doesn't store. */
+type DisplayStatus = MyAd["status"] | "expired";
+
+const STATUS_LABEL: Record<DisplayStatus, string> = {
   pending_review: "In review",
   approved: "Live",
   denied: "Declined",
+  expired: "Expired",
 };
 
-const STATUS_COLOR: Record<MyAd["status"], string> = {
+const STATUS_COLOR: Record<DisplayStatus, string> = {
   pending_review: "#9a7a00",
   approved: "#006400",
   denied: "#a00",
+  expired: "#666",
 };
+
+/**
+ * An approved ad whose window has elapsed shows as "expired" (it has fallen out
+ * of the active-ads rotation server-side). Expiry is derived from `expiryAt`
+ * client-side since the stored status stays "approved".
+ */
+function displayStatus(ad: MyAd): DisplayStatus {
+  if (ad.status === "approved" && ad.expiryAt && new Date(ad.expiryAt) <= new Date()) {
+    return "expired";
+  }
+  return ad.status;
+}
 
 /**
  * Signed-in panel to buy your own HUD text ad. Compose a headline + tagline,
@@ -571,31 +588,34 @@ export default function AdPurchasePanel() {
             </p>
           ) : (
             <ul className="avp-list">
-              {ads.map((ad) => (
-                <li key={ad.id} className="avp-row">
-                  <div className="avp-row-main">
-                    <span className="avp-row-name">{ad.headline}</span>
-                    <span className="avp-row-meta">
-                      {ad.tagline}
-                      {ad.days ? ` · ${ad.days} ${ad.days === 1 ? "day" : "days"}` : ""}
-                      {ad.expiryAt && ad.status === "approved"
-                        ? ` · until ${new Date(ad.expiryAt).toLocaleDateString()}`
-                        : ""}
-                    </span>
-                  </div>
-                  <div className="avp-row-actions">
-                    <span
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "bold",
-                        color: STATUS_COLOR[ad.status],
-                      }}
-                    >
-                      {STATUS_LABEL[ad.status]}
-                    </span>
-                  </div>
-                </li>
-              ))}
+              {ads.map((ad) => {
+                const ds = displayStatus(ad);
+                return (
+                  <li key={ad.id} className="avp-row">
+                    <div className="avp-row-main">
+                      <span className="avp-row-name">{ad.headline}</span>
+                      <span className="avp-row-meta">
+                        {ad.tagline}
+                        {ad.days ? ` · ${ad.days} ${ad.days === 1 ? "day" : "days"}` : ""}
+                        {ad.expiryAt && ds === "approved"
+                          ? ` · until ${new Date(ad.expiryAt).toLocaleDateString()}`
+                          : ""}
+                      </span>
+                    </div>
+                    <div className="avp-row-actions">
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "bold",
+                          color: STATUS_COLOR[ds],
+                        }}
+                      >
+                        {STATUS_LABEL[ds]}
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
