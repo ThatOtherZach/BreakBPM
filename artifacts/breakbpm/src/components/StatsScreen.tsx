@@ -586,8 +586,8 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                               <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(57,255,20,0.18)" strokeWidth={1} />
                             </pattern>
                             <linearGradient id="bc-fill" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor={THEME_ACCENT.green} stopOpacity={0.35} />
-                              <stop offset="100%" stopColor={THEME_ACCENT.green} stopOpacity={0.02} />
+                              <stop offset="0%" stopColor="#ffffff" stopOpacity={0.25} />
+                              <stop offset="100%" stopColor="#ffffff" stopOpacity={0.02} />
                             </linearGradient>
                           </defs>
                           {/* graph paper */}
@@ -595,7 +595,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           <rect width={W} height={H} fill="url(#bc-grid-maj)" />
                           {/* bell curve */}
                           <path d={area} fill="url(#bc-fill)" />
-                          <path d={curve} fill="none" stroke={THEME_ACCENT.green} strokeWidth={2} style={{ filter: "drop-shadow(0 0 3px rgba(57,255,20,0.6))" }} />
+                          <path d={curve} fill="none" stroke="#ffffff" strokeWidth={2} style={{ filter: "drop-shadow(0 0 3px rgba(255,255,255,0.5))" }} />
                           {/* red crosshair through the middle (the mean line) */}
                           <line x1={cx} y1={0} x2={cx} y2={H} stroke="#ff3b30" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
                           <line x1={0} y1={cyMid} x2={W} y2={cyMid} stroke="#ff3b30" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
