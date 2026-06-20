@@ -701,7 +701,7 @@ export default function FindPlayersScreen({
               )}
             </div>
           ) : (
-            <p className="fpp-hint text-center">🔓 Unlock posting your own games with a pass</p>
+            <p className="fpp-hint text-center">🔓 Unlock posting meetups with a pass</p>
           )}
         </SignedIn>
 
