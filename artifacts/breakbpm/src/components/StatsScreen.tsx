@@ -545,7 +545,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   const W = 240, H = 150;
                   const padX = 14, padT = 12, padB = 12;
                   const cx = W / 2;            // mean → chart center (x)
-                  const cyMid = H / 2;         // horizontal crosshair (y)
                   const peakY = padT + 8;
                   const baseY = H - padB;
                   const sx = (W / 2 - padX) / 2.8; // px per z unit (fit ±2.8)
@@ -559,6 +558,17 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   const area = `${curve} L ${pts[pts.length - 1][0].toFixed(1)} ${baseY} L ${pts[0][0].toFixed(1)} ${baseY} Z`;
                   const px = cx + zClamped * sx;
                   const py = bell(zClamped);
+
+                  // "Typical pace" band: the bell drops to half its peak height at
+                  // z = ±√(2 ln2) ≈ ±1.18, so a line at that height spans the central
+                  // hump where most players cluster — the flat tails outside it are
+                  // the unusually slow / fast. The cue ball above the line = typical;
+                  // out in a tail (below it) = an outlier pace. `inBand` drives the tag.
+                  const zHalf = Math.sqrt(2 * Math.LN2);
+                  const halfY = baseY - 0.5 * (baseY - peakY);
+                  const bandL = cx - zHalf * sx;
+                  const bandR = cx + zHalf * sx;
+                  const inBand = Math.abs(zClamped) <= zHalf;
 
                   const status = Math.abs(pct) < 1 ? "EVEN" : pct > 0 ? "OVER" : "UNDER";
                   const statusColor = status === "OVER" ? THEME_ACCENT.green : status === "UNDER" ? "#ff5b4d" : "#f4f4dc";
@@ -596,8 +606,12 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           {/* bell curve */}
                           <path d={area} fill="url(#bc-fill)" />
                           <path d={curve} fill="none" stroke="#ffffff" strokeWidth={2} style={{ filter: "drop-shadow(0 0 3px rgba(255,255,255,0.5))" }} />
-                          {/* red crosshair — horizontal mean line only */}
-                          <line x1={0} y1={cyMid} x2={W} y2={cyMid} stroke="#ff3b30" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
+                          {/* "typical pace" band — the bell's half-max width, where
+                              most players cluster; the flat tails outside are outliers */}
+                          <line x1={bandL} y1={halfY} x2={bandR} y2={halfY} stroke="#ff3b30" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
+                          <line x1={bandL} y1={halfY - 4} x2={bandL} y2={halfY + 4} stroke="#ff3b30" strokeWidth={1.5} opacity={0.85} />
+                          <line x1={bandR} y1={halfY - 4} x2={bandR} y2={halfY + 4} stroke="#ff3b30" strokeWidth={1.5} opacity={0.85} />
+                          <text x={cx} y={halfY + 13} textAnchor="middle" fontFamily="VT323" fontSize={10} fill="#ff7b73" opacity={0.9}>TYPICAL</text>
                           {/* player marker — the cue ball */}
                           <line x1={px} y1={baseY} x2={px} y2={py} stroke="#ffffff" strokeWidth={1.5} strokeDasharray="2 2" opacity={0.7} />
                           <foreignObject x={px - 7} y={py - 7} width={14} height={14} style={{ overflow: "visible" }}>
@@ -610,8 +624,9 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         </svg>
                         {/* Readout legend — two columns */}
                         <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 150 }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "5px 8px", border: `1px solid ${statusColor}`, background: "rgba(0,0,0,0.3)" }}>
-                            <span style={{ fontFamily: "VT323", fontSize: 20, color: statusColor, textShadow: "1px 1px 0 #042414", letterSpacing: 1 }}>{status}</span>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, padding: "5px 8px", border: `1px solid ${statusColor}`, background: "rgba(0,0,0,0.3)" }}>
+                            <span style={{ fontFamily: "VT323", fontSize: 20, color: statusColor, textShadow: "1px 1px 0 #042414", letterSpacing: 1, lineHeight: 1 }}>{status}</span>
+                            <span style={{ fontFamily: "VT323", fontSize: 11, color: "#7fae8c", letterSpacing: 0.5, lineHeight: 1 }}>{inBand ? "TYPICAL PACE" : "OUTLIER PACE"}</span>
                           </div>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                             <Cell label="YOUR BPM" value={you.toFixed(1)} color="var(--amber)" />
