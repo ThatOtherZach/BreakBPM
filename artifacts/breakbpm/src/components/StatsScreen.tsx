@@ -25,6 +25,7 @@ interface Props {
   onFindPlayers: () => void;
   onSignIn: () => void;
   onPasses: () => void;
+  onLeaderboard: () => void;
 }
 
 const WINDOW_LABEL: Record<string, string> = {
@@ -131,7 +132,7 @@ function SectionHeader({ emoji, title }: { emoji: string; title: string }) {
   );
 }
 
-export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers, onSignIn, onPasses }: Props) {
+export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers, onSignIn, onPasses, onLeaderboard }: Props) {
   const qc = useQueryClient();
   const { isAuthenticated, user } = useAuth();
 
@@ -567,6 +568,9 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                             <Cell label="CHANGE" value={`${sign}${ABS(pct).toFixed(0)}%`} color={statusColor} />
                           </div>
                         </div>
+                      </div>
+                      <div className="panel-body" style={{ paddingTop: 0 }}>
+                        <button className="btn w-full" onClick={onLeaderboard}>🏆 View Leaderboard</button>
                       </div>
                     </div>
                   );

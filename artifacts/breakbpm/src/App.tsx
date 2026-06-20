@@ -375,6 +375,7 @@ function StatsRoute() {
       onFindPlayers={() => setLocation("/find-players")}
       onSignIn={() => setLocation("/sign-in")}
       onPasses={() => setLocation("/passes")}
+      onLeaderboard={() => setLocation("/leaderboard")}
     />
   );
 }
