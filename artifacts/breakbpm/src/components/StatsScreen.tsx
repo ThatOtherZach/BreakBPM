@@ -599,9 +599,11 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           {/* red crosshair through the middle (the mean line) */}
                           <line x1={cx} y1={0} x2={cx} y2={H} stroke="#ff3b30" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
                           <line x1={0} y1={cyMid} x2={W} y2={cyMid} stroke="#ff3b30" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
-                          {/* player marker */}
-                          <line x1={px} y1={baseY} x2={px} y2={py} stroke="var(--amber)" strokeWidth={1.5} strokeDasharray="2 2" />
-                          <circle cx={px} cy={py} r={4.5} fill="var(--amber)" stroke="#042414" strokeWidth={1.5} style={{ filter: "drop-shadow(0 0 4px var(--amber))" }} />
+                          {/* player marker — the cue ball */}
+                          <line x1={px} y1={baseY} x2={px} y2={py} stroke="#ffffff" strokeWidth={1.5} strokeDasharray="2 2" opacity={0.7} />
+                          <foreignObject x={px - 7} y={py - 7} width={14} height={14} style={{ overflow: "visible" }}>
+                            <span className="cue-ball-icon" style={{ fontSize: 14, display: "block", filter: "drop-shadow(0 0 4px rgba(255,255,255,0.6))" }} aria-label="Your pace" />
+                          </foreignObject>
                           {/* axis tick labels */}
                           <text x={cx} y={H - 2} textAnchor="middle" fontFamily="VT323" fontSize={11} fill="#ff7b73">AVG</text>
                           <text x={padX} y={H - 2} textAnchor="start" fontFamily="VT323" fontSize={11} fill="#5f8a6c">SLOW</text>
