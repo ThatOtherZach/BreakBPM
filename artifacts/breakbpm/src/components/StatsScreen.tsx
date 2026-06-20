@@ -40,7 +40,7 @@ const GAME_MODE_LABEL: Record<string, string> = {
   "8ball": "8-Ball",
   "9ball": "9-Ball",
   practice: "Practice",
-  shark: "🦈 Shark",
+  shark: "🦈 Shark Mode",
 };
 
 function fmtNum(v: number | null | undefined): string {
