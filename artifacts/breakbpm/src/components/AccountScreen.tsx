@@ -497,8 +497,8 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
                     }}
-                  >
-                    {account.email}
+                    className="text-[#000000] border-t-[#000000] border-r-[#000000] border-b-[#000000] border-l-[#000000]">
+                    📮 {account.email}
                   </span>
                 )}
               </div>
