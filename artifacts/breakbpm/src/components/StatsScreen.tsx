@@ -610,7 +610,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         {/* Readout legend — two columns */}
                         <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 150 }}>
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "5px 8px", border: `1px solid ${statusColor}`, background: "rgba(0,0,0,0.3)" }}>
-                            <span style={{ fontFamily: "VT323", fontSize: 12, color: "#7fae8c", letterSpacing: 0.5 }}>STATUS</span>
                             <span style={{ fontFamily: "VT323", fontSize: 20, color: statusColor, textShadow: "1px 1px 0 #042414", letterSpacing: 1 }}>{status}</span>
                           </div>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
