@@ -68,12 +68,14 @@ function PixelMeter({
   emoji,
   pct,
   display,
+  sub,
   tone = "green",
 }: {
   label: string;
   emoji?: React.ReactNode;
   pct: number | null | undefined;
   display: string;
+  sub?: string;
   tone?: Tone;
 }) {
   const w = pct == null || !Number.isFinite(pct) ? 0 : Math.max(0, Math.min(100, pct));
@@ -89,6 +91,9 @@ function PixelMeter({
       <div className="stats-meter-track">
         <div className={`stats-meter-fill ${tone}`} style={{ width: `${w}%` }} />
       </div>
+      {sub && (
+        <span style={{ fontSize: 10, color: "#888", letterSpacing: 0.3, marginTop: 1 }}>{sub}</span>
+      )}
     </div>
   );
 }
@@ -726,6 +731,9 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       emoji={isPersonal ? "🥇" : "🏁"}
                       pct={rateValue == null ? null : rateValue * 100}
                       display={fmtPct(rateValue)}
+                      sub={isPersonal && rateValue != null && stats.gamesPlayed > 0
+                        ? `${Math.round(rateValue * stats.gamesPlayed)} of ${stats.gamesPlayed} games`
+                        : undefined}
                       tone="green"
                     />
                     {isPersonal && (stats.sharkGames ?? 0) > 0 && (
@@ -733,6 +741,9 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         label="🦈 SHARK WIN RATE"
                         pct={stats.sharkWinRate == null ? null : stats.sharkWinRate * 100}
                         display={fmtPct(stats.sharkWinRate)}
+                        sub={stats.sharkWinRate != null
+                          ? `${Math.round(stats.sharkWinRate * (stats.sharkGames ?? 0))} of ${stats.sharkGames ?? 0} games`
+                          : undefined}
                         tone="cyan"
                       />
                     )}
