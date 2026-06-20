@@ -609,7 +609,11 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   };
                   const cx = 80, cy = 80, r = 68;
                   let angle = -Math.PI / 2;
-                  const slices = stats.playTimeByType.map((p) => {
+                  // Draw largest → smallest, clockwise from 12 o'clock (matches
+                  // the descending legend order below).
+                  const slices = [...stats.playTimeByType]
+                    .sort((a, b) => b.gameCount - a.gameCount)
+                    .map((p) => {
                     const sweep = (p.gameCount / total) * 2 * Math.PI;
                     const start = angle;
                     angle += sweep;
