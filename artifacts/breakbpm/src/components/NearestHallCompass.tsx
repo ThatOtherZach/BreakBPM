@@ -56,6 +56,8 @@ export default function NearestHallCompass({
   const [nearest, setNearest] = useState<NearestHall | null>(null);
   /** Live device compass heading (clockwise from north), or null if none. */
   const [deviceHeading, setDeviceHeading] = useState<number | null>(null);
+  /** True while re-pinging the user's location from the readout refresh button. */
+  const [refreshing, setRefreshing] = useState(false);
   const cleanupRef = useRef<(() => void) | null>(null);
 
   // Tear down the orientation listener on unmount.
@@ -161,6 +163,44 @@ export default function NearestHallCompass({
     );
   }, [computeNearest, startHeadingUpdates, onLocate]);
 
+  // Re-grab a FRESH location fix (maximumAge:0, never cached) and recompute the
+  // nearest hall + distance, without tearing down the live compass listener.
+  const refreshLocation = useCallback(() => {
+    if (!navigator.geolocation) return;
+    setRefreshing(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const origin: LatLng = [pos.coords.latitude, pos.coords.longitude];
+        setUser(origin);
+        onLocate?.(origin);
+        const res = await fetchOsmVenues({
+          south: origin[0] - SEARCH_HALF_DEG,
+          north: origin[0] + SEARCH_HALF_DEG,
+          west: origin[1] - SEARCH_HALF_DEG,
+          east: origin[1] + SEARCH_HALF_DEG,
+        });
+        const osm = res.status === "ok" ? res.venues : [];
+        const best = computeNearest(origin, osm);
+        if (!best) {
+          // Mirror start()'s handling so a failed recompute never leaves a
+          // stale distance/venue showing.
+          setPhase(res.status === "error" ? "load-error" : "no-halls");
+          setRefreshing(false);
+          return;
+        }
+        setNearest(best);
+        setPhase(best.distanceKm > MAX_HALL_KM ? "no-halls" : "ready");
+        setRefreshing(false);
+      },
+      () => {
+        // Permission may have been revoked since the first successful fix.
+        setRefreshing(false);
+        setPhase("geo-denied");
+      },
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 },
+    );
+  }, [computeNearest, onLocate]);
+
   const distanceLabel = (km: number): string =>
     km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(km < 10 ? 1 : 0)} km`;
 
@@ -258,6 +298,14 @@ export default function NearestHallCompass({
             </div>
             <div className="fpp-compass-dist">{distanceLabel(nearest.distanceKm)}</div>
           </div>
+          <button
+            className="btn"
+            onClick={refreshLocation}
+            disabled={refreshing}
+            style={{ marginTop: 8 }}
+          >
+            {refreshing ? "📍 Refreshing…" : "📍 Refresh location"}
+          </button>
           <p className="fpp-compass-mode">
             {deviceHeading != null
               ? "Live compass — turn until the 8-ball points up."
