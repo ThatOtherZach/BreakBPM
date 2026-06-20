@@ -507,6 +507,28 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const cur = state.players[state.currentPlayerIndex];
   const pendingSharkPick = state.phase === 'playing' && !!state.pendingSharkPick;
   const sharkPickCandidates = pendingSharkPick ? getSharkPickCandidates(state) : [];
+  // Shark-mode coaching hint shown under the ball grid. It mirrors the solo
+  // player through each phase — open break, group assigned, group cleared — and
+  // (uniquely) speaks up during the Shark's steal, where nothing is shown
+  // otherwise. Aggression tunes the steal warning: Normal steals on foul, Hard
+  // on miss or foul. Non-Shark 8-ball keeps its own single hint below.
+  const sharkHint: { icon: string; text: string } | null = (() => {
+    if (!isSharkGame(state) || state.phase !== 'playing') return null;
+    if (pendingSharkPick) {
+      return { icon: '🦈', text: "Shark's turn, tap the lit ball it pockets from the table." };
+    }
+    if (!state.teamAssigned) {
+      return { icon: '💡', text: "Sink any ball to claim your group, the rest are the Shark's. Pot the 8 now and you lose." };
+    }
+    const player = state.players[0];
+    const myGroup = player?.team === 'solids' ? SOLIDS : player?.team === 'stripes' ? STRIPES : [];
+    const cleared = myGroup.length > 0 && myGroup.every(b => state.sunkBalls.includes(b));
+    if (cleared) {
+      return { icon: '💡', text: 'Group cleared, sink the 8 to win! A miss or foul could give the Shark the 8.' };
+    }
+    const steal = state.sharkAggression === 'hard' ? 'Miss or foul' : 'Foul';
+    return { icon: '💡', text: `Clear your group, then sink the 8 to win. ${steal} and the Shark steals a ball.` };
+  })();
   const legalBalls = state.phase !== 'playing'
     ? []
     : pendingSharkPick
@@ -1180,11 +1202,20 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 </button>
               ))}
             </div>
-            {state.gameType === '8ball' && !state.chaosMode && !state.teamAssigned && !pendingSharkPick && (
-              <div className="notice" style={{ marginTop: 6 }}>
-                <span>💡</span>
-                <span style={{ fontSize: 11 }}>First ball sunk assigns Solids (1-7) or Stripes (9-15)</span>
-              </div>
+            {isSharkGame(state) ? (
+              sharkHint && (
+                <div className="notice" style={{ marginTop: 6 }}>
+                  <span>{sharkHint.icon}</span>
+                  <span style={{ fontSize: 11 }}>{sharkHint.text}</span>
+                </div>
+              )
+            ) : (
+              state.gameType === '8ball' && !state.chaosMode && !state.teamAssigned && !pendingSharkPick && (
+                <div className="notice" style={{ marginTop: 6 }}>
+                  <span>💡</span>
+                  <span style={{ fontSize: 11 }}>First ball sunk assigns Solids (1-7) or Stripes (9-15)</span>
+                </div>
+              )
             )}
           </div>
         )}
