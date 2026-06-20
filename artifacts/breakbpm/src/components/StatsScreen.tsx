@@ -652,13 +652,23 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           <rect width="160" height="160" fill="url(#gm-scan)" opacity={0.12} style={{ pointerEvents: "none" }} />
                         </svg>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {[...slices].sort((a, b) => b.gameCount - a.gameCount).map((s) => {
+                          {slices.map((s) => {
                             const pct = Math.round((s.gameCount / total) * 100);
                             return (
                               <div key={s.gameType} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                                 <span style={{ width: 10, height: 10, background: MODE_COLORS[s.gameType] ?? "#888", display: "inline-block", flexShrink: 0, border: "1px solid #042414" }} />
                                 <span style={{ fontFamily: "VT323", fontSize: 16, color: "#f4f4dc", textShadow: "1px 1px 0 #042414", lineHeight: 1 }}>
-                                  {MODE_LABELS[s.gameType] ?? s.gameType.toUpperCase()}{" "}
+                                  {s.gameType === "8ball" || s.gameType === "9ball" ? (() => {
+                                    const ball = s.gameType === "8ball" ? 8 : 9;
+                                    return (
+                                      <span
+                                        className={`hud-chip hud-chip-sm ${ball === 8 ? "hud-chip-eight" : "hud-chip-stripe"}`}
+                                        data-number={ball}
+                                        style={{ "--chip-color": BALL_COLORS[ball], verticalAlign: "middle" } as React.CSSProperties}
+                                        aria-label={ball === 8 ? "8-ball" : "9-ball"}
+                                      />
+                                    );
+                                  })() : (MODE_LABELS[s.gameType] ?? s.gameType.toUpperCase())}{" "}
                                   <span style={{ color: MODE_PCT_COLORS[s.gameType] ?? "#f4f4dc" }}>{pct}%</span>
                                   {isPersonal && (
                                     <>
