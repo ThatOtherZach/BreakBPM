@@ -2448,10 +2448,17 @@ router.get("/stats", async (req, res): Promise<void> => {
 
   // For personal stats, fetch the global 24h average (same mode) so the hero
   // can show an above/below-average arrow. Global scope needs no comparison.
+  // If the mode-specific global 24h average is null (no global games in that
+  // mode recently), fall back to the all-modes global 24h average so the bell
+  // curve still renders with a meaningful comparison point.
   let globalAvgBpm: number | null = null;
   if (appliedScope === "personal") {
     const { core: globalCore } = await resolveStats("global", "24h", null, false, appliedGameMode);
     globalAvgBpm = globalCore.avgBpm ?? null;
+    if (globalAvgBpm == null && appliedGameMode !== "all") {
+      const { core: globalFallback } = await resolveStats("global", "24h", null, false, "all");
+      globalAvgBpm = globalFallback.avgBpm ?? null;
+    }
   }
 
   const { computedAt, ...rest } = core;
