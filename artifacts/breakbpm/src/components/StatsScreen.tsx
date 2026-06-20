@@ -743,43 +743,6 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   </div>
                 </div>
 
-                {/* ── Pace ── */}
-                <div className="panel">
-                  <SectionHeader emoji="⚡" title="Pace" />
-                  <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <div style={{ flex: 1 }}>
-                        <div className="digit-display">
-                          <div className="digit-bpm">{stats.avgBpm == null ? "--" : stats.avgBpm.toFixed(1)}</div>
-                        </div>
-                        <div className="digit-label">AVG BPM</div>
-                      </div>
-                      {isAuthenticated && (
-                        <div style={{ flex: 1 }}>
-                          <div className="digit-display">
-                            <div className="digit-bpm" style={{ color: "var(--amber)" }}>
-                              {stats.bestBpm == null ? "--" : stats.bestBpm.toFixed(1)}
-                            </div>
-                          </div>
-                          <div className="digit-label">BEST BPM</div>
-                        </div>
-                      )}
-                    </div>
-                    {isAuthenticated && isPersonal && stats.playTimeByType.length > 0 && (() => {
-                      const totalMs = stats.playTimeByType.reduce((sum, p) => sum + p.avgDurationMs * p.gameCount, 0);
-                      const totalGames = stats.playTimeByType.reduce((sum, p) => sum + p.gameCount, 0);
-                      const totalHours = totalMs / 3_600_000;
-                      const avgPerGameMin = totalGames > 0 ? totalMs / totalGames / 60_000 : 0;
-                      return (
-                        <p
-                          style={{ fontSize: 12, color: "#000", margin: 0 }}
-                          className="text-center font-semibold">🕐 {totalHours.toFixed(1)} Hours Played - {avgPerGameMin.toFixed(1)} Min Per Game (Average)
-                                                                            </p>
-                      );
-                    })()}
-                  </div>
-                </div>
-
                 {/* ── Patterns — personal scope only ── */}
                 {isPersonal && (() => {
                   // Wear the player's applied profile theme as the panel
@@ -903,6 +866,43 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   </div>
                   );
                 })()}
+
+                {/* ── Pace ── */}
+                <div className="panel">
+                  <SectionHeader emoji="⚡" title="Pace" />
+                  <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <div className="digit-display">
+                          <div className="digit-bpm">{stats.avgBpm == null ? "--" : stats.avgBpm.toFixed(1)}</div>
+                        </div>
+                        <div className="digit-label">AVG BPM</div>
+                      </div>
+                      {isAuthenticated && (
+                        <div style={{ flex: 1 }}>
+                          <div className="digit-display">
+                            <div className="digit-bpm" style={{ color: "var(--amber)" }}>
+                              {stats.bestBpm == null ? "--" : stats.bestBpm.toFixed(1)}
+                            </div>
+                          </div>
+                          <div className="digit-label">BEST BPM</div>
+                        </div>
+                      )}
+                    </div>
+                    {isAuthenticated && isPersonal && stats.playTimeByType.length > 0 && (() => {
+                      const totalMs = stats.playTimeByType.reduce((sum, p) => sum + p.avgDurationMs * p.gameCount, 0);
+                      const totalGames = stats.playTimeByType.reduce((sum, p) => sum + p.gameCount, 0);
+                      const totalHours = totalMs / 3_600_000;
+                      const avgPerGameMin = totalGames > 0 ? totalMs / totalGames / 60_000 : 0;
+                      return (
+                        <p
+                          style={{ fontSize: 12, color: "#000", margin: 0 }}
+                          className="text-center font-semibold">🕐 {totalHours.toFixed(1)} Hours Played - {avgPerGameMin.toFixed(1)} Min Per Game (Average)
+                                                                            </p>
+                      );
+                    })()}
+                  </div>
+                </div>
               </>
             )}
 
