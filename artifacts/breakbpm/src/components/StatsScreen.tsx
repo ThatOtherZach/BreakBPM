@@ -590,10 +590,10 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ flexShrink: 0, background: "#08210f", border: "2px solid #0c3a1c", boxShadow: "inset 0 0 14px rgba(0,0,0,0.6)" }}>
                           <defs>
                             <pattern id="bc-grid-min" width="10" height="10" patternUnits="userSpaceOnUse">
-                              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(57,255,20,0.10)" strokeWidth={1} />
+                              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(0,255,65,0.10)" strokeWidth={1} />
                             </pattern>
                             <pattern id="bc-grid-maj" width="40" height="40" patternUnits="userSpaceOnUse">
-                              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(57,255,20,0.18)" strokeWidth={1} />
+                              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0,255,65,0.18)" strokeWidth={1} />
                             </pattern>
                             <linearGradient id="bc-fill" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="0%" stopColor="#ffffff" stopOpacity={0.25} />
@@ -619,14 +619,14 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           </foreignObject>
                           {/* axis tick labels */}
                           <text x={cx} y={H - 2} textAnchor="middle" fontFamily="VT323" fontSize={11} fill="#ff7b73">AVG</text>
-                          <text x={padX} y={H - 2} textAnchor="start" fontFamily="VT323" fontSize={11} fill="#5f8a6c">SLOW</text>
-                          <text x={W - padX} y={H - 2} textAnchor="end" fontFamily="VT323" fontSize={11} fill="#5f8a6c">FAST</text>
+                          <text x={padX} y={H - 2} textAnchor="start" fontFamily="VT323" fontSize={11} fill="#00ff41">SLOW</text>
+                          <text x={W - padX} y={H - 2} textAnchor="end" fontFamily="VT323" fontSize={11} fill="#00ff41">FAST</text>
                         </svg>
                         {/* Readout legend — two columns */}
                         <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 150 }}>
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, padding: "5px 8px", border: `1px solid ${statusColor}`, background: "rgba(0,0,0,0.3)" }}>
                             <span style={{ fontFamily: "VT323", fontSize: 20, color: statusColor, textShadow: "1px 1px 0 #042414", letterSpacing: 1, lineHeight: 1 }}>{status}</span>
-                            <span style={{ fontFamily: "VT323", fontSize: 11, color: "#7fae8c", letterSpacing: 0.5, lineHeight: 1 }}>{inBand ? "TYPICAL PACE" : "OUTLIER PACE"}</span>
+                            <span style={{ fontFamily: "VT323", fontSize: 11, color: "#00ff41", letterSpacing: 0.5, lineHeight: 1 }}>{inBand ? "TYPICAL PACE" : "OUTLIER PACE"}</span>
                           </div>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                             <Cell label="YOUR BPM" value={you.toFixed(1)} color="var(--amber)" />
