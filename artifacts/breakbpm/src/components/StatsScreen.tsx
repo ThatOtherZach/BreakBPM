@@ -115,21 +115,6 @@ function StatCard({
   );
 }
 
-/**
- * Bell-curve "CRT screen" accent per applied profile theme. Deliberately its
- * OWN palette, distinct from themeColorOf (the felt mapping): the curve uses
- * WHITE as its neutral default (vs the felt's green) and GOLD for The Hustler,
- * while shark→blue and pool-player→purple match the felt accents. Rainbow
- * themes and Chaos wins paint the curve LINE with the animated gradient instead
- * (see rainbowCurve), so they fall through to the white frame here.
- */
-const BELL_CURVE_THEME = {
-  white: { line: "#ffffff", grid1: "rgba(255,255,255,0.10)", grid2: "rgba(255,255,255,0.18)" },
-  blue: { line: "#3ba7ff", grid1: "rgba(59,167,255,0.12)", grid2: "rgba(59,167,255,0.22)" },
-  gold: { line: "#ffd700", grid1: "rgba(255,215,0,0.10)", grid2: "rgba(255,215,0,0.20)" },
-  purple: { line: "#a06bff", grid1: "rgba(160,107,255,0.14)", grid2: "rgba(160,107,255,0.24)" },
-} as const;
-
 function SectionHeader({ emoji, title }: { emoji: string; title: string }) {
   return (
     <div className="panel-header">
@@ -496,30 +481,9 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     typeof matchMedia === "function" &&
                     matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-                  // Tint the calculator screen (grid, axis labels, readout
-                  // frames) and the non-rainbow curve line to the player's
-                  // applied profile theme. "auto" resolves to the earned
-                  // background; rainbow/Chaos paint the line itself (above) and
-                  // leave this on the white default frame.
-                  const bcAccount = meQuery.data?.account;
-                  const bcVariant =
-                    bcAccount?.profileTheme === "auto"
-                      ? (bcAccount?.profileBackground ?? "none")
-                      : (bcAccount?.profileTheme ?? "none");
-                  const bc =
-                    BELL_CURVE_THEME[
-                      bcVariant === "shark"
-                        ? "blue"
-                        : bcVariant === "hustler"
-                          ? "gold"
-                          : bcVariant === "pool-player"
-                            ? "purple"
-                            : "white"
-                    ];
-
                   const Cell = ({ label, value, color }: { label: string; value: string; color?: string }) => (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 1, padding: "4px 6px", border: `1px solid ${bc.grid2}`, background: "rgba(0,0,0,0.25)" }}>
-                      <span style={{ fontFamily: "VT323", fontSize: 12, color: bc.line, letterSpacing: 0.5, lineHeight: 1 }}>{label}</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 1, padding: "4px 6px", border: "1px solid rgba(0,255,65,0.18)", background: "rgba(0,0,0,0.25)" }}>
+                      <span style={{ fontFamily: "VT323", fontSize: 12, color: "#00ff41", letterSpacing: 0.5, lineHeight: 1 }}>{label}</span>
                       <span style={{ fontFamily: "VT323", fontSize: 22, color: color ?? "#f4f4dc", textShadow: "1px 1px 0 #042414", lineHeight: 1 }}>{value}</span>
                     </div>
                   );
@@ -532,10 +496,10 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ flexShrink: 0, background: "#08210f", border: "2px solid #0c3a1c", boxShadow: "inset 0 0 14px rgba(0,0,0,0.6)" }}>
                           <defs>
                             <pattern id="bc-grid-min" width="10" height="10" patternUnits="userSpaceOnUse">
-                              <path d="M 10 0 L 0 0 0 10" fill="none" stroke={bc.grid1} strokeWidth={1} />
+                              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(0,255,65,0.10)" strokeWidth={1} />
                             </pattern>
                             <pattern id="bc-grid-maj" width="40" height="40" patternUnits="userSpaceOnUse">
-                              <path d="M 40 0 L 0 0 0 40" fill="none" stroke={bc.grid2} strokeWidth={1} />
+                              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0,255,65,0.18)" strokeWidth={1} />
                             </pattern>
                             <linearGradient id="bc-fill" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="0%" stopColor="#ffffff" stopOpacity={0.25} />
@@ -568,7 +532,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           <rect width={W} height={H} fill="url(#bc-grid-maj)" />
                           {/* bell curve */}
                           <path d={area} fill="url(#bc-fill)" />
-                          <path d={curve} fill="none" stroke={rainbowCurve ? "url(#bc-rainbow)" : bc.line} strokeWidth={2} style={{ filter: rainbowCurve ? "drop-shadow(0 0 3px rgba(255,255,255,0.35))" : "drop-shadow(0 0 3px rgba(255,255,255,0.5))" }} />
+                          <path d={curve} fill="none" stroke={rainbowCurve ? "url(#bc-rainbow)" : "#ffffff"} strokeWidth={2} style={{ filter: rainbowCurve ? "drop-shadow(0 0 3px rgba(255,255,255,0.35))" : "drop-shadow(0 0 3px rgba(255,255,255,0.5))" }} />
                           {/* "typical pace" band — the bell's half-max width, where
                               most players cluster; the flat tails outside are outliers */}
                           <line x1={bandL} y1={halfY} x2={bandR} y2={halfY} stroke="#ff3b30" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
@@ -582,8 +546,8 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           </foreignObject>
                           {/* axis tick labels */}
                           <text x={cx} y={H - 2} textAnchor="middle" fontFamily="VT323" fontSize={11} fill="#ff7b73">AVG</text>
-                          <text x={padX} y={H - 2} textAnchor="start" fontFamily="VT323" fontSize={11} fill={bc.line}>SLOW</text>
-                          <text x={W - padX} y={H - 2} textAnchor="end" fontFamily="VT323" fontSize={11} fill={bc.line}>FAST</text>
+                          <text x={padX} y={H - 2} textAnchor="start" fontFamily="VT323" fontSize={11} fill="#00ff41">SLOW</text>
+                          <text x={W - padX} y={H - 2} textAnchor="end" fontFamily="VT323" fontSize={11} fill="#00ff41">FAST</text>
                         </svg>
                         {/* Readout legend — two columns */}
                         <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 150 }}>
