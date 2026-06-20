@@ -503,18 +503,20 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
               </div>
             ) : (
               <>
-                <div style={{
-                  fontSize: 13,
-                  color: "#444",
-                  textAlign: "center",
-                  background: "#f5f5dc",
-                  border: "1px solid #ccc",
-                  borderRadius: 3,
-                  padding: "5px 10px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 2,
-                }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: "#444",
+                    textAlign: "center",
+                    background: "#f5f5dc",
+                    border: "1px solid #ccc",
+                    borderRadius: 3,
+                    padding: "5px 10px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2,
+                  }}
+                  className="text-left">
                   <div>
                     📺{" "}
                     <a
