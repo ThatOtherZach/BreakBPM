@@ -5,6 +5,7 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { AdSummary } from './adSummary';
 import type { CryptoVerifyResultStatus } from './cryptoVerifyResultStatus';
 import type { LuckyBreakResult } from './luckyBreakResult';
 import type { PassSummary } from './passSummary';
@@ -17,4 +18,5 @@ export interface CryptoVerifyResult {
   confirmations?: number;
   needed?: number;
   luckyBreak?: LuckyBreakResult;
+  ad?: AdSummary;
 }

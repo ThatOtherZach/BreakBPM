@@ -5,10 +5,10 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
-import type { Ad } from './ad';
+import type { AdminAd } from './adminAd';
 
 export interface AdPage {
-  ads: Ad[];
+  ads: AdminAd[];
   page: number;
   limit: number;
   total: number;

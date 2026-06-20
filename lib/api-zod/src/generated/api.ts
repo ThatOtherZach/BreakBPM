@@ -485,6 +485,13 @@ export const VerifyCryptoPaymentResponse = zod.object({
   "windowDays": zod.number(),
   "seedHash": zod.string().optional(),
   "seededShotCount": zod.number().optional()
+}).optional(),
+  "ad": zod.object({
+  "id": zod.string(),
+  "headline": zod.string(),
+  "tagline": zod.string(),
+  "status": zod.enum(['pending_review', 'approved', 'denied']),
+  "days": zod.number().nullish()
 }).optional()
 })
 
@@ -1298,7 +1305,84 @@ export const ListAdsResponse = zod.object({
   "ads": zod.array(zod.object({
   "id": zod.string(),
   "headline": zod.string(),
-  "tagline": zod.string()
+  "tagline": zod.string(),
+  "sponsor": zod.string().nullish()
+}))
+})
+
+
+/**
+ * Signed-in. Returns the live per-day ad rate (base × demand multiplier, floored), the max purchasable run length, and the active-ad count that drives the multiplier. The buyer UI multiplies effectiveDailyCents by the chosen days; /ads/quote re-freezes the same number at purchase time.
+
+ * @summary Current dynamic ad pricing (signed-in)
+ */
+export const GetAdPricingResponse = zod.object({
+  "cryptoEnabled": zod.boolean(),
+  "baseDailyCents": zod.number(),
+  "minDailyCents": zod.number(),
+  "effectiveDailyCents": zod.number(),
+  "maxDays": zod.number(),
+  "activeAdsCount": zod.number()
+})
+
+
+/**
+ * Signed-in. Validates + sanitizes the headline/tagline, freezes the current per-day rate × days into a total, and creates a manual crypto order (pay the unique exact amount to the receiving address from any wallet). The ad copy + run length are stashed on the order; the ad row itself is created (status pending_review) only once /crypto/verify confirms payment. Rejected with success=false when crypto is closed.
+
+ * @summary Quote a user-bought HUD ad for on-chain payment (signed-in)
+ */
+export const createAdQuoteBodyHeadlineMax = 60;
+
+export const createAdQuoteBodyTaglineMax = 120;
+
+export const createAdQuoteBodyDaysMax = 369;
+
+
+
+export const CreateAdQuoteBody = zod.object({
+  "asset": zod.enum(['usdc', 'eth']),
+  "headline": zod.string().min(1).max(createAdQuoteBodyHeadlineMax),
+  "tagline": zod.string().min(1).max(createAdQuoteBodyTaglineMax),
+  "days": zod.number().min(1).max(createAdQuoteBodyDaysMax)
+})
+
+export const CreateAdQuoteResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "order": zod.object({
+  "id": zod.string(),
+  "manual": zod.boolean(),
+  "asset": zod.enum(['usdc', 'eth']),
+  "network": zod.enum(['base', 'base-sepolia']),
+  "chainId": zod.number(),
+  "receivingAddress": zod.string(),
+  "tokenAddress": zod.string().nullish(),
+  "expectedAmount": zod.string(),
+  "decimals": zod.number(),
+  "displayAmount": zod.string(),
+  "priceCents": zod.number(),
+  "days": zod.number(),
+  "expiresAt": zod.coerce.date()
+}).optional()
+})
+
+
+/**
+ * Signed-in. Returns the caller's purchased ads newest-first with their moderation status and live window, for the buyer's "my ads" list.
+
+ * @summary The caller's own bought ads (signed-in)
+ */
+export const ListMyAdsResponse = zod.object({
+  "ads": zod.array(zod.object({
+  "id": zod.string(),
+  "headline": zod.string(),
+  "tagline": zod.string(),
+  "status": zod.enum(['pending_review', 'approved', 'denied']),
+  "days": zod.number().nullish(),
+  "priceCents": zod.number().nullish(),
+  "startAt": zod.coerce.date().nullish(),
+  "expiryAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
 }))
 })
 
@@ -1608,7 +1692,16 @@ export const ListAdminAdsResponse = zod.object({
   "ads": zod.array(zod.object({
   "id": zod.string(),
   "headline": zod.string(),
-  "tagline": zod.string()
+  "tagline": zod.string(),
+  "status": zod.enum(['pending_review', 'approved', 'denied']),
+  "isHouse": zod.boolean(),
+  "ownerEmail": zod.string().nullish(),
+  "ownerScreenName": zod.string().nullish(),
+  "days": zod.number().nullish(),
+  "priceCents": zod.number().nullish(),
+  "startAt": zod.coerce.date().nullish(),
+  "expiryAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
 })),
   "page": zod.number(),
   "limit": zod.number(),
@@ -1638,7 +1731,8 @@ export const CreateAdResponse = zod.object({
   "ad": zod.object({
   "id": zod.string(),
   "headline": zod.string(),
-  "tagline": zod.string()
+  "tagline": zod.string(),
+  "sponsor": zod.string().nullish()
 }).optional()
 })
 
@@ -1658,7 +1752,50 @@ export const DeleteAdResponse = zod.object({
   "ad": zod.object({
   "id": zod.string(),
   "headline": zod.string(),
-  "tagline": zod.string()
+  "tagline": zod.string(),
+  "sponsor": zod.string().nullish()
+}).optional()
+})
+
+
+/**
+ * Admin-only. Approves a pending_review ad: sets status=approved and opens its live window (startAt=now, expiryAt=now+days) so it enters the HUD rotation. 403 for non-admins; 200 + success:false/reason on a missing or non-pending ad.
+
+ * @summary Approve a pending user-bought ad (admin only)
+ */
+export const ApproveAdParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ApproveAdResponse = zod.object({
+  "success": zod.boolean(),
+  "reason": zod.string().optional(),
+  "ad": zod.object({
+  "id": zod.string(),
+  "headline": zod.string(),
+  "tagline": zod.string(),
+  "sponsor": zod.string().nullish()
+}).optional()
+})
+
+
+/**
+ * Admin-only. Denies a pending_review ad: sets status=denied so it never runs. The payment is intentionally kept (no auto-refund). 403 for non-admins; 200 + success:false/reason on a missing or non-pending ad.
+
+ * @summary Deny a pending user-bought ad (admin only)
+ */
+export const DenyAdParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DenyAdResponse = zod.object({
+  "success": zod.boolean(),
+  "reason": zod.string().optional(),
+  "ad": zod.object({
+  "id": zod.string(),
+  "headline": zod.string(),
+  "tagline": zod.string(),
+  "sponsor": zod.string().nullish()
 }).optional()
 })
 

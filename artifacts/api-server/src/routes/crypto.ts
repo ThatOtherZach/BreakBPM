@@ -1,11 +1,11 @@
 import { Router, type IRouter } from "express";
-import { randomInt } from "node:crypto";
 import { and, eq, ne } from "drizzle-orm";
 import { getAddress, formatUnits } from "viem";
 import {
   db,
   cryptoOrdersTable,
   passesTable,
+  adsTable,
   luckyBreakRollsTable,
   type PassKind,
   type CryptoAsset,
@@ -25,6 +25,7 @@ import { CRYPTO_PASS_PLANS } from "../lib/pricing";
 import {
   recordSaleEventTx,
   valuationForCryptoOrder,
+  valuationForAdOrder,
 } from "../lib/saleEvents";
 import {
   LUCKY_BREAK_CODE_KIND,
@@ -49,20 +50,8 @@ import {
   verifyPayment,
   verifyPayerSignature,
   findIncomingUsdcTx,
+  manualAmountTail,
 } from "../lib/cryptoChain";
-
-/**
- * A tiny random atomic tail added to a MANUAL order's amount so each one is
- * unique — a single on-chain payment then maps to exactly one order, letting us
- * claim it by amount (and auto-detect USDC) without binding a payer. Kept
- * economically negligible:
- *   - USDC (6dp): 1..9999 base units (< $0.01)
- *   - ETH (18dp): 1..1e12 wei (< $0.01 at any realistic ETH price)
- */
-function manualAmountTail(asset: CryptoAsset): bigint {
-  if (asset === "usdc") return BigInt(randomInt(1, 10_000));
-  return BigInt(randomInt(1, 1_000_000_000_000));
-}
 
 const router: IRouter = Router();
 
@@ -98,6 +87,23 @@ function toLuckyBreakReveal(row: {
     windowDays: row.windowDays,
     seedHash: row.seedHash,
     seededShotCount: row.entropyShotCount,
+  };
+}
+
+/** Shape an ad row into the /crypto/verify AdSummary payload. */
+function toAdSummary(ad: {
+  id: string;
+  headline: string;
+  tagline: string;
+  status: string;
+  days: number | null;
+}) {
+  return {
+    id: ad.id,
+    headline: ad.headline,
+    tagline: ad.tagline,
+    status: ad.status as "pending_review" | "approved" | "denied",
+    days: ad.days,
   };
 }
 
@@ -386,6 +392,25 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
     return;
   }
 
+  // Already settled ad order — return the created ad idempotently so a
+  // resumed/re-verified checkout still shows "your ad is in review".
+  if (order.status === "paid" && order.purpose === "ad" && order.adId) {
+    const [ad] = await db
+      .select()
+      .from(adsTable)
+      .where(eq(adsTable.id, order.adId))
+      .limit(1);
+    res.json(
+      VerifyCryptoPaymentResponse.parse({
+        success: true,
+        status: "granted",
+        message: "This payment was already confirmed — your ad is in review.",
+        ad: ad ? toAdSummary(ad) : undefined,
+      }),
+    );
+    return;
+  }
+
   // The active chain must still match the one this order was quoted on, or the
   // locked amount/oracle assumptions no longer hold.
   if (order.chainId !== getNetworkConfig().chainId) {
@@ -609,6 +634,119 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
   // network; fx never throws and falls back to a cached/env/default rate).
   const fx = await getUsdToCadRate();
 
+  // Ad-purchase order: create the buyer's ad (pending review) and settle the
+  // order in one tx. Idempotent via a row lock on the order — a concurrent or
+  // resumed verify sees the already-created ad and returns it deduped. The copy
+  // was sanitized + validated when the quote was created, so we trust the
+  // snapshot frozen on the order here.
+  if (order.purpose === "ad") {
+    let ad;
+    let adDeduped = false;
+    try {
+      ad = await db.transaction(async (tx) => {
+        const [locked] = await tx
+          .select()
+          .from(cryptoOrdersTable)
+          .where(eq(cryptoOrdersTable.id, order.id))
+          .for("update")
+          .limit(1);
+        if (locked?.status === "paid" && locked.adId) {
+          const [existing] = await tx
+            .select()
+            .from(adsTable)
+            .where(eq(adsTable.id, locked.adId))
+            .limit(1);
+          adDeduped = true;
+          return existing;
+        }
+        const adId = newId();
+        const [created] = await tx
+          .insert(adsTable)
+          .values({
+            id: adId,
+            ownerUserId: user.id,
+            createdByUserId: user.id,
+            headline: order.adHeadline ?? "",
+            tagline: order.adTagline ?? "",
+            status: "pending_review",
+            days: order.adDays,
+            priceCents: order.priceCents,
+          })
+          .returning();
+        const v = valuationForAdOrder(order.adDays ?? 0, order.priceCents);
+        await recordSaleEventTx(tx, {
+          userId: user.id,
+          eventType: "crypto_purchase",
+          paymentMethod: "crypto",
+          grossCents: v.grossCents,
+          isComp: v.isComp,
+          productLabel: v.productLabel,
+          fx,
+          providerRef: txHash,
+        });
+        await tx
+          .update(cryptoOrdersTable)
+          .set({ status: "paid", txHash, adId, updatedAt: new Date() })
+          .where(eq(cryptoOrdersTable.id, order.id));
+        return created;
+      });
+    } catch (e) {
+      // Unique-index race (txHash / sale provider_ref). If THIS order settled
+      // concurrently, return its ad idempotently; otherwise the hash was bound
+      // to a different order — a genuine mismatch.
+      if ((e as { code?: string }).code === "23505") {
+        const [settled] = await db
+          .select()
+          .from(cryptoOrdersTable)
+          .where(eq(cryptoOrdersTable.id, order.id))
+          .limit(1);
+        if (settled?.status === "paid" && settled.adId) {
+          const [settledAd] = await db
+            .select()
+            .from(adsTable)
+            .where(eq(adsTable.id, settled.adId))
+            .limit(1);
+          res.json(
+            VerifyCryptoPaymentResponse.parse({
+              success: true,
+              status: "granted",
+              message:
+                "This payment was already confirmed — your ad is in review.",
+              ad: settledAd ? toAdSummary(settledAd) : undefined,
+            }),
+          );
+          return;
+        }
+        res.json(
+          VerifyCryptoPaymentResponse.parse({
+            success: false,
+            status: "mismatch",
+            message: "That transaction was already used for another order.",
+          }),
+        );
+        return;
+      }
+      req.log.error({ err: e, orderId: order.id }, "Crypto ad grant failed");
+      res.status(500).json({ error: "Could not create the ad" });
+      return;
+    }
+    req.log.info(
+      { userId: user.id, orderId: order.id, adId: ad?.id, deduped: adDeduped },
+      "Crypto ad purchase verified",
+    );
+    res.json(
+      VerifyCryptoPaymentResponse.parse({
+        success: true,
+        status: "granted",
+        message: adDeduped
+          ? "This payment was already confirmed — your ad is in review."
+          : "Paid — your ad is in review. We'll have it live shortly.",
+        ad: ad ? toAdSummary(ad) : undefined,
+      }),
+    );
+    return;
+  }
+
   // Issue the pass and settle the order in one transaction. The grant is
   // idempotent on the tx hash; for a Lucky Break order the roll is seeded by the
   // stable order id, so a re-verify reproduces the same outcome and we never
@@ -693,7 +831,7 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
         // what was actually paid (the Lucky Break price snapshotted on the
         // order), keyed on the settling tx hash.
         {
-          const v = valuationForCryptoOrder(order.passKind, order.priceCents);
+          const v = valuationForCryptoOrder(order.passKind as string, order.priceCents);
           await recordSaleEventTx(tx, {
             userId: user.id,
             eventType: "crypto_purchase",
@@ -735,7 +873,7 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
       // Sales ledger: record the paid crypto purchase once (skip on a deduped
       // re-verify — the row already exists, and providerRef is unique anyway).
       if (!grant.deduped) {
-        const v = valuationForCryptoOrder(order.passKind, order.priceCents);
+        const v = valuationForCryptoOrder(order.passKind as string, order.priceCents);
         await recordSaleEventTx(tx, {
           userId: user.id,
           eventType: "crypto_purchase",

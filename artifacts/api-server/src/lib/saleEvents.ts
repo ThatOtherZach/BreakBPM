@@ -89,6 +89,22 @@ export function valuationForCodeRedemption(
   };
 }
 
+/**
+ * Sale value for a user-bought HUD ad paid in crypto. Always a real (paid)
+ * sale, valued at the frozen total snapshotted on the order (`priceCents`). The
+ * label carries the purchased run length for the ledger.
+ */
+export function valuationForAdOrder(
+  days: number,
+  priceCents: number,
+): SaleValuation {
+  return {
+    grossCents: priceCents,
+    isComp: false,
+    productLabel: `HUD Ad — ${days} ${days === 1 ? "day" : "days"}`,
+  };
+}
+
 export interface RecordSaleEventInput {
   userId: string | null;
   eventType: SaleEventType;

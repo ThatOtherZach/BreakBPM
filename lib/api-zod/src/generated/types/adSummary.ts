@@ -5,11 +5,13 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { AdSummaryStatus } from './adSummaryStatus';
 
-export interface Ad {
+export interface AdSummary {
   id: string;
   headline: string;
   tagline: string;
+  status: AdSummaryStatus;
   /** @nullable */
-  sponsor?: string | null;
+  days?: number | null;
 }

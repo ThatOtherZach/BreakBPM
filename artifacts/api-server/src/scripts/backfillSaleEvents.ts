@@ -23,6 +23,7 @@ import {
 import {
   recordSaleEventTx,
   valuationForCryptoOrder,
+  valuationForAdOrder,
   valuationForCodeRedemption,
   PASS_PRODUCT_LABELS,
 } from "../lib/saleEvents";
@@ -41,7 +42,10 @@ async function main(): Promise<void> {
     .where(eq(cryptoOrdersTable.status, "paid"));
   for (const order of paidOrders) {
     if (!order.txHash) continue; // paid but no settling hash → can't key it
-    const v = valuationForCryptoOrder(order.passKind, order.priceCents);
+    const v =
+      order.purpose === "ad"
+        ? valuationForAdOrder(order.adDays ?? 0, order.priceCents)
+        : valuationForCryptoOrder(order.passKind as string, order.priceCents);
     await recordSaleEventTx(db, {
       userId: order.userId,
       eventType: "crypto_purchase",

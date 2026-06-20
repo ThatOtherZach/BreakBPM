@@ -4,14 +4,29 @@ import {
   useListAdminAds,
   useCreateAd,
   useDeleteAd,
+  useApproveAd,
+  useDenyAd,
   getListAdminAdsQueryKey,
   getListAdsQueryKey,
+  type AdminAd,
 } from "@workspace/api-client-react";
 
 // Match the admin list page size used by the other admin panels.
 const LIMIT = 10;
 const HEADLINE_MAX = 60;
 const TAGLINE_MAX = 120;
+
+const STATUS_LABEL: Record<AdminAd["status"], string> = {
+  pending_review: "In review",
+  approved: "Live",
+  denied: "Declined",
+};
+
+const STATUS_COLOR: Record<AdminAd["status"], string> = {
+  pending_review: "#9a7a00",
+  approved: "#006400",
+  denied: "#a00",
+};
 
 /**
  * Admin-only panel to manage the in-game HUD text ads. Add an ad (headline +
@@ -30,6 +45,8 @@ export default function AdminAdsPanel() {
 
   const createAd = useCreateAd();
   const deleteAd = useDeleteAd();
+  const approveAd = useApproveAd();
+  const denyAd = useDenyAd();
 
   const [headline, setHeadline] = useState("");
   const [tagline, setTagline] = useState("");
@@ -88,6 +105,48 @@ export default function AdminAdsPanel() {
       invalidate();
     } catch {
       setError("Couldn't delete the ad. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const approve = async (id: string) => {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await approveAd.mutateAsync({ id });
+      if (!res.success) {
+        setError(
+          res.reason === "not_found"
+            ? "That ad no longer exists."
+            : "Couldn't approve the ad.",
+        );
+        return;
+      }
+      invalidate();
+    } catch {
+      setError("Couldn't approve the ad. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const deny = async (id: string) => {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await denyAd.mutateAsync({ id });
+      if (!res.success) {
+        setError(
+          res.reason === "not_found"
+            ? "That ad no longer exists."
+            : "Couldn't decline the ad.",
+        );
+        return;
+      }
+      invalidate();
+    } catch {
+      setError("Couldn't decline the ad. Try again.");
     } finally {
       setBusy(false);
     }
@@ -160,15 +219,60 @@ export default function AdminAdsPanel() {
                   <div className="avp-row-main">
                     <span className="avp-row-name">{ad.headline}</span>
                     <span className="avp-row-meta">{ad.tagline}</span>
+                    <span className="avp-row-meta" style={{ color: "#666" }}>
+                      {ad.isHouse
+                        ? "House ad"
+                        : `${ad.ownerScreenName ?? ad.ownerEmail ?? "User"}${
+                            ad.days ? ` · ${ad.days} ${ad.days === 1 ? "day" : "days"}` : ""
+                          }${
+                            ad.expiryAt && ad.status === "approved"
+                              ? ` · until ${new Date(ad.expiryAt).toLocaleDateString()}`
+                              : ""
+                          }`}
+                    </span>
                   </div>
-                  <div className="avp-row-actions">
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => remove(ad.id)}
-                      disabled={busy}
-                    >
-                      Delete
-                    </button>
+                  <div
+                    className="avp-row-actions"
+                    style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}
+                  >
+                    {!ad.isHouse && (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: "bold",
+                          color: STATUS_COLOR[ad.status],
+                        }}
+                      >
+                        {STATUS_LABEL[ad.status]}
+                      </span>
+                    )}
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {!ad.isHouse && ad.status === "pending_review" && (
+                        <>
+                          <button
+                            className="btn btn-primary"
+                            onClick={() => approve(ad.id)}
+                            disabled={busy}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            className="btn btn-danger"
+                            onClick={() => deny(ad.id)}
+                            disabled={busy}
+                          >
+                            Deny
+                          </button>
+                        </>
+                      )}
+                      <button
+                        className="btn btn-danger"
+                        onClick={() => remove(ad.id)}
+                        disabled={busy}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </li>
               ))}

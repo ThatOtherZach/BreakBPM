@@ -6,6 +6,11 @@
 
 import { logger } from "./logger";
 import { LUCKY_BREAK_LIFETIME_PROBABILITY } from "./luckyBreak";
+import {
+  AD_BASE_DAILY_CENTS_DEFAULT,
+  AD_MIN_DAILY_CENTS_DEFAULT,
+  AD_MAX_DAYS_DEFAULT,
+} from "./pricing";
 
 function envFlag(name: string, defaultValue: boolean): boolean {
   const raw = process.env[name];
@@ -142,6 +147,52 @@ export function storeUrl(): string {
   const raw = process.env.BREAKBPM_STORE_URL;
   if (raw === undefined || raw.trim() === "") return "";
   return raw.trim();
+}
+
+/**
+ * Read a positive-integer env var, falling back to `defaultValue` when unset,
+ * blank, or invalid (a warning is logged on a malformed value). `min` clamps
+ * the floor (e.g. 1 for "at least one day"); values below it fall back too.
+ */
+function envInt(name: string, defaultValue: number, min: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === "") return defaultValue;
+  const parsed = Number(raw.trim());
+  if (!Number.isInteger(parsed) || parsed < min) {
+    logger.warn(
+      { value: raw, default: defaultValue },
+      `Invalid ${name} (expected an integer >= ${min}); using default`,
+    );
+    return defaultValue;
+  }
+  return parsed;
+}
+
+/**
+ * Base daily rate (USD cents) for a user-bought HUD ad, before the demand
+ * multiplier + floor (see pricing.ts `computeAdQuote`). Read from
+ * `BREAKBPM_AD_BASE_DAILY_CENTS`; defaults to $6.90/day. Restart after change.
+ */
+export function adBaseDailyCents(): number {
+  return envInt("BREAKBPM_AD_BASE_DAILY_CENTS", AD_BASE_DAILY_CENTS_DEFAULT, 1);
+}
+
+/**
+ * Floor for the effective daily ad rate (USD cents). The multiplier can push
+ * the computed rate very low (or to zero) when there's little activity, so this
+ * is the minimum a buyer ever pays per day. Read from
+ * `BREAKBPM_AD_MIN_DAILY_CENTS`; defaults to $1.00/day. Restart after change.
+ */
+export function adMinDailyCents(): number {
+  return envInt("BREAKBPM_AD_MIN_DAILY_CENTS", AD_MIN_DAILY_CENTS_DEFAULT, 0);
+}
+
+/**
+ * Maximum run length (days) a buyer may purchase for one ad. Read from
+ * `BREAKBPM_AD_MAX_DAYS`; defaults to 369. Restart after change.
+ */
+export function adMaxDays(): number {
+  return envInt("BREAKBPM_AD_MAX_DAYS", AD_MAX_DAYS_DEFAULT, 1);
 }
 
 /** Default splash QR target when no promo override is configured. */

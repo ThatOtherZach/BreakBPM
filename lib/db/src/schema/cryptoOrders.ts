@@ -11,6 +11,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
 import { passesTable } from "./passes";
+import { adsTable } from "./ads";
 
 /**
  * A crypto checkout order is a server-issued quote for ONE one-time pass paid
@@ -48,11 +49,15 @@ export const cryptoOrdersTable = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),
-    // What this order grants on payment. Either a fixed one-time pass kind
+    // What this order is for: "pass" (a pass/Lucky-Break purchase, the default)
+    // or "ad" (a user-bought HUD text ad). Discriminates the verify grant path.
+    purpose: text("purpose").notNull().default("pass"),
+    // What a "pass" order grants on payment. Either a fixed one-time pass kind
     // ("day" | "month" | "year" | "lifetime") OR the "lucky_break" sentinel,
     // which runs the seeded Lucky Break draw on confirmation and grants the
     // won tier (Monthly floor, fixed-odds Lifetime) instead of a fixed pass.
-    passKind: text("pass_kind").notNull(),
+    // NULL for "ad" orders (they grant an ad, not a pass).
+    passKind: text("pass_kind"),
     asset: text("asset").notNull(), // "usdc" | "eth"
     network: text("network").notNull(), // "base" | "base-sepolia"
     chainId: integer("chain_id").notNull(),
@@ -74,10 +79,18 @@ export const cryptoOrdersTable = pgTable(
     status: text("status").notNull().default("pending"),
     // The settling transaction hash (lowercased), once verified.
     txHash: text("tx_hash"),
-    // The pass row issued on a successful payment.
+    // The pass row issued on a successful payment ("pass" orders only).
     passId: text("pass_id").references(() => passesTable.id, {
       onDelete: "set null",
     }),
+    // ── "ad" orders only (NULL for "pass" orders) ──
+    // The ad copy + run length the buyer paid for, snapshotted at quote time so
+    // verify can mint the ad without re-trusting the client. Sanitized at quote.
+    adHeadline: text("ad_headline"),
+    adTagline: text("ad_tagline"),
+    adDays: integer("ad_days"),
+    // The ad row created on a successful payment.
+    adId: text("ad_id").references(() => adsTable.id, { onDelete: "set null" }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

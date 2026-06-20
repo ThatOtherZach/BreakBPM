@@ -28,6 +28,9 @@ import type {
   AdList,
   AdMutationResult,
   AdPage,
+  AdPricing,
+  AdQuoteInput,
+  AdQuoteResult,
   AdminCodeInput,
   AdminCodeList,
   AdminCodeResult,
@@ -76,6 +79,7 @@ import type {
   ListVenuesParams,
   MeResponse,
   MentionResolveResult,
+  MyAdsList,
   MyGiftCodesResult,
   OsmVenueList,
   PassCheckoutInput,
@@ -3638,6 +3642,237 @@ export function useListAds<TData = Awaited<ReturnType<typeof listAds>>, TError =
 
 
 
+export const getGetAdPricingUrl = () => {
+
+
+
+
+  return `/api/ads/pricing`
+}
+
+/**
+ * Signed-in. Returns the live per-day ad rate (base × demand multiplier, floored), the max purchasable run length, and the active-ad count that drives the multiplier. The buyer UI multiplies effectiveDailyCents by the chosen days; /ads/quote re-freezes the same number at purchase time.
+
+ * @summary Current dynamic ad pricing (signed-in)
+ */
+export const getAdPricing = async ( options?: RequestInit): Promise<AdPricing> => {
+
+  return customFetch<AdPricing>(getGetAdPricingUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdPricingQueryKey = () => {
+    return [
+    `/api/ads/pricing`
+    ] as const;
+    }
+
+
+export const getGetAdPricingQueryOptions = <TData = Awaited<ReturnType<typeof getAdPricing>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdPricing>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdPricingQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdPricing>>> = ({ signal }) => getAdPricing({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdPricing>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdPricingQueryResult = NonNullable<Awaited<ReturnType<typeof getAdPricing>>>
+export type GetAdPricingQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Current dynamic ad pricing (signed-in)
+ */
+
+export function useGetAdPricing<TData = Awaited<ReturnType<typeof getAdPricing>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdPricing>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdPricingQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateAdQuoteUrl = () => {
+
+
+
+
+  return `/api/ads/quote`
+}
+
+/**
+ * Signed-in. Validates + sanitizes the headline/tagline, freezes the current per-day rate × days into a total, and creates a manual crypto order (pay the unique exact amount to the receiving address from any wallet). The ad copy + run length are stashed on the order; the ad row itself is created (status pending_review) only once /crypto/verify confirms payment. Rejected with success=false when crypto is closed.
+
+ * @summary Quote a user-bought HUD ad for on-chain payment (signed-in)
+ */
+export const createAdQuote = async (adQuoteInput: AdQuoteInput, options?: RequestInit): Promise<AdQuoteResult> => {
+
+  return customFetch<AdQuoteResult>(getCreateAdQuoteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      adQuoteInput,)
+  }
+);}
+
+
+
+
+export const getCreateAdQuoteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdQuote>>, TError,{data: BodyType<AdQuoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAdQuote>>, TError,{data: BodyType<AdQuoteInput>}, TContext> => {
+
+const mutationKey = ['createAdQuote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAdQuote>>, {data: BodyType<AdQuoteInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAdQuote(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdQuoteMutationResult = NonNullable<Awaited<ReturnType<typeof createAdQuote>>>
+    export type CreateAdQuoteMutationBody = BodyType<AdQuoteInput>
+    export type CreateAdQuoteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Quote a user-bought HUD ad for on-chain payment (signed-in)
+ */
+export const useCreateAdQuote = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdQuote>>, TError,{data: BodyType<AdQuoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAdQuote>>,
+        TError,
+        {data: BodyType<AdQuoteInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAdQuoteMutationOptions(options));
+    }
+
+export const getListMyAdsUrl = () => {
+
+
+
+
+  return `/api/ads/mine`
+}
+
+/**
+ * Signed-in. Returns the caller's purchased ads newest-first with their moderation status and live window, for the buyer's "my ads" list.
+
+ * @summary The caller's own bought ads (signed-in)
+ */
+export const listMyAds = async ( options?: RequestInit): Promise<MyAdsList> => {
+
+  return customFetch<MyAdsList>(getListMyAdsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyAdsQueryKey = () => {
+    return [
+    `/api/ads/mine`
+    ] as const;
+    }
+
+
+export const getListMyAdsQueryOptions = <TData = Awaited<ReturnType<typeof listMyAds>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyAds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyAdsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyAds>>> = ({ signal }) => listMyAds({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyAds>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyAdsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyAds>>>
+export type ListMyAdsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The caller's own bought ads (signed-in)
+ */
+
+export function useListMyAds<TData = Awaited<ReturnType<typeof listMyAds>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyAds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyAdsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getListAdminVenuesUrl = () => {
 
 
@@ -4481,5 +4716,149 @@ export const useDeleteAd = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteAdMutationOptions(options));
+    }
+
+export const getApproveAdUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/ads/${id}/approve`
+}
+
+/**
+ * Admin-only. Approves a pending_review ad: sets status=approved and opens its live window (startAt=now, expiryAt=now+days) so it enters the HUD rotation. 403 for non-admins; 200 + success:false/reason on a missing or non-pending ad.
+
+ * @summary Approve a pending user-bought ad (admin only)
+ */
+export const approveAd = async (id: string, options?: RequestInit): Promise<AdMutationResult> => {
+
+  return customFetch<AdMutationResult>(getApproveAdUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getApproveAdMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveAd>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveAd>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['approveAd'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveAd>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  approveAd(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveAdMutationResult = NonNullable<Awaited<ReturnType<typeof approveAd>>>
+
+    export type ApproveAdMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Approve a pending user-bought ad (admin only)
+ */
+export const useApproveAd = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveAd>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveAd>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getApproveAdMutationOptions(options));
+    }
+
+export const getDenyAdUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/ads/${id}/deny`
+}
+
+/**
+ * Admin-only. Denies a pending_review ad: sets status=denied so it never runs. The payment is intentionally kept (no auto-refund). 403 for non-admins; 200 + success:false/reason on a missing or non-pending ad.
+
+ * @summary Deny a pending user-bought ad (admin only)
+ */
+export const denyAd = async (id: string, options?: RequestInit): Promise<AdMutationResult> => {
+
+  return customFetch<AdMutationResult>(getDenyAdUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDenyAdMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof denyAd>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof denyAd>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['denyAd'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof denyAd>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  denyAd(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DenyAdMutationResult = NonNullable<Awaited<ReturnType<typeof denyAd>>>
+
+    export type DenyAdMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Deny a pending user-bought ad (admin only)
+ */
+export const useDenyAd = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof denyAd>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof denyAd>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDenyAdMutationOptions(options));
     }
 

@@ -32,6 +32,7 @@ import {
   type Hex,
 } from "viem";
 import { base, baseSepolia } from "viem/chains";
+import { randomInt } from "node:crypto";
 import type { CryptoAsset, CryptoNetwork } from "@workspace/db";
 
 export interface NetworkConfig {
@@ -216,6 +217,19 @@ export function ethWeiAmount(priceCents: number, eth: EthUsdQuote): bigint {
   const numerator = BigInt(priceCents) * 10n ** BigInt(eth.decimals) * 10n ** 18n;
   const denominator = 100n * eth.raw;
   return numerator / denominator;
+}
+
+/**
+ * A tiny random atomic tail added to a MANUAL order's amount so each one is
+ * unique — a single on-chain payment then maps to exactly one order, letting us
+ * claim it by amount (and auto-detect USDC) without binding a payer. Kept
+ * economically negligible:
+ *   - USDC (6dp): 1..9999 base units (< $0.01)
+ *   - ETH (18dp): 1..1e12 wei (< $0.01 at any realistic ETH price)
+ */
+export function manualAmountTail(asset: CryptoAsset): bigint {
+  if (asset === "usdc") return BigInt(randomInt(1, 10_000));
+  return BigInt(randomInt(1, 1_000_000_000_000));
 }
 
 const TRANSFER_EVENT = parseAbiItem(

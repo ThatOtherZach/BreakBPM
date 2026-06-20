@@ -492,6 +492,24 @@ export interface LuckyBreakResult {
   seededShotCount?: number;
 }
 
+export type AdSummaryStatus = typeof AdSummaryStatus[keyof typeof AdSummaryStatus];
+
+
+export const AdSummaryStatus = {
+  pending_review: 'pending_review',
+  approved: 'approved',
+  denied: 'denied',
+} as const;
+
+export interface AdSummary {
+  id: string;
+  headline: string;
+  tagline: string;
+  status: AdSummaryStatus;
+  /** @nullable */
+  days?: number | null;
+}
+
 export interface CryptoVerifyResult {
   success: boolean;
   status: CryptoVerifyResultStatus;
@@ -500,6 +518,7 @@ export interface CryptoVerifyResult {
   confirmations?: number;
   needed?: number;
   luckyBreak?: LuckyBreakResult;
+  ad?: AdSummary;
 }
 
 export type SubscriptionCheckoutInputInterval = typeof SubscriptionCheckoutInputInterval[keyof typeof SubscriptionCheckoutInputInterval];
@@ -1494,6 +1513,8 @@ export interface Ad {
   id: string;
   headline: string;
   tagline: string;
+  /** @nullable */
+  sponsor?: string | null;
 }
 
 export interface AdInput {
@@ -1513,8 +1534,38 @@ export interface AdList {
   ads: Ad[];
 }
 
+export type AdminAdStatus = typeof AdminAdStatus[keyof typeof AdminAdStatus];
+
+
+export const AdminAdStatus = {
+  pending_review: 'pending_review',
+  approved: 'approved',
+  denied: 'denied',
+} as const;
+
+export interface AdminAd {
+  id: string;
+  headline: string;
+  tagline: string;
+  status: AdminAdStatus;
+  isHouse: boolean;
+  /** @nullable */
+  ownerEmail?: string | null;
+  /** @nullable */
+  ownerScreenName?: string | null;
+  /** @nullable */
+  days?: number | null;
+  /** @nullable */
+  priceCents?: number | null;
+  /** @nullable */
+  startAt?: string | null;
+  /** @nullable */
+  expiryAt?: string | null;
+  createdAt: string;
+}
+
 export interface AdPage {
-  ads: Ad[];
+  ads: AdminAd[];
   page: number;
   limit: number;
   total: number;
@@ -1524,6 +1575,110 @@ export interface AdMutationResult {
   success: boolean;
   reason?: string;
   ad?: Ad;
+}
+
+export interface AdPricing {
+  cryptoEnabled: boolean;
+  baseDailyCents: number;
+  minDailyCents: number;
+  effectiveDailyCents: number;
+  maxDays: number;
+  activeAdsCount: number;
+}
+
+export type AdQuoteInputAsset = typeof AdQuoteInputAsset[keyof typeof AdQuoteInputAsset];
+
+
+export const AdQuoteInputAsset = {
+  usdc: 'usdc',
+  eth: 'eth',
+} as const;
+
+export interface AdQuoteInput {
+  asset: AdQuoteInputAsset;
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  headline: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  tagline: string;
+  /**
+     * @minimum 1
+     * @maximum 369
+     */
+  days: number;
+}
+
+export type AdCryptoOrderAsset = typeof AdCryptoOrderAsset[keyof typeof AdCryptoOrderAsset];
+
+
+export const AdCryptoOrderAsset = {
+  usdc: 'usdc',
+  eth: 'eth',
+} as const;
+
+export type AdCryptoOrderNetwork = typeof AdCryptoOrderNetwork[keyof typeof AdCryptoOrderNetwork];
+
+
+export const AdCryptoOrderNetwork = {
+  base: 'base',
+  'base-sepolia': 'base-sepolia',
+} as const;
+
+export interface AdCryptoOrder {
+  id: string;
+  manual: boolean;
+  asset: AdCryptoOrderAsset;
+  network: AdCryptoOrderNetwork;
+  chainId: number;
+  receivingAddress: string;
+  /** @nullable */
+  tokenAddress?: string | null;
+  expectedAmount: string;
+  decimals: number;
+  displayAmount: string;
+  priceCents: number;
+  days: number;
+  expiresAt: string;
+}
+
+export interface AdQuoteResult {
+  success: boolean;
+  message: string;
+  order?: AdCryptoOrder;
+}
+
+export type MyAdStatus = typeof MyAdStatus[keyof typeof MyAdStatus];
+
+
+export const MyAdStatus = {
+  pending_review: 'pending_review',
+  approved: 'approved',
+  denied: 'denied',
+} as const;
+
+export interface MyAd {
+  id: string;
+  headline: string;
+  tagline: string;
+  status: MyAdStatus;
+  /** @nullable */
+  days?: number | null;
+  /** @nullable */
+  priceCents?: number | null;
+  /** @nullable */
+  startAt?: string | null;
+  /** @nullable */
+  expiryAt?: string | null;
+  createdAt: string;
+}
+
+export interface MyAdsList {
+  ads: MyAd[];
 }
 
 export type OsmVenueSource = typeof OsmVenueSource[keyof typeof OsmVenueSource];

@@ -1011,6 +1011,62 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AdList" }
 
+  /ads/pricing:
+    get:
+      operationId: getAdPricing
+      tags: [ads]
+      summary: Current dynamic ad pricing (signed-in)
+      description: >
+        Signed-in. Returns the live per-day ad rate (base × demand multiplier,
+        floored), the max purchasable run length, and the active-ad count that
+        drives the multiplier. The buyer UI multiplies effectiveDailyCents by
+        the chosen days; /ads/quote re-freezes the same number at purchase time.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdPricing" }
+
+  /ads/quote:
+    post:
+      operationId: createAdQuote
+      tags: [ads]
+      summary: Quote a user-bought HUD ad for on-chain payment (signed-in)
+      description: >
+        Signed-in. Validates + sanitizes the headline/tagline, freezes the
+        current per-day rate × days into a total, and creates a manual crypto
+        order (pay the unique exact amount to the receiving address from any
+        wallet). The ad copy + run length are stashed on the order; the ad row
+        itself is created (status pending_review) only once /crypto/verify
+        confirms payment. Rejected with success=false when crypto is closed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdQuoteInput" }
+      responses:
+        "200":
+          description: Quote created (or rejected)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdQuoteResult" }
+
+  /ads/mine:
+    get:
+      operationId: listMyAds
+      tags: [ads]
+      summary: The caller's own bought ads (signed-in)
+      description: >
+        Signed-in. Returns the caller's purchased ads newest-first with their
+        moderation status and live window, for the buyer's "my ads" list.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyAdsList" }
+
   /admin/venues:
     get:
       operationId: listAdminVenues
@@ -1250,6 +1306,49 @@ paths:
       description: >
         Admin-only. Removes a text ad permanently. 403 for non-admins. 200 +
         `success:false, reason:"not_found"` when the id doesn't exist.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Result (check `success`; `reason` set on failure)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdMutationResult" }
+
+  /admin/ads/{id}/approve:
+    post:
+      operationId: approveAd
+      tags: [ads]
+      summary: Approve a pending user-bought ad (admin only)
+      description: >
+        Admin-only. Approves a pending_review ad: sets status=approved and
+        opens its live window (startAt=now, expiryAt=now+days) so it enters the
+        HUD rotation. 403 for non-admins; 200 + success:false/reason on a
+        missing or non-pending ad.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Result (check `success`; `reason` set on failure)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdMutationResult" }
+
+  /admin/ads/{id}/deny:
+    post:
+      operationId: denyAd
+      tags: [ads]
+      summary: Deny a pending user-bought ad (admin only)
+      description: >
+        Admin-only. Denies a pending_review ad: sets status=denied so it never
+        runs. The payment is intentionally kept (no auto-refund). 403 for
+        non-admins; 200 + success:false/reason on a missing or non-pending ad.
       parameters:
         - name: id
           in: path
@@ -1660,6 +1759,9 @@ components:
         # Present only when the order was a Lucky Break purchase — the won roll,
         # so the client can play the "rolling the rack" reveal on the result.
         luckyBreak: { $ref: "#/components/schemas/LuckyBreakResult" }
+        # Present only when the order was a HUD-ad purchase — the created ad
+        # (status pending_review), so the buyer sees it landed in moderation.
+        ad: { $ref: "#/components/schemas/AdSummary" }
 
     SubscriptionCheckoutInput:
       type: object
@@ -2728,6 +2830,9 @@ components:
         id: { type: string }
         headline: { type: string }
         tagline: { type: string }
+        # The buyer's screen name for a user-bought ad ("Sponsored by …").
+        # Null for house/admin ads. NEVER an email.
+        sponsor: { type: ["string", "null"] }
 
     AdInput:
       type: object
@@ -2750,7 +2855,7 @@ components:
       properties:
         ads:
           type: array
-          items: { $ref: "#/components/schemas/Ad" }
+          items: { $ref: "#/components/schemas/AdminAd" }
         # Current page number (1-based).
         page: { type: integer }
         # Page size used for this response.
@@ -2767,6 +2872,123 @@ components:
         reason: { type: string }
         # The created/deleted ad when success is true.
         ad: { $ref: "#/components/schemas/Ad" }
+
+    # Admin-facing ad row: the full moderation view (owner identity, status,
+    # purchased window + price). House ads have isHouse=true and null owner.
+    AdminAd:
+      type: object
+      required: [id, headline, tagline, status, isHouse, createdAt]
+      properties:
+        id: { type: string }
+        headline: { type: string }
+        tagline: { type: string }
+        status: { type: string, enum: [pending_review, approved, denied] }
+        # True for an admin/house ad (no buyer); false for a user-bought ad.
+        isHouse: { type: boolean }
+        # Buyer identity (paid ads only) — admin moderation view ONLY.
+        ownerEmail: { type: ["string", "null"] }
+        ownerScreenName: { type: ["string", "null"] }
+        # Purchased run length + frozen price (paid ads only).
+        days: { type: ["integer", "null"] }
+        priceCents: { type: ["integer", "null"] }
+        # Live window — set on approval (paid ads).
+        startAt: { type: ["string", "null"], format: date-time }
+        expiryAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    # A short summary of an ad created by a successful crypto purchase, returned
+    # from /crypto/verify so the buyer sees it landed in review.
+    AdSummary:
+      type: object
+      required: [id, headline, tagline, status]
+      properties:
+        id: { type: string }
+        headline: { type: string }
+        tagline: { type: string }
+        status: { type: string, enum: [pending_review, approved, denied] }
+        days: { type: ["integer", "null"] }
+
+    # Current dynamic ad pricing for the buyer UI. The client computes the live
+    # total as effectiveDailyCents × days; the server re-freezes the same
+    # product at quote time so the two always agree.
+    AdPricing:
+      type: object
+      required:
+        [cryptoEnabled, baseDailyCents, minDailyCents, effectiveDailyCents, maxDays, activeAdsCount]
+      properties:
+        # True only when crypto checkout is open AND a wallet is configured.
+        cryptoEnabled: { type: boolean }
+        baseDailyCents: { type: integer }
+        minDailyCents: { type: integer }
+        # The current per-day rate after the demand multiplier + floor.
+        effectiveDailyCents: { type: integer }
+        # Max purchasable run length (days).
+        maxDays: { type: integer }
+        # How many ads are currently live (drives the multiplier — shown so the
+        # price is explainable).
+        activeAdsCount: { type: integer }
+
+    AdQuoteInput:
+      type: object
+      required: [asset, headline, tagline, days]
+      properties:
+        asset: { type: string, enum: [usdc, eth] }
+        headline: { type: string, minLength: 1, maxLength: 60 }
+        tagline: { type: string, minLength: 1, maxLength: 120 }
+        days: { type: integer, minimum: 1, maximum: 369 }
+
+    # Like CryptoOrderQuote but for an ad purchase: no passKind, plus the
+    # purchased run length. Always a manual (pay-to-address) order.
+    AdCryptoOrder:
+      type: object
+      required:
+        [id, manual, asset, network, chainId, receivingAddress, expectedAmount, decimals, displayAmount, priceCents, days, expiresAt]
+      properties:
+        id: { type: string }
+        manual: { type: boolean }
+        asset: { type: string, enum: [usdc, eth] }
+        network: { type: string, enum: [base, base-sepolia] }
+        chainId: { type: integer }
+        receivingAddress: { type: string }
+        tokenAddress: { type: ["string", "null"] }
+        expectedAmount: { type: string }
+        decimals: { type: integer }
+        displayAmount: { type: string }
+        # Frozen total price in USD cents (effectiveDailyCents × days).
+        priceCents: { type: integer }
+        days: { type: integer }
+        expiresAt: { type: string, format: date-time }
+
+    AdQuoteResult:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        order: { $ref: "#/components/schemas/AdCryptoOrder" }
+
+    # One of the caller's own bought ads (their purchase history + live status).
+    MyAd:
+      type: object
+      required: [id, headline, tagline, status, createdAt]
+      properties:
+        id: { type: string }
+        headline: { type: string }
+        tagline: { type: string }
+        status: { type: string, enum: [pending_review, approved, denied] }
+        days: { type: ["integer", "null"] }
+        priceCents: { type: ["integer", "null"] }
+        startAt: { type: ["string", "null"], format: date-time }
+        expiryAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    MyAdsList:
+      type: object
+      required: [ads]
+      properties:
+        ads:
+          type: array
+          items: { $ref: "#/components/schemas/MyAd" }
 
     OsmVenue:
       type: object

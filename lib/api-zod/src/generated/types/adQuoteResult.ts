@@ -5,11 +5,10 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { AdCryptoOrder } from './adCryptoOrder';
 
-export interface Ad {
-  id: string;
-  headline: string;
-  tagline: string;
-  /** @nullable */
-  sponsor?: string | null;
+export interface AdQuoteResult {
+  success: boolean;
+  message: string;
+  order?: AdCryptoOrder;
 }

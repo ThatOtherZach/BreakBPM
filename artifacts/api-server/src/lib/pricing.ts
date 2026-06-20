@@ -117,6 +117,57 @@ export const CRYPTO_PASS_PLANS: CryptoPassPlan[] = [
   },
 ];
 
+/**
+ * User-bought HUD ad pricing. The displayed/charged daily rate is dynamic:
+ *
+ *   multiplier        = activeAdsCount / 100 + gamesLast24h / 3
+ *   effectiveDaily¢   = max(minDailyCents, round(baseDailyCents × multiplier))
+ *   total¢            = effectiveDaily¢ × days
+ *
+ * `effectiveDaily¢` is rounded to an integer first so the client (which only
+ * receives `effectiveDailyCents` from /ads/pricing and multiplies by `days`)
+ * and the server (which freezes the same product at quote time) always agree to
+ * the cent. The defaults below are the out-of-the-box knobs; all three are
+ * env-overridable via config.ts.
+ */
+export const AD_BASE_DAILY_CENTS_DEFAULT = 690;
+export const AD_MIN_DAILY_CENTS_DEFAULT = 100;
+export const AD_MAX_DAYS_DEFAULT = 369;
+
+export interface AdQuoteInput {
+  days: number;
+  activeAdsCount: number;
+  gamesLast24h: number;
+  baseDailyCents: number;
+  minDailyCents: number;
+}
+
+export interface AdQuote {
+  days: number;
+  /** Per-day rate in cents, after the multiplier + floor (integer). */
+  effectiveDailyCents: number;
+  /** Frozen total in cents: effectiveDailyCents × days. */
+  totalCents: number;
+  /** The raw demand multiplier (for diagnostics / logging). */
+  multiplier: number;
+}
+
+/** Pure ad-price computation (see the block comment above). */
+export function computeAdQuote(input: AdQuoteInput): AdQuote {
+  const multiplier =
+    input.activeAdsCount / 100 + input.gamesLast24h / 3;
+  const effectiveDailyCents = Math.max(
+    input.minDailyCents,
+    Math.round(input.baseDailyCents * multiplier),
+  );
+  return {
+    days: input.days,
+    effectiveDailyCents,
+    totalCents: effectiveDailyCents * input.days,
+    multiplier,
+  };
+}
+
 export type PlanId = "day" | "monthly" | "yearly" | "lifetime";
 
 export interface Plan {

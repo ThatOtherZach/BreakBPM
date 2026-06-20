@@ -1137,6 +1137,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
               <span style={{ fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: '#7a6a9a' }}>Ad</span>
               <span style={{ fontSize: 16, fontWeight: 'bold', color: '#e8c8ff', lineHeight: 1.1 }}>{currentAd.headline}</span>
               <span style={{ fontSize: 13, color: '#b89ad8', lineHeight: 1.15 }}>{currentAd.tagline}</span>
+              {currentAd.sponsor ? (
+                <span style={{ fontSize: 10, fontStyle: 'italic', color: '#8a7aaa', lineHeight: 1.1 }}>
+                  Sponsored · {currentAd.sponsor}
+                </span>
+              ) : null}
             </div>
           ) : null;
           // Where the ad sits among the non-shark player rows: after the first
