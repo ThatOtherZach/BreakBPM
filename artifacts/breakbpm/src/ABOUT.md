@@ -89,7 +89,7 @@ Sign in to save and view your own, as well as a free 24-hour global view. Use a 
 
 Who's fastest? Use **[the Leaderboard](https://breakbpm.com/leaderboard)** to see your rank by BPM across recent 8-ball singles games (time weighted average). Pass holders can switch the ranking window to 90 days or all-time. Sign in to open the full leaderboard. 
 
-![Leaderboard example](leaderboard-example.png)
+![Leaderboard example](leaderboard-example.gif)
 
 ## Passes
 
