@@ -210,6 +210,13 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
   const statsQuery = useGetStats(params);
   const stats = statsQuery.data as StatsResult | undefined;
 
+  // Rainbow "flair" toggle: admins and pass holders who pick the rainbow
+  // profile theme get the animated rainbow name treatment. Reused by the
+  // StatsHero name and the BPM bell curve line below.
+  const rainbowName =
+    (meQuery.data?.entitlement.isAdmin ?? false) ||
+    (meQuery.data?.entitlement.tier === "pass" && meQuery.data?.account?.profileTheme === "rainbow");
+
   async function handleRefresh() {
     if (refreshing) return;
     setRefreshing(true);
@@ -415,7 +422,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
             ) : (
               <>
                 {/* ── CRT hero readout — only shown when signed in ── */}
-                {isAuthenticated && <StatsHero stats={stats} screenName={user?.screenName} rainbowName={(meQuery.data?.entitlement.isAdmin ?? false) || (meQuery.data?.entitlement.tier === "pass" && meQuery.data?.account?.profileTheme === "rainbow")} joinedAt={joinedAt} />}
+                {isAuthenticated && <StatsHero stats={stats} screenName={user?.screenName} rainbowName={rainbowName} joinedAt={joinedAt} />}
 
                 {/* ── BPM Bell Curve (personal pace vs global average) ── */}
                 {isPersonal && stats.avgBpm != null && stats.globalAvgBpm != null && stats.globalAvgBpm > 0 && (() => {
@@ -465,6 +472,15 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   const sign = delta >= 0 ? "+" : "−";
                   const ABS = Math.abs;
 
+                  // The bell line wears the rainbow flair for rainbow-theme
+                  // holders, or for anyone riding a recent Chaos win (same
+                  // trigger as the rainbow AVG-BPM number in StatsHero). Honour
+                  // reduced-motion by freezing the gradient instead of panning.
+                  const rainbowCurve = rainbowName || Boolean(stats.chaosWinRecent);
+                  const reducedMotion =
+                    typeof matchMedia === "function" &&
+                    matchMedia("(prefers-reduced-motion: reduce)").matches;
+
                   const Cell = ({ label, value, color }: { label: string; value: string; color?: string }) => (
                     <div style={{ display: "flex", flexDirection: "column", gap: 1, padding: "4px 6px", border: "1px solid rgba(0,255,65,0.18)", background: "rgba(0,0,0,0.25)" }}>
                       <span style={{ fontFamily: "VT323", fontSize: 12, color: "#00ff41", letterSpacing: 0.5, lineHeight: 1 }}>{label}</span>
@@ -489,13 +505,34 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                               <stop offset="0%" stopColor="#ffffff" stopOpacity={0.25} />
                               <stop offset="100%" stopColor="#ffffff" stopOpacity={0.02} />
                             </linearGradient>
+                            {rainbowCurve && (
+                              <linearGradient id="bc-rainbow" x1="0" y1="0" x2="0.5" y2="0" spreadMethod="repeat">
+                                <stop offset="0" stopColor="#ff004d" />
+                                <stop offset="0.166" stopColor="#ff8a00" />
+                                <stop offset="0.333" stopColor="#ffe600" />
+                                <stop offset="0.5" stopColor="#00e676" />
+                                <stop offset="0.666" stopColor="#00b0ff" />
+                                <stop offset="0.833" stopColor="#d500f9" />
+                                <stop offset="1" stopColor="#ff004d" />
+                                {!reducedMotion && (
+                                  <animateTransform
+                                    attributeName="gradientTransform"
+                                    type="translate"
+                                    from="0 0"
+                                    to="0.5 0"
+                                    dur="2.5s"
+                                    repeatCount="indefinite"
+                                  />
+                                )}
+                              </linearGradient>
+                            )}
                           </defs>
                           {/* graph paper */}
                           <rect width={W} height={H} fill="url(#bc-grid-min)" />
                           <rect width={W} height={H} fill="url(#bc-grid-maj)" />
                           {/* bell curve */}
                           <path d={area} fill="url(#bc-fill)" />
-                          <path d={curve} fill="none" stroke="#ffffff" strokeWidth={2} style={{ filter: "drop-shadow(0 0 3px rgba(255,255,255,0.5))" }} />
+                          <path d={curve} fill="none" stroke={rainbowCurve ? "url(#bc-rainbow)" : "#ffffff"} strokeWidth={2} style={{ filter: rainbowCurve ? "drop-shadow(0 0 3px rgba(255,255,255,0.35))" : "drop-shadow(0 0 3px rgba(255,255,255,0.5))" }} />
                           {/* "typical pace" band — the bell's half-max width, where
                               most players cluster; the flat tails outside are outliers */}
                           <line x1={bandL} y1={halfY} x2={bandR} y2={halfY} stroke="#ff3b30" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
