@@ -583,7 +583,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   );
 
                   return (
-                    <div className="panel" style={{ background: "#06140a", backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.16) 2px, rgba(0,0,0,0.16) 4px)" }}>
+                    <div className="panel" style={{ background: "#0a1a0a", backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.16) 2px, rgba(0,0,0,0.16) 4px)" }}>
                       <SectionHeader emoji="📈" title="BPM Bell Curve" />
                       <div className="panel-body" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 14 }}>
                         {/* Graphing-calculator screen */}
