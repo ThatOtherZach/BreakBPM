@@ -586,6 +586,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
 
                 {/* ── Game Modes pie ── */}
                 {isAuthenticated && stats.playTimeByType.length > 0 && (() => {
+                  if (gameMode !== "all") return null;
                   const total = stats.playTimeByType.reduce((s, p) => s + p.gameCount, 0);
                   if (total === 0) return null;
                   const MODE_COLORS: Record<string, string> = {
