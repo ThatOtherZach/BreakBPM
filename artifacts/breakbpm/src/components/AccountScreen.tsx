@@ -1182,7 +1182,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 }}
                 onClick={onPasses}
               >
-                💡 Showing your {history.data.visibleCount} most recent games. Upgrade to see all {history.data.totalCount} →
+                💡 Showing your {history.data.visibleCount} most recent games. Upgrade for all
               </button>
             )}
           </div>
