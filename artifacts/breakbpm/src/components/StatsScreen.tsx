@@ -616,7 +616,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                             <Cell label="YOUR BPM" value={you.toFixed(1)} color="var(--amber)" />
                             <Cell label="GLOBAL AVG" value={avg.toFixed(1)} color="#ff7b73" />
                             <Cell label="DELTA" value={`${sign}${ABS(delta).toFixed(1)}`} color={statusColor} />
-                            <Cell label="OVER/UNDER" value={`${sign}${ABS(pct).toFixed(0)}%`} color={statusColor} />
+                            <Cell label="CHANGE" value={`${sign}${ABS(pct).toFixed(0)}%`} color={statusColor} />
                           </div>
                         </div>
                       </div>
