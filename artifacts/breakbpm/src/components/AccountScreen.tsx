@@ -24,6 +24,7 @@ import {
   useRedeemDiscountCode,
   useListAdminDiscountCodes,
   useCreateAdminDiscountCode,
+  useBackfillGameSummaries,
   useListMyInvites,
   useAcceptInvite,
   useRemoveInvite,
@@ -131,6 +132,12 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
     query: { queryKey: getListAdminDiscountCodesQueryKey(), enabled: isAdmin },
   });
   const createAdminCode = useCreateAdminDiscountCode();
+
+  // One-shot global game-summary backfill (admin only). Forces every finalized
+  // game to (re)write its distilled summary so the global averages converge now
+  // instead of waiting for each player's lazy self-heal. Idempotent.
+  const backfillSummaries = useBackfillGameSummaries();
+  const [backfillMsg, setBackfillMsg] = useState<string | null>(null);
 
   // @Mention invites: games where another paid host linked the caller by
   // screen name. Pending invites are opt-in (Accept counts the game toward
@@ -1037,6 +1044,52 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
 
         {/* Admin verified-venues manager — gated on isAdmin (endpoint 403s too). */}
         {isAdmin && <AdminVenuesPanel />}
+
+        {/* Admin one-shot global summary backfill — gated on isAdmin (endpoint
+            403s too). Forces every finalized game to (re)write its distilled
+            summary so global averages converge immediately. Idempotent. */}
+        {isAdmin && (
+          <div className="panel">
+            <div className="panel-header">
+              <span>Backfill game summaries</span>
+            </div>
+            <div
+              className="panel-body"
+              style={{ display: "flex", flexDirection: "column", gap: 8 }}
+            >
+              <p style={{ margin: 0, opacity: 0.8, fontSize: 13 }}>
+                Recomputes the distilled summary for every finalized game so the
+                global stats &amp; leaderboard averages converge now instead of
+                waiting for each player to open their own stats. Safe to re-run.
+              </p>
+              <button
+                type="button"
+                className="btn"
+                disabled={backfillSummaries.isPending}
+                onClick={() => {
+                  setBackfillMsg(null);
+                  backfillSummaries.mutate(undefined, {
+                    onSuccess: (r) => {
+                      setBackfillMsg(
+                        `Done — scanned ${r.scanned}, summarized ${r.summarized}, failed ${r.failed}.`,
+                      );
+                    },
+                    onError: () => {
+                      setBackfillMsg("Backfill failed. Check the server logs.");
+                    },
+                  });
+                }}
+              >
+                {backfillSummaries.isPending
+                  ? "Backfilling…"
+                  : "Run backfill"}
+              </button>
+              {backfillMsg && (
+                <p style={{ margin: 0, fontSize: 13 }}>{backfillMsg}</p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Redeem a Code panel — handles both Lucky Break roll codes (animated
             reveal) and plain gifted Day/Year/Lifetime codes (plain message). */}

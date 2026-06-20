@@ -1555,6 +1555,14 @@ export interface RepairVenueCoordinatesResult {
   items: RepairVenueCoordinatesItem[];
 }
 
+export interface BackfillGameSummariesResult {
+  success: boolean;
+  reason?: string;
+  scanned: number;
+  summarized: number;
+  failed: number;
+}
+
 export type GetGameStateByCodeParams = {
 /**
  * @minLength 5

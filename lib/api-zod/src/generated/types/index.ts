@@ -29,6 +29,7 @@ export * from './adminSaleRowPaymentMethod';
 export * from './adminSalesResponse';
 export * from './adminSalesTotals';
 export * from './appConfig';
+export * from './backfillGameSummariesResult';
 export * from './cancelFindPlayerPostInput';
 export * from './cancelFindPlayerPostResult';
 export * from './cancelSubscriptionResult';

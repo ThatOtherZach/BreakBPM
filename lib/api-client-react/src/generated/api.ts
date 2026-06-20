@@ -30,6 +30,7 @@ import type {
   AdminLeaderboardResponse,
   AdminSalesResponse,
   AppConfig,
+  BackfillGameSummariesResult,
   CancelFindPlayerPostInput,
   CancelFindPlayerPostResult,
   CancelSubscriptionResult,
@@ -3921,6 +3922,78 @@ export const useDeleteVenue = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteVenueMutationOptions(options));
+    }
+
+export const getBackfillGameSummariesUrl = () => {
+
+
+
+
+  return `/api/admin/backfill-game-summaries`
+}
+
+/**
+ * Admin-only. Recomputes and writes the authoritative distilled summary for every already-finalized game (game-level + each participant), so the bulk stats/leaderboard/history/profile read paths stop skipping summary-less rows. Idempotent — re-running overwrites the same values. Used as a one-shot after a deploy to repair games that predate the summary rollout (the per-user lazy self-heal otherwise fixes them only as each player opens their own stats). 403 for non-admins.
+
+ * @summary Distill every finalized game into its summary (admin only)
+ */
+export const backfillGameSummaries = async ( options?: RequestInit): Promise<BackfillGameSummariesResult> => {
+
+  return customFetch<BackfillGameSummariesResult>(getBackfillGameSummariesUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getBackfillGameSummariesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof backfillGameSummaries>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof backfillGameSummaries>>, TError,void, TContext> => {
+
+const mutationKey = ['backfillGameSummaries'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof backfillGameSummaries>>, void> = () => {
+
+
+          return  backfillGameSummaries(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BackfillGameSummariesMutationResult = NonNullable<Awaited<ReturnType<typeof backfillGameSummaries>>>
+
+    export type BackfillGameSummariesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Distill every finalized game into its summary (admin only)
+ */
+export const useBackfillGameSummaries = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof backfillGameSummaries>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof backfillGameSummaries>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getBackfillGameSummariesMutationOptions(options));
     }
 
 export const getListAdminSalesUrl = (params?: ListAdminSalesParams,) => {

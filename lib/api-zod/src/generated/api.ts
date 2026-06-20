@@ -1477,6 +1477,20 @@ export const DeleteVenueResponse = zod.object({
 
 
 /**
+ * Admin-only. Recomputes and writes the authoritative distilled summary for every already-finalized game (game-level + each participant), so the bulk stats/leaderboard/history/profile read paths stop skipping summary-less rows. Idempotent — re-running overwrites the same values. Used as a one-shot after a deploy to repair games that predate the summary rollout (the per-user lazy self-heal otherwise fixes them only as each player opens their own stats). 403 for non-admins.
+
+ * @summary Distill every finalized game into its summary (admin only)
+ */
+export const BackfillGameSummariesResponse = zod.object({
+  "success": zod.boolean(),
+  "reason": zod.string().optional(),
+  "scanned": zod.number(),
+  "summarized": zod.number(),
+  "failed": zod.number()
+})
+
+
+/**
  * Admin-only. Returns valued, taxed sale rows newest-first over an optional [from, to) date range, with revenue totals. Tax is the figure frozen at sale time (BC Canada: GST 5% + PST 7%, tax-inclusive). Comps (admin/gift/seed code redemptions) appear at $0 with `isComp: true`. `format=csv` streams a CSV download instead of JSON. 403s for non-admins.
 
  * @summary Sales/revenue ledger for the accountant (admin only)

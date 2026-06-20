@@ -671,6 +671,16 @@ export function clearUserStatsCache(userId: string): void {
   }
 }
 
+/**
+ * Drop EVERY cached stats snapshot — personal (all users) and global (all
+ * windows). Used after an admin-triggered global summary backfill rewrites many
+ * games at once, so the next read recomputes against the freshly distilled rows
+ * instead of serving up-to-1h-stale numbers (notably the global averages).
+ */
+export function clearAllStatsCache(): void {
+  statsCache.clear();
+}
+
 // ───────────────────────── Leaderboard ─────────────────────────
 //
 // A pace (Balls-Per-Minute) ranking over a deliberately narrow, apples-to-

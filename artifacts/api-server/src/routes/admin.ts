@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, saleEventsTable, usersTable } from "@workspace/db";
-import { and, desc, eq, gte, lt, sql, type SQL } from "drizzle-orm";
+import { db, gamesTable, saleEventsTable, usersTable } from "@workspace/db";
+import { and, desc, eq, gte, isNotNull, lt, sql, type SQL } from "drizzle-orm";
 import {
   ListAdminSalesResponse,
   ListAdminSalesQueryParams,
@@ -9,8 +9,11 @@ import {
 } from "@workspace/api-zod";
 import { getOrCreateUser } from "../lib/auth";
 import { isAdminEmail } from "../lib/config";
+import { writeFinalizedSummary } from "../lib/gameSummaryWriter";
 import {
   resolveAdminLeaderboard,
+  clearAllStatsCache,
+  clearLeaderboardCache,
   type LeaderboardMode,
   type LeaderboardWindow,
 } from "../lib/stats";
@@ -196,10 +199,62 @@ router.get("/admin/sales", async (req, res): Promise<void> => {
 });
 
 /**
- * Admin-only leaderboard view (403 for everyone else). Returns the SAME ordered
- * ranking the public board shows for a given mode+window, but exposes the hidden
- * anti-cheat signals the public row strips: the composite `score` ranked on, how
- * many of each player's qualifying games were between two registered players
+ * One-shot global summary backfill. Recomputes + writes the authoritative
+ * distilled summary for every finalized game (game-level + each participant) so
+ * the bulk read paths stop skipping summary-less rows. Idempotent — the writer
+ * overwrites the same values every run. Admin-only; flushes the stats and
+ * leaderboard caches afterwards so the repaired rows show immediately (notably
+ * the global averages). This is the forced counterpart to the per-user lazy
+ * self-heal, useful as a one-shot after a deploy that introduced summaries.
+ */
+router.post(
+  "/admin/backfill-game-summaries",
+  async (req, res): Promise<void> => {
+    const user = await getOrCreateUser(req);
+    if (!user) {
+      res.status(401).json({ success: false, reason: "not_signed_in", scanned: 0, summarized: 0, failed: 0 });
+      return;
+    }
+    if (!isAdminEmail(user.email)) {
+      res.status(403).json({ success: false, reason: "not_admin", scanned: 0, summarized: 0, failed: 0 });
+      return;
+    }
+
+    const rows = await db
+      .select({ id: gamesTable.id, gameState: gamesTable.gameState })
+      .from(gamesTable)
+      .where(isNotNull(gamesTable.endedAt));
+
+    let summarized = 0;
+    let failed = 0;
+    for (const row of rows) {
+      try {
+        // Pass the row we already hold so the writer skips a redundant re-read.
+        await writeFinalizedSummary(row.id, row.gameState);
+        summarized++;
+      } catch (err) {
+        failed++;
+        req.log.warn(
+          { gameId: row.id, err },
+          "admin backfill: failed to summarize game",
+        );
+      }
+    }
+
+    if (summarized > 0) {
+      clearAllStatsCache();
+      clearLeaderboardCache();
+    }
+    req.log.info(
+      { scanned: rows.length, summarized, failed },
+      "admin backfill: game summaries complete",
+    );
+    res.json({ success: true, scanned: rows.length, summarized, failed });
+  },
+);
+
+/**
+ * Admin-only leaderboard with the raw composite score and anti-cheat signals
  * (`trustedGames`), and the `provisional` thin-sample flag. Lets an admin eyeball
  * suspicious early ranks (e.g. a top spot built entirely on guest games).
  */
