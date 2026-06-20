@@ -96,30 +96,24 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
   // HUD text ads: shown only to non-paying viewers (anyone whose tier is not
   // `pass`). Anonymous / still-loading callers are treated as non-paid so they
-  // see ads. We pick ONE ad per game (component mount) using a rotation pointer
-  // kept in localStorage that advances once per game, so the ad is stable
-  // within a game and cycles through every ad in order across games.
+  // see ads. The ad advances to the next one every THIRD shot within a game,
+  // and the rotation continues in order across games via a localStorage pointer
+  // (a fresh game starts right after the last ad shown).
+  const AD_ROTATION_KEY = 'breakbpm.adRotation';
   const isPaidViewer = me.data?.entitlement?.tier === 'pass';
   const adsQuery = useListAds();
   const ads = adsQuery.data?.ads ?? [];
-  const [adSlot, setAdSlot] = useState<number | null>(null);
+  // Base pointer captured once on mount so the within-game stepping is stable.
+  const [adBase, setAdBase] = useState<number | null>(null);
   useEffect(() => {
-    if (ads.length === 0 || adSlot !== null) return;
-    const KEY = 'breakbpm.adRotation';
+    if (adBase !== null) return;
     let ptr = 0;
     try {
-      const raw = Number(localStorage.getItem(KEY) ?? '0');
+      const raw = Number(localStorage.getItem(AD_ROTATION_KEY) ?? '0');
       if (Number.isFinite(raw) && raw >= 0) ptr = Math.floor(raw);
     } catch { /* localStorage unavailable — start at 0 */ }
-    setAdSlot(ptr % ads.length);
-    try {
-      localStorage.setItem(KEY, String((ptr + 1) % 1_000_000));
-    } catch { /* ignore persistence failure */ }
-  }, [ads.length, adSlot]);
-  const currentAd =
-    !isPaidViewer && adSlot !== null && ads.length > 0
-      ? ads[adSlot % ads.length]
-      : null;
+    setAdBase(ptr);
+  }, [adBase]);
   // Tint the pool-table HUD felt to the signed-in player's profile theme. The
   // effective theme mirrors the Account picker: "auto" resolves to the stored
   // background, anything else uses the explicit choice; absent/"none" → green.
@@ -135,6 +129,24 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const forfeitedRef = useRef(false);
   const [state, setState] = useState<GameState>(initialState);
   const [elapsed, setElapsed] = useState(0);
+
+  // Step forward one ad for every three shots logged this game (see the ad
+  // gating/rotation setup above for the base pointer + cross-game continuity).
+  const adStep = Math.floor(state.shotLog.length / 3);
+  const currentAd =
+    !isPaidViewer && adBase !== null && ads.length > 0
+      ? ads[(adBase + adStep) % ads.length]
+      : null;
+  // Persist the NEXT pointer only when this game ends, so the following game
+  // continues the rotation in order (right after the last ad shown). Persisting
+  // on end (not on every step) keeps a mid-game refresh on the same ad instead
+  // of jumping it forward.
+  useEffect(() => {
+    if (adBase === null || ads.length === 0 || state.phase !== 'ended') return;
+    try {
+      localStorage.setItem(AD_ROTATION_KEY, String((adBase + adStep + 1) % 1_000_000));
+    } catch { /* ignore persistence failure */ }
+  }, [adBase, adStep, ads.length, state.phase]);
 
   // Resolve which of THIS game's participants render the rainbow name from the
   // single game-state participants payload (the same source the spectator/OBS

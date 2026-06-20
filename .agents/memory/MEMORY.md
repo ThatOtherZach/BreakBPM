@@ -45,4 +45,4 @@
 - [api-server deploy startup-probe](api-server-deploy-startup-probe.md) — bind port fast (tiny http bootstrap + esbuild splitting + load ./app only after first health probe) or autoscale promote fails; don't add heavy static imports to index.ts.
 - [Backfill rollout gap](backfill-rollout-gap.md) — one-time backfills don't reach prod automatically (post-merge=dev only, deploy runs none); ship lazy read-path self-heal + add to post-merge.sh.
 - [Bulk-stats summary-skip denominator](stats-summary-denominator.md) — skipped (absent/stale-summary) rows must leave BOTH numerator AND denominator (gamesPlayed = rows.length − summaryless, guard divides); preserve legacy shark-discrimination-in-denominator quirk.
-- [HUD text-ads gating & rotation](hud-text-ads-gating.md) — ads gate on `tier !== 'pass'` so anon/loading see them; rotation pointer advances once per game (GameScreen keyed by shareCode).
+- [HUD text-ads gating & rotation](hud-text-ads-gating.md) — ads gate on `tier !== 'pass'` so anon/loading see them; advance every 3rd shot (floor(shots/3)), persist pointer only on game-end to avoid mid-game-refresh jumps.
