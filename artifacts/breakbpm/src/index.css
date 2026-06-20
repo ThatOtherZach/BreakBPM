@@ -313,7 +313,7 @@ html, #root {
 .about-markdown strong { font-weight: bold; }
 .about-markdown em { font-style: italic; }
 .about-markdown hr { border: none; border-top: 1px solid #ccc; margin: 12px 0; }
-.about-markdown img { max-width: 100%; height: auto; display: block; margin: 12px 0; border: 2px solid var(--navy); border-radius: 0; }
+.about-markdown img { max-width: 100%; height: auto; display: block; margin: 12px 0; border: none; border-radius: 0; }
 .about-markdown table {
   width: 100%;
   border-collapse: collapse;
