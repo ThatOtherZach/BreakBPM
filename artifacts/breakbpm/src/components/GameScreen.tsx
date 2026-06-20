@@ -515,7 +515,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const sharkHint: { icon: string; text: string } | null = (() => {
     if (!isSharkGame(state) || state.phase !== 'playing') return null;
     if (pendingSharkPick) {
-      return { icon: '🦈', text: "Shark's turn, tap the lit ball it pockets from the table." };
+      return { icon: '🦈', text: "Shark's turn, select a ball and remove it from the table." };
     }
     if (!state.teamAssigned) {
       return { icon: '💡', text: "Sink any ball to claim your group, the rest are the Shark's. Pot the 8 now and you lose." };
