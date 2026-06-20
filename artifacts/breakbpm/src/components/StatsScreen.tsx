@@ -92,7 +92,7 @@ function PixelMeter({
         <div className={`stats-meter-fill ${tone}`} style={{ width: `${w}%` }} />
       </div>
       {sub && (
-        <span style={{ fontSize: 10, color: "#888", letterSpacing: 0.3, marginTop: 1 }}>{sub}</span>
+        <span style={{ fontSize: 10, color: "#ffffff", letterSpacing: 0.3, marginTop: 1 }}>{sub}</span>
       )}
     </div>
   );
