@@ -541,6 +541,9 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                       📮 {account.email}
                     </span>
                   )}
+                  <span style={{ fontSize: 10, color: "#000000" }}>
+                    🗓️ Joined {fmtDate(account.createdAt)}
+                  </span>
                 </div>
                 {/* Styled like a leaderboard standing (fpp-card history-card):
                     felt tinted to the player's theme, global rank on the left,
