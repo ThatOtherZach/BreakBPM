@@ -655,7 +655,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                   )}
                 </div>
                 {!canEditName && (
-                  <div style={{ fontSize: 11, color: "#444" }}>
+                  <div style={{ fontSize: 11, color: "#444", textAlign: "center" }}>
                     <button
                       className="link-btn"
                       onClick={onPasses}
