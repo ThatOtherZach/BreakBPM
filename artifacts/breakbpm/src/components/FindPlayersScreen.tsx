@@ -701,7 +701,10 @@ export default function FindPlayersScreen({
               )}
             </div>
           ) : (
-            <p className="fpp-hint text-center">🔓 Unlock posting meetups with a pass</p>
+            <p className="fpp-hint text-center">
+              🔓 Unlock posting meetups{" "}
+              <button className="fpp-link" onClick={onPasses}>with a pass</button>
+            </p>
           )}
         </SignedIn>
 
