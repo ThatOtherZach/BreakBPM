@@ -304,7 +304,7 @@ export default function NearestHallCompass({
             disabled={refreshing}
             style={{ marginTop: 8 }}
           >
-            {refreshing ? "📍 Refreshing…" : "📍 Refresh location"}
+            {refreshing ? "🔄 Refreshing…" : "🔄 Refresh GPS"}
           </button>
           <p className="fpp-compass-mode">
             {deviceHeading != null
