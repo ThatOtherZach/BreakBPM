@@ -668,7 +668,9 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                                         aria-label={ball === 8 ? "8-ball" : "9-ball"}
                                       />
                                     );
-                                  })() : s.gameType === "shark" ? "🦈" : (MODE_LABELS[s.gameType] ?? s.gameType.toUpperCase())}{" "}
+                                  })() : s.gameType === "shark" ? "🦈" : s.gameType === "practice" ? (
+                                    <span className="rainbow-cue" aria-label="Practice" />
+                                  ) : (MODE_LABELS[s.gameType] ?? String(s.gameType).toUpperCase())}{" "}
                                   <span style={{ color: MODE_PCT_COLORS[s.gameType] ?? "#f4f4dc" }}>{pct}%</span>
                                   {isPersonal && (
                                     <>
