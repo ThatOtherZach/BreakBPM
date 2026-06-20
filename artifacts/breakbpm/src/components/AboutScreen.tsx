@@ -34,8 +34,8 @@ export default function AboutScreen({ onBack, onPasses }: AboutScreenProps) {
               <div className="splash-title-sub">BILLIARDS SCORE SYSTEM</div>
               <div className="splash-title-rule" />
               <div className="splash-meta">
-                <span>VER {APP_VERSION}</span>
-                <span>© 2026 Saym Services Inc.</span>
+                <span>v{APP_VERSION}</span>
+                <span>©Saym Services 2026</span>
               </div>
               <div className="splash-tagline text-left">
                 {tagline.split('\n').map((line, i, arr) => (
