@@ -91,6 +91,8 @@ Who's fastest? Use **[the Leaderboard](https://breakbpm.com/leaderboard)** to se
 
 ![Leaderboard example](leaderboard-example.gif)
 
+Earn themes as you play each mode, or buy a pass to unlock them all! Lifetime pass holders also get access to a special raindow effect.
+
 ## Passes
 
 BreakBPM is free to play. Sign in (no charge) to save your games, but you'll need a pass to access more data.
