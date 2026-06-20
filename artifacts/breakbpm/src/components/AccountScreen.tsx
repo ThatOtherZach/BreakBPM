@@ -579,13 +579,13 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                       <span
                         style={{
                           fontSize: 10,
-                          color: "#a9c9b3",
+                          color: "#000000",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {account.email}
+                        📮 {account.email}
                       </span>
                     )}
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
