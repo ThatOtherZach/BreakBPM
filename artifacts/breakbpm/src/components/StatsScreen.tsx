@@ -596,8 +596,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                           {/* bell curve */}
                           <path d={area} fill="url(#bc-fill)" />
                           <path d={curve} fill="none" stroke="#ffffff" strokeWidth={2} style={{ filter: "drop-shadow(0 0 3px rgba(255,255,255,0.5))" }} />
-                          {/* red crosshair through the middle (the mean line) */}
-                          <line x1={cx} y1={0} x2={cx} y2={H} stroke="#ff3b30" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
+                          {/* red crosshair — horizontal mean line only */}
                           <line x1={0} y1={cyMid} x2={W} y2={cyMid} stroke="#ff3b30" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
                           {/* player marker — the cue ball */}
                           <line x1={px} y1={baseY} x2={px} y2={py} stroke="#ffffff" strokeWidth={1.5} strokeDasharray="2 2" opacity={0.7} />
