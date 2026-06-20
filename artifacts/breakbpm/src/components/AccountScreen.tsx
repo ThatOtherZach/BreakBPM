@@ -477,15 +477,30 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
           <div className="panel-header"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>👤</span>Identity</span></div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {editing ? (
-              <div style={{ display: "flex", gap: 6 }}>
-                <input
-                  className="input"
-                  value={name}
-                  maxLength={32}
-                  onChange={(e) => setName(e.target.value)}
-                />
-                <button className="btn btn-primary" disabled={updateName.isPending} onClick={handleSaveName}>Save</button>
-                <button className="btn" onClick={() => { setEditing(false); setName(account.screenName); }}>Cancel</button>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input
+                    className="input"
+                    value={name}
+                    maxLength={32}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                  <button className="btn btn-primary" disabled={updateName.isPending} onClick={handleSaveName}>Save</button>
+                  <button className="btn" onClick={() => { setEditing(false); setName(account.screenName); }}>Cancel</button>
+                </div>
+                {account.email && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      color: "#a9c9b3",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {account.email}
+                  </span>
+                )}
               </div>
             ) : (
               <>
