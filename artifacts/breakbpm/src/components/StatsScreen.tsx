@@ -553,7 +553,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 150 }}>
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, padding: "5px 8px", border: `1px solid ${statusColor}`, background: "rgba(0,0,0,0.3)" }}>
                             <span style={{ fontFamily: "VT323", fontSize: 20, color: statusColor, textShadow: "1px 1px 0 #042414", letterSpacing: 1, lineHeight: 1 }}>{status}</span>
-                            <span style={{ fontFamily: "VT323", fontSize: 11, color: "#ffffff", letterSpacing: 0.5, lineHeight: 1 }}>{inBand ? "TYPICAL PACE" : "OUTLIER PACE"}</span>
+                            <span style={{ fontFamily: "VT323", fontSize: 11, color: "#ffffff", letterSpacing: 0.5, lineHeight: 1 }}>{inBand ? "TYPICAL BPM" : "OUTLIER BPM"}</span>
                           </div>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                             <Cell label="YOUR BPM" value={you.toFixed(1)} color="var(--amber)" />
