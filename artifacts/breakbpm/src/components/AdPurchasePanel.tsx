@@ -404,6 +404,16 @@ export default function AdPurchasePanel() {
               </span>
             </div>
 
+            <div
+              className="notice"
+              style={{ fontSize: 12, color: "#7a2a00", lineHeight: 1.35 }}
+            >
+              <strong>Crypto payments are non-refundable.</strong> You pay upfront,
+              then an admin reviews your ad. If it's approved it goes live for your
+              chosen days; if it's denied it never displays — and your payment is
+              kept either way. No refunds, including on denial.
+            </div>
+
             <button
               className="btn btn-primary btn-big"
               disabled={busy}
