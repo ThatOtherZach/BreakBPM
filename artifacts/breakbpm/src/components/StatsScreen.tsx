@@ -576,8 +576,8 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                   const ABS = Math.abs;
 
                   const Cell = ({ label, value, color }: { label: string; value: string; color?: string }) => (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 1, padding: "4px 6px", border: "1px solid rgba(57,255,20,0.18)", background: "rgba(0,0,0,0.25)" }}>
-                      <span style={{ fontFamily: "VT323", fontSize: 12, color: "#7fae8c", letterSpacing: 0.5, lineHeight: 1 }}>{label}</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 1, padding: "4px 6px", border: "1px solid rgba(0,255,65,0.18)", background: "rgba(0,0,0,0.25)" }}>
+                      <span style={{ fontFamily: "VT323", fontSize: 12, color: "#00ff41", letterSpacing: 0.5, lineHeight: 1 }}>{label}</span>
                       <span style={{ fontFamily: "VT323", fontSize: 22, color: color ?? "#f4f4dc", textShadow: "1px 1px 0 #042414", lineHeight: 1 }}>{value}</span>
                     </div>
                   );
