@@ -436,6 +436,47 @@ async function backfillHostParticipants(userId: string): Promise<void> {
 }
 
 /**
+ * Lazily distill any of this user's finalized games that are still
+ * un-summarized (game-level summary is the empty `{}` sentinel). Mirrors
+ * {@link backfillHostParticipants}: idempotent, with a cheap early-return when
+ * there is nothing to repair, so it is safe to call on every personal read
+ * path. This self-heals games that predate the summary rollout (or whose
+ * best-effort live finalize write failed) the first time the player views
+ * their stats/history/profile — without it, the bulk read paths, which
+ * deliberately SKIP summary-less rows, hide the player's whole history.
+ *
+ * Returns the number of games repaired so callers can bust the now-stale
+ * personal stats cache only when a repair actually happened.
+ */
+async function backfillUserGameSummaries(userId: string): Promise<number> {
+  // (gameId, userId) is unique for signed-in participants, so the join yields
+  // at most one row per game — no DISTINCT needed.
+  const stale = await db
+    .select({ id: gamesTable.id, gameState: gamesTable.gameState })
+    .from(gamesTable)
+    .innerJoin(gameParticipantsTable, eq(gameParticipantsTable.gameId, gamesTable.id))
+    .where(
+      and(
+        eq(gameParticipantsTable.userId, userId),
+        isNotNull(gamesTable.endedAt),
+        eq(gamesTable.summary, sql`'{}'::jsonb`),
+      ),
+    );
+  if (stale.length === 0) return 0;
+  let repaired = 0;
+  for (const row of stale) {
+    try {
+      // Pass the row we already hold so the writer skips a redundant re-read.
+      await writeFinalizedSummary(row.id, row.gameState);
+      repaired++;
+    } catch {
+      // Best-effort: a later read (or the standalone backfill) can repair it.
+    }
+  }
+  return repaired;
+}
+
+/**
  * Is this user the active scorekeeping host of the game? Only the host
  * device may write to game state (/games/activity, /games/save) —
  * joiners are view-only via /join/:code. This is the server-side
@@ -1900,6 +1941,12 @@ router.get("/games/profile", async (req, res): Promise<void> => {
   // profile mirrors exactly what the owner sees in their own history.
   await sweepStaleGames(host.id);
   await backfillHostParticipants(host.id);
+  // Self-heal un-summarized finalized games and bust the now-stale personal
+  // stats cache so the 24h hero (resolveStats below) reflects the repair.
+  {
+    const repaired = await backfillUserGameSummaries(host.id);
+    if (repaired > 0) clearUserStatsCache(host.id);
+  }
 
   const participantGameIds = await db
     .select({ gameId: gameParticipantsTable.gameId })
@@ -2206,6 +2253,9 @@ router.get("/games/history", async (req, res): Promise<void> => {
   // remain visible in this user's history after the v0.7 cut-over to
   // participant-based membership.
   await backfillHostParticipants(user.id);
+  // Self-heal any of this user's un-summarized finalized games so history
+  // (and every other personal read path) stops skipping them.
+  await backfillUserGameSummaries(user.id);
 
   const entitlement = await computeEntitlement(user);
   const limit = entitlement.historyVisibleLimit;
@@ -2359,6 +2409,14 @@ router.get("/stats", async (req, res): Promise<void> => {
   const entitlement = await computeEntitlement(user);
   const tier = entitlement.tier;
   const isPass = tier === "pass";
+
+  // Self-heal: distill any of this user's still-un-summarized finalized games
+  // before reading, so the bulk stats path stops skipping them. Bust the now
+  // stale personal cache so the recompute below picks the repaired rows up.
+  if (user) {
+    const repaired = await backfillUserGameSummaries(user.id);
+    if (repaired > 0) clearUserStatsCache(user.id);
+  }
 
   // Clamp the requested scope/window to what this tier may access.
   let appliedScope: StatScope;
