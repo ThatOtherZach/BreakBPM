@@ -22,6 +22,7 @@ import {
   useGetMe,
   useGetGameStateByCode,
   getGetGameStateByCodeQueryKey,
+  useListAds,
 } from '@workspace/api-client-react';
 import { FORFEIT_INACTIVITY_MS, MAX_GAME_DURATION_MS } from '../lib/forfeit';
 
@@ -92,6 +93,33 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const me = useGetMe();
   const hasActivePass = me.data?.entitlement?.hasActivePass ?? false;
   const spectatingEnabled = me.data?.entitlement?.tier === 'pass';
+
+  // HUD text ads: shown only to non-paying viewers (anyone whose tier is not
+  // `pass`). Anonymous / still-loading callers are treated as non-paid so they
+  // see ads. We pick ONE ad per game (component mount) using a rotation pointer
+  // kept in localStorage that advances once per game, so the ad is stable
+  // within a game and cycles through every ad in order across games.
+  const isPaidViewer = me.data?.entitlement?.tier === 'pass';
+  const adsQuery = useListAds();
+  const ads = adsQuery.data?.ads ?? [];
+  const [adSlot, setAdSlot] = useState<number | null>(null);
+  useEffect(() => {
+    if (ads.length === 0 || adSlot !== null) return;
+    const KEY = 'breakbpm.adRotation';
+    let ptr = 0;
+    try {
+      const raw = Number(localStorage.getItem(KEY) ?? '0');
+      if (Number.isFinite(raw) && raw >= 0) ptr = Math.floor(raw);
+    } catch { /* localStorage unavailable — start at 0 */ }
+    setAdSlot(ptr % ads.length);
+    try {
+      localStorage.setItem(KEY, String((ptr + 1) % 1_000_000));
+    } catch { /* ignore persistence failure */ }
+  }, [ads.length, adSlot]);
+  const currentAd =
+    !isPaidViewer && adSlot !== null && ads.length > 0
+      ? ads[adSlot % ads.length]
+      : null;
   // Tint the pool-table HUD felt to the signed-in player's profile theme. The
   // effective theme mirrors the Account picker: "auto" resolves to the stored
   // background, anything else uses the explicit choice; absent/"none" → green.
@@ -1084,6 +1112,26 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
               aria-label={`Ball ${b}`}
             />
           ));
+          // Text ad slotted into the scoreboard, only for non-paying viewers and
+          // only when there's an ad to show (see currentAd). Styled to read as a
+          // plain text ad within the retro HUD without dominating it.
+          const adPanel = currentAd ? (
+            <div style={{
+              ...rowStyle,
+              gap: 1,
+              border: '1px dashed #6a3a9a',
+              background: '#0a0a1e',
+            }}>
+              <span style={{ fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: '#7a6a9a' }}>Ad</span>
+              <span style={{ fontSize: 16, fontWeight: 'bold', color: '#e8c8ff', lineHeight: 1.1 }}>{currentAd.headline}</span>
+              <span style={{ fontSize: 13, color: '#b89ad8', lineHeight: 1.15 }}>{currentAd.tagline}</span>
+            </div>
+          ) : null;
+          // Where the ad sits among the non-shark player rows: after the first
+          // two players in doubles (4P), otherwise after the first player —
+          // which puts it between the two in singles, and below the lone player
+          // in practice (1P). Shark mode slots it before the Shark row instead.
+          const adAfterIndex = state.players.length >= 4 ? 1 : 0;
           return (
             <>
               {state.players.map((p, i) => {
@@ -1096,7 +1144,8 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                   .map(e => e.ball as number);
                 const teamLabel = p.team ? (p.team === 'solids' ? 'Solids' : 'Stripes') : null;
                 return (
-                  <div key={p.id} style={{
+                  <Fragment key={p.id}>
+                  <div style={{
                     ...rowStyle,
                     borderColor: active ? '#d8b4ff' : '#5a2a8a',
                   }}>
@@ -1118,8 +1167,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                       {renderBalls(mySunk)}
                     </div>
                   </div>
+                  {!isSharkGame(state) && i === adAfterIndex && adPanel}
+                  </Fragment>
                 );
               })}
+              {isSharkGame(state) && adPanel}
               {isSharkGame(state) && (
                 <div style={{
                   ...rowStyle,

@@ -8,6 +8,7 @@ import subscriptionsRouter from "./subscriptions";
 import gamesRouter from "./games";
 import findPlayersRouter from "./findPlayers";
 import venuesRouter from "./venues";
+import adsRouter from "./ads";
 import adminRouter from "./admin";
 
 const router: IRouter = Router();
@@ -21,6 +22,7 @@ router.use(subscriptionsRouter);
 router.use(gamesRouter);
 router.use(findPlayersRouter);
 router.use(venuesRouter);
+router.use(adsRouter);
 router.use(adminRouter);
 
 export default router;

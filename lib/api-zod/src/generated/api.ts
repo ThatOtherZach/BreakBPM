@@ -1290,6 +1290,20 @@ export const ListOsmVenuesResponse = zod.object({
 
 
 /**
+ * Public. Returns every saved text ad (id, headline, tagline) ordered by creation time (oldest first), for the in-game HUD rotation. The client shows them only to non-paying users and rotates through them in order.
+
+ * @summary Ordered list of HUD text ads (public)
+ */
+export const ListAdsResponse = zod.object({
+  "ads": zod.array(zod.object({
+  "id": zod.string(),
+  "headline": zod.string(),
+  "tagline": zod.string()
+}))
+})
+
+
+/**
  * Admin-only. Returns every verified venue (active and inactive), newest-first, for the admin management panel. 403 for non-admins.
 
  * @summary List ALL verified venues incl. inactive (admin only)
@@ -1570,6 +1584,82 @@ export const ListAdminLeaderboardResponse = zod.object({
   "trustedGames": zod.number(),
   "provisional": zod.boolean()
 }))
+})
+
+
+/**
+ * Admin-only. Returns saved text ads newest-first with server-side pagination (page/limit) plus the total count, for the admin management panel. 403 for non-admins.
+
+ * @summary Paginated list of text ads (admin only)
+ */
+export const listAdminAdsQueryPageDefault = 1;
+
+export const listAdminAdsQueryLimitDefault = 10;
+export const listAdminAdsQueryLimitMax = 100;
+
+
+
+export const ListAdminAdsQueryParams = zod.object({
+  "page": zod.coerce.number().min(1).default(listAdminAdsQueryPageDefault),
+  "limit": zod.coerce.number().min(1).max(listAdminAdsQueryLimitMax).default(listAdminAdsQueryLimitDefault)
+})
+
+export const ListAdminAdsResponse = zod.object({
+  "ads": zod.array(zod.object({
+  "id": zod.string(),
+  "headline": zod.string(),
+  "tagline": zod.string()
+})),
+  "page": zod.number(),
+  "limit": zod.number(),
+  "total": zod.number()
+})
+
+
+/**
+ * Admin-only. Adds a text ad (headline + tagline). 403 for non-admins.
+
+ * @summary Create a text ad (admin only)
+ */
+export const createAdBodyHeadlineMax = 60;
+
+export const createAdBodyTaglineMax = 120;
+
+
+
+export const CreateAdBody = zod.object({
+  "headline": zod.string().min(1).max(createAdBodyHeadlineMax),
+  "tagline": zod.string().min(1).max(createAdBodyTaglineMax)
+})
+
+export const CreateAdResponse = zod.object({
+  "success": zod.boolean(),
+  "reason": zod.string().optional(),
+  "ad": zod.object({
+  "id": zod.string(),
+  "headline": zod.string(),
+  "tagline": zod.string()
+}).optional()
+})
+
+
+/**
+ * Admin-only. Removes a text ad permanently. 403 for non-admins. 200 + `success:false, reason:"not_found"` when the id doesn't exist.
+
+ * @summary Delete a text ad (admin only)
+ */
+export const DeleteAdParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteAdResponse = zod.object({
+  "success": zod.boolean(),
+  "reason": zod.string().optional(),
+  "ad": zod.object({
+  "id": zod.string(),
+  "headline": zod.string(),
+  "tagline": zod.string()
+}).optional()
 })
 
 

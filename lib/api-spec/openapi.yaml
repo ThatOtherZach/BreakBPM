@@ -20,6 +20,8 @@ tags:
     description: Find Players meetup board
   - name: venues
     description: Verified pool-hall venues (map + admin)
+  - name: ads
+    description: HUD text ads (public rotation + admin management)
 paths:
   /healthz:
     get:
@@ -993,6 +995,22 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/OsmVenueList" }
 
+  /ads:
+    get:
+      operationId: listAds
+      tags: [ads]
+      summary: Ordered list of HUD text ads (public)
+      description: >
+        Public. Returns every saved text ad (id, headline, tagline) ordered by
+        creation time (oldest first), for the in-game HUD rotation. The client
+        shows them only to non-paying users and rotates through them in order.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdList" }
+
   /admin/venues:
     get:
       operationId: listAdminVenues
@@ -1181,6 +1199,68 @@ paths:
               schema: { $ref: "#/components/schemas/AdminLeaderboardResponse" }
         "403":
           description: Admins only.
+
+  /admin/ads:
+    get:
+      operationId: listAdminAds
+      tags: [ads]
+      summary: Paginated list of text ads (admin only)
+      description: >
+        Admin-only. Returns saved text ads newest-first with server-side
+        pagination (page/limit) plus the total count, for the admin management
+        panel. 403 for non-admins.
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdPage" }
+    post:
+      operationId: createAd
+      tags: [ads]
+      summary: Create a text ad (admin only)
+      description: >
+        Admin-only. Adds a text ad (headline + tagline). 403 for non-admins.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdInput" }
+      responses:
+        "200":
+          description: Result (check `success`; `reason` set on failure)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdMutationResult" }
+
+  /admin/ads/{id}:
+    delete:
+      operationId: deleteAd
+      tags: [ads]
+      summary: Delete a text ad (admin only)
+      description: >
+        Admin-only. Removes a text ad permanently. 403 for non-admins. 200 +
+        `success:false, reason:"not_found"` when the id doesn't exist.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Result (check `success`; `reason` set on failure)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdMutationResult" }
 
 components:
   schemas:
@@ -2640,6 +2720,53 @@ components:
         totalPages: { type: integer }
         # Total number of active venues (across all pages).
         total: { type: integer }
+
+    Ad:
+      type: object
+      required: [id, headline, tagline]
+      properties:
+        id: { type: string }
+        headline: { type: string }
+        tagline: { type: string }
+
+    AdInput:
+      type: object
+      required: [headline, tagline]
+      properties:
+        headline: { type: string, minLength: 1, maxLength: 60 }
+        tagline: { type: string, minLength: 1, maxLength: 120 }
+
+    AdList:
+      type: object
+      required: [ads]
+      properties:
+        ads:
+          type: array
+          items: { $ref: "#/components/schemas/Ad" }
+
+    AdPage:
+      type: object
+      required: [ads, page, limit, total]
+      properties:
+        ads:
+          type: array
+          items: { $ref: "#/components/schemas/Ad" }
+        # Current page number (1-based).
+        page: { type: integer }
+        # Page size used for this response.
+        limit: { type: integer }
+        # Total number of ads across all pages.
+        total: { type: integer }
+
+    AdMutationResult:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+        # Failure reason token when success is false (e.g. "not_found").
+        reason: { type: string }
+        # The created/deleted ad when success is true.
+        ad: { $ref: "#/components/schemas/Ad" }
 
     OsmVenue:
       type: object

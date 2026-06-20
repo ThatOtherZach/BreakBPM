@@ -43,6 +43,7 @@ import GameHistoryCard, { fmtDate } from "./GameHistoryCard";
 import LuckyBreakReveal from "./LuckyBreakReveal";
 import AdminSalesPanel from "./AdminSalesPanel";
 import AdminVenuesPanel from "./AdminVenuesPanel";
+import AdminAdsPanel from "./AdminAdsPanel";
 import { WinsTodayChip } from "./WinsTodayChip";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -1044,6 +1045,9 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
 
         {/* Admin verified-venues manager — gated on isAdmin (endpoint 403s too). */}
         {isAdmin && <AdminVenuesPanel />}
+
+        {/* Admin HUD text-ads manager — gated on isAdmin (endpoint 403s too). */}
+        {isAdmin && <AdminAdsPanel />}
 
         {/* Admin one-shot global summary backfill — gated on isAdmin (endpoint
             403s too). Forces every finalized game to (re)write its distilled

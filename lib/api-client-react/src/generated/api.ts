@@ -24,6 +24,10 @@ import type {
   AbandonGameResult,
   AcceptInviteResult,
   Account,
+  AdInput,
+  AdList,
+  AdMutationResult,
+  AdPage,
   AdminCodeInput,
   AdminCodeList,
   AdminCodeResult,
@@ -64,6 +68,7 @@ import type {
   LeaderboardResult,
   LeaveGameInput,
   LeaveGameResult,
+  ListAdminAdsParams,
   ListAdminLeaderboardParams,
   ListAdminSalesParams,
   ListFindPlayerPostsParams,
@@ -3554,6 +3559,85 @@ export function useListOsmVenues<TData = Awaited<ReturnType<typeof listOsmVenues
 
 
 
+export const getListAdsUrl = () => {
+
+
+
+
+  return `/api/ads`
+}
+
+/**
+ * Public. Returns every saved text ad (id, headline, tagline) ordered by creation time (oldest first), for the in-game HUD rotation. The client shows them only to non-paying users and rotates through them in order.
+
+ * @summary Ordered list of HUD text ads (public)
+ */
+export const listAds = async ( options?: RequestInit): Promise<AdList> => {
+
+  return customFetch<AdList>(getListAdsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdsQueryKey = () => {
+    return [
+    `/api/ads`
+    ] as const;
+    }
+
+
+export const getListAdsQueryOptions = <TData = Awaited<ReturnType<typeof listAds>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAds>>> = ({ signal }) => listAds({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAds>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdsQueryResult = NonNullable<Awaited<ReturnType<typeof listAds>>>
+export type ListAdsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Ordered list of HUD text ads (public)
+ */
+
+export function useListAds<TData = Awaited<ReturnType<typeof listAds>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getListAdminVenuesUrl = () => {
 
 
@@ -4167,4 +4251,235 @@ export function useListAdminLeaderboard<TData = Awaited<ReturnType<typeof listAd
 
 
 
+
+export const getListAdminAdsUrl = (params?: ListAdminAdsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/ads?${stringifiedParams}` : `/api/admin/ads`
+}
+
+/**
+ * Admin-only. Returns saved text ads newest-first with server-side pagination (page/limit) plus the total count, for the admin management panel. 403 for non-admins.
+
+ * @summary Paginated list of text ads (admin only)
+ */
+export const listAdminAds = async (params?: ListAdminAdsParams, options?: RequestInit): Promise<AdPage> => {
+
+  return customFetch<AdPage>(getListAdminAdsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminAdsQueryKey = (params?: ListAdminAdsParams,) => {
+    return [
+    `/api/admin/ads`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminAdsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminAds>>, TError = ErrorType<unknown>>(params?: ListAdminAdsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminAdsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminAds>>> = ({ signal }) => listAdminAds(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminAds>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminAdsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminAds>>>
+export type ListAdminAdsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Paginated list of text ads (admin only)
+ */
+
+export function useListAdminAds<TData = Awaited<ReturnType<typeof listAdminAds>>, TError = ErrorType<unknown>>(
+ params?: ListAdminAdsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminAdsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateAdUrl = () => {
+
+
+
+
+  return `/api/admin/ads`
+}
+
+/**
+ * Admin-only. Adds a text ad (headline + tagline). 403 for non-admins.
+
+ * @summary Create a text ad (admin only)
+ */
+export const createAd = async (adInput: AdInput, options?: RequestInit): Promise<AdMutationResult> => {
+
+  return customFetch<AdMutationResult>(getCreateAdUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      adInput,)
+  }
+);}
+
+
+
+
+export const getCreateAdMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAd>>, TError,{data: BodyType<AdInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAd>>, TError,{data: BodyType<AdInput>}, TContext> => {
+
+const mutationKey = ['createAd'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAd>>, {data: BodyType<AdInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAd(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdMutationResult = NonNullable<Awaited<ReturnType<typeof createAd>>>
+    export type CreateAdMutationBody = BodyType<AdInput>
+    export type CreateAdMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a text ad (admin only)
+ */
+export const useCreateAd = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAd>>, TError,{data: BodyType<AdInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAd>>,
+        TError,
+        {data: BodyType<AdInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAdMutationOptions(options));
+    }
+
+export const getDeleteAdUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/ads/${id}`
+}
+
+/**
+ * Admin-only. Removes a text ad permanently. 403 for non-admins. 200 + `success:false, reason:"not_found"` when the id doesn't exist.
+
+ * @summary Delete a text ad (admin only)
+ */
+export const deleteAd = async (id: string, options?: RequestInit): Promise<AdMutationResult> => {
+
+  return customFetch<AdMutationResult>(getDeleteAdUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAdMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAd>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAd>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteAd'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAd>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAd(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAd>>>
+
+    export type DeleteAdMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a text ad (admin only)
+ */
+export const useDeleteAd = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAd>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAd>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteAdMutationOptions(options));
+    }
 

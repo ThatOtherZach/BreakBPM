@@ -1490,6 +1490,42 @@ export interface VenuePage {
   total: number;
 }
 
+export interface Ad {
+  id: string;
+  headline: string;
+  tagline: string;
+}
+
+export interface AdInput {
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  headline: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  tagline: string;
+}
+
+export interface AdList {
+  ads: Ad[];
+}
+
+export interface AdPage {
+  ads: Ad[];
+  page: number;
+  limit: number;
+  total: number;
+}
+
+export interface AdMutationResult {
+  success: boolean;
+  reason?: string;
+  ad?: Ad;
+}
+
 export type OsmVenueSource = typeof OsmVenueSource[keyof typeof OsmVenueSource];
 
 
@@ -1803,4 +1839,16 @@ export const ListAdminLeaderboardWindow = {
   '90d': '90d',
   all: 'all',
 } as const;
+
+export type ListAdminAdsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
 
