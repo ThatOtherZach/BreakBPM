@@ -613,7 +613,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                         </div>
                       )}
                     </div>
-                    {isAuthenticated && stats.playTimeByType.length > 0 && (() => {
+                    {isAuthenticated && isPersonal && stats.playTimeByType.length > 0 && (() => {
                       const totalMs = stats.playTimeByType.reduce((sum, p) => sum + p.avgDurationMs * p.gameCount, 0);
                       const totalGames = stats.playTimeByType.reduce((sum, p) => sum + p.gameCount, 0);
                       const totalHours = totalMs / 3_600_000;
