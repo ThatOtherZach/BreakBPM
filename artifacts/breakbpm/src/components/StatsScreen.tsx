@@ -600,6 +600,13 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                     practice: "PRACTICE",
                     shark: "🦈 SHARK",
                   };
+                  // Hover tooltips for the pie slices.
+                  const MODE_TITLES: Record<string, string> = {
+                    "8ball": "8-Ball",
+                    "9ball": "9-Ball",
+                    practice: "Practice",
+                    shark: "Shark Mode",
+                  };
                   const fmtHHMM = (ms: number) => {
                     const totalMin = Math.floor(ms / 60000);
                     const hh = Math.floor(totalMin / 60);
@@ -664,7 +671,9 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                               fill={MODE_COLORS[s.gameType] ?? "#888"}
                               stroke="#042414"
                               strokeWidth={2}
-                            />
+                            >
+                              <title>{MODE_TITLES[s.gameType] ?? String(s.gameType)}</title>
+                            </path>
                           ))}
                           <rect width="160" height="160" fill="url(#gm-scan)" opacity={0.12} style={{ pointerEvents: "none" }} />
                         </svg>
