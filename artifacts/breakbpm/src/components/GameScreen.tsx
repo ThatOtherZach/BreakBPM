@@ -1424,8 +1424,8 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
               </div>
             </div>
             <div className="grid-2">
-              <button className="btn btn-primary btn-big" onClick={onNewGame}>Yes • 是</button>
-              <button className="btn btn-big" onClick={() => setConfirmNew(false)}>Cancel • 消</button>
+              <button className="btn btn-primary btn-big" onClick={onNewGame}>✅ Yes</button>
+              <button className="btn btn-big" onClick={() => setConfirmNew(false)}>❌ Cancel • 消</button>
             </div>
           </div>
         </div>
