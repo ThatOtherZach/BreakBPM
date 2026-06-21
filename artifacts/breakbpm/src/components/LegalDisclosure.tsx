@@ -44,9 +44,7 @@ function LegalTranslate({ title, markdown, rawUrl }: { title: string; markdown: 
           Couldn't copy automatically — select the text below and copy it manually.
         </p>
       )}
-      <p className="legal-translate-note">
-        AI translation is for convenience only — the English version governs.
-      </p>
+      <p className="legal-translate-note">AI translation is for convenience only. English version is the primary source material.</p>
     </div>
   );
 }
