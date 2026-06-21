@@ -1,6 +1,6 @@
 ---
 name: Banned-words blocklist matching
-description: BREAKBPM_BANNED_WORDS filter — whole-word matching, and the clean-vs-reject behaviour per surface.
+description: BREAKBPM_BANNED_WORDS filter — letter-boundary matching, player-name sanitizer, and the clean-vs-reject behaviour per surface.
 ---
 
 `BREAKBPM_BANNED_WORDS` is an owner-curated, comma-separated env list filtering
@@ -20,9 +20,12 @@ letter-glued inflections ("shitty"/"fucker") — owner adds variants explicitly.
 - HUD ad copy → CLEANED server-side (emoji-swap, never rejected).
 - Custom screen names → REJECTED server-side ("choose another name"): they
   double as the public `/watch/{name}` URL handle (`[A-Za-z0-9_-]`), no emoji.
-- In-game player names → CLEANED client-side (emoji-swap), at the SetupScreen
-  input (on blur + a safety pass in handleStart). Only the free-typed slot;
-  slot-0/@mention names are canonical screen names already filtered server-side.
+- In-game player names → SANITIZED client-side (`sanitizePlayerName`), at the
+  SetupScreen input (on blur + a safety pass in handleStart). On top of the
+  banned-word emoji-swap it strips invisible/control/bidi chars, emoji-swaps
+  URL/markup runs ("no funny business"), and caps at 125 code points
+  (MAX_PLAYER_NAME_LENGTH). Only the free-typed slot; slot-0/@mention names are
+  canonical screen names already filtered server-side.
 
 **Why player-name cleaning is client-side at the input (not server-side):**
 the random swap picks a different emoji each call, and a player name is copied

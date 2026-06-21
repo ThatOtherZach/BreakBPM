@@ -14,7 +14,7 @@ import {
   resolveMention,
 } from '@workspace/api-client-react';
 import { saveInProgressGame, clearInProgressGame, normalizeSharkIdentity } from '../lib/gameLogic';
-import { cleanBannedWords } from '../lib/wordFilter';
+import { sanitizePlayerName, MAX_PLAYER_NAME_LENGTH } from '../lib/wordFilter';
 import SharkIcon from './SharkIcon';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../lib/authClient';
@@ -469,10 +469,11 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
       const mention = i >= 1 ? mentions[i] : undefined;
       const linkedName = mention?.kind === 'found' ? mention.screenName : null;
       if (linkedName) mentionPayload.push({ slotIndex: i, screenName: linkedName });
-      // Emoji-swap any blocked word in the typed name (safety net in case the
-      // field wasn't blurred). @mention/locked names are canonical screen names
-      // already filtered server-side, so only the free-typed slot is cleaned.
-      const typedName = cleanBannedWords(names[i] ?? '', bannedWords);
+      // Sanitize the typed name (strip control/URL/markup + blocked words, cap
+      // length) as a safety net in case the field wasn't blurred. @mention/locked
+      // names are canonical screen names already filtered server-side, so only
+      // the free-typed slot is cleaned.
+      const typedName = sanitizePlayerName(names[i] ?? '', bannedWords);
       const p: Player = { id: i, name: linkedName ?? (typedName || DEFAULT_NAMES[i]) };
       // Manual team assignment is only relevant for multiplayer 8-ball.
       if (gameType === '8ball' && !isShark && teamMode === 'manual' && manualTeams[i]) {
@@ -763,12 +764,13 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                     }
                     onChange={e => setName(i, e.target.value)}
                     onBlur={() => {
-                      // Emoji-swap blocked words once the user leaves the field,
-                      // so the cleaned name is visible and is what gets used.
-                      if (!isNameLocked) setName(i, cleanBannedWords(names[i] ?? '', bannedWords));
+                      // Sanitize once the user leaves the field (strip control/
+                      // URL/markup + blocked words, cap length) so the cleaned
+                      // name is visible and is what gets used.
+                      if (!isNameLocked) setName(i, sanitizePlayerName(names[i] ?? '', bannedWords));
                     }}
                     placeholder={DEFAULT_NAMES[i]}
-                    maxLength={110}
+                    maxLength={MAX_PLAYER_NAME_LENGTH}
                     readOnly={isNameLocked}
                     aria-readonly={isNameLocked || undefined}
                     title={

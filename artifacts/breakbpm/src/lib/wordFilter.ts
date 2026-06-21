@@ -14,7 +14,12 @@
  * Matching is case-insensitive and uses LETTER boundaries, so banning `ass`
  * swaps a standalone "ass" AND digit/symbol-wrapped uses like "45ass56", but
  * never the app's own vocabulary ("passes"/"class") where letters sit on either
- * side. Keep this in lockstep with the server matcher.
+ * side. Keep `cleanBannedWords` in lockstep with the server matcher.
+ *
+ * `sanitizePlayerName` is the client-only entry point for the name field: on top
+ * of the banned-word clean it strips invisible/control/bidi spoofing chars,
+ * emoji-swaps URLs and markup ("no funny business"), and caps length. It has no
+ * server mirror — player-name policy is enforced once, here, at the input.
  */
 
 /** Escape a string so it can be embedded literally inside a RegExp. */
@@ -77,4 +82,42 @@ export function cleanBannedWords(
     );
   }
   return out;
+}
+
+/** Cap for a free-typed player name, aligned with the screen-name ceiling so a
+ * typed name and a generated one share the same length budget. */
+export const MAX_PLAYER_NAME_LENGTH = 125;
+
+// Invisible, control, and bidi-override characters — used for spoofing or to
+// break layout. They have no place in a display name, so strip them outright.
+const INVISIBLE_OR_CONTROL =
+  /[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g;
+
+// "Funny business": HTML/markup tags and URL-like runs (scheme://, www., or a
+// bare domain.tld with optional path). Each whole run is swapped for one emoji.
+const URL_OR_MARKUP =
+  /(<[^>]*>?|\b\w+:\/\/\S+|\bwww\.\S+|\b[a-z0-9-]+\.(?:com|net|org|io|gg|co|app|dev|xyz|info|biz|tv|me|ly|us|ca|uk|gov|edu)\b(?:\/\S*)?)/gi;
+
+/**
+ * Sanitize a free-typed player name down to plain display text: drop invisible/
+ * control/bidi chars, emoji-swap any URL or markup run, strip any residual angle
+ * brackets, run the banned-word cleaner, collapse whitespace, and cap length.
+ * Deterministic except for the emoji choice — so, like `cleanBannedWords`, apply
+ * it ONCE at the input source (see header) so the result is stable downstream.
+ */
+export function sanitizePlayerName(
+  raw: string,
+  banned: readonly string[],
+): string {
+  if (!raw) return raw;
+  let out = raw.replace(INVISIBLE_OR_CONTROL, "");
+  out = out.replace(URL_OR_MARKUP, () => randomSwapEmoji());
+  out = out.replace(/[<>]/g, "");
+  out = cleanBannedWords(out, banned);
+  out = out.replace(/\s+/g, " ").trim();
+  // Slice by code points so a multi-unit emoji is never cut in half.
+  const points = Array.from(out);
+  return points.length > MAX_PLAYER_NAME_LENGTH
+    ? points.slice(0, MAX_PLAYER_NAME_LENGTH).join("")
+    : out;
 }
