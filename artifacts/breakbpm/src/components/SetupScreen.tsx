@@ -701,7 +701,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                   style={{ flex: 1, fontSize: 13, fontWeight: 'bold', minHeight: 44 }}
                   onClick={() => setPlayerCount(n)}
                 >
-                  {n === 1 ? 'Shark Mode • 挑战' : n === 2 ? 'Singles • 单人' : 'Doubles • 双人'}
+                  {n === 1 ? '🦈 Shark Mode • 挑战' : n === 2 ? '👤 Singles • 单人' : '👥 Doubles • 双人'}
                 </button>
               ))}
             </div>
