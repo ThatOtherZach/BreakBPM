@@ -112,13 +112,13 @@ Pass Unlocks:
 
 Passes can be purchased on-chain with crypto from your account page or redeemed with a code. Crypto passes are applied automatically on purchase once payment is confirmed.
 
-Prefer to pay by card? A **14 Day Pass** is [sold on our off-platform store](https://www.saymservices.com/store/p/breakbpm-14-day-pass). After purchase we email your code to you within 24 hours. You can try to get a free day pass from a Lifetime pass holder or [try your luck here](https://breakbpm.com/pool-stats-app).
+Prefer to pay by card? A **14 Day Pass** is [sold on our off-platform store](https://www.saymservices.com/store/p/breakbpm-14-day-pass) for $5.99. After purchase a redemption code will be emailed to you within 24 hours. You can try to get a free day pass from a Lifetime pass holder or [try your luck here](https://breakbpm.com/pool-stats-app).
 
-All pass types are non-refundable. If you need assistance, use the Github first. 
+All pass types are non-refundable. If you need assistance, use the Github first. Current pass prices can be found here; as of June 2026 they are (USD): Day Pass (24 Hours) $1.99, Month Pass (30 Days) $4.99, Year Pass (365 Days) $14.99, and Lifetime (No Expiry) $24.99.
 
 ### 🎱 Lucky Break Pass
 
-Lucky Break is a $4.99, 30-day pass, but there's an 80/20 chance it's upgraded to a Lifetime Pass.
+Lucky Break is a $4.99, 30 day pass, but there's an 80/20 chance it's upgraded to a Lifetime Pass.
 
 The outcome is determined by a seeded draw using the last 30 days of global shot activity. You are guaranteed a 30-day pass regardless of the outcome. Pass is granted automatically after payment is confirmed.
 
