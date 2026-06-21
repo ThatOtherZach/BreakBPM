@@ -1016,7 +1016,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                 style={{ flex: 1, fontWeight: 'bold', minHeight: 40 }}
                 onClick={() => setPracticeRack('9ball')}
               >
-                9-Ball
+                9-Ball • 练习
                 <span style={{ display: 'block', fontWeight: 'normal', fontSize: 10, marginTop: 2 }}>(1–9)</span>
               </button>
             </div>
