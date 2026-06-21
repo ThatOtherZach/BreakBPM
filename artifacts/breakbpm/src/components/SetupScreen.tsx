@@ -866,7 +866,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
               handle without a join code. Shown only for multiplayer setups. */}
           {!isSignedOut && canMention && count >= 2 && !isShark && (
             <div style={{ fontSize: 11, color: '#444', marginTop: 4, paddingLeft: 34 }}>
-              Tip: <strong>@USERNAME</strong> to add another registered player.
+              Tip: <strong>@USERNAME</strong> to add another player.
             </div>
           )}
 
