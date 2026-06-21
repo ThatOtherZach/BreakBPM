@@ -995,7 +995,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
           {/* BPM — the hero number */}
           <div className="hud-bpm-block">
-            <div className="hud-bpm-label">BALLS/MIN</div>
+            <div className="hud-bpm-label">BPM</div>
             <div className={`hud-bpm-value${dispBpm === null ? ' hud-bpm-dim' : ''}`}>
               {dispBpm !== null ? dispBpm.toFixed(1) : (awaitingPlay ? spinner : '--.-')}
             </div>
