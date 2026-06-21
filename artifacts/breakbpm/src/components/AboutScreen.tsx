@@ -73,7 +73,7 @@ export default function AboutScreen({ onBack, onPasses }: AboutScreenProps) {
           <div className="panel">
             <div className="panel-header">🌐 Translation & TL;DR</div>
             <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <p style={{ fontSize: 12, margin: 0, lineHeight: 1.4 }}>Prompt any AI assistant for translation and summary.</p>
+              <p style={{ fontSize: 12, margin: 0, lineHeight: 1.4 }}>Prompt any AI or LLM assistant for translation and summary.</p>
               <button className="btn btn-primary btn-full" onClick={handleCopyPrompt}>
                 {copyState === 'ok' ? '✓ Copied' : '🤖 Copy Prompt'}
               </button>
