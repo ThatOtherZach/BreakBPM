@@ -405,12 +405,7 @@ export default function AdPurchasePanel() {
               </span>
             </div>
 
-            <div className="notice" style={{ color: "#7a2a00" }}>
-              You pay upfront, then an admin reviews your ad. If it's approved
-              it goes live for your chosen days; if it's denied it never
-              displays — and your payment is kept either way. No refunds,
-              including on denial.
-            </div>
+            <div className="notice" style={{ color: "#7a2a00" }}>Ads are subject to Admin Review. If approved it goes live for your chosen days; if denied, it never displays. No refunds, including on denial.</div>
 
             <button
               className="btn btn-primary btn-big"
