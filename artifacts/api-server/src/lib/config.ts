@@ -110,6 +110,24 @@ export function isAdminEmail(email: string | null | undefined): boolean {
   return adminEmails().has(email.trim().toLowerCase());
 }
 
+/**
+ * Owner-curated blocklist for user-supplied free text (HUD ad copy + custom
+ * screen names). `BREAKBPM_BANNED_WORDS` is a comma-separated list of words or
+ * phrases, parsed (and lowercased) on every call so editing the env var never
+ * leaves stale state. Matching is whole-word/case-insensitive (see
+ * `findBannedWord` in wordFilter.ts), so e.g. banning `ass` blocks a standalone
+ * "ass" but not "passes". Empty/unset = no filtering. Restart the API server
+ * after changing.
+ */
+export function bannedWords(): string[] {
+  const raw = process.env.BREAKBPM_BANNED_WORDS;
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((w) => w.trim().toLowerCase())
+    .filter((w) => w.length > 0);
+}
+
 /** Default per-pool monthly stock for the landing-page free-pass giveaway. */
 export const FREE_PASS_MONTHLY_CAP_DEFAULT = 15;
 

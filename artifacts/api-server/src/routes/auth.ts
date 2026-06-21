@@ -13,6 +13,8 @@ import { computeEntitlement, getActivePasses, isRainbowEligible } from "../lib/e
 import { normalizeProfileTheme } from "../lib/profileBackground";
 import { resolveUserProfileBackground } from "../lib/userProfileBackground";
 import { resolveLeaderboard, clearLeaderboardCache, countEightBallWinsToday } from "../lib/stats";
+import { bannedWords } from "../lib/config";
+import { findBannedWord } from "../lib/wordFilter";
 import type { User } from "@workspace/db";
 
 // Custom screen names are a Lifetime-pass perk. Admins are treated as effective
@@ -109,6 +111,14 @@ router.patch("/auth/screen-name", async (req, res): Promise<void> => {
     res.status(400).json({
       error:
         "Use 2–30 characters: letters, numbers, hyphens or underscores only (no spaces or symbols).",
+    });
+    return;
+  }
+  // Owner-curated blocklist (BREAKBPM_BANNED_WORDS) — screen names aren't
+  // moderated, so this is the only gate on naughty handles.
+  if (findBannedWord(trimmed, bannedWords())) {
+    res.status(400).json({
+      error: "That name contains blocked language — please choose another.",
     });
     return;
   }

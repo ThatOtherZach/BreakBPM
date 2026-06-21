@@ -5,6 +5,8 @@
  * user ad-purchase path so the same rules apply no matter who authored the ad.
  */
 
+import { findBannedWord } from "./wordFilter";
+
 /** Max rendered lengths (kept in lockstep with the OpenAPI maxLength bounds). */
 export const AD_HEADLINE_MAX = 60;
 export const AD_TAGLINE_MAX = 120;
@@ -30,10 +32,15 @@ export type SanitizedAdCopy =
  * Sanitize a headline + tagline pair to display-safe, length-capped text.
  * Returns `{ ok: false, message }` when either field is empty after cleaning,
  * so the same emptiness rule applies on both the admin and user create paths.
+ *
+ * `banned` is the owner-curated blocklist (`bannedWords()` from config.ts);
+ * copy containing any blocked word is rejected so the same filter covers every
+ * ad-create path. Pass `[]` (or omit) to skip the blocklist check.
  */
 export function sanitizeAdCopy(
   headline: string,
   tagline: string,
+  banned: readonly string[] = [],
 ): SanitizedAdCopy {
   const cleanHeadline = sanitizeAdField(headline, AD_HEADLINE_MAX);
   const cleanTagline = sanitizeAdField(tagline, AD_TAGLINE_MAX);
@@ -42,6 +49,14 @@ export function sanitizeAdCopy(
   }
   if (!cleanTagline) {
     return { ok: false, message: "Add a tagline for your ad." };
+  }
+  const blocked =
+    findBannedWord(cleanHeadline, banned) ?? findBannedWord(cleanTagline, banned);
+  if (blocked) {
+    return {
+      ok: false,
+      message: "Please remove blocked language from your ad copy and try again.",
+    };
   }
   return { ok: true, headline: cleanHeadline, tagline: cleanTagline };
 }

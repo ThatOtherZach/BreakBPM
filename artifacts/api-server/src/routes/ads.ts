@@ -33,6 +33,7 @@ import {
   adMaxDays,
   cryptoPaymentsEnabled,
   CRYPTO_PAYMENTS_OFF_MESSAGE,
+  bannedWords,
 } from "../lib/config";
 import { newId } from "../lib/ids";
 import { sanitizeAdCopy } from "../lib/adContent";
@@ -196,7 +197,11 @@ router.post("/ads/quote", async (req, res): Promise<void> => {
     return;
   }
 
-  const copy = sanitizeAdCopy(parsed.data.headline, parsed.data.tagline);
+  const copy = sanitizeAdCopy(
+    parsed.data.headline,
+    parsed.data.tagline,
+    bannedWords(),
+  );
   if (!copy.ok) {
     res.json(CreateAdQuoteResponse.parse({ success: false, message: copy.message }));
     return;
@@ -473,7 +478,11 @@ router.post("/admin/ads", async (req, res): Promise<void> => {
     return;
   }
 
-  const copy = sanitizeAdCopy(parsed.data.headline, parsed.data.tagline);
+  const copy = sanitizeAdCopy(
+    parsed.data.headline,
+    parsed.data.tagline,
+    bannedWords(),
+  );
   if (!copy.ok) {
     res.json(CreateAdResponse.parse({ success: false, reason: copy.message }));
     return;
