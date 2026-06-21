@@ -2,9 +2,11 @@
  * Shared "Read in your language" handoff used by the About and Legal pages.
  *
  * Each surface offers one "Copy Prompt" button that copies a self-contained
- * translation prompt — the full document text embedded inline (so the AI never
- * has to fetch a link) plus the canonical GitHub-raw URL as added context. This
- * module centralises the browser-language detection and prompt building so every
+ * prompt — the full document text embedded inline (so the AI never has to fetch
+ * a link) plus the canonical GitHub-raw URL as added context. The prompt offers
+ * two things: a translation into the reader's language and a short TL;DR
+ * summary (the default for English readers who just want the gist). This module
+ * centralises the browser-language detection and prompt building so every
  * surface stays in lockstep.
  */
 
@@ -53,12 +55,17 @@ export interface CopyPrompt {
 }
 
 /**
- * Build a single self-contained translation prompt the reader can paste into any
- * AI assistant (ChatGPT, Perplexity, Gemini, DeepSeek, …). The entire document
+ * Build a single self-contained prompt the reader can paste into any AI
+ * assistant (ChatGPT, Perplexity, Gemini, DeepSeek, …). The entire document
  * `body` is embedded inline so the assistant never has to fetch a link, and the
  * canonical GitHub-raw `rawUrl` is included as added context so it has a source
  * to follow up on. `subject` describes the document (e.g. "BreakBPM billiards
  * app guide" or `BreakBPM legal document ("Terms of Service")`).
+ *
+ * The prompt offers both a translation and a short TL;DR summary. Non-English
+ * readers default to a translation into their language; English (or undetected)
+ * readers default to a TL;DR — handy for anyone who just wants the gist — with
+ * translation offered as the alternative.
  */
 export function buildCopyPrompt(
   subject: string,
@@ -66,16 +73,23 @@ export function buildCopyPrompt(
   body: string,
 ): CopyPrompt {
   const lang = detectLanguage();
-  const target =
-    lang.isEnglish || !lang.name
-      ? 'the language I specify — please ask me which language first'
-      : lang.name;
-  const instruction =
-    `Translate the ${subject} below into ${target}. Keep all headings, ` +
+  const translate = (target: string) =>
+    `translate the ${subject} below into ${target}, keeping all headings, ` +
     `structure, markdown formatting, emojis, product names (BreakBPM, BPM) and ` +
-    `URLs unchanged. Output only the translation, with no extra commentary. The ` +
-    `full text is included below; the canonical source is also at ${rawUrl} if ` +
-    `you need to re-check it.`;
-  const prompt = `${instruction}\n\n--- DOCUMENT START ---\n${body}\n--- DOCUMENT END ---\n\nSource: ${rawUrl}`;
+    `URLs unchanged, and output only the translation`;
+  const tldr = (target: string) =>
+    `give me a short TL;DR — a plain-language summary of the key points in ` +
+    `${target}, skipping the boilerplate`;
+
+  const instruction =
+    lang.isEnglish || !lang.name
+      ? `Please ${tldr('English')}. If I instead ask you to translate it, ` +
+        `${translate('the language I name')}.`
+      : `Please ${translate(lang.name)}. If I instead ask for a TL;DR, ` +
+        `${tldr(lang.name)}.`;
+  const context =
+    ` The full text is included below; the canonical source is also at ` +
+    `${rawUrl} if you need to re-check it.`;
+  const prompt = `${instruction}${context}\n\n--- DOCUMENT START ---\n${body}\n--- DOCUMENT END ---\n\nSource: ${rawUrl}`;
   return { lang, prompt };
 }
