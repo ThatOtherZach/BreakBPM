@@ -666,7 +666,23 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                 className={`btn type-btn ${gameType === gt.id ? 'selected' : ''}`}
                 onClick={() => { setGameType(gt.id); if (gt.id === 'practice') setPlayerCount(1); }}
               >
-                <span className="type-btn-label">{gt.label}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <span className="type-btn-label">{gt.label}</span>
+                  {gt.id === '8ball' && (
+                    <span className="hud-chip hud-chip-sm hud-chip-eight" data-number="8" aria-hidden="true" />
+                  )}
+                  {gt.id === '9ball' && (
+                    <span
+                      className="hud-chip hud-chip-sm hud-chip-stripe"
+                      data-number="9"
+                      aria-hidden="true"
+                      style={{ '--chip-color': '#FDD307' } as React.CSSProperties}
+                    />
+                  )}
+                  {gt.id === 'practice' && (
+                    <span className="rainbow-cue" aria-hidden="true" style={{ fontSize: 18 }} />
+                  )}
+                </span>
                 <span className="type-btn-desc">{gt.desc}</span>
               </button>
             ))}
