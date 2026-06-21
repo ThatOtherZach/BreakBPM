@@ -212,6 +212,7 @@ export default function AdPurchasePanel() {
     setShowHashInput(false);
     if (!headline.trim() || !tagline.trim()) {
       setErr("Add a headline and a tagline for your ad.");
+      setPhase("error");
       return;
     }
     setPhase("quoting");
