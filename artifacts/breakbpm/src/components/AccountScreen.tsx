@@ -44,7 +44,6 @@ import LuckyBreakReveal from "./LuckyBreakReveal";
 import AdminSalesPanel from "./AdminSalesPanel";
 import AdminVenuesPanel from "./AdminVenuesPanel";
 import AdminAdsPanel from "./AdminAdsPanel";
-import AdPurchasePanel from "./AdPurchasePanel";
 import { WinsTodayChip } from "./WinsTodayChip";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -1040,9 +1039,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
             </div>
           </div>
         )}
-
-        {/* Buy-your-own HUD ad — any signed-in user (endpoint requires auth). */}
-        <AdPurchasePanel />
 
         {/* Admin sales/revenue ledger — gated on isAdmin (endpoint 403s too). */}
         {isAdmin && <AdminSalesPanel />}

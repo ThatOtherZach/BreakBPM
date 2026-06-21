@@ -15,6 +15,7 @@ import Navbar from "./Navbar";
 import LuckyBreakReveal from "./LuckyBreakReveal";
 import CryptoCheckout from "./CryptoCheckout";
 import PricingPanel from "./PricingPanel";
+import AdPurchasePanel from "./AdPurchasePanel";
 import { signInPath } from "../lib/authClient";
 import { usePageMeta, PAGE_META } from "../lib/pageMeta";
 
@@ -282,6 +283,9 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
                 }}
               />
             )}
+
+            {/* Buy-your-own HUD ad — any signed-in user (endpoint requires auth). */}
+            <AdPurchasePanel />
           </>
         )}
 
