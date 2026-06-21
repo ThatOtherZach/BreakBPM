@@ -295,11 +295,7 @@ export default function AdPurchasePanel() {
         className="panel-body"
         style={{ display: "flex", flexDirection: "column", gap: 10 }}
       >
-        <p style={{ fontSize: 12, color: "#333", margin: 0 }}>
-          Show a text ad (a bold headline + tagline) in the live game HUD to
-          non-paying players. Pick how many days it runs, pay in crypto, and an
-          admin reviews it before it goes live. Sponsored by your screen name.
-        </p>
+        <p style={{ fontSize: 12, color: "#333", margin: 0 }}>Show a text ad (a bold headline + tagline) in the live game HUD to players without a pass. Pick how many days it runs, pay in crypto. Sponsored by your username.</p>
 
         {pricing.isLoading ? (
           <p style={{ fontSize: 12, color: "#666", margin: 0 }}>Loading pricing…</p>
