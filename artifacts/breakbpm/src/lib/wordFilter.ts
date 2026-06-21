@@ -84,9 +84,8 @@ export function cleanBannedWords(
   return out;
 }
 
-/** Cap for a free-typed player name, aligned with the screen-name ceiling so a
- * typed name and a generated one share the same length budget. */
-export const MAX_PLAYER_NAME_LENGTH = 125;
+/** Cap for a free-typed player name. */
+export const MAX_PLAYER_NAME_LENGTH = 35;
 
 // Invisible, control, and bidi-override characters — used for spoofing or to
 // break layout. They have no place in a display name, so strip them outright.

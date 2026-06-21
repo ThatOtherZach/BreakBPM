@@ -23,7 +23,7 @@ letter-glued inflections ("shitty"/"fucker") — owner adds variants explicitly.
 - In-game player names → SANITIZED client-side (`sanitizePlayerName`), at the
   SetupScreen input (on blur + a safety pass in handleStart). On top of the
   banned-word emoji-swap it strips invisible/control/bidi chars, emoji-swaps
-  URL/markup runs ("no funny business"), and caps at 125 code points
+  URL/markup runs ("no funny business"), and caps at 35 code points
   (MAX_PLAYER_NAME_LENGTH). Only the free-typed slot; slot-0/@mention names are
   canonical screen names already filtered server-side.
 
