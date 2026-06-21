@@ -1309,7 +1309,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             style={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'nowrap', minHeight: 32, fontSize: 12 }}
             onClick={() => setLogOpen(o => !o)}
           >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span aria-hidden="true" style={{ fontSize: 14 }}>📜</span>Game History ({state.shotLog.length})</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span aria-hidden="true" style={{ fontSize: 14 }}>📜</span>History · 記 ({state.shotLog.length})</span>
             <span>{logOpen ? '▲' : '▼'}</span>
           </button>
           {logOpen && (
