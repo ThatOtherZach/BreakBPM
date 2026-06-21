@@ -400,7 +400,7 @@ export default function AdPurchasePanel() {
               <span style={{ fontSize: 13, color: "#222" }}>
                 Est. total: <strong>{formatPrice(estTotalCents)}</strong>
               </span>
-              <span style={{ fontSize: 11, color: "#888" }}>
+              <span style={{ fontSize: 11, color: "#555" }}>
                 {formatPrice(dailyCents)}/day × {days} {days === 1 ? "day" : "days"} — final amount locked at quote
               </span>
             </div>
