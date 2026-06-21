@@ -14,6 +14,7 @@ import {
   resolveMention,
 } from '@workspace/api-client-react';
 import { saveInProgressGame, clearInProgressGame, normalizeSharkIdentity } from '../lib/gameLogic';
+import { cleanBannedWords } from '../lib/wordFilter';
 import SharkIcon from './SharkIcon';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../lib/authClient';
@@ -212,6 +213,10 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
   // back to the marketing site until the config resolves / if it fails.
   const appConfig = useGetAppConfig();
   const qrUrl = appConfig.data?.qrUrl ?? 'https://breakbpm.com';
+  // Owner-curated blocklist (server env, delivered via /config). Used to
+  // emoji-swap blocked words typed into player-name fields — cleaned at this
+  // single source so the swapped name flows consistently into the shot log.
+  const bannedWords = appConfig.data?.bannedWords ?? [];
   const qrPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const qrRevertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearQrPress = () => {
@@ -464,7 +469,11 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
       const mention = i >= 1 ? mentions[i] : undefined;
       const linkedName = mention?.kind === 'found' ? mention.screenName : null;
       if (linkedName) mentionPayload.push({ slotIndex: i, screenName: linkedName });
-      const p: Player = { id: i, name: linkedName ?? (names[i] || DEFAULT_NAMES[i]) };
+      // Emoji-swap any blocked word in the typed name (safety net in case the
+      // field wasn't blurred). @mention/locked names are canonical screen names
+      // already filtered server-side, so only the free-typed slot is cleaned.
+      const typedName = cleanBannedWords(names[i] ?? '', bannedWords);
+      const p: Player = { id: i, name: linkedName ?? (typedName || DEFAULT_NAMES[i]) };
       // Manual team assignment is only relevant for multiplayer 8-ball.
       if (gameType === '8ball' && !isShark && teamMode === 'manual' && manualTeams[i]) {
         p.team = manualTeams[i] as 'solids' | 'stripes';
@@ -753,6 +762,11 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
                           : names[i]
                     }
                     onChange={e => setName(i, e.target.value)}
+                    onBlur={() => {
+                      // Emoji-swap blocked words once the user leaves the field,
+                      // so the cleaned name is visible and is what gets used.
+                      if (!isNameLocked) setName(i, cleanBannedWords(names[i] ?? '', bannedWords));
+                    }}
                     placeholder={DEFAULT_NAMES[i]}
                     maxLength={110}
                     readOnly={isNameLocked}
