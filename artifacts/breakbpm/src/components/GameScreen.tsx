@@ -1298,7 +1298,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
               ? <button className={`btn btn-big${paused ? ' btn-primary' : ''}`} onClick={handlePause}>{paused ? '▶️ Resume' : '⏸️ Pause'}</button>
               : <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')} disabled={pendingSharkPick}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🛡️</span>Safety · 安</button>
             }
-            <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo</button>
+            <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo · 撤</button>
           </div>
         )}
 
