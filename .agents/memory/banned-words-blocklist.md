@@ -1,26 +1,26 @@
 ---
 name: Banned-words blocklist matching
-description: Why the BREAKBPM_BANNED_WORDS filter matches whole words, not substrings, and where it is wired.
+description: BREAKBPM_BANNED_WORDS filter — whole-word matching, and why ads are cleaned while screen names are rejected.
 ---
 
-`BREAKBPM_BANNED_WORDS` is an owner-curated, comma-separated env list. It filters
-user-supplied free text on two surfaces: HUD ad copy (headline + tagline) and the
-custom screen-name change. The pure matcher is `wordFilter.ts` `findBannedWord`,
-read via `config.bannedWords()`.
+`BREAKBPM_BANNED_WORDS` is an owner-curated, comma-separated env list filtering
+user-supplied free text. Pure matcher lives in `wordFilter.ts`.
 
-**Rule:** matching is WHOLE-WORD and case-insensitive
-(`(^|[^a-z0-9])<word>([^a-z0-9]|$)`), not substring.
+**Matching is WHOLE-WORD, not substring.**
+**Why:** this app's own vocabulary collides with naughty substrings — it
+literally sells "passes". Substring matching of "ass" would wreck
+"passes"/"class"/"grass". Cost: misses inflections ("shitty" when only "shit"
+listed) — owner adds variants explicitly.
 
-**Why:** this app's own vocabulary collides with naughty substrings — the product
-literally sells "passes". Substring matching of a banned "ass" would silently
-reject legitimate ad copy like "Day passes available" and break "class"/"grass".
-Whole-word matching avoids those false positives at the cost of missing inflected
-variants (e.g. "shitty" when only "shit" is listed) — those must be added to the
-list explicitly. Separator-delimited forms like "x-ass-x" still match (hyphen is a
-boundary); fully packed forms like "xassx" do not.
+**Two behaviours by surface, and why they differ:**
+- HUD ad copy → CLEANED, never rejected: each blocked word is swapped for a
+  random emoji and the copy proceeds. Ad copy is free display text, so a fun
+  redaction beats a hard refusal.
+- Custom screen names → REJECTED ("choose another name"): they double as the
+  public `/watch/{name}` URL handle (`[A-Za-z0-9_-]` only), so emoji can't go
+  there. The user explicitly chose reject-only for names over allowing emoji
+  handles or a link-safe filler swap.
 
-**How to apply:** wire the filter at `sanitizeAdCopy` (covers both ad-create paths)
-and after the screen-name URL-safe regex (screen names are NOT admin-moderated, so
-the filter is the only gate there). Ads ARE admin-moderated, so a slip-through is
-caught by a human. If extending to other free-text inputs (e.g. Find Players
-posts), reuse `findBannedWord` + `bannedWords()`, don't reinvent.
+**How to apply:** for new free-text surfaces, pick the matching behaviour by
+whether the field is display text (clean) or a constrained handle (reject);
+reuse the existing matcher, don't reinvent.
