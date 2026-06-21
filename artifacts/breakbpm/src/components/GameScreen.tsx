@@ -1370,7 +1370,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
               <QRCodeSVG value={joinUrl} size={96} level="M" />
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 18, color: '#00ff41', letterSpacing: 1 }}>📡 WATCH LIVE</div>
+              <div style={{ fontSize: 18, color: '#00ff41', letterSpacing: 1 }}>📡 Watch Live • 观战</div>
               <div style={{ fontSize: 14, opacity: 0.85, marginTop: 2 }}>
                 Spectators can follow this game in real time.
               </div>
