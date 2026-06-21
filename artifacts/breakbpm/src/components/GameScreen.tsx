@@ -1292,13 +1292,13 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         {/* ── Actions ── */}
         {state.phase === 'playing' && (
           <div className="action-grid">
-            <button className="btn btn-big" onClick={() => turnAction('miss')} disabled={pendingSharkPick}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>❌</span>Miss · 失</button>
-            <button className="btn btn-big btn-danger" onClick={() => turnAction('foul', 'Ball to opponent')} disabled={pendingSharkPick}><span className="cue-ball-icon" aria-hidden="true" style={{ marginRight: 5 }} />Foul · 犯</button>
+            <button className="btn btn-big" onClick={() => turnAction('miss')} disabled={pendingSharkPick}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>❌</span>Miss • 失</button>
+            <button className="btn btn-big btn-danger" onClick={() => turnAction('foul', 'Ball to opponent')} disabled={pendingSharkPick}><span className="cue-ball-icon" aria-hidden="true" style={{ marginRight: 5 }} />Foul • 犯</button>
             {state.gameType === 'practice'
               ? <button className={`btn btn-big${paused ? ' btn-primary' : ''}`} onClick={handlePause}>{paused ? '▶️ Resume' : '⏸️ Pause'}</button>
-              : <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')} disabled={pendingSharkPick}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🛡️</span>Safety · 安</button>
+              : <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')} disabled={pendingSharkPick}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🛡️</span>Safety • 安</button>
             }
-            <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo · 撤</button>
+            <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo • 撤</button>
           </div>
         )}
 
@@ -1309,7 +1309,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             style={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'nowrap', minHeight: 32, fontSize: 12 }}
             onClick={() => setLogOpen(o => !o)}
           >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span aria-hidden="true" style={{ fontSize: 14 }}>📜</span>History · 記 ({state.shotLog.length})</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span aria-hidden="true" style={{ fontSize: 14 }}>📜</span>History • 記 ({state.shotLog.length})</span>
             <span>{logOpen ? '▲' : '▼'}</span>
           </button>
           {logOpen && (
@@ -1345,7 +1345,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
               </button>
             )}
             <button className="btn btn-big btn-danger" style={{ flex: 1 }} onClick={() => setConfirmNew(true)}>
-              <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🏁</span>End · 終
+              <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🏁</span>End • 終
             </button>
           </div>
         )}
