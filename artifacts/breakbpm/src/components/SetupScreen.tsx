@@ -865,7 +865,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, flex: 1 }}>
-                  <span style={{ fontWeight: 'bold', fontSize: 13 }}>Format</span>
+                  <span style={{ fontWeight: 'bold', fontSize: 13 }}>Format • 规则</span>
                   <span style={{ fontSize: 11, color: '#444' }}>
                     {teamMode === 'auto' ? RULE_SET_SUBLABEL[ruleSet] : TEAM_MODE_SUBLABEL[teamMode]}
                   </span>
