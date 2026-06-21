@@ -1345,7 +1345,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
               </button>
             )}
             <button className="btn btn-big btn-danger" style={{ flex: 1 }} onClick={() => setConfirmNew(true)}>
-              <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🏁</span>End Game / New Game
+              <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🏁</span>End · 終
             </button>
           </div>
         )}
