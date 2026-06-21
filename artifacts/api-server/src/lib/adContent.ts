@@ -5,7 +5,7 @@
  * user ad-purchase path so the same rules apply no matter who authored the ad.
  */
 
-import { findBannedWord } from "./wordFilter";
+import { cleanBannedWords } from "./wordFilter";
 
 /** Max rendered lengths (kept in lockstep with the OpenAPI maxLength bounds). */
 export const AD_HEADLINE_MAX = 60;
@@ -33,9 +33,10 @@ export type SanitizedAdCopy =
  * Returns `{ ok: false, message }` when either field is empty after cleaning,
  * so the same emptiness rule applies on both the admin and user create paths.
  *
- * `banned` is the owner-curated blocklist (`bannedWords()` from config.ts);
- * copy containing any blocked word is rejected so the same filter covers every
- * ad-create path. Pass `[]` (or omit) to skip the blocklist check.
+ * `banned` is the owner-curated blocklist (`bannedWords()` from config.ts). We
+ * never reject for blocked language — each blocked word is swapped for a random
+ * friendly emoji and the (cleaned) copy proceeds as normal. Pass `[]` (or omit)
+ * to skip the swap. Only genuinely empty fields are rejected.
  */
 export function sanitizeAdCopy(
   headline: string,
@@ -50,13 +51,20 @@ export function sanitizeAdCopy(
   if (!cleanTagline) {
     return { ok: false, message: "Add a tagline for your ad." };
   }
-  const blocked =
-    findBannedWord(cleanHeadline, banned) ?? findBannedWord(cleanTagline, banned);
-  if (blocked) {
-    return {
-      ok: false,
-      message: "Please remove blocked language from your ad copy and try again.",
-    };
-  }
-  return { ok: true, headline: cleanHeadline, tagline: cleanTagline };
+  // Swap blocked words for emoji, then re-cap (an emoji is 2 UTF-16 units, so a
+  // swap can nudge length over the bound) without splitting a surrogate pair.
+  return {
+    ok: true,
+    headline: capUtf16(cleanBannedWords(cleanHeadline, banned), AD_HEADLINE_MAX),
+    tagline: capUtf16(cleanBannedWords(cleanTagline, banned), AD_TAGLINE_MAX),
+  };
+}
+
+/** Truncate to `max` UTF-16 units without leaving a dangling high surrogate. */
+function capUtf16(s: string, max: number): string {
+  if (s.length <= max) return s;
+  let out = s.slice(0, max);
+  const last = out.charCodeAt(out.length - 1);
+  if (last >= 0xd800 && last <= 0xdbff) out = out.slice(0, -1);
+  return out;
 }
