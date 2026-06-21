@@ -5,10 +5,12 @@
  * without a redeploy; this module is the pure matcher so the same rule applies
  * everywhere it's wired in.
  *
- * Matching is case-insensitive and WHOLE-WORD (word boundaries), so banning
- * `ass` blocks a standalone "ass" but NOT the app's own vocabulary like
- * "passes"/"class"/"grass". A banned entry can be a multi-word phrase. To catch
- * a variant like "shitty", add it to the list explicitly.
+ * Matching is case-insensitive and uses LETTER boundaries: a banned word matches
+ * unless it's directly touching another letter. So banning `ass` catches a
+ * standalone "ass" AND digit/symbol-wrapped uses like "45ass56" or "ass!!", but
+ * NOT the app's own vocabulary like "passes"/"class"/"grass" (letters on either
+ * side). A banned entry can be a multi-word phrase. To catch a variant like
+ * "shitty", add it explicitly.
  *
  * The preferred behaviour is to "clean" rather than reject: `cleanBannedWords`
  * swaps each blocked word for a random friendly emoji so a user's input is
@@ -48,11 +50,13 @@ function randomSwapEmoji(): string {
   return SWAP_EMOJIS[Math.floor(Math.random() * SWAP_EMOJIS.length)];
 }
 
-/** Build the whole-word matcher for one banned entry (trailing boundary is a
- * lookahead so adjacent matches like "ass ass" both get caught). */
+/** Build the letter-boundary matcher for one banned entry: the word matches
+ * unless a LETTER sits directly on either side, so digit/symbol-wrapped uses
+ * ("45ass56") are caught while real words ("passes") are not. The trailing
+ * boundary is a lookahead so adjacent matches like "ass ass" both get caught. */
 function bannedWordRegExp(word: string, flags: string): RegExp {
   return new RegExp(
-    `(^|[^a-z0-9])(${escapeRegExp(word)})(?=[^a-z0-9]|$)`,
+    `(^|[^a-z])(${escapeRegExp(word)})(?=[^a-z]|$)`,
     flags,
   );
 }

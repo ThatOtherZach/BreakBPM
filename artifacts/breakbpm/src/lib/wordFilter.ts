@@ -11,9 +11,10 @@
  * only consistent place is the single source — the name input — before the name
  * ever flows into game state and the shot log.
  *
- * Matching is case-insensitive and WHOLE-WORD, so banning `ass` swaps a
- * standalone "ass" but never the app's own vocabulary ("passes"/"class"). Keep
- * this in lockstep with the server matcher.
+ * Matching is case-insensitive and uses LETTER boundaries, so banning `ass`
+ * swaps a standalone "ass" AND digit/symbol-wrapped uses like "45ass56", but
+ * never the app's own vocabulary ("passes"/"class") where letters sit on either
+ * side. Keep this in lockstep with the server matcher.
  */
 
 /** Escape a string so it can be embedded literally inside a RegExp. */
@@ -48,10 +49,12 @@ function randomSwapEmoji(): string {
   return SWAP_EMOJIS[Math.floor(Math.random() * SWAP_EMOJIS.length)];
 }
 
-/** Whole-word matcher for one banned entry (trailing boundary is a lookahead so
- * adjacent matches like "ass ass" both get caught). */
+/** Letter-boundary matcher for one banned entry: the word matches unless a
+ * LETTER sits directly on either side, so digit/symbol-wrapped uses ("45ass56")
+ * are caught while real words ("passes") are not. The trailing boundary is a
+ * lookahead so adjacent matches like "ass ass" both get caught. */
 function bannedWordRegExp(word: string, flags: string): RegExp {
-  return new RegExp(`(^|[^a-z0-9])(${escapeRegExp(word)})(?=[^a-z0-9]|$)`, flags);
+  return new RegExp(`(^|[^a-z])(${escapeRegExp(word)})(?=[^a-z]|$)`, flags);
 }
 
 /**

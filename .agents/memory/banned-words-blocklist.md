@@ -7,11 +7,14 @@ description: BREAKBPM_BANNED_WORDS filter — whole-word matching, and the clean
 user-supplied free text. Pure matcher lives in `wordFilter.ts` (server) with a
 client mirror in `artifacts/breakbpm/src/lib/wordFilter.ts`.
 
-**Matching is WHOLE-WORD, not substring.**
-**Why:** this app's own vocabulary collides with naughty substrings — it
-literally sells "passes". Substring matching of "ass" would wreck
-"passes"/"class"/"grass". Cost: misses inflections ("shitty" when only "shit"
-listed) — owner adds variants explicitly.
+**Matching uses LETTER boundaries (not whole-word, not substring).** A banned
+word matches unless a LETTER sits directly on either side. So digit/symbol-
+wrapped uses ("45ass56", "ass!!") ARE caught, but real words ("passes"/
+"class"/"grass"/"bass") are NOT.
+**Why:** plain substring matching of "ass" would wreck the app's own vocab — it
+literally sells "passes". But pure whole-word (digits as boundaries) let users
+smuggle slurs as "45slur56". Letter-only boundaries thread both. Cost: misses
+letter-glued inflections ("shitty"/"fucker") — owner adds variants explicitly.
 
 **Behaviour per surface (user-directed):**
 - HUD ad copy → CLEANED server-side (emoji-swap, never rejected).
