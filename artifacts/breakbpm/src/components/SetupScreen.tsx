@@ -1104,7 +1104,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
             <span
               style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
               className="justify-start items-center flex-row text-left text-[13px] font-semibold text-[#ffffff]">
-              Join Game • 加入
+              JOIN GAME • 加入
             </span>
             <span aria-hidden="true" className="text-[#000000]">{joinOpen ? '▼' : '▶'}</span>
           </button>
