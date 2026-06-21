@@ -7,6 +7,7 @@ import aboutMd from '../ABOUT.md?raw';
 import { APP_VERSION } from '../lib/version';
 import { pickTagline } from '../lib/taglines';
 import { usePageMeta, PAGE_META } from '../lib/pageMeta';
+import { RAW_BASE_URL, buildTranslateLinks } from '../lib/aiTranslate';
 
 const tagline = pickTagline();
 
@@ -15,45 +16,7 @@ const tagline = pickTagline();
  * that renders this page is hosted publicly on GitHub raw, so an AI assistant
  * can fetch and translate it with zero drift and no extra endpoint/build step.
  */
-const GUIDE_RAW_URL =
-  'https://raw.githubusercontent.com/ThatOtherZach/BreakBPM/main/artifacts/breakbpm/src/ABOUT.md';
-
-/**
- * Resolve the reader's browser language into a human-readable English name.
- * Keeps the script subtag (so zh-TW → "Traditional Chinese", zh-CN →
- * "Simplified Chinese") but drops the region (avoids "French (France)").
- */
-function detectLanguage(): { name: string; isEnglish: boolean } {
-  const code =
-    (typeof navigator !== 'undefined' &&
-      (navigator.languages?.[0] || navigator.language)) ||
-    'en';
-  let base = code.split('-')[0].toLowerCase();
-  let name = '';
-  const display = (tag: string) => {
-    try {
-      return new Intl.DisplayNames(['en'], { type: 'language' }).of(tag) || '';
-    } catch {
-      return '';
-    }
-  };
-  try {
-    const loc = new Intl.Locale(code).maximize();
-    base = loc.language;
-    name = display(loc.script ? `${loc.language}-${loc.script}` : loc.language);
-  } catch {
-    name = display(base);
-  }
-  return { name, isEnglish: base === 'en' };
-}
-
-/** Auto-submitting prompt that tells an AI to read + translate the guide. */
-function buildTranslatePrompt(lang: { name: string; isEnglish: boolean }): string {
-  if (lang.isEnglish || !lang.name) {
-    return `Read this BreakBPM billiards app guide and translate it into the language I ask for — please ask me which language first. Keep the original headings and structure. Here is the guide: ${GUIDE_RAW_URL}`;
-  }
-  return `Read this BreakBPM billiards app guide and translate the entire thing into ${lang.name}, keeping the original headings and structure. Here is the guide: ${GUIDE_RAW_URL}`;
-}
+const GUIDE_RAW_URL = `${RAW_BASE_URL}ABOUT.md`;
 
 interface AboutScreenProps {
   onBack: () => void;
@@ -66,18 +29,15 @@ export default function AboutScreen({ onBack, onPasses }: AboutScreenProps) {
 
   const [copyState, setCopyState] = useState<'idle' | 'ok' | 'fail'>('idle');
 
-  const { translateLabel, perplexityUrl, chatgptUrl } = useMemo(() => {
-    const lang = detectLanguage();
-    const q = encodeURIComponent(buildTranslatePrompt(lang));
-    return {
-      translateLabel:
-        lang.isEnglish || !lang.name
-          ? '🌐 Translate this guide'
-          : `🌐 Translate to ${lang.name}`,
-      perplexityUrl: `https://www.perplexity.ai/search?q=${q}`,
-      chatgptUrl: `https://chatgpt.com/?q=${q}`,
-    };
-  }, []);
+  const { translateLabel, perplexityUrl, chatgptUrl } = useMemo(
+    () =>
+      buildTranslateLinks(
+        'BreakBPM billiards app guide',
+        GUIDE_RAW_URL,
+        '🌐 Translate this guide',
+      ),
+    [],
+  );
 
   async function handleCopyGuide() {
     try {

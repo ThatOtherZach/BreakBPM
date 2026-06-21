@@ -666,6 +666,41 @@ html, #root {
 .legal-markdown h2 { font-size: 17px; }
 .legal-markdown h3 { font-size: 15px; }
 
+.legal-translate {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--silver);
+  border: 1px solid var(--dark);
+  border-top: none;
+  padding: 8px 12px;
+}
+
+.legal-translate-title {
+  font-size: 12px;
+  font-weight: bold;
+  color: #000;
+}
+
+.legal-translate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.legal-translate-raw {
+  font-size: 11px;
+  color: #000080;
+  text-decoration: underline;
+}
+
+.legal-translate-note {
+  font-size: 11px;
+  color: #444;
+  margin: 0;
+  line-height: 1.4;
+}
+
 /* ── Title Bar (legacy, kept for reference) ── */
 .titlebar {
   background: linear-gradient(to right, var(--navy) 0%, var(--blue) 100%);
