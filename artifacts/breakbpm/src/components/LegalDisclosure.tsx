@@ -2,7 +2,7 @@ import { useId, useMemo, useState } from "react";
 import { marked } from "marked";
 import termsMd from "../legal/TERMS_OF_SERVICE.md?raw";
 import dataPolicyMd from "../legal/DATA_POLICY.md?raw";
-import { RAW_BASE_URL, buildTranslateLinks } from "../lib/aiTranslate";
+import { RAW_BASE_URL, buildCopyPrompt } from "../lib/aiTranslate";
 
 interface LegalItemProps {
   title: string;
@@ -15,19 +15,14 @@ interface LegalItemProps {
 function LegalTranslate({ title, markdown, rawUrl }: { title: string; markdown: string; rawUrl: string }) {
   const [copyState, setCopyState] = useState<"idle" | "ok" | "fail">("idle");
 
-  const { translateLabel, perplexityUrl, chatgptUrl } = useMemo(
-    () =>
-      buildTranslateLinks(
-        `BreakBPM legal document ("${title}")`,
-        rawUrl,
-        "🌐 Translate",
-      ),
-    [title, rawUrl],
+  const { prompt } = useMemo(
+    () => buildCopyPrompt(`BreakBPM legal document ("${title}")`, rawUrl, markdown),
+    [title, rawUrl, markdown],
   );
 
-  async function handleCopy() {
+  async function handleCopyPrompt() {
     try {
-      await navigator.clipboard.writeText(markdown);
+      await navigator.clipboard.writeText(prompt);
       setCopyState("ok");
       window.setTimeout(() => setCopyState("idle"), 2000);
     } catch {
@@ -40,40 +35,15 @@ function LegalTranslate({ title, markdown, rawUrl }: { title: string; markdown: 
     <div className="legal-translate">
       <div className="legal-translate-title">🌐 Read in your language</div>
       <div className="legal-translate-actions">
-        <a
-          className="btn btn-primary"
-          style={{ flex: 1 }}
-          href={perplexityUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {translateLabel}
-        </a>
-        <a
-          className="btn"
-          href={chatgptUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          🤖 ChatGPT
-        </a>
-        <button type="button" className="btn" onClick={handleCopy}>
-          {copyState === "ok" ? "✓ Copied" : "📋 Copy text"}
+        <button type="button" className="btn btn-primary" style={{ flex: 1 }} onClick={handleCopyPrompt}>
+          {copyState === "ok" ? "✓ Copied" : "🤖 Copy Prompt"}
         </button>
       </div>
       {copyState === "fail" && (
         <p className="legal-translate-note" style={{ color: "#800000" }}>
-          Couldn't copy — use “View raw text” instead.
+          Couldn't copy automatically — select the text below and copy it manually.
         </p>
       )}
-      <a
-        className="legal-translate-raw"
-        href={rawUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        View raw text ↗
-      </a>
       <p className="legal-translate-note">
         AI translation is for convenience only — the English version governs.
       </p>

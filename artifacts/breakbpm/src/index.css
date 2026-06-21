@@ -688,12 +688,6 @@ html, #root {
   gap: 6px;
 }
 
-.legal-translate-raw {
-  font-size: 11px;
-  color: #000080;
-  text-decoration: underline;
-}
-
 .legal-translate-note {
   font-size: 11px;
   color: #444;

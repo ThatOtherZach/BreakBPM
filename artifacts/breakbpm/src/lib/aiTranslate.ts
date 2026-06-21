@@ -1,11 +1,11 @@
 /**
  * Shared "Read in your language" handoff used by the About and Legal pages.
  *
- * The markdown sources that render those pages are hosted publicly on GitHub
- * raw, so an AI assistant can fetch and translate them with zero drift and no
- * extra endpoint/build step. This module centralises the browser-language
- * detection, prompt building, and assistant-link construction so every surface
- * stays in lockstep.
+ * Each surface offers one "Copy Prompt" button that copies a self-contained
+ * translation prompt — the full document text embedded inline (so the AI never
+ * has to fetch a link) plus the canonical GitHub-raw URL as added context. This
+ * module centralises the browser-language detection and prompt building so every
+ * surface stays in lockstep.
  */
 
 /** Base GitHub-raw URL for the breakbpm source tree (trailing slash included). */
@@ -46,47 +46,36 @@ export function detectLanguage(): DetectedLanguage {
   return { name, isEnglish: base === 'en' };
 }
 
-/**
- * Auto-submitting prompt that tells an AI to read + translate the document at
- * `rawUrl`. `subject` describes the document (e.g. "BreakBPM billiards app
- * guide" or `BreakBPM legal document ("Terms of Service")`).
- */
-export function buildTranslatePrompt(
-  subject: string,
-  rawUrl: string,
-  lang: DetectedLanguage,
-): string {
-  if (lang.isEnglish || !lang.name) {
-    return `Read this ${subject} and translate it into the language I ask for — please ask me which language first. Keep the original headings and structure. Here it is: ${rawUrl}`;
-  }
-  return `Read this ${subject} and translate the entire thing into ${lang.name}, keeping the original headings and structure. Here it is: ${rawUrl}`;
-}
-
-export interface TranslateLinks {
+export interface CopyPrompt {
   lang: DetectedLanguage;
-  translateLabel: string;
-  perplexityUrl: string;
-  chatgptUrl: string;
+  /** The complete, ready-to-paste prompt (full document text embedded inline). */
+  prompt: string;
 }
 
 /**
- * Build the detected language plus ready-to-use Perplexity (primary) and
- * ChatGPT (secondary) handoff URLs and a localized button label.
- * `englishLabel` is the fallback button text shown when the reader's browser is
- * already English (or the language name can't be resolved).
+ * Build a single self-contained translation prompt the reader can paste into any
+ * AI assistant (ChatGPT, Perplexity, Gemini, DeepSeek, …). The entire document
+ * `body` is embedded inline so the assistant never has to fetch a link, and the
+ * canonical GitHub-raw `rawUrl` is included as added context so it has a source
+ * to follow up on. `subject` describes the document (e.g. "BreakBPM billiards
+ * app guide" or `BreakBPM legal document ("Terms of Service")`).
  */
-export function buildTranslateLinks(
+export function buildCopyPrompt(
   subject: string,
   rawUrl: string,
-  englishLabel = '🌐 Translate',
-): TranslateLinks {
+  body: string,
+): CopyPrompt {
   const lang = detectLanguage();
-  const q = encodeURIComponent(buildTranslatePrompt(subject, rawUrl, lang));
-  return {
-    lang,
-    translateLabel:
-      lang.isEnglish || !lang.name ? englishLabel : `🌐 Translate to ${lang.name}`,
-    perplexityUrl: `https://www.perplexity.ai/search?q=${q}`,
-    chatgptUrl: `https://chatgpt.com/?q=${q}`,
-  };
+  const target =
+    lang.isEnglish || !lang.name
+      ? 'the language I specify — please ask me which language first'
+      : lang.name;
+  const instruction =
+    `Translate the ${subject} below into ${target}. Keep all headings, ` +
+    `structure, markdown formatting, emojis, product names (BreakBPM, BPM) and ` +
+    `URLs unchanged. Output only the translation, with no extra commentary. The ` +
+    `full text is included below; the canonical source is also at ${rawUrl} if ` +
+    `you need to re-check it.`;
+  const prompt = `${instruction}\n\n--- DOCUMENT START ---\n${body}\n--- DOCUMENT END ---\n\nSource: ${rawUrl}`;
+  return { lang, prompt };
 }

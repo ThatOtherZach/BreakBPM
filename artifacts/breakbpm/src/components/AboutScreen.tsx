@@ -7,7 +7,7 @@ import aboutMd from '../ABOUT.md?raw';
 import { APP_VERSION } from '../lib/version';
 import { pickTagline } from '../lib/taglines';
 import { usePageMeta, PAGE_META } from '../lib/pageMeta';
-import { RAW_BASE_URL, buildTranslateLinks } from '../lib/aiTranslate';
+import { RAW_BASE_URL, buildCopyPrompt } from '../lib/aiTranslate';
 
 const tagline = pickTagline();
 
@@ -29,23 +29,17 @@ export default function AboutScreen({ onBack, onPasses }: AboutScreenProps) {
 
   const [copyState, setCopyState] = useState<'idle' | 'ok' | 'fail'>('idle');
 
-  const { translateLabel, perplexityUrl, chatgptUrl } = useMemo(
-    () =>
-      buildTranslateLinks(
-        'BreakBPM billiards app guide',
-        GUIDE_RAW_URL,
-        '🌐 Translate this guide',
-      ),
+  const { prompt } = useMemo(
+    () => buildCopyPrompt('BreakBPM billiards app guide', GUIDE_RAW_URL, aboutMd),
     [],
   );
 
-  async function handleCopyGuide() {
+  async function handleCopyPrompt() {
     try {
-      await navigator.clipboard.writeText(aboutMd);
+      await navigator.clipboard.writeText(prompt);
       setCopyState('ok');
       window.setTimeout(() => setCopyState('idle'), 2000);
     } catch {
-      /* clipboard unavailable — point the reader at the View raw text link */
       setCopyState('fail');
       window.setTimeout(() => setCopyState('idle'), 4000);
     }
@@ -81,43 +75,17 @@ export default function AboutScreen({ onBack, onPasses }: AboutScreenProps) {
             <div className="panel-header">🌐 Read in your language</div>
             <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <p style={{ fontSize: 12, margin: 0, lineHeight: 1.4 }}>
-                Open this guide in an AI assistant and have it translated into your language.
+                Copy a ready-to-paste prompt, then drop it into any AI assistant
+                (ChatGPT, Perplexity, Gemini…) to read this guide in your language.
               </p>
-              <a
-                className="btn btn-primary btn-full"
-                href={perplexityUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {translateLabel}
-              </a>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <a
-                  className="btn"
-                  style={{ flex: 1 }}
-                  href={chatgptUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  🤖 ChatGPT
-                </a>
-                <button className="btn" style={{ flex: 1 }} onClick={handleCopyGuide}>
-                  {copyState === 'ok' ? '✓ Copied' : '📋 Copy text'}
-                </button>
-              </div>
+              <button className="btn btn-primary btn-full" onClick={handleCopyPrompt}>
+                {copyState === 'ok' ? '✓ Copied' : '🤖 Copy Prompt'}
+              </button>
               {copyState === 'fail' && (
                 <p style={{ fontSize: 11, color: '#800000', margin: 0, textAlign: 'center' }}>
-                  Couldn't copy — use “View raw text” below instead.
+                  Couldn't copy automatically — select the guide text below and copy it manually.
                 </p>
               )}
-              <a
-                href={GUIDE_RAW_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ fontSize: 11, color: '#000080', textAlign: 'center', textDecoration: 'underline' }}
-              >
-                View raw text ↗
-              </a>
             </div>
           </div>
 
