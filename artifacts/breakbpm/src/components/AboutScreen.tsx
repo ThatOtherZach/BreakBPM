@@ -48,7 +48,6 @@ export default function AboutScreen({ onBack, onPasses }: AboutScreenProps) {
   return (
     <div className="app-window about-window">
       <Navbar onBack={onBack} />
-
       <div className="about-scroll-area">
         <div className="app-body" style={{ overflow: 'visible', flex: 'none' }}>
           <div className="splash-panel">
@@ -72,7 +71,7 @@ export default function AboutScreen({ onBack, onPasses }: AboutScreenProps) {
           </div>
 
           <div className="panel">
-            <div className="panel-header">🌐 Read in your language</div>
+            <div className="panel-header">🌐 Translation & TLDR</div>
             <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <p style={{ fontSize: 12, margin: 0, lineHeight: 1.4 }}>
                 Copy a ready-to-paste prompt, then drop it into any AI assistant
@@ -99,7 +98,6 @@ export default function AboutScreen({ onBack, onPasses }: AboutScreenProps) {
           <PricingPanel showBuyButtons onBuy={onPasses} hideCardCallout />
         </div>
       </div>
-
       <div className="statusbar">
         <span><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v{APP_VERSION}</a> - Saym Services Inc.</span>
         <a href="/legal" style={{ color: 'inherit', textDecoration: 'underline', marginLeft: 12 }}>Legal</a>
