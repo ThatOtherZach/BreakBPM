@@ -1341,7 +1341,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           <div style={{ display: 'flex', gap: 8 }}>
             {state.gameType === 'practice' && (
               <button className="btn btn-big" style={{ flex: 1 }} onClick={handleReset}>
-                <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🔄</span>Reset Table
+                <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🔄</span>Reset • 重置
               </button>
             )}
             <button className="btn btn-big btn-danger" style={{ flex: 1 }} onClick={() => setConfirmNew(true)}>
