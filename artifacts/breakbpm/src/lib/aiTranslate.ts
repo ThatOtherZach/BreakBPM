@@ -83,8 +83,9 @@ export function buildCopyPrompt(
 
   const instruction =
     lang.isEnglish || !lang.name
-      ? `Please ${tldr('English')}. If I instead ask you to translate it, ` +
-        `${translate('the language I name')}.`
+      ? `Please ${tldr('English')}. If I'd rather read the whole document in ` +
+        `another language, first ask me which language, then ` +
+        `${translate('that language')}.`
       : `Please ${translate(lang.name)}. If I instead ask for a TL;DR, ` +
         `${tldr(lang.name)}.`;
   const context =
