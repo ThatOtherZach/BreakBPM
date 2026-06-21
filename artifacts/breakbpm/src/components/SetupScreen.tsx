@@ -83,7 +83,7 @@ type TeamMode = 'auto' | 'manual' | 'chaos' | 'none';
 const TEAM_MODE_CYCLE: TeamMode[] = ['auto', 'manual', 'none', 'chaos'];
 const TEAM_MODE_LABEL: Record<TeamMode, string> = {
   auto: '🤝 Normal',
-  manual: '🕹️ Manual',
+  manual: '🕹️ Manual • 手动',
   chaos: '😈 Chaos',
   none: '🤷 None',
 };
