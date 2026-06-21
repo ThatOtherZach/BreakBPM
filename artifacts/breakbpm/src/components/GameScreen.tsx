@@ -1292,7 +1292,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         {/* ── Actions ── */}
         {state.phase === 'playing' && (
           <div className="action-grid">
-            <button className="btn btn-big" onClick={() => turnAction('miss')} disabled={pendingSharkPick}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>❌</span>Miss</button>
+            <button className="btn btn-big" onClick={() => turnAction('miss')} disabled={pendingSharkPick}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>❌</span>Miss · 失</button>
             <button className="btn btn-big btn-danger" onClick={() => turnAction('foul', 'Ball to opponent')} disabled={pendingSharkPick}><span className="cue-ball-icon" aria-hidden="true" style={{ marginRight: 5 }} />Foul</button>
             {state.gameType === 'practice'
               ? <button className={`btn btn-big${paused ? ' btn-primary' : ''}`} onClick={handlePause}>{paused ? '▶️ Resume' : '⏸️ Pause'}</button>
