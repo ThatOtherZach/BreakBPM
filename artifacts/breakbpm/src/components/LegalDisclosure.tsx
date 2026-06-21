@@ -33,7 +33,7 @@ function LegalTranslate({ title, markdown, rawUrl }: { title: string; markdown: 
 
   return (
     <div className="legal-translate">
-      <div className="legal-translate-title">🌐 Read in your language</div>
+      <div className="legal-translate-title">🌐 TLDR; Translation</div>
       <div className="legal-translate-actions">
         <button type="button" className="btn btn-primary" style={{ flex: 1 }} onClick={handleCopyPrompt}>
           {copyState === "ok" ? "✓ Copied" : "🤖 Copy Prompt"}
