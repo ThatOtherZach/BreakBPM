@@ -643,10 +643,10 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
             </div>
             <div className="flex gap-2">
               <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleResume}>
-                {degraded ? '▶ Resume anyway' : '▶ Resume'}
+                {degraded ? '▶ Resume anyway • 继' : '▶ Resume • 继'}
               </button>
               <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleDiscardResume} disabled={abandonGame.isPending}>
-                {abandonGame.isPending ? '…' : 'Start fresh'}
+                {abandonGame.isPending ? '…' : 'Start Fresh • 重来'}
               </button>
             </div>
             {discardError && (
