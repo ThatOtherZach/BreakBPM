@@ -1,20 +1,34 @@
 ---
 name: Banned-words blocklist matching
-description: BREAKBPM_BANNED_WORDS filter — letter-boundary matching, player-name sanitizer, and the clean-vs-reject behaviour per surface.
+description: BREAKBPM_BANNED_WORDS filter — length-tiered + concatenation matching, player-name sanitizer, and the clean-vs-reject behaviour per surface.
 ---
 
 `BREAKBPM_BANNED_WORDS` is an owner-curated, comma-separated env list filtering
 user-supplied free text. Pure matcher lives in `wordFilter.ts` (server) with a
-client mirror in `artifacts/breakbpm/src/lib/wordFilter.ts`.
+client mirror in `artifacts/breakbpm/src/lib/wordFilter.ts`. Both implement an
+identical span-collector (`findBannedSpans`) — keep in lockstep.
 
-**Matching uses LETTER boundaries (not whole-word, not substring).** A banned
-word matches unless a LETTER sits directly on either side. So digit/symbol-
-wrapped uses ("45ass56", "ass!!") ARE caught, but real words ("passes"/
-"class"/"grass"/"bass") are NOT.
-**Why:** plain substring matching of "ass" would wreck the app's own vocab — it
-literally sells "passes". But pure whole-word (digits as boundaries) let users
-smuggle slurs as "45slur56". Letter-only boundaries thread both. Cost: misses
-letter-glued inflections ("shitty"/"fucker") — owner adds variants explicitly.
+**Matching is LENGTH-TIERED + a concatenation rule (not uniform).** Three rules:
+1. SHORT entries (≤3 chars: ass/jew/sex/gay) match only at LETTER boundaries
+   ("ass"/"45ass56"/"ass!!" caught; "passes"/"class"/"jewelry"/"Sussex"/"bass"
+   spared). 3-letter fragments are too common inside real words to substring.
+2. LONG entries (≥4 chars: cunt/fuck/pussy) match ANYWHERE (substring), so a
+   banned word glued to other text ("cuntycounty", "fuckyou") is caught.
+3. A whole letter-run tiled ENTIRELY by banned words ("pussyass"=pussy+ass,
+   "assgay"=ass+gay) is swapped wholesale — catches concatenations while sparing
+   "assassin"/"bassist" (leftover letters → not fully composed). DP requires ≥2
+   segments so it never double-handles a standalone word (rules 1/2 own those).
+**Why length-tiered:** earlier pure letter-boundary missed glued evasions
+("pussyass", "cuntycounty"); pure substring would wreck the app's own vocab (it
+sells "passes", contains "jewelry"). The 4-char cutoff threads both: a 4+ char
+slur rarely sits inside an innocent word; a 3-char one usually does.
+**Trade-off (documented, accepted):** a LONG entry also flags real words that
+contain it — banning `cock` would emoji-swap "cocktail"/"peacock", `cunt` swaps
+"Scunthorpe". Tune the list; if a real-word collision bites, the fix is a
+curated allowlist (not yet built — add only if needed). Still misses letter-
+glued inflections of SHORT words ("shitty") — owner adds variants explicitly.
+**Output:** `cleanBannedWords` merges overlapping/abutting spans into ONE emoji
+(so "pussyass" → a single emoji, not two).
 
 **Behaviour per surface (user-directed):**
 - HUD ad copy → CLEANED server-side (emoji-swap, never rejected).
