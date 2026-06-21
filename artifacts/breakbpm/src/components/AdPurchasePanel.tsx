@@ -396,19 +396,19 @@ export default function AdPurchasePanel() {
               </div>
             </div>
 
-            <div style={{ fontSize: 12, color: "#333" }}>
-              About{" "}
-              <strong>{formatPrice(estTotalCents)}</strong>{" "}
-              <span style={{ color: "#888" }}>
-                ({formatPrice(dailyCents)}/day × {days}) — final amount is locked
-                when you get the quote.
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <span style={{ fontSize: 13, color: "#222" }}>
+                Est. total: <strong>{formatPrice(estTotalCents)}</strong>
+              </span>
+              <span style={{ fontSize: 11, color: "#888" }}>
+                {formatPrice(dailyCents)}/day × {days} {days === 1 ? "day" : "days"} — final amount locked at quote
               </span>
             </div>
 
-            <div
-              className="notice"
-              style={{ fontSize: 12, color: "#7a2a00", lineHeight: 1.35 }}
-            >Crypto payments are non-refundable. Subject to admin review. If it's approved it goes live for your chosen days; if it's denied, it never displays. No refunds, including on denial.</div>
+            <div className="notice" style={{ color: "#7a2a00" }}>
+              Subject to admin review. If approved, your ad goes live for the
+              chosen number of days. If denied, it never displays. No refunds.
+            </div>
 
             <button
               className="btn btn-primary btn-big"
