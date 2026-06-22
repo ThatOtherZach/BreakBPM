@@ -863,6 +863,19 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                               <div style={{ fontSize: 13, color: "#4ade80", letterSpacing: 0.5, lineHeight: 1.2 }}>
                                 {account.screenName} Invites you to BreakBPM.com
                               </div>
+                              {/* Redeem link */}
+                              <a
+                                href={redeemUrlFor(latest.code)}
+                                style={{
+                                  fontFamily: "monospace",
+                                  fontSize: 10,
+                                  color: "#b89ad8",
+                                  wordBreak: "break-all",
+                                  textAlign: "center",
+                                }}
+                              >
+                                {redeemUrlFor(latest.code)}
+                              </a>
                               {/* Expiry status */}
                               {(() => {
                                 const dot = (color: string) => (
@@ -890,19 +903,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                   </div>
                                 );
                               })()}
-                              {/* Redeem link */}
-                              <a
-                                href={redeemUrlFor(latest.code)}
-                                style={{
-                                  fontFamily: "monospace",
-                                  fontSize: 10,
-                                  color: "#b89ad8",
-                                  wordBreak: "break-all",
-                                  textAlign: "center",
-                                }}
-                              >
-                                {redeemUrlFor(latest.code)}
-                              </a>
                             </div>
                             {/* QR + Copy link button — centred below the info */}
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
