@@ -11,7 +11,7 @@ import {
   cardFilename,
 } from "../lib/redeemCard";
 import type { BackgroundVariant } from "../lib/backgroundVariants";
-import { THEME_DOT, THEME_FELT, THEME_ACCENT, RAINBOW_DOT, themeColorOf, type ThemeColor } from "../lib/backgroundVariants";
+import { THEME_DOT, THEME_FELT, RAINBOW_DOT, themeColorOf } from "../lib/backgroundVariants";
 import { PlayerName } from "./PlayerName";
 import {
   useGetMe,
@@ -296,29 +296,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
     ? (account.profileBackground ?? "none")
     : account.profileTheme) as AccountProfileTheme;
   const identityFelt = THEME_FELT[themeColorOf(feltTheme)];
-  const giftThemeColor = themeColorOf(feltTheme);
-  const GIFT_BOX_BG: Record<ThemeColor, string> = {
-    green:  "#050f08",
-    blue:   "#060d1a",
-    red:    "#1a0508",
-    purple: "#0d0514",
-  };
-  const GIFT_BOX_TEXT: Record<ThemeColor, string> = {
-    green:  "#a8f5c2",
-    blue:   "#a8ccff",
-    red:    "#ffa8ab",
-    purple: "#d8b4ff",
-  };
-  const GIFT_BOX_CODE: Record<ThemeColor, string> = {
-    green:  "#c8ffe0",
-    blue:   "#c8e0ff",
-    red:    "#ffc8ca",
-    purple: "#e8c8ff",
-  };
-  const giftBoxBg     = GIFT_BOX_BG[giftThemeColor];
-  const giftBoxBorder = THEME_ACCENT[giftThemeColor];
-  const giftBoxText   = GIFT_BOX_TEXT[giftThemeColor];
-  const giftBoxCode   = GIFT_BOX_CODE[giftThemeColor];
 
   async function handleSaveName() {
     setError("");
@@ -850,10 +827,10 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                               gap: 8,
                               marginTop: 8,
                               padding: 8,
-                              background: giftBoxBg,
-                              border: `1px dashed ${giftBoxBorder}`,
+                              backgroundColor: identityFelt.felt,
+                              boxShadow: `inset 0 0 0 2px ${identityFelt.feltShadow}, inset 0 2px 6px rgba(0,0,0,0.35)`,
                               fontFamily: "'VT323',monospace",
-                              color: giftBoxText,
+                              color: "#f4f4dc",
                             }}
                           >
                             {/* Info: code + title + expiry + link */}
@@ -866,9 +843,10 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                   style={{
                                     fontFamily: "'VT323',monospace",
                                     fontSize: 30,
-                                    color: giftBoxCode,
+                                    color: "#ffe98a",
                                     wordBreak: "break-all",
                                     letterSpacing: 1,
+                                    textShadow: "1px 1px 0 #042414",
                                   }}
                                 >
                                   {latest.code}
@@ -892,7 +870,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                 style={{
                                   fontFamily: "monospace",
                                   fontSize: 10,
-                                  color: giftBoxText,
+                                  color: "#f4f4dc",
                                   opacity: 0.65,
                                   wordBreak: "break-all",
                                   textAlign: "center",
