@@ -888,7 +888,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                               </div>
                               {/* Title */}
                               <div style={{ fontSize: 13, color: "#4ade80", letterSpacing: 0.5, lineHeight: 1.2 }}>
-                                Day Pass from @{account.screenName}
+                                {account.screenName} Invites you to BreakBPM.com
                               </div>
                               {/* Expiry status */}
                               {(() => {
