@@ -834,9 +834,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                           >
                             {/* QR + Copy link button stacked */}
                             <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-                              <div style={{ fontSize: 13, color: "#4ade80", letterSpacing: 0.5, lineHeight: 1.2, textAlign: "center" }}>
-                                Day Pass from @{account.screenName}
-                              </div>
                               <a
                                 href={redeemUrlFor(latest.code)}
                                 style={{ display: "block", lineHeight: 0, background: "#fff", padding: 4 }}
@@ -867,6 +864,10 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                 justifyContent: "center",
                               }}
                             >
+                              {/* Title */}
+                              <div style={{ fontSize: 13, color: "#4ade80", letterSpacing: 0.5, lineHeight: 1.2 }}>
+                                Day Pass from @{account.screenName}
+                              </div>
                               {/* Code + 📋 to copy bare code */}
                               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                                 <span
