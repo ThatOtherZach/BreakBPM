@@ -1104,7 +1104,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
             </span>
           </div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <p style={{ fontSize: 12, color: "#444", margin: 0 }}>Have gift code? Enter it here to unlock.</p>
+            <p style={{ fontSize: 12, color: "#444", margin: 0 }}>Have a code? Enter it here to unlock.</p>
             <input
               className="input"
               placeholder="ENTER CODE"
