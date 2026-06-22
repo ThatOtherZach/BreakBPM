@@ -890,16 +890,32 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                 </button>
                               </div>
                               {/* Expiry status */}
-                              <div style={{ fontSize: 11, color: "#666" }}>
-                                {(() => {
-                                  if (latest.redeemed) return "Redeemed";
-                                  if (latest.expired) return "Expired";
-                                  const h = fmtHoursUntil(latest.expiresAt);
-                                  return h
-                                    ? `Unused — expires in ${h}`
-                                    : "Unused — expires soon";
-                                })()}
-                              </div>
+                              {(() => {
+                                const dot = (color: string) => (
+                                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: color, display: "inline-block", flexShrink: 0 }} />
+                                );
+                                if (latest.redeemed) return (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#888" }}>
+                                    {dot("#888")} Redeemed
+                                  </div>
+                                );
+                                if (latest.expired) return (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#c0392b", fontWeight: "bold" }}>
+                                    {dot("#c0392b")} Expired
+                                  </div>
+                                );
+                                const h = fmtHoursUntil(latest.expiresAt);
+                                if (h) return (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#27ae60" }}>
+                                    {dot("#27ae60")} Active · expires in {h}
+                                  </div>
+                                );
+                                return (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#e67e22", fontWeight: "bold" }}>
+                                    {dot("#e67e22")} Expires soon
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </div>
                         )}
