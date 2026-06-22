@@ -812,72 +812,95 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                 : "Generate Gift Code"}
                         </button>
                         {latest && !latest.expired && (
-                          <div style={{ marginTop: 8 }}>
-                            {/* Code box — 📋 emoji copies just the bare code */}
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 10,
+                              marginTop: 8,
+                              padding: 8,
+                              background: "#f5f5dc",
+                              border: "1px solid #999",
+                            }}
+                          >
+                            {/* QR — tappable, opens the redeem URL */}
+                            <a
+                              href={redeemUrlFor(latest.code)}
+                              style={{ flexShrink: 0, display: "block", lineHeight: 0 }}
+                              title="Scan or tap to redeem"
+                            >
+                              <QRCodeCanvas
+                                value={redeemUrlFor(latest.code)}
+                                size={108}
+                                level="M"
+                              />
+                            </a>
+                            {/* Info column */}
                             <div
                               style={{
+                                flex: 1,
+                                minWidth: 0,
                                 display: "flex",
-                                alignItems: "center",
+                                flexDirection: "column",
                                 gap: 6,
-                                fontFamily: "monospace",
-                                fontSize: 16,
-                                padding: "6px 8px",
-                                background: "#f5f5dc",
-                                border: "1px solid #999",
+                                justifyContent: "center",
                               }}
                             >
-                              <span style={{ flex: 1, wordBreak: "break-all" }}>
-                                {latest.code}
-                              </span>
-                              <button
-                                className="btn"
-                                style={{ flexShrink: 0, fontSize: 15, padding: "0 5px", minWidth: 0 }}
-                                title={giftCopied ? "Copied!" : "Copy code"}
-                                onClick={() => handleCopyGiftCode(latest.code)}
-                              >
-                                {giftCopied ? "✓" : "📋"}
-                              </button>
-                            </div>
-                            {/* Redeem link row — Copy button copies the full URL */}
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 6,
-                                marginTop: 4,
-                              }}
-                            >
-                              <a
-                                href={redeemUrlFor(latest.code)}
-                                style={{
-                                  flex: 1,
-                                  fontFamily: "monospace",
-                                  fontSize: 11,
-                                  color: "#444",
-                                  wordBreak: "break-all",
-                                  minWidth: 0,
-                                }}
-                              >
-                                {redeemUrlFor(latest.code)}
-                              </a>
-                              <button
-                                className="btn"
-                                style={{ flexShrink: 0 }}
-                                onClick={() => handleCopyGiftLink(latest.code)}
-                              >
-                                {giftLinkCopied ? "Copied" : "Copy"}
-                              </button>
-                            </div>
-                            {/* Expiry status */}
-                            <div style={{ marginTop: 4, fontSize: 11, color: "#444" }}>
-                              {(() => {
-                                if (latest.redeemed) return "Redeemed";
-                                if (latest.expired) return "Expired";
-                                const h = fmtHoursUntil(latest.expiresAt);
-                                return h
-                                  ? `Unused — expires in ${h}`
-                                  : "Unused — expires soon";
-                              })()}
+                              {/* Code + 📋 to copy bare code */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                <span
+                                  style={{
+                                    flex: 1,
+                                    fontFamily: "monospace",
+                                    fontSize: 17,
+                                    fontWeight: "bold",
+                                    wordBreak: "break-all",
+                                  }}
+                                >
+                                  {latest.code}
+                                </span>
+                                <button
+                                  className="btn"
+                                  style={{ flexShrink: 0, fontSize: 14, padding: "0 5px", minWidth: 0 }}
+                                  title={giftCopied ? "Copied!" : "Copy code"}
+                                  onClick={() => handleCopyGiftCode(latest.code)}
+                                >
+                                  {giftCopied ? "✓" : "📋"}
+                                </button>
+                              </div>
+                              {/* Redeem link + Copy button */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                <a
+                                  href={redeemUrlFor(latest.code)}
+                                  style={{
+                                    flex: 1,
+                                    fontFamily: "monospace",
+                                    fontSize: 10,
+                                    color: "#444",
+                                    wordBreak: "break-all",
+                                    minWidth: 0,
+                                  }}
+                                >
+                                  {redeemUrlFor(latest.code)}
+                                </a>
+                                <button
+                                  className="btn"
+                                  style={{ flexShrink: 0 }}
+                                  onClick={() => handleCopyGiftLink(latest.code)}
+                                >
+                                  {giftLinkCopied ? "Copied" : "Copy"}
+                                </button>
+                              </div>
+                              {/* Expiry status */}
+                              <div style={{ fontSize: 11, color: "#666" }}>
+                                {(() => {
+                                  if (latest.redeemed) return "Redeemed";
+                                  if (latest.expired) return "Expired";
+                                  const h = fmtHoursUntil(latest.expiresAt);
+                                  return h
+                                    ? `Unused — expires in ${h}`
+                                    : "Unused — expires soon";
+                                })()}
+                              </div>
                             </div>
                           </div>
                         )}
