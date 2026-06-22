@@ -297,6 +297,8 @@ export default function CryptoCheckout({
   // Live estimate for the slider — the server recomputes + freezes the real
   // amount at quote time from the same shared formula.
   const daysPriceCents = computeDayPassPriceCents(days, dayPass);
+  // Cheapest entry point, shown as the collapsed card's "From" price.
+  const minDaysPriceCents = computeDayPassPriceCents(dayPass.minDays, dayPass);
   const selectedPass = passes.find((p) => p.passKind === passKind);
   const selectedPrice = isDaysSelected
     ? formatPrice(daysPriceCents)
@@ -362,31 +364,42 @@ export default function CryptoCheckout({
                     Purchase Days of Access
                   </span>
                   <span className="crypto-option__sub">
-                    Pick {dayPass.minDays}–{dayPass.maxDays} days — the more you
-                    add, the less per day
+                    Any {dayPass.minDays}–{dayPass.maxDays} days · longer = less
+                    per day
                   </span>
                 </span>
                 <span className="crypto-option__price">
-                  {formatPrice(daysPriceCents)}
+                  {isDaysSelected
+                    ? formatPrice(daysPriceCents)
+                    : `from ${formatPrice(minDaysPriceCents)}`}
                 </span>
               </button>
               {isDaysSelected && (
-                <label className="avp-field crypto-days__config">
-                  Pass length: <strong>{days}</strong>{" "}
-                  {days === 1 ? "day" : "days"}
+                <div className="crypto-days__config">
+                  <div className="crypto-days__readout">
+                    <span className="crypto-days__count">{days}</span>
+                    <span className="crypto-days__unit">
+                      {days === 1 ? "day" : "days"} of access
+                    </span>
+                  </div>
                   <input
+                    className="crypto-days__slider"
                     type="range"
                     min={dayPass.minDays}
                     max={dayPass.maxDays}
                     value={days}
                     disabled={locked}
+                    aria-label="Pass length in days"
                     onChange={(e) => setDays(Number(e.target.value))}
                   />
-                  <span style={{ fontSize: 11, color: "#555" }}>
-                    {formatPrice(daysPriceCents)} total — final amount locked at
-                    quote
+                  <div className="crypto-days__ends">
+                    <span>{dayPass.minDays}</span>
+                    <span>{dayPass.maxDays}</span>
+                  </div>
+                  <span className="crypto-days__note">
+                    Final price locks in when you get your quote
                   </span>
-                </label>
+                </div>
               )}
             </div>
             {passes.map((p) => {
