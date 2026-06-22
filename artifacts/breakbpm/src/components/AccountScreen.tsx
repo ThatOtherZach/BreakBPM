@@ -834,7 +834,9 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                             }}
                           >
                             {/* Info: code + title + expiry + link */}
-                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            <div
+                              style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                              className="justify-center items-center">
                               {/* Code + 📋 to copy bare code */}
                               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                                 <span
@@ -896,6 +898,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                   fontSize: 10,
                                   color: "#b89ad8",
                                   wordBreak: "break-all",
+                                  textAlign: "center",
                                 }}
                               >
                                 {redeemUrlFor(latest.code)}
