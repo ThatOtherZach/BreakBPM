@@ -114,7 +114,13 @@ Passes can be purchased on-chain with crypto from your account page or redeemed 
 
 Prefer to pay by card? A **14 Day Pass [can be purchased on our off-platform store](https://www.saymservices.com/store/p/breakbpm-14-day-pass)** for $5.99. After purchase a redemption code will be emailed to you within 24 hours. You can try to get a free day pass from a Lifetime pass holder or **[try your luck here](https://breakbpm.com/pool-stats-app)**.
 
-All pass types are non-refundable. If you need assistance, use the Github first. With crypto you buy however many days of access you want — anywhere from 1 to 365 — and the per-day rate drops the more days you add (a single day starts at $1.99). A Lifetime (No Expiry) pass is a one-time $24.99. Prices are current as of June 2026 (USD).
+All pass types are non-refundable. If you need assistance, use the Github first.
+
+On BreakBPM you buy however many days of access you want (1 to 365) for $1.99 USD per day. The per-day rate drops the more days you add.
+
+A Lifetime (No Expiry) pass is a one-time purchase of $24.99 USD with crypto or $49.95 on the Saym Services Store.
+
+Prices are current as of June 2026 (USD).
 
 ### 🎱 Lucky Break Pass
 
