@@ -847,7 +847,8 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                 marginTop: 4,
                               }}
                             >
-                              <span
+                              <a
+                                href={redeemUrlFor(latest.code)}
                                 style={{
                                   flex: 1,
                                   fontFamily: "monospace",
@@ -858,7 +859,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                 }}
                               >
                                 {redeemUrlFor(latest.code)}
-                              </span>
+                              </a>
                               <button
                                 className="btn"
                                 style={{ flexShrink: 0 }}
