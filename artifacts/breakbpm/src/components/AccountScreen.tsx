@@ -940,7 +940,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                 style={{ fontSize: 11, width: "100%", maxWidth: 148 }}
                                 onClick={() => handleCopyGiftLink(latest.code)}
                               >
-                                {giftLinkCopied ? "Copied" : "Copy Link"}
+                                {giftLinkCopied ? "Copied" : "Share Link"}
                               </button>
                             </div>
                           </div>
