@@ -826,15 +826,17 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                               gap: 10,
                               marginTop: 8,
                               padding: 8,
-                              background: "#f5f5dc",
-                              border: "1px solid #999",
+                              background: "#0a0a1e",
+                              border: "1px dashed #6a3a9a",
+                              fontFamily: "'VT323',monospace",
+                              color: "#d8b4ff",
                             }}
                           >
                             {/* QR + Copy link button stacked */}
                             <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: 4 }}>
                               <a
                                 href={redeemUrlFor(latest.code)}
-                                style={{ display: "block", lineHeight: 0 }}
+                                style={{ display: "block", lineHeight: 0, background: "#fff", padding: 4 }}
                                 title="Scan or tap to redeem"
                               >
                                 <QRCodeCanvas
@@ -866,10 +868,11 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                                 <span
                                   style={{
-                                    fontFamily: "monospace",
-                                    fontSize: 17,
-                                    fontWeight: "bold",
+                                    fontFamily: "'VT323',monospace",
+                                    fontSize: 22,
+                                    color: "#e8c8ff",
                                     wordBreak: "break-all",
+                                    letterSpacing: 1,
                                   }}
                                 >
                                   {latest.code}
@@ -889,24 +892,24 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                   <span style={{ width: 7, height: 7, borderRadius: "50%", background: color, display: "inline-block", flexShrink: 0 }} />
                                 );
                                 if (latest.redeemed) return (
-                                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#888" }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "#888" }}>
                                     {dot("#888")} Redeemed
                                   </div>
                                 );
                                 if (latest.expired) return (
-                                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#c0392b", fontWeight: "bold" }}>
-                                    {dot("#c0392b")} Expired
+                                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "#ff6b6b", fontWeight: "bold" }}>
+                                    {dot("#ff6b6b")} Expired
                                   </div>
                                 );
                                 const h = fmtHoursUntil(latest.expiresAt);
                                 if (h) return (
-                                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#27ae60" }}>
-                                    {dot("#27ae60")} Active • Expires in {h}
+                                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "#4ade80" }}>
+                                    {dot("#4ade80")} Active • Expires in {h}
                                   </div>
                                 );
                                 return (
-                                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#e67e22", fontWeight: "bold" }}>
-                                    {dot("#e67e22")} Expires soon
+                                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "#fb923c", fontWeight: "bold" }}>
+                                    {dot("#fb923c")} Expires soon
                                   </div>
                                 );
                               })()}
@@ -916,7 +919,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                 style={{
                                   fontFamily: "monospace",
                                   fontSize: 10,
-                                  color: "#444",
+                                  color: "#b89ad8",
                                   wordBreak: "break-all",
                                 }}
                               >
