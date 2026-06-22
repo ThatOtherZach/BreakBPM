@@ -893,7 +893,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                 const h = fmtHoursUntil(latest.expiresAt);
                                 if (h) return (
                                   <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#27ae60" }}>
-                                    {dot("#27ae60")} Active · expires in {h}
+                                    {dot("#27ae60")} Active • Expires in {h}
                                   </div>
                                 );
                                 return (
