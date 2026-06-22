@@ -254,6 +254,18 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
   const rateLabel = isPersonal ? "WIN RATE" : "FINISH RATE";
   const rateValue = isPersonal ? stats?.winRate : stats?.finishRate;
 
+  // Player's applied profile theme felt color — worn by BOTH the Ball Patterns
+  // panel and the Shooting stat cards so their felt matches the player's theme.
+  // auto/rainbow resolve to the auto-earned background colour; every other theme
+  // maps straight to its felt; anything unrecognized falls back to green.
+  const feltAccount = meQuery.data?.account;
+  const feltRawTheme = feltAccount?.profileTheme ?? "none";
+  const feltTheme =
+    feltRawTheme === "auto" || feltRawTheme === "rainbow"
+      ? (feltAccount?.profileBackground ?? "none")
+      : feltRawTheme;
+  const felt = THEME_FELT[themeColorOf(feltTheme)];
+
   return (
     <div className="app-window app-window--page">
       <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
@@ -788,7 +800,10 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                       tone="red"
                     />
                     {isAuthenticated && (
-                      <div className="stats-card-grid">
+                      <div
+                        className="stats-card-grid"
+                        style={{ "--stats-felt": felt.felt, "--stats-felt-shadow": felt.feltShadow } as React.CSSProperties}
+                      >
                         <StatCard emoji="❌" value={fmtNum(stats.avgMissesPerGame)} label="MISSES" sub="per game" />
                         <StatCard emoji={<span className="cue-ball-icon" style={{ fontSize: 21, verticalAlign: "baseline" }} />} value={fmtCeil(stats.avgFoulsPerGame)} label="FOULS" sub="per game" />
                         <StatCard emoji="🛡️" value={fmtCeil(stats.avgSafetiesPerGame)} label="SAFETIES" sub="per game" />
@@ -801,18 +816,11 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
                 {/* ── Patterns — personal scope only ── */}
                 {isPersonal && (() => {
                   // Wear the player's applied profile theme as the panel
-                  // background. We use the theme's felt COLOR only (never the
-                  // splash artwork): auto/rainbow resolve to the auto-earned
-                  // background colour, every other theme maps straight to its
-                  // felt. The panel keeps `panel--wood` only for its light-on-dark
-                  // text rules, which stay legible on the dark felt.
-                  const account = meQuery.data?.account;
-                  const rawTheme = account?.profileTheme ?? "none";
-                  const feltTheme =
-                    rawTheme === "auto" || rawTheme === "rainbow"
-                      ? (account?.profileBackground ?? "none")
-                      : rawTheme;
-                  const felt = THEME_FELT[themeColorOf(feltTheme)];
+                  // background, using the theme's felt COLOR only (never the
+                  // splash artwork). `felt` is computed once at the component
+                  // level (shared with the Shooting stat cards). The panel keeps
+                  // `panel--wood` only for its light-on-dark text rules, which
+                  // stay legible on the dark felt.
                   const themedPanelStyle: React.CSSProperties = {
                     backgroundColor: felt.felt,
                     backgroundImage:
