@@ -88,6 +88,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   const [historyPage, setHistoryPage] = useState(1);
   const [giftMsg, setGiftMsg] = useState("");
   const [giftCopied, setGiftCopied] = useState(false);
+  const [giftLinkCopied, setGiftLinkCopied] = useState(false);
   const [code, setCode] = useState("");
   const [redeemMsg, setRedeemMsg] = useState("");
   const [revealState, setRevealState] = useState<RevealState>("idle");
@@ -334,14 +335,22 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
     }
   }
 
-  async function handleCopyGift(code: string) {
+  async function handleCopyGiftCode(code: string) {
     try {
       await navigator.clipboard.writeText(code);
       setGiftCopied(true);
-      // Drop the "Copied" flash after 2s; harmless if the user navigates away.
       setTimeout(() => setGiftCopied(false), 2000);
     } catch {
-      // Some sandboxed iframes block clipboard writes — surface that gently.
+      setGiftMsg("Couldn't copy automatically — long-press to copy manually.");
+    }
+  }
+
+  async function handleCopyGiftLink(code: string) {
+    try {
+      await navigator.clipboard.writeText(redeemUrlFor(code));
+      setGiftLinkCopied(true);
+      setTimeout(() => setGiftLinkCopied(false), 2000);
+    } catch {
       setGiftMsg("Couldn't copy automatically — long-press to copy manually.");
     }
   }
@@ -804,43 +813,70 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                         </button>
                         {latest && !latest.expired && (
                           <div style={{ marginTop: 8 }}>
+                            {/* Code box — 📋 emoji copies just the bare code */}
                             <div
                               style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
                                 fontFamily: "monospace",
                                 fontSize: 16,
                                 padding: "6px 8px",
                                 background: "#f5f5dc",
                                 border: "1px solid #999",
-                                wordBreak: "break-all",
                               }}
                             >
-                              {latest.code}
-                            </div>
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                marginTop: 4,
-                                gap: 8,
-                              }}
-                            >
-                              <span style={{ fontSize: 11, color: "#444" }}>
-                                {(() => {
-                                  if (latest.redeemed) return "Redeemed";
-                                  if (latest.expired) return "Expired";
-                                  const h = fmtHoursUntil(latest.expiresAt);
-                                  return h
-                                    ? `Unused — expires in ${h}`
-                                    : "Unused — expires soon";
-                                })()}
+                              <span style={{ flex: 1, wordBreak: "break-all" }}>
+                                {latest.code}
                               </span>
                               <button
                                 className="btn"
-                                onClick={() => handleCopyGift(latest.code)}
+                                style={{ flexShrink: 0, fontSize: 15, padding: "0 5px", minWidth: 0 }}
+                                title={giftCopied ? "Copied!" : "Copy code"}
+                                onClick={() => handleCopyGiftCode(latest.code)}
                               >
-                                {giftCopied ? "Copied" : "Copy"}
+                                {giftCopied ? "✓" : "📋"}
                               </button>
+                            </div>
+                            {/* Redeem link row — Copy button copies the full URL */}
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                                marginTop: 4,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  flex: 1,
+                                  fontFamily: "monospace",
+                                  fontSize: 11,
+                                  color: "#444",
+                                  wordBreak: "break-all",
+                                  minWidth: 0,
+                                }}
+                              >
+                                {redeemUrlFor(latest.code)}
+                              </span>
+                              <button
+                                className="btn"
+                                style={{ flexShrink: 0 }}
+                                onClick={() => handleCopyGiftLink(latest.code)}
+                              >
+                                {giftLinkCopied ? "Copied" : "Copy"}
+                              </button>
+                            </div>
+                            {/* Expiry status */}
+                            <div style={{ marginTop: 4, fontSize: 11, color: "#444" }}>
+                              {(() => {
+                                if (latest.redeemed) return "Redeemed";
+                                if (latest.expired) return "Expired";
+                                const h = fmtHoursUntil(latest.expiresAt);
+                                return h
+                                  ? `Unused — expires in ${h}`
+                                  : "Unused — expires soon";
+                              })()}
                             </div>
                           </div>
                         )}
