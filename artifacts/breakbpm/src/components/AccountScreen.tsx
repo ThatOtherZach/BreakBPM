@@ -822,18 +822,27 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                               border: "1px solid #999",
                             }}
                           >
-                            {/* QR — tappable, opens the redeem URL */}
-                            <a
-                              href={redeemUrlFor(latest.code)}
-                              style={{ flexShrink: 0, display: "block", lineHeight: 0 }}
-                              title="Scan or tap to redeem"
-                            >
-                              <QRCodeCanvas
-                                value={redeemUrlFor(latest.code)}
-                                size={108}
-                                level="M"
-                              />
-                            </a>
+                            {/* QR + Copy link button stacked */}
+                            <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                              <a
+                                href={redeemUrlFor(latest.code)}
+                                style={{ display: "block", lineHeight: 0 }}
+                                title="Scan or tap to redeem"
+                              >
+                                <QRCodeCanvas
+                                  value={redeemUrlFor(latest.code)}
+                                  size={108}
+                                  level="M"
+                                />
+                              </a>
+                              <button
+                                className="btn w-full"
+                                style={{ fontSize: 11 }}
+                                onClick={() => handleCopyGiftLink(latest.code)}
+                              >
+                                {giftLinkCopied ? "Copied" : "Copy"}
+                              </button>
+                            </div>
                             {/* Info column */}
                             <div
                               style={{
@@ -866,29 +875,18 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                   {latest.code}
                                 </span>
                               </div>
-                              {/* Redeem link + Copy button */}
-                              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                <a
-                                  href={redeemUrlFor(latest.code)}
-                                  style={{
-                                    flex: 1,
-                                    fontFamily: "monospace",
-                                    fontSize: 10,
-                                    color: "#444",
-                                    wordBreak: "break-all",
-                                    minWidth: 0,
-                                  }}
-                                >
-                                  {redeemUrlFor(latest.code)}
-                                </a>
-                                <button
-                                  className="btn"
-                                  style={{ flexShrink: 0 }}
-                                  onClick={() => handleCopyGiftLink(latest.code)}
-                                >
-                                  {giftLinkCopied ? "Copied" : "Copy"}
-                                </button>
-                              </div>
+                              {/* Redeem link */}
+                              <a
+                                href={redeemUrlFor(latest.code)}
+                                style={{
+                                  fontFamily: "monospace",
+                                  fontSize: 10,
+                                  color: "#444",
+                                  wordBreak: "break-all",
+                                }}
+                              >
+                                {redeemUrlFor(latest.code)}
+                              </a>
                               {/* Expiry status */}
                               {(() => {
                                 const dot = (color: string) => (
