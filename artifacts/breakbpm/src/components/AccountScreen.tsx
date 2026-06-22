@@ -87,6 +87,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   const [cancelMsg, setCancelMsg] = useState("");
   const [historyPage, setHistoryPage] = useState(1);
   const [giftMsg, setGiftMsg] = useState("");
+  const [nameCopied, setNameCopied] = useState(false);
   const [giftCopied, setGiftCopied] = useState(false);
   const [giftLinkCopied, setGiftLinkCopied] = useState(false);
   const [code, setCode] = useState("");
@@ -335,6 +336,13 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
     }
   }
 
+  async function handleCopyName() {
+    if (!account?.screenName) return;
+    await navigator.clipboard.writeText(account.screenName);
+    setNameCopied(true);
+    setTimeout(() => setNameCopied(false), 2000);
+  }
+
   async function handleCopyGiftCode(code: string) {
     try {
       await navigator.clipboard.writeText(code);
@@ -562,6 +570,13 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     <span style={{ fontSize: 12, color: "#b89ad8" }}>
                       🗓️ Joined {fmtDate(account.createdAt)}
                     </span>
+                    <button
+                      className="btn"
+                      style={{ fontSize: 11, padding: "2px 8px", alignSelf: "flex-start" }}
+                      onClick={handleCopyName}
+                    >
+                      {nameCopied ? "✓ Copied" : "📋 Copy Username"}
+                    </button>
                   </div>
                   <div style={{ flexShrink: 0, background: "#fff", padding: 4, lineHeight: 0 }}>
                     <QRCodeCanvas
