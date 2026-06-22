@@ -823,7 +823,8 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                           <div
                             style={{
                               display: "flex",
-                              gap: 10,
+                              flexDirection: "column",
+                              gap: 8,
                               marginTop: 8,
                               padding: 8,
                               background: "#0a0a1e",
@@ -832,38 +833,8 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                               color: "#d8b4ff",
                             }}
                           >
-                            {/* QR + Copy link button stacked */}
-                            <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-                              <a
-                                href={redeemUrlFor(latest.code)}
-                                style={{ display: "block", lineHeight: 0, background: "#fff", padding: 4 }}
-                                title="Scan or tap to redeem"
-                              >
-                                <QRCodeCanvas
-                                  value={redeemUrlFor(latest.code)}
-                                  size={108}
-                                  level="M"
-                                />
-                              </a>
-                              <button
-                                className="btn w-full"
-                                style={{ fontSize: 11 }}
-                                onClick={() => handleCopyGiftLink(latest.code)}
-                              >
-                                {giftLinkCopied ? "Copied" : "Copy"}
-                              </button>
-                            </div>
-                            {/* Info column */}
-                            <div
-                              style={{
-                                flex: 1,
-                                minWidth: 0,
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 6,
-                                justifyContent: "center",
-                              }}
-                            >
+                            {/* Info: code + title + expiry + link */}
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                               {/* Code + 📋 to copy bare code */}
                               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                                 <span
@@ -929,6 +900,27 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                               >
                                 {redeemUrlFor(latest.code)}
                               </a>
+                            </div>
+                            {/* QR + Copy link button — centred below the info */}
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                              <a
+                                href={redeemUrlFor(latest.code)}
+                                style={{ display: "block", lineHeight: 0, background: "#fff", padding: 4 }}
+                                title="Scan or tap to redeem"
+                              >
+                                <QRCodeCanvas
+                                  value={redeemUrlFor(latest.code)}
+                                  size={140}
+                                  level="M"
+                                />
+                              </a>
+                              <button
+                                className="btn"
+                                style={{ fontSize: 11, width: "100%", maxWidth: 148 }}
+                                onClick={() => handleCopyGiftLink(latest.code)}
+                              >
+                                {giftLinkCopied ? "Copied" : "Copy Link"}
+                              </button>
                             </div>
                           </div>
                         )}
