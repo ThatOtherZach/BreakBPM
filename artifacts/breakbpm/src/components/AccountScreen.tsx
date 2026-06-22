@@ -541,7 +541,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                           e.preventDefault();
                           setLocation(`/watch/${encodeURIComponent(account.screenName)}`);
                         }}
-                        style={{ color: "#e8c8ff" }}
+                        style={{ color: "#e8c8ff", textTransform: "uppercase" }}
                       >
                         breakbpm.com/watch/{account.screenName}
                       </a>
