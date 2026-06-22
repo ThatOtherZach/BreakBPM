@@ -54,6 +54,7 @@ export * from './createFindPlayerPostResult';
 export * from './cryptoCatalog';
 export * from './cryptoCatalogAssetsItem';
 export * from './cryptoCatalogNetwork';
+export * from './cryptoDayPassPricing';
 export * from './cryptoOrderQuote';
 export * from './cryptoOrderQuoteAsset';
 export * from './cryptoOrderQuoteNetwork';

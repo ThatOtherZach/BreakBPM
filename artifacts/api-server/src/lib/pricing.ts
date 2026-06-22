@@ -60,20 +60,77 @@ export const SUBSCRIPTION_PRICES_CENTS: Record<SubscriptionInterval, number> = {
 };
 
 /**
- * One-time passes purchasable with crypto (USDC / native ETH on Base). Crypto
- * sells time-based passes only — there are no crypto subscriptions — so unlike
- * the card catalog (where "Monthly"/"Yearly" are recurring), here Month and
- * Year are one-time, fixed-duration passes that do not auto-renew. Prices reuse
- * the single PASS_PRICES_CENTS source.
+ * Flexible crypto "add days" pass — marginal-bracket pricing. The buyer picks
+ * any 1–365 days on a slider and pays a total built from three brackets:
+ *
+ *   - the first day is a flat fee (impulse-unlock anchor, = the Day pass price);
+ *   - each subsequent day up to `midThreshold` (30) adds `midRateCents`;
+ *   - each day beyond `midThreshold` adds the cheaper `longRateCents`.
+ *
+ * So the per-day rate falls the more you buy. The params are shipped to the
+ * client via the /passes/plans crypto catalog so it can render a live price
+ * estimate from the EXACT same math; the server recomputes + freezes the
+ * authoritative amount at quote time (the client never sets the price).
+ *
+ * Sample totals: 1d→$1.99, 7d→$2.59, 30d→$4.89, 31d→$4.92, 365d→$14.94.
+ */
+export interface DayPassPricingParams {
+  minDays: number;
+  maxDays: number;
+  firstDayCents: number;
+  midRateCents: number;
+  midThreshold: number;
+  longRateCents: number;
+}
+
+export const DAY_PASS_PRICING: DayPassPricingParams = {
+  minDays: 1,
+  maxDays: 365,
+  firstDayCents: PASS_PRICES_CENTS.day,
+  midRateCents: 10,
+  midThreshold: 30,
+  longRateCents: 3,
+};
+
+/** Pure marginal-bracket price for an N-day crypto pass (see DAY_PASS_PRICING).
+ * Days are clamped to [minDays, maxDays] and floored to an integer so the
+ * client estimate and the server-frozen quote always agree to the cent. */
+export function computeDayPassPriceCents(
+  days: number,
+  params: DayPassPricingParams = DAY_PASS_PRICING,
+): number {
+  const d = Math.min(
+    params.maxDays,
+    Math.max(params.minDays, Math.floor(days)),
+  );
+  let total = params.firstDayCents;
+  if (d >= 2) {
+    total += (Math.min(d, params.midThreshold) - 1) * params.midRateCents;
+  }
+  if (d > params.midThreshold) {
+    total += (d - params.midThreshold) * params.longRateCents;
+  }
+  return total;
+}
+
+/**
+ * Fixed-price items purchasable with crypto (USDC / native ETH on Base). Crypto
+ * sells time-based passes only — there are no crypto subscriptions. The flexible
+ * day pass (1–365 days, marginal-bracket priced — see DAY_PASS_PRICING) is NOT
+ * listed here; it is quoted dynamically from the slider. This catalog carries
+ * only the two FIXED-price crypto items: Lucky Break and Lifetime. (Legacy
+ * `month`/`year` crypto orders still verify — their price/duration is resolved
+ * from PASS_PRICES_CENTS/PASS_DURATIONS_SECONDS — but are no longer offered.)
  */
 /**
- * What a crypto checkout can buy. Either a fixed one-time pass kind, or the
- * "lucky_break" sentinel — paid at the Lucky Break price, it runs the seeded
- * draw on confirmation and grants the won tier (Monthly floor, fixed-odds
- * Lifetime) instead of a predetermined pass.
+ * What a crypto checkout can buy as a FIXED-price item. Either a fixed one-time
+ * pass kind, or the "lucky_break" sentinel — paid at the Lucky Break price, it
+ * runs the seeded draw on confirmation and grants the won tier (Monthly floor,
+ * fixed-odds Lifetime) instead of a predetermined pass. The flexible "days"
+ * pass is quoted dynamically and is intentionally absent from this type.
  */
 export type CryptoItemKind =
-  | Extract<PassKind, "day" | "month" | "year" | "lifetime">
+  | Extract<PassKind, "lifetime">
   | typeof LUCKY_BREAK_CODE_KIND;
 
 export interface CryptoPassPlan {
@@ -85,29 +142,11 @@ export interface CryptoPassPlan {
 
 export const CRYPTO_PASS_PLANS: CryptoPassPlan[] = [
   {
-    passKind: "day",
-    name: "Day Pass",
-    priceCents: PASS_PRICES_CENTS.day,
-    description: "Unlocks unlimited play & full history for 24 hours.",
-  },
-  {
-    passKind: "month",
-    name: "Month Pass",
-    priceCents: PASS_PRICES_CENTS.month,
-    description: "Full access for 30 days. One-time — does not auto-renew.",
-  },
-  {
     passKind: LUCKY_BREAK_CODE_KIND,
     name: "Lucky Break",
     priceCents: LUCKY_BREAK_PRICE_CENTS,
     description:
       "Roll the rack — a guaranteed Monthly pass with a fixed chance at Lifetime.",
-  },
-  {
-    passKind: "year",
-    name: "Year Pass",
-    priceCents: PASS_PRICES_CENTS.year,
-    description: "Full access for 365 days. One-time — does not auto-renew.",
   },
   {
     passKind: "lifetime",

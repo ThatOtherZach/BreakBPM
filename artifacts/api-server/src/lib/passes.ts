@@ -22,6 +22,12 @@ export interface IssuePassInput {
    * of the won tier.
    */
   priceCents?: number;
+  /**
+   * Override the issued pass duration (seconds). Defaults to the catalog
+   * duration for `kind`. Used by the flexible crypto "add days" pass, which
+   * issues a `day`-kind pass with an arbitrary 1–365 day duration.
+   */
+  durationSeconds?: number;
 }
 
 /**
@@ -34,7 +40,8 @@ export async function issuePassTx(
   input: IssuePassInput,
 ) {
   const startedAt = new Date();
-  const durationSeconds = PASS_DURATIONS_SECONDS[input.kind];
+  const durationSeconds =
+    input.durationSeconds ?? PASS_DURATIONS_SECONDS[input.kind];
   const priceCents =
     input.priceCents ??
     (input.source === "purchase" ? PASS_PRICES_CENTS[input.kind] : 0);
@@ -65,6 +72,18 @@ export interface GrantPurchasedPassInput {
   kind: PassKind;
   /** Stripe payment-intent id — the idempotency key for this purchase. */
   sourceRef: string;
+  /**
+   * Override the issued pass duration (seconds). Defaults to the catalog
+   * duration for `kind`. Set by the flexible crypto "add days" pass (a
+   * `day`-kind pass with an arbitrary 1–365 day duration).
+   */
+  durationSeconds?: number;
+  /**
+   * Override the recorded price (cents). Defaults to the catalog price for
+   * `kind`. Set by the flexible crypto day pass (the slider total actually
+   * paid, which differs from the fixed Day-pass catalog price).
+   */
+  priceCents?: number;
 }
 
 /**
@@ -107,10 +126,11 @@ export async function grantPurchasedPassTx(
       userId: input.userId,
       kind: input.kind,
       startedAt: new Date(),
-      durationSeconds: PASS_DURATIONS_SECONDS[input.kind],
+      durationSeconds:
+        input.durationSeconds ?? PASS_DURATIONS_SECONDS[input.kind],
       source: "purchase",
       sourceRef: input.sourceRef,
-      priceCents: PASS_PRICES_CENTS[input.kind],
+      priceCents: input.priceCents ?? PASS_PRICES_CENTS[input.kind],
     })
     .onConflictDoNothing({
       target: passesTable.sourceRef,

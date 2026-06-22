@@ -1663,13 +1663,13 @@ components:
       properties:
         # "lucky_break" runs the seeded draw on payment instead of granting a
         # fixed pass (guaranteed Monthly floor, fixed-odds Lifetime).
-        passKind: { type: string, enum: [day, month, year, lifetime, lucky_break] }
+        passKind: { type: string, enum: [day, days, month, year, lifetime, lucky_break] }
         name: { type: string }
         priceCents: { type: integer }
 
     CryptoCatalog:
       type: object
-      required: [enabled, network, chainId, assets, passes]
+      required: [enabled, network, chainId, assets, passes, dayPass]
       properties:
         # True only when crypto payments are flagged on AND a receiving wallet
         # is configured. The client hides the crypto panel when false.
@@ -1682,13 +1682,36 @@ components:
         passes:
           type: array
           items: { $ref: "#/components/schemas/CryptoPassPlanInfo" }
+        # Marginal-bracket pricing params for the flexible "add days" crypto
+        # pass. The client mirrors the exact price math from these for a live
+        # estimate; the server recomputes + freezes the authoritative amount.
+        dayPass: { $ref: "#/components/schemas/CryptoDayPassPricing" }
+
+    CryptoDayPassPricing:
+      type: object
+      required: [minDays, maxDays, firstDayCents, midRateCents, midThreshold, longRateCents]
+      properties:
+        minDays: { type: integer }
+        maxDays: { type: integer }
+        # Flat fee for the first day (cents).
+        firstDayCents: { type: integer }
+        # Per-day cents for days 2..midThreshold.
+        midRateCents: { type: integer }
+        # The day at which the mid bracket ends (inclusive).
+        midThreshold: { type: integer }
+        # Per-day cents for days beyond midThreshold.
+        longRateCents: { type: integer }
 
     CryptoQuoteInput:
       type: object
       required: [passKind, asset]
       properties:
-        passKind: { type: string, enum: [day, month, year, lifetime, lucky_break] }
+        passKind: { type: string, enum: [day, days, month, year, lifetime, lucky_break] }
         asset: { type: string, enum: [usdc, eth] }
+        # Required only when passKind = "days": the number of days to buy for
+        # the flexible pass (1–365). Ignored for other pass kinds. The server
+        # recomputes the price from this — the client never sets the amount.
+        days: { type: integer, minimum: 1, maximum: 365 }
         # Optional connect-wallet shortcut. Supply all three to bind the order
         # to this payer (the settling tx must originate here). OMIT all three
         # for a "manual" order — payable from ANY wallet (mobile or desktop) by
@@ -1713,7 +1736,7 @@ components:
         # wallet (the client renders address + amount + QR). False for the
         # connect-wallet shortcut (a specific payer is bound).
         manual: { type: boolean }
-        passKind: { type: string, enum: [day, month, year, lifetime, lucky_break] }
+        passKind: { type: string, enum: [day, days, month, year, lifetime, lucky_break] }
         asset: { type: string, enum: [usdc, eth] }
         network: { type: string, enum: [base, base-sepolia] }
         chainId: { type: integer }
@@ -1727,6 +1750,8 @@ components:
         # Human-readable amount + symbol, e.g. "0.00213 ETH" or "1.99 USDC".
         displayAmount: { type: string }
         priceCents: { type: integer }
+        # The day count for a flexible "days" pass order; null otherwise.
+        days: { type: ["integer", "null"] }
         expiresAt: { type: string, format: date-time }
 
     CryptoQuoteResult:

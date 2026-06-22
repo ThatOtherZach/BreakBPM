@@ -53,11 +53,16 @@ export const cryptoOrdersTable = pgTable(
     // or "ad" (a user-bought HUD text ad). Discriminates the verify grant path.
     purpose: text("purpose").notNull().default("pass"),
     // What a "pass" order grants on payment. Either a fixed one-time pass kind
-    // ("day" | "month" | "year" | "lifetime") OR the "lucky_break" sentinel,
-    // which runs the seeded Lucky Break draw on confirmation and grants the
-    // won tier (Monthly floor, fixed-odds Lifetime) instead of a fixed pass.
-    // NULL for "ad" orders (they grant an ad, not a pass).
+    // ("day" | "month" | "year" | "lifetime"), the "days" sentinel (a flexible
+    // 1–365 day pass priced by marginal brackets — issues a `day`-kind pass
+    // with duration = passDays × 86400), OR the "lucky_break" sentinel, which
+    // runs the seeded Lucky Break draw on confirmation and grants the won tier
+    // (Monthly floor, fixed-odds Lifetime) instead of a fixed pass. NULL for
+    // "ad" orders (they grant an ad, not a pass).
     passKind: text("pass_kind"),
+    // For a flexible "days" pass order (passKind = "days"): the number of days
+    // purchased (1–365). NULL for fixed passes, Lucky Break, and ad orders.
+    passDays: integer("pass_days"),
     asset: text("asset").notNull(), // "usdc" | "eth"
     network: text("network").notNull(), // "base" | "base-sepolia"
     chainId: integer("chain_id").notNull(),

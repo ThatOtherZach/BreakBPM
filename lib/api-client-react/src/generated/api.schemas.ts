@@ -346,6 +346,7 @@ export type CryptoPassPlanInfoPassKind = typeof CryptoPassPlanInfoPassKind[keyof
 
 export const CryptoPassPlanInfoPassKind = {
   day: 'day',
+  days: 'days',
   month: 'month',
   year: 'year',
   lifetime: 'lifetime',
@@ -358,12 +359,22 @@ export interface CryptoPassPlanInfo {
   priceCents: number;
 }
 
+export interface CryptoDayPassPricing {
+  minDays: number;
+  maxDays: number;
+  firstDayCents: number;
+  midRateCents: number;
+  midThreshold: number;
+  longRateCents: number;
+}
+
 export interface CryptoCatalog {
   enabled: boolean;
   network: CryptoCatalogNetwork;
   chainId: number;
   assets: CryptoCatalogAssetsItem[];
   passes: CryptoPassPlanInfo[];
+  dayPass: CryptoDayPassPricing;
 }
 
 export interface PlanCatalog {
@@ -378,6 +389,7 @@ export type CryptoQuoteInputPassKind = typeof CryptoQuoteInputPassKind[keyof typ
 
 export const CryptoQuoteInputPassKind = {
   day: 'day',
+  days: 'days',
   month: 'month',
   year: 'year',
   lifetime: 'lifetime',
@@ -396,6 +408,11 @@ export interface CryptoQuoteInput {
   passKind: CryptoQuoteInputPassKind;
   asset: CryptoQuoteInputAsset;
   /**
+     * @minimum 1
+     * @maximum 365
+     */
+  days?: number;
+  /**
      * @minLength 42
      * @maxLength 42
      */
@@ -409,6 +426,7 @@ export type CryptoOrderQuotePassKind = typeof CryptoOrderQuotePassKind[keyof typ
 
 export const CryptoOrderQuotePassKind = {
   day: 'day',
+  days: 'days',
   month: 'month',
   year: 'year',
   lifetime: 'lifetime',
@@ -445,6 +463,8 @@ export interface CryptoOrderQuote {
   decimals: number;
   displayAmount: string;
   priceCents: number;
+  /** @nullable */
+  days?: number | null;
   expiresAt: string;
 }
 

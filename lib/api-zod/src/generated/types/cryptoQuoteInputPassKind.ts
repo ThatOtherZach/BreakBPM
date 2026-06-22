@@ -11,6 +11,7 @@ export type CryptoQuoteInputPassKind = typeof CryptoQuoteInputPassKind[keyof typ
 
 export const CryptoQuoteInputPassKind = {
   day: 'day',
+  days: 'days',
   month: 'month',
   year: 'year',
   lifetime: 'lifetime',

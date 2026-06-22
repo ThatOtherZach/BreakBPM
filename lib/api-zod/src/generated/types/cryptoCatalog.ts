@@ -7,6 +7,7 @@
  */
 import type { CryptoCatalogAssetsItem } from './cryptoCatalogAssetsItem';
 import type { CryptoCatalogNetwork } from './cryptoCatalogNetwork';
+import type { CryptoDayPassPricing } from './cryptoDayPassPricing';
 import type { CryptoPassPlanInfo } from './cryptoPassPlanInfo';
 
 export interface CryptoCatalog {
@@ -15,4 +16,5 @@ export interface CryptoCatalog {
   chainId: number;
   assets: CryptoCatalogAssetsItem[];
   passes: CryptoPassPlanInfo[];
+  dayPass: CryptoDayPassPricing;
 }

@@ -10,6 +10,7 @@ import {
   type LuckyBreakInfo,
   type LuckyBreakResult,
 } from "@workspace/api-client-react";
+import { computeDayPassPriceCents } from "../lib/dayPassPricing";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const LS_KEY = "breakbpm.crypto.pending";
@@ -97,9 +98,13 @@ export default function CryptoCheckout({
   const verify = useVerifyCryptoPayment();
 
   const passes = catalog.passes;
-  const [passKind, setPassKind] = useState<CryptoOrderQuote["passKind"]>(
-    passes[0]?.passKind ?? "day",
-  );
+  const dayPass = catalog.dayPass;
+  // Default to the flexible "add days" pass — the primary crypto purchase. The
+  // discrete Day/Month/Year cards are gone; Lucky Break + Lifetime remain as
+  // fixed-price cards alongside the slider.
+  const [passKind, setPassKind] =
+    useState<CryptoOrderQuote["passKind"]>("days");
+  const [days, setDays] = useState(7);
   const [asset, setAsset] = useState<CryptoOrderQuote["asset"]>("usdc");
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState("");
@@ -199,7 +204,12 @@ export default function CryptoCheckout({
     setShowHashInput(false);
     setPhase("quoting");
     try {
-      const q = await createQuote.mutateAsync({ data: { passKind, asset } });
+      const q = await createQuote.mutateAsync({
+        data:
+          passKind === "days"
+            ? { passKind: "days", days, asset }
+            : { passKind, asset },
+      });
       if (!q.success || !q.order) {
         setErr(q.message);
         setPhase("error");
@@ -275,8 +285,16 @@ export default function CryptoCheckout({
     !!manualOrder &&
     (phase === "awaiting_payment" || phase === "confirming");
 
+  const isDaysSelected = passKind === "days";
+  // Live estimate for the slider — the server recomputes + freezes the real
+  // amount at quote time from the same shared formula.
+  const daysPriceCents = computeDayPassPriceCents(days, dayPass);
   const selectedPass = passes.find((p) => p.passKind === passKind);
-  const selectedPrice = selectedPass ? formatPrice(selectedPass.priceCents) : "";
+  const selectedPrice = isDaysSelected
+    ? formatPrice(daysPriceCents)
+    : selectedPass
+      ? formatPrice(selectedPass.priceCents)
+      : "";
   const isLuckyBreakSelected = passKind === "lucky_break";
   const oddsPct = luckyBreak
     ? Math.round(luckyBreak.lifetimeProbability * 100)
@@ -312,10 +330,31 @@ export default function CryptoCheckout({
           <div style={{ fontFamily: "VT323", fontSize: 18, color: "#006400" }}>You already have an active pass :)</div>
         )}
 
-        {/* Pass picker — selectable cards. Locked once an order is quoted. */}
+        {/* Pass picker — selectable cards. Locked once an order is quoted. The
+           flexible "Add days" pass leads (slider below); Lucky Break + Lifetime
+           follow as fixed-price cards. */}
         <div className="crypto-field">
           <span className="crypto-field-label">Choose a pass</span>
           <div className="crypto-options">
+            <button
+              type="button"
+              className={`crypto-option${isDaysSelected ? " crypto-option--active" : ""}`}
+              disabled={locked}
+              aria-pressed={isDaysSelected}
+              onClick={() => setPassKind("days")}
+            >
+              <span className="crypto-option__radio" aria-hidden="true" />
+              <span className="crypto-option__text">
+                <span className="crypto-option__name">Add Days</span>
+                <span className="crypto-option__sub">
+                  Pick {dayPass.minDays}–{dayPass.maxDays} days — the more you add,
+                  the less per day
+                </span>
+              </span>
+              <span className="crypto-option__price">
+                {formatPrice(daysPriceCents)}
+              </span>
+            </button>
             {passes.map((p) => {
               const active = passKind === p.passKind;
               return (
@@ -341,6 +380,23 @@ export default function CryptoCheckout({
               );
             })}
           </div>
+          {isDaysSelected && (
+            <label className="avp-field" style={{ marginTop: 4 }}>
+              Pass length: <strong>{days}</strong>{" "}
+              {days === 1 ? "day" : "days"}
+              <input
+                type="range"
+                min={dayPass.minDays}
+                max={dayPass.maxDays}
+                value={days}
+                disabled={locked}
+                onChange={(e) => setDays(Number(e.target.value))}
+              />
+              <span style={{ fontSize: 11, color: "#555" }}>
+                {formatPrice(daysPriceCents)} total — final amount locked at quote
+              </span>
+            </label>
+          )}
         </div>
 
         {/* Asset toggle — split control */}
@@ -367,9 +423,15 @@ export default function CryptoCheckout({
           /* ---- Manual order: pay-to-address details + QR ---- */
           (<div className="crypto-pay">
             <p style={{ fontSize: 12, color: "#333", margin: 0 }}>
-              Send <strong>exactly</strong> this amount to the address below. The
-              exact amount is how we match your payment — sending a different
-              amount won't confirm.
+              Send <strong>exactly</strong> this amount
+              {manualOrder.passKind === "days" && manualOrder.days ? (
+                <>
+                  {" "}
+                  for a <strong>{manualOrder.days}-day</strong> pass
+                </>
+              ) : null}{" "}
+              to the address below. The exact amount is how we match your payment
+              — sending a different amount won't confirm.
             </p>
             <div className="crypto-pay__amount">
               <span className="crypto-pay__label">Send exactly</span>
@@ -528,7 +590,9 @@ export default function CryptoCheckout({
                 ? "Getting a quote…"
                 : isLuckyBreakSelected
                   ? `Roll the Rack — ${selectedPrice} with ${asset.toUpperCase()}`
-                  : `Pay ${selectedPrice} with ${asset.toUpperCase()}`}
+                  : isDaysSelected
+                    ? `Pay ${selectedPrice} for ${days} ${days === 1 ? "day" : "days"} with ${asset.toUpperCase()}`
+                    : `Pay ${selectedPrice} with ${asset.toUpperCase()}`}
             </button>
           </>)
         ) : null}

@@ -351,10 +351,18 @@ export const ListPlansResponse = zod.object({
   "chainId": zod.number(),
   "assets": zod.array(zod.enum(['usdc', 'eth'])),
   "passes": zod.array(zod.object({
-  "passKind": zod.enum(['day', 'month', 'year', 'lifetime', 'lucky_break']),
+  "passKind": zod.enum(['day', 'days', 'month', 'year', 'lifetime', 'lucky_break']),
   "name": zod.string(),
   "priceCents": zod.number()
-}))
+})),
+  "dayPass": zod.object({
+  "minDays": zod.number(),
+  "maxDays": zod.number(),
+  "firstDayCents": zod.number(),
+  "midRateCents": zod.number(),
+  "midThreshold": zod.number(),
+  "longRateCents": zod.number()
+})
 })
 })
 
@@ -417,14 +425,17 @@ export const CancelSubscriptionResponse = zod.object({
 
  * @summary Quote a one-time pass for on-chain payment (USDC or ETH on Base)
  */
+export const createCryptoQuoteBodyDaysMax = 365;
+
 export const createCryptoQuoteBodyPayerAddressMin = 42;
 export const createCryptoQuoteBodyPayerAddressMax = 42;
 
 
 
 export const CreateCryptoQuoteBody = zod.object({
-  "passKind": zod.enum(['day', 'month', 'year', 'lifetime', 'lucky_break']),
+  "passKind": zod.enum(['day', 'days', 'month', 'year', 'lifetime', 'lucky_break']),
   "asset": zod.enum(['usdc', 'eth']),
+  "days": zod.number().min(1).max(createCryptoQuoteBodyDaysMax).optional(),
   "payerAddress": zod.string().min(createCryptoQuoteBodyPayerAddressMin).max(createCryptoQuoteBodyPayerAddressMax).optional(),
   "signature": zod.string().optional(),
   "issuedAt": zod.number().optional()
@@ -436,7 +447,7 @@ export const CreateCryptoQuoteResponse = zod.object({
   "order": zod.object({
   "id": zod.string(),
   "manual": zod.boolean(),
-  "passKind": zod.enum(['day', 'month', 'year', 'lifetime', 'lucky_break']),
+  "passKind": zod.enum(['day', 'days', 'month', 'year', 'lifetime', 'lucky_break']),
   "asset": zod.enum(['usdc', 'eth']),
   "network": zod.enum(['base', 'base-sepolia']),
   "chainId": zod.number(),
@@ -446,6 +457,7 @@ export const CreateCryptoQuoteResponse = zod.object({
   "decimals": zod.number(),
   "displayAmount": zod.string(),
   "priceCents": zod.number(),
+  "days": zod.number().nullish(),
   "expiresAt": zod.coerce.date()
 }).optional()
 })

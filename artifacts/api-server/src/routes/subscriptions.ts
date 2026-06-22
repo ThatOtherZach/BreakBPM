@@ -15,7 +15,12 @@ import {
   cancelSubscriptionTx,
 } from "../lib/subscriptions";
 import { paymentProvider } from "../lib/paymentProvider";
-import { PLANS, luckyBreakInfo, CRYPTO_PASS_PLANS } from "../lib/pricing";
+import {
+  PLANS,
+  luckyBreakInfo,
+  CRYPTO_PASS_PLANS,
+  DAY_PASS_PRICING,
+} from "../lib/pricing";
 import {
   cardPaymentsEnabled,
   CARD_PAYMENTS_OFF_MESSAGE,
@@ -49,6 +54,14 @@ router.get("/passes/plans", async (_req, res): Promise<void> => {
           name: p.name,
           priceCents: p.priceCents,
         })),
+        dayPass: {
+          minDays: DAY_PASS_PRICING.minDays,
+          maxDays: DAY_PASS_PRICING.maxDays,
+          firstDayCents: DAY_PASS_PRICING.firstDayCents,
+          midRateCents: DAY_PASS_PRICING.midRateCents,
+          midThreshold: DAY_PASS_PRICING.midThreshold,
+          longRateCents: DAY_PASS_PRICING.longRateCents,
+        },
       },
     }),
   );

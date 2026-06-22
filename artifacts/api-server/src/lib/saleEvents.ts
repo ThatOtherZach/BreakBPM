@@ -44,11 +44,18 @@ function labelForGrantKind(grantKind: string): string {
 export function valuationForCryptoOrder(
   orderPassKind: string,
   priceCents: number,
+  /** Day count for a flexible "days" pass order — folded into the label so the
+   * ledger shows the purchased run length. Ignored for other pass kinds. */
+  days?: number,
 ): SaleValuation {
+  const productLabel =
+    orderPassKind === "days"
+      ? `Day Pass (${days ?? 0} ${days === 1 ? "day" : "days"})`
+      : labelForGrantKind(orderPassKind);
   return {
     grossCents: priceCents,
     isComp: false,
-    productLabel: labelForGrantKind(orderPassKind),
+    productLabel,
   };
 }
 

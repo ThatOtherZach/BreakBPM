@@ -12,6 +12,11 @@ export interface CryptoQuoteInput {
   passKind: CryptoQuoteInputPassKind;
   asset: CryptoQuoteInputAsset;
   /**
+     * @minimum 1
+     * @maximum 365
+     */
+  days?: number;
+  /**
      * @minLength 42
      * @maxLength 42
      */

@@ -21,7 +21,11 @@ import { issuePassTx, grantPurchasedPassTx } from "../lib/passes";
 import { stopRenewingActiveSubscriptionsTx } from "../lib/subscriptions";
 import { stopRenewingStripeSubscriptions } from "../lib/paymentProvider";
 import { newId } from "../lib/ids";
-import { CRYPTO_PASS_PLANS } from "../lib/pricing";
+import {
+  CRYPTO_PASS_PLANS,
+  DAY_PASS_PRICING,
+  computeDayPassPriceCents,
+} from "../lib/pricing";
 import {
   recordSaleEventTx,
   valuationForCryptoOrder,
@@ -134,15 +138,47 @@ router.post("/crypto/quote", async (req, res): Promise<void> => {
     return;
   }
 
-  const plan = CRYPTO_PASS_PLANS.find((p) => p.passKind === parsed.data.passKind);
-  if (!plan) {
-    res.json(
-      CreateCryptoQuoteResponse.parse({
-        success: false,
-        message: "Unknown pass.",
-      }),
+  // Resolve what's being bought into a (passKind, priceCents) the order freezes.
+  // The flexible "days" pass is priced dynamically from the slider count via the
+  // marginal brackets (the client only ESTIMATES — the server is authoritative);
+  // every other item is a fixed-price entry in CRYPTO_PASS_PLANS.
+  let quotePassKind: string;
+  let quotePriceCents: number;
+  let passDays: number | null = null;
+  if (parsed.data.passKind === "days") {
+    const days = parsed.data.days;
+    if (
+      days === undefined ||
+      !Number.isInteger(days) ||
+      days < DAY_PASS_PRICING.minDays ||
+      days > DAY_PASS_PRICING.maxDays
+    ) {
+      res.json(
+        CreateCryptoQuoteResponse.parse({
+          success: false,
+          message: `Pick between ${DAY_PASS_PRICING.minDays} and ${DAY_PASS_PRICING.maxDays} days.`,
+        }),
+      );
+      return;
+    }
+    quotePassKind = "days";
+    quotePriceCents = computeDayPassPriceCents(days);
+    passDays = days;
+  } else {
+    const plan = CRYPTO_PASS_PLANS.find(
+      (p) => p.passKind === parsed.data.passKind,
     );
-    return;
+    if (!plan) {
+      res.json(
+        CreateCryptoQuoteResponse.parse({
+          success: false,
+          message: "Unknown pass.",
+        }),
+      );
+      return;
+    }
+    quotePassKind = plan.passKind;
+    quotePriceCents = plan.priceCents;
   }
 
   // Two order shapes. If a payerAddress is supplied, this is the connect-wallet
@@ -177,7 +213,7 @@ router.post("/crypto/quote", async (req, res): Promise<void> => {
     }
     const sigOk = await verifyPayerSignature({
       payerAddress: addr,
-      passKind: plan.passKind,
+      passKind: quotePassKind,
       asset: parsed.data.asset,
       issuedAt: parsed.data.issuedAt,
       signature: parsed.data.signature,
@@ -218,13 +254,13 @@ router.post("/crypto/quote", async (req, res): Promise<void> => {
   try {
     if (asset === "usdc") {
       decimals = cfg.usdcDecimals;
-      baseAmount = usdcAtomicAmount(plan.priceCents, decimals);
+      baseAmount = usdcAtomicAmount(quotePriceCents, decimals);
       tokenAddress = cfg.usdcAddress;
       symbol = "USDC";
     } else {
       const eth = await readEthUsd();
       decimals = 18;
-      baseAmount = ethWeiAmount(plan.priceCents, eth);
+      baseAmount = ethWeiAmount(quotePriceCents, eth);
       tokenAddress = null;
       ethUsdRaw = eth.raw.toString();
       symbol = "ETH";
@@ -260,7 +296,8 @@ router.post("/crypto/quote", async (req, res): Promise<void> => {
       .values({
         id,
         userId: user.id,
-        passKind: plan.passKind,
+        passKind: quotePassKind,
+        passDays,
         asset,
         network: cfg.network,
         chainId: cfg.chainId,
@@ -268,7 +305,7 @@ router.post("/crypto/quote", async (req, res): Promise<void> => {
         payerAddress,
         tokenAddress,
         expectedAmount: candidate.toString(),
-        priceCents: plan.priceCents,
+        priceCents: quotePriceCents,
         ethUsdRaw,
         status: "pending",
         expiresAt,
@@ -298,7 +335,8 @@ router.post("/crypto/quote", async (req, res): Promise<void> => {
       order: {
         id,
         manual,
-        passKind: plan.passKind,
+        passKind: quotePassKind,
+        days: passDays,
         asset,
         network: cfg.network,
         chainId: cfg.chainId,
@@ -307,7 +345,7 @@ router.post("/crypto/quote", async (req, res): Promise<void> => {
         expectedAmount: expectedAmount.toString(),
         decimals,
         displayAmount: `${formatUnits(expectedAmount, decimals)} ${symbol}`,
-        priceCents: plan.priceCents,
+        priceCents: quotePriceCents,
         expiresAt,
       },
     }),
@@ -865,15 +903,29 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
         };
       }
 
+      // A flexible "days" order issues a normal `day`-kind pass, but with the
+      // purchased duration (passDays × 86400) and the slider total actually paid
+      // (priceCents on the order) overriding the fixed Day-pass catalog values.
+      const isDaysOrder = order.passKind === "days";
       const grant = await grantPurchasedPassTx(tx, {
         userId: user.id,
-        kind: order.passKind as PassKind,
+        kind: isDaysOrder ? "day" : (order.passKind as PassKind),
         sourceRef: txHash,
+        ...(isDaysOrder
+          ? {
+              durationSeconds: (order.passDays ?? 1) * 86_400,
+              priceCents: order.priceCents,
+            }
+          : {}),
       });
       // Sales ledger: record the paid crypto purchase once (skip on a deduped
       // re-verify — the row already exists, and providerRef is unique anyway).
       if (!grant.deduped) {
-        const v = valuationForCryptoOrder(order.passKind as string, order.priceCents);
+        const v = valuationForCryptoOrder(
+          order.passKind as string,
+          order.priceCents,
+          order.passDays ?? undefined,
+        );
         await recordSaleEventTx(tx, {
           userId: user.id,
           eventType: "crypto_purchase",
@@ -968,11 +1020,15 @@ router.post("/crypto/verify", async (req, res): Promise<void> => {
     },
     luckyBreak ? "Crypto Lucky Break verified" : "Crypto payment verified",
   );
+  // For a flexible days order the granted pass kind is "day" regardless of the
+  // duration, so describe it by the purchased day count instead.
+  const passLabel =
+    order.passKind === "days" ? `${order.passDays ?? 1}-day` : `${pass.kind}`;
   const message = luckyBreak
     ? luckyBreak.outcome === "lifetime"
       ? "JACKPOT — you rolled a Lifetime pass!"
       : "Nice break — you rolled a Monthly pass!"
-    : `Paid — your ${pass.kind} pass is active!`;
+    : `Paid — your ${passLabel} pass is active!`;
   res.json(
     VerifyCryptoPaymentResponse.parse({
       success: true,

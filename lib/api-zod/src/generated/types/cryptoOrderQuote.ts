@@ -23,5 +23,7 @@ export interface CryptoOrderQuote {
   decimals: number;
   displayAmount: string;
   priceCents: number;
+  /** @nullable */
+  days?: number | null;
   expiresAt: Date;
 }
