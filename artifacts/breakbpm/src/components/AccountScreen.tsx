@@ -821,6 +821,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                         </button>
                         {latest && !latest.expired && (
                           <div
+                            className="fpp-card"
                             style={{
                               display: "flex",
                               flexDirection: "column",
