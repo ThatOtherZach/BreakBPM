@@ -555,7 +555,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
                         }}
-                      >
+                        className="text-[12px]">
                         📮 {account.email}
                       </span>
                     )}
