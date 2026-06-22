@@ -849,7 +849,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                                 <span
                                   style={{
-                                    flex: 1,
                                     fontFamily: "monospace",
                                     fontSize: 17,
                                     fontWeight: "bold",
