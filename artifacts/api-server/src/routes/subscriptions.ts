@@ -19,12 +19,12 @@ import {
   PLANS,
   luckyBreakInfo,
   CRYPTO_PASS_PLANS,
-  DAY_PASS_PRICING,
 } from "../lib/pricing";
 import {
   cardPaymentsEnabled,
   CARD_PAYMENTS_OFF_MESSAGE,
   cryptoPaymentsEnabled,
+  dayPassPricing,
 } from "../lib/config";
 import { cryptoConfigured, getNetworkConfig } from "../lib/cryptoChain";
 
@@ -54,14 +54,7 @@ router.get("/passes/plans", async (_req, res): Promise<void> => {
           name: p.name,
           priceCents: p.priceCents,
         })),
-        dayPass: {
-          minDays: DAY_PASS_PRICING.minDays,
-          maxDays: DAY_PASS_PRICING.maxDays,
-          firstDayCents: DAY_PASS_PRICING.firstDayCents,
-          midRateCents: DAY_PASS_PRICING.midRateCents,
-          midThreshold: DAY_PASS_PRICING.midThreshold,
-          longRateCents: DAY_PASS_PRICING.longRateCents,
-        },
+        dayPass: dayPassPricing(),
       },
     }),
   );

@@ -3122,6 +3122,19 @@ html, #root {
 .crypto-option__name { font-family: 'VT323', monospace; font-size: 22px; color: var(--navy); line-height: 1; }
 .crypto-option__sub { font-size: 10px; color: #666; }
 .crypto-option__price { font-weight: bold; font-size: 14px; white-space: nowrap; margin-left: auto; }
+/* "Purchase Days of Access" — header card + its day-slider grouped as one
+   element. When active, the config nests directly under the card (matching
+   bg/border, no top border) so the card reads as expanding to reveal the
+   slider. */
+.crypto-days { display: flex; flex-direction: column; }
+.crypto-days__config {
+  background: #eaf1ff;
+  border: 2px solid var(--navy);
+  border-top: none;
+  padding: 8px 10px 10px;
+  margin: 0;
+}
+.crypto-days__config input[type="range"] { width: 100%; }
 .crypto-assets { display: flex; gap: 6px; }
 .crypto-assets .btn { flex: 1; }
 .crypto-wallet {

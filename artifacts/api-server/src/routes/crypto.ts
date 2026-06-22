@@ -23,7 +23,6 @@ import { stopRenewingStripeSubscriptions } from "../lib/paymentProvider";
 import { newId } from "../lib/ids";
 import {
   CRYPTO_PASS_PLANS,
-  DAY_PASS_PRICING,
   computeDayPassPriceCents,
 } from "../lib/pricing";
 import {
@@ -42,6 +41,7 @@ import {
   cryptoPaymentsEnabled,
   CRYPTO_PAYMENTS_OFF_MESSAGE,
   luckyBreakLifetimeProbability,
+  dayPassPricing,
 } from "../lib/config";
 import {
   cryptoConfigured,
@@ -146,23 +146,24 @@ router.post("/crypto/quote", async (req, res): Promise<void> => {
   let quotePriceCents: number;
   let passDays: number | null = null;
   if (parsed.data.passKind === "days") {
+    const dayPricing = dayPassPricing();
     const days = parsed.data.days;
     if (
       days === undefined ||
       !Number.isInteger(days) ||
-      days < DAY_PASS_PRICING.minDays ||
-      days > DAY_PASS_PRICING.maxDays
+      days < dayPricing.minDays ||
+      days > dayPricing.maxDays
     ) {
       res.json(
         CreateCryptoQuoteResponse.parse({
           success: false,
-          message: `Pick between ${DAY_PASS_PRICING.minDays} and ${DAY_PASS_PRICING.maxDays} days.`,
+          message: `Pick between ${dayPricing.minDays} and ${dayPricing.maxDays} days.`,
         }),
       );
       return;
     }
     quotePassKind = "days";
-    quotePriceCents = computeDayPassPriceCents(days);
+    quotePriceCents = computeDayPassPriceCents(days, dayPricing);
     passDays = days;
   } else {
     const plan = CRYPTO_PASS_PLANS.find(

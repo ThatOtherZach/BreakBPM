@@ -7,23 +7,10 @@ const STATIC_PLAN_SUMMARIES = [
   {
     id: "day",
     name: "Day Pass",
-    price: "$1.99",
+    price: "From $1.99",
     suffix: "",
-    description: "Pass Access for 24 Hours, single use.",
-  },
-  {
-    id: "month",
-    name: "Month Pass",
-    price: "$4.99",
-    suffix: "",
-    description: "Pass Access for 30 Days, single use.",
-  },
-  {
-    id: "year",
-    name: "Year Pass",
-    price: "$14.99",
-    suffix: "",
-    description: "Pass Access for 365 Days, single use.",
+    description:
+      "Buy 1–365 days of access with crypto; the per-day rate drops the more days you add.",
   },
   {
     id: "lifetime",

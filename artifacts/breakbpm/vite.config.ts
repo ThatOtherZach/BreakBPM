@@ -73,14 +73,14 @@ const PUBLIC_ROUTES: RouteMetaEntry[] = [
   {
     path: "passes",
     title:
-      "BreakBPM Passes & Pricing — Day, Month, Year & Lifetime Access",
+      "BreakBPM Passes & Pricing — Flexible Day Passes & Lifetime Access",
     description:
-      "Unlock full stats history, live spectating, and all BreakBPM features. Get a Day ($1.99), Month ($4.99), Year ($14.99), or Lifetime ($24.99) pass — pay with crypto or redeem a code.",
+      "Unlock full stats history, live spectating, and all BreakBPM features. Buy any 1–365 days of access with crypto (from $1.99 — longer passes cost less per day) or go Lifetime ($24.99) — pay with crypto or redeem a code.",
     canonical: "https://breakbpm.com/passes",
     ogTitle:
       "BreakBPM Passes & Pricing — Unlock Full Stats & Spectating",
     ogDescription:
-      "Get a Day ($1.99), Month ($4.99), Year ($14.99), or Lifetime ($24.99) pass to unlock full stats history, live spectating, and all paid BreakBPM features. Pay with crypto or redeem a code.",
+      "Buy any 1–365 days of access with crypto (from $1.99 — longer passes cost less per day) or go Lifetime ($24.99) to unlock full stats history, live spectating, and all paid BreakBPM features. Pay with crypto or redeem a code.",
   },
   {
     path: "pool-stats-app",
@@ -201,11 +201,9 @@ ${PRERENDER_STYLE}
 
 function buildPassesBody(): string {
   const plans = [
-    { name: "Day Pass", price: "$1.99", suffix: "", desc: "24 hours of full access — stats, history, live spectating, and all paid features.", note: "" },
-    { name: "Month Pass", price: "$4.99", suffix: "", desc: "30 days of full access. One-time — does not auto-renew.", note: "" },
-    { name: "Year Pass", price: "$14.99", suffix: "", desc: "365 days of full access. One-time — does not auto-renew.", note: "" },
+    { name: "Day Pass", price: "From $1.99", suffix: "", desc: "Buy 1–365 days of full access with crypto — stats, history, live spectating, and all paid features. The per-day rate drops the more days you add. One-time — does not auto-renew.", note: "" },
     { name: "Lifetime", price: "$24.99", suffix: "", desc: "One-time purchase. Pay once, full access forever, including a custom screen name.", note: "" },
-    { name: "14 Day Pass", price: "$5.99", suffix: "", desc: "14 days of full access. Pay by card on our store — we email your redeem code within 24 hours.", note: "Card-only alternative — crypto's Month Pass ($4.99 / 30 days) is the better deal." },
+    { name: "14 Day Pass", price: "$5.99", suffix: "", desc: "14 days of full access. Pay by card on our store — we email your redeem code within 24 hours.", note: "Card-only alternative — buying ~14 days of access with crypto (~$3.29) is the better deal." },
   ];
   const planRows = plans.map(p =>
     `<div class="plan-row">
@@ -285,9 +283,7 @@ function poolStatsAppJsonLd(): string {
     },
     offers: [
       { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD", description: "Free to play forever. Sign in to save stats." },
-      { "@type": "Offer", name: "Day Pass", price: "1.99", priceCurrency: "USD", description: "24 hours of full access." },
-      { "@type": "Offer", name: "Month Pass", price: "4.99", priceCurrency: "USD", description: "30 days of full access. One-time — does not auto-renew." },
-      { "@type": "Offer", name: "Year Pass", price: "14.99", priceCurrency: "USD", description: "365 days of full access. One-time — does not auto-renew." },
+      { "@type": "Offer", name: "Day Pass", price: "1.99", priceCurrency: "USD", description: "Buy 1 to 365 days of full access with crypto — the per-day rate drops the more days you add (from $1.99). One-time — does not auto-renew." },
       { "@type": "Offer", name: "Lifetime", price: "24.99", priceCurrency: "USD", description: "One-time purchase, full access forever." },
       { "@type": "Offer", name: "14 Day Pass", price: "5.99", priceCurrency: "USD", description: "14 days of full access. Paid by card via our off-platform store; redeem code emailed within 24 hours." },
     ],

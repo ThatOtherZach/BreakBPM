@@ -116,6 +116,14 @@ export default function CryptoCheckout({
   const [showHashInput, setShowHashInput] = useState(false);
   const [copied, setCopied] = useState("");
 
+  // Keep the slider value inside the env-configured day-pass bounds so a custom
+  // BREAKBPM_DAY_PASS_MIN/MAX_DAYS can't leave the label/request out of range
+  // (otherwise the default of 7 could exceed a low maxDays and the quote would
+  // reject it server-side).
+  useEffect(() => {
+    setDays((d) => Math.min(dayPass.maxDays, Math.max(dayPass.minDays, d)));
+  }, [dayPass.minDays, dayPass.maxDays]);
+
   // Surface a resumable payment saved before a refresh / accidental close so a
   // user who already paid can finish verifying without re-sending funds.
   useEffect(() => {
@@ -321,9 +329,10 @@ export default function CryptoCheckout({
         style={{ display: "flex", flexDirection: "column", gap: 10 }}
       >
         <p style={{ fontSize: 12, color: "#333", margin: 0 }}>
-          Buy a one-time pass with <strong>USDC</strong> or <strong>ETH</strong>{" "}
-          on <strong>{networkLabel}</strong>. Pay from any wallet — scan the QR on
-          mobile or copy the amount &amp; address on desktop. All sales final.
+          Buy access with <strong>USDC</strong> or <strong>ETH</strong>{" "}
+          on <strong>{networkLabel}</strong> — pick how many days you want, or go
+          Lifetime. Pay from any wallet — scan the QR on mobile or copy the amount
+          &amp; address on desktop. All sales final.
         </p>
 
         {hasAccess && (
@@ -331,30 +340,55 @@ export default function CryptoCheckout({
         )}
 
         {/* Pass picker — selectable cards. Locked once an order is quoted. The
-           flexible "Add days" pass leads (slider below); Lucky Break + Lifetime
-           follow as fixed-price cards. */}
+           flexible "Purchase Days of Access" pass leads (its day slider is
+           nested inside the card); Lucky Break + Lifetime follow as fixed-price
+           cards. */}
         <div className="crypto-field">
           <span className="crypto-field-label">Choose a pass</span>
           <div className="crypto-options">
-            <button
-              type="button"
-              className={`crypto-option${isDaysSelected ? " crypto-option--active" : ""}`}
-              disabled={locked}
-              aria-pressed={isDaysSelected}
-              onClick={() => setPassKind("days")}
+            <div
+              className={`crypto-days${isDaysSelected ? " crypto-days--active" : ""}`}
             >
-              <span className="crypto-option__radio" aria-hidden="true" />
-              <span className="crypto-option__text">
-                <span className="crypto-option__name">Add Days</span>
-                <span className="crypto-option__sub">
-                  Pick {dayPass.minDays}–{dayPass.maxDays} days — the more you add,
-                  the less per day
+              <button
+                type="button"
+                className={`crypto-option crypto-days__head${isDaysSelected ? " crypto-option--active" : ""}`}
+                disabled={locked}
+                aria-pressed={isDaysSelected}
+                onClick={() => setPassKind("days")}
+              >
+                <span className="crypto-option__radio" aria-hidden="true" />
+                <span className="crypto-option__text">
+                  <span className="crypto-option__name">
+                    Purchase Days of Access
+                  </span>
+                  <span className="crypto-option__sub">
+                    Pick {dayPass.minDays}–{dayPass.maxDays} days — the more you
+                    add, the less per day
+                  </span>
                 </span>
-              </span>
-              <span className="crypto-option__price">
-                {formatPrice(daysPriceCents)}
-              </span>
-            </button>
+                <span className="crypto-option__price">
+                  {formatPrice(daysPriceCents)}
+                </span>
+              </button>
+              {isDaysSelected && (
+                <label className="avp-field crypto-days__config">
+                  Pass length: <strong>{days}</strong>{" "}
+                  {days === 1 ? "day" : "days"}
+                  <input
+                    type="range"
+                    min={dayPass.minDays}
+                    max={dayPass.maxDays}
+                    value={days}
+                    disabled={locked}
+                    onChange={(e) => setDays(Number(e.target.value))}
+                  />
+                  <span style={{ fontSize: 11, color: "#555" }}>
+                    {formatPrice(daysPriceCents)} total — final amount locked at
+                    quote
+                  </span>
+                </label>
+              )}
+            </div>
             {passes.map((p) => {
               const active = passKind === p.passKind;
               return (
@@ -380,23 +414,6 @@ export default function CryptoCheckout({
               );
             })}
           </div>
-          {isDaysSelected && (
-            <label className="avp-field" style={{ marginTop: 4 }}>
-              Pass length: <strong>{days}</strong>{" "}
-              {days === 1 ? "day" : "days"}
-              <input
-                type="range"
-                min={dayPass.minDays}
-                max={dayPass.maxDays}
-                value={days}
-                disabled={locked}
-                onChange={(e) => setDays(Number(e.target.value))}
-              />
-              <span style={{ fontSize: 11, color: "#555" }}>
-                {formatPrice(daysPriceCents)} total — final amount locked at quote
-              </span>
-            </label>
-          )}
         </div>
 
         {/* Asset toggle — split control */}

@@ -10,6 +10,8 @@ import {
   AD_BASE_DAILY_CENTS_DEFAULT,
   AD_MIN_DAILY_CENTS_DEFAULT,
   AD_MAX_DAYS_DEFAULT,
+  DAY_PASS_PRICING,
+  type DayPassPricingParams,
 } from "./pricing";
 
 function envFlag(name: string, defaultValue: boolean): boolean {
@@ -211,6 +213,48 @@ export function adMinDailyCents(): number {
  */
 export function adMaxDays(): number {
   return envInt("BREAKBPM_AD_MAX_DAYS", AD_MAX_DAYS_DEFAULT, 1);
+}
+
+/**
+ * Flexible "purchase days of access" crypto pass pricing, read from the
+ * environment so the per-day rate can be retuned without a redeploy (see
+ * pricing.ts `computeDayPassPriceCents` + DAY_PASS_PRICING for the math). The
+ * params are shipped to the client via /passes/plans so the live slider
+ * estimate and the server-frozen quote always use the SAME numbers — the
+ * server stays authoritative. `minDays` is fixed at 1. Blank/invalid values log
+ * a warning and fall back to the default. Restart the API server after changing.
+ *
+ *   - BREAKBPM_DAY_PASS_FIRST_DAY_CENTS  first-day flat fee, cents (default 199)
+ *   - BREAKBPM_DAY_PASS_MID_RATE_CENTS   per-day add for days 2..threshold (default 10)
+ *   - BREAKBPM_DAY_PASS_MID_THRESHOLD    day the cheaper bracket starts (default 30)
+ *   - BREAKBPM_DAY_PASS_LONG_RATE_CENTS  per-day add beyond the threshold (default 3)
+ *   - BREAKBPM_DAY_PASS_MAX_DAYS         longest purchasable run, days (default 365)
+ */
+export function dayPassPricing(): DayPassPricingParams {
+  return {
+    minDays: DAY_PASS_PRICING.minDays,
+    maxDays: envInt("BREAKBPM_DAY_PASS_MAX_DAYS", DAY_PASS_PRICING.maxDays, 1),
+    firstDayCents: envInt(
+      "BREAKBPM_DAY_PASS_FIRST_DAY_CENTS",
+      DAY_PASS_PRICING.firstDayCents,
+      0,
+    ),
+    midRateCents: envInt(
+      "BREAKBPM_DAY_PASS_MID_RATE_CENTS",
+      DAY_PASS_PRICING.midRateCents,
+      0,
+    ),
+    midThreshold: envInt(
+      "BREAKBPM_DAY_PASS_MID_THRESHOLD",
+      DAY_PASS_PRICING.midThreshold,
+      1,
+    ),
+    longRateCents: envInt(
+      "BREAKBPM_DAY_PASS_LONG_RATE_CENTS",
+      DAY_PASS_PRICING.longRateCents,
+      0,
+    ),
+  };
 }
 
 /** Default splash QR target when no promo override is configured. */
