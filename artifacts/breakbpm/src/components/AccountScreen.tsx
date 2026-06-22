@@ -583,7 +583,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                       style={{ fontSize: 11, padding: "1px 8px", lineHeight: 1.2, width: "100%" }}
                       onClick={handleCopyName}
                     >
-                      {nameCopied ? "✓ Copied" : "📋 Share Username"}
+                      {nameCopied ? "✓ Copied" : "📋Copy"}
                     </button>
                   </div>
                 </div>
