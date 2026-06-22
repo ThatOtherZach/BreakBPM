@@ -864,10 +864,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                 justifyContent: "center",
                               }}
                             >
-                              {/* Title */}
-                              <div style={{ fontSize: 13, color: "#4ade80", letterSpacing: 0.5, lineHeight: 1.2 }}>
-                                Day Pass from @{account.screenName}
-                              </div>
                               {/* Code + 📋 to copy bare code */}
                               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                                 <span
@@ -889,6 +885,10 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                 >
                                   {giftCopied ? "✓" : "📋"}
                                 </span>
+                              </div>
+                              {/* Title */}
+                              <div style={{ fontSize: 13, color: "#4ade80", letterSpacing: 0.5, lineHeight: 1.2 }}>
+                                Day Pass from @{account.screenName}
                               </div>
                               {/* Expiry status */}
                               {(() => {
