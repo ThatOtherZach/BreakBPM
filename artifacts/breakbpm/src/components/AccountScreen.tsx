@@ -847,6 +847,14 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                             >
                               {/* Code + 📋 to copy bare code */}
                               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                <button
+                                  className="btn"
+                                  style={{ flexShrink: 0, fontSize: 14, padding: "0 5px", minWidth: 0 }}
+                                  title={giftCopied ? "Copied!" : "Copy code"}
+                                  onClick={() => handleCopyGiftCode(latest.code)}
+                                >
+                                  {giftCopied ? "✓" : "📋"}
+                                </button>
                                 <span
                                   style={{
                                     fontFamily: "monospace",
@@ -857,14 +865,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                 >
                                   {latest.code}
                                 </span>
-                                <button
-                                  className="btn"
-                                  style={{ flexShrink: 0, fontSize: 14, padding: "0 5px", minWidth: 0 }}
-                                  title={giftCopied ? "Copied!" : "Copy code"}
-                                  onClick={() => handleCopyGiftCode(latest.code)}
-                                >
-                                  {giftCopied ? "✓" : "📋"}
-                                </button>
                               </div>
                               {/* Redeem link + Copy button */}
                               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
