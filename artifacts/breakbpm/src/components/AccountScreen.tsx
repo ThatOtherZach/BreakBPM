@@ -522,19 +522,18 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
               <>
                 <div
                   style={{
-                    fontSize: 13,
-                    color: "#444",
-                    background: "#f5f5dc",
-                    border: "1px solid #ccc",
-                    borderRadius: 3,
-                    padding: "5px 10px",
                     display: "flex",
                     flexDirection: "row",
                     alignItems: "center",
                     gap: 10,
+                    padding: "5px 10px",
+                    background: "#0a0a1e",
+                    border: "1px dashed #6a3a9a",
+                    fontFamily: "'VT323',monospace",
+                    color: "#d8b4ff",
                   }}>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                    <div>
+                    <div style={{ fontSize: 14 }}>
                       📺{" "}
                       <a
                         href={`/watch/${encodeURIComponent(account.screenName)}`}
@@ -542,7 +541,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                           e.preventDefault();
                           setLocation(`/watch/${encodeURIComponent(account.screenName)}`);
                         }}
-                        style={{ color: "#000080" }}
+                        style={{ color: "#e8c8ff" }}
                       >
                         breakbpm.com/watch/{account.screenName}
                       </a>
@@ -550,8 +549,8 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     {account.email && (
                       <span
                         style={{
-                          fontSize: 10,
-                          color: "#000000",
+                          fontSize: 11,
+                          color: "#b89ad8",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
@@ -560,11 +559,11 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                         📮 {account.email}
                       </span>
                     )}
-                    <span style={{ fontSize: 10, color: "#000000" }}>
+                    <span style={{ fontSize: 11, color: "#b89ad8" }}>
                       🗓️ Joined {fmtDate(account.createdAt)}
                     </span>
                   </div>
-                  <div style={{ flexShrink: 0 }}>
+                  <div style={{ flexShrink: 0, background: "#fff", padding: 4, lineHeight: 0 }}>
                     <QRCodeCanvas
                       value={`@${account.screenName}`}
                       size={72}
