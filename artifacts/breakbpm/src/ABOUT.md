@@ -4,7 +4,7 @@ BreakBPM was developed by Saym Software Systems in the late 1990s. However, due 
 
 BreakBPM got started as a bowling score tracker before being augmented into a billiards format. The system logs every shot over your game, one ball at a time, and gives you two numbers back: **accuracy** and **BPM**, a relative stat you can compare with friends (or no one).
 
-That's basically it. Want a sticker? [Grab one here](https://www.redbubble.com/i/sticker/BreakBPM-Sticker-by-ThatOtherZach/181421812/7sgk).
+That's basically it. Want a sticker? [Grab one here](https://www.saymservices.com/store/p/breakbpmcom-rack-sticker).
 
 ![A seasoned player leans over the table, cue in hand](/hustler.jpg)
 
