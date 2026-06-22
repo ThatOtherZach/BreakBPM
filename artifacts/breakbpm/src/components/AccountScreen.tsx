@@ -529,38 +529,47 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     borderRadius: 3,
                     padding: "5px 10px",
                     display: "flex",
-                    flexDirection: "column",
-                    gap: 2,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
                   }}>
-                  <div>
-                    📺{" "}
-                    <a
-                      href={`/watch/${encodeURIComponent(account.screenName)}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setLocation(`/watch/${encodeURIComponent(account.screenName)}`);
-                      }}
-                      style={{ color: "#000080" }}
-                    >
-                      breakbpm.com/watch/{account.screenName}
-                    </a>
-                  </div>
-                  {account.email && (
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color: "#000000",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      📮 {account.email}
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                    <div>
+                      📺{" "}
+                      <a
+                        href={`/watch/${encodeURIComponent(account.screenName)}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setLocation(`/watch/${encodeURIComponent(account.screenName)}`);
+                        }}
+                        style={{ color: "#000080" }}
+                      >
+                        breakbpm.com/watch/{account.screenName}
+                      </a>
+                    </div>
+                    {account.email && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: "#000000",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        📮 {account.email}
+                      </span>
+                    )}
+                    <span style={{ fontSize: 10, color: "#000000" }}>
+                      🗓️ Joined {fmtDate(account.createdAt)}
                     </span>
-                  )}
-                  <span style={{ fontSize: 10, color: "#000000" }}>
-                    🗓️ Joined {fmtDate(account.createdAt)}
-                  </span>
+                  </div>
+                  <div style={{ flexShrink: 0 }}>
+                    <QRCodeCanvas
+                      value={`@${account.screenName}`}
+                      size={72}
+                    />
+                  </div>
                 </div>
                 {/* Styled like a leaderboard standing (fpp-card history-card):
                     felt tinted to the player's theme, global rank on the left,
