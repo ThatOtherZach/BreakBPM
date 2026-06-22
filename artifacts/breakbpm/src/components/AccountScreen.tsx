@@ -528,6 +528,115 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
               </div>
             ) : (
               <>
+                {/* Styled like a leaderboard standing (fpp-card history-card):
+                    felt tinted to the player's theme, global rank on the left,
+                    name in the middle, and the player's all-time BPM/accuracy
+                    hero on the right. */}
+                <div
+                  className="fpp-card history-card mb-[5px]"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    backgroundColor: identityFelt.felt,
+                    boxShadow: `inset 0 0 0 2px ${identityFelt.feltShadow}, inset 0 2px 6px rgba(0, 0, 0, 0.35)`,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "VT323",
+                      fontSize: 20,
+                      lineHeight: 1,
+                      color: "#ffe98a",
+                      textShadow: "1px 1px 0 #042414",
+                      minWidth: 44,
+                      textAlign: "center",
+                      flexShrink: 0,
+                    }}
+                    title={
+                      standing
+                        ? `Global rank #${standing.rank}`
+                        : "Play ranked 8-ball 1-on-1 games to earn a global rank"
+                    }
+                  >
+                    {standing ? `#${standing.rank}` : ":)"}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+                      <span
+                        className="felt-name"
+                        style={{
+                          fontFamily: "VT323",
+                          fontSize: 22,
+                          lineHeight: 1,
+                          color: "#f4f4dc",
+                          textShadow: "1px 1px 0 #042414",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        <PlayerName name={account.screenName} rainbow={effectiveTheme === "rainbow"} />
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <WinsTodayChip winsToday={account.winsToday ?? 0} small />
+                      {standing != null && (
+                        <span
+                          style={{
+                            fontFamily: "VT323",
+                            fontSize: 16,
+                            lineHeight: 1,
+                            color: "#ffe98a",
+                            textShadow: "1px 1px 0 #042414",
+                          }}
+                        >
+                          {standing.bpm.toFixed(1)} BPM
+                        </span>
+                      )}
+                      {standing != null && (
+                        <span
+                          style={{
+                            fontFamily: "VT323",
+                            fontSize: 16,
+                            lineHeight: 1,
+                            color: standing.accuracy != null ? "#b9e6c4" : "#8aa593",
+                            textShadow: "1px 1px 0 #042414",
+                          }}
+                        >
+                          {standing.accuracy != null ? `${standing.accuracy}% ACC` : "—% ACC"}
+                        </span>
+                      )}
+                      {standing != null && standing.sharkLevel > 0 && (
+                        <span
+                          style={{
+                            fontFamily: "VT323",
+                            fontSize: 16,
+                            lineHeight: 1,
+                            color: "#9fc6ff",
+                            textShadow: "1px 1px 0 #042414",
+                          }}
+                        >
+                          🦈{standing.sharkLevel}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {canTheme && (
+                    <button
+                      className="btn"
+                      disabled={updateTheme.isPending}
+                      title="Cycle theme"
+                      style={{ flexShrink: 0 }}
+                      onClick={() => {
+                        const idx = THEME_CYCLE.indexOf(effectiveTheme);
+                        handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length]);
+                      }}
+                    >
+                      {effectiveTheme === "rainbow" ? RAINBOW_DOT : THEME_DOT[themeColorOf(effectiveTheme)]}
+                    </button>
+                  )}
+                </div>
                 <div
                   style={{
                     display: "flex",
@@ -626,118 +735,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
             </div>
           </div>
         </div>
-
-        {/* Styled like a leaderboard standing (fpp-card history-card):
-            felt tinted to the player's theme, global rank on the left,
-            name in the middle, and the player's all-time BPM/accuracy
-            hero on the right. */}
-        {account && (
-          <div
-            className="fpp-card history-card mb-[5px]"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              backgroundColor: identityFelt.felt,
-              boxShadow: `inset 0 0 0 2px ${identityFelt.feltShadow}, inset 0 2px 6px rgba(0, 0, 0, 0.35)`,
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "VT323",
-                fontSize: 20,
-                lineHeight: 1,
-                color: "#ffe98a",
-                textShadow: "1px 1px 0 #042414",
-                minWidth: 44,
-                textAlign: "center",
-                flexShrink: 0,
-              }}
-              title={
-                standing
-                  ? `Global rank #${standing.rank}`
-                  : "Play ranked 8-ball 1-on-1 games to earn a global rank"
-              }
-            >
-              {standing ? `#${standing.rank}` : ":)"}
-            </span>
-            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
-                <span
-                  className="felt-name"
-                  style={{
-                    fontFamily: "VT323",
-                    fontSize: 22,
-                    lineHeight: 1,
-                    color: "#f4f4dc",
-                    textShadow: "1px 1px 0 #042414",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <PlayerName name={account.screenName} rainbow={effectiveTheme === "rainbow"} />
-                </span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <WinsTodayChip winsToday={account.winsToday ?? 0} small />
-                {standing != null && (
-                  <span
-                    style={{
-                      fontFamily: "VT323",
-                      fontSize: 16,
-                      lineHeight: 1,
-                      color: "#ffe98a",
-                      textShadow: "1px 1px 0 #042414",
-                    }}
-                  >
-                    {standing.bpm.toFixed(1)} BPM
-                  </span>
-                )}
-                {standing != null && (
-                  <span
-                    style={{
-                      fontFamily: "VT323",
-                      fontSize: 16,
-                      lineHeight: 1,
-                      color: standing.accuracy != null ? "#b9e6c4" : "#8aa593",
-                      textShadow: "1px 1px 0 #042414",
-                    }}
-                  >
-                    {standing.accuracy != null ? `${standing.accuracy}% ACC` : "—% ACC"}
-                  </span>
-                )}
-                {standing != null && standing.sharkLevel > 0 && (
-                  <span
-                    style={{
-                      fontFamily: "VT323",
-                      fontSize: 16,
-                      lineHeight: 1,
-                      color: "#9fc6ff",
-                      textShadow: "1px 1px 0 #042414",
-                    }}
-                  >
-                    🦈{standing.sharkLevel}
-                  </span>
-                )}
-              </div>
-            </div>
-            {canTheme && (
-              <button
-                className="btn"
-                disabled={updateTheme.isPending}
-                title="Cycle theme"
-                style={{ flexShrink: 0 }}
-                onClick={() => {
-                  const idx = THEME_CYCLE.indexOf(effectiveTheme);
-                  handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length]);
-                }}
-              >
-                {effectiveTheme === "rainbow" ? RAINBOW_DOT : THEME_DOT[themeColorOf(effectiveTheme)]}
-              </button>
-            )}
-          </div>
-        )}
 
         {/* Tier panel */}
         <div className="panel">
