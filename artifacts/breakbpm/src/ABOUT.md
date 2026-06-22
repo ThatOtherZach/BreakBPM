@@ -1,10 +1,10 @@
 # BreakBPM
 
-BreakBPM was developed by Saym Software Systems in the late 1990s. However, due to the Y2K bug, the software was never officially released — until now!
+BreakBPM was developed by Saym Software Systems in the late 1990s. However, due to the Y2K bug, the software was never officially released, until now!
 
 BreakBPM got started as a bowling score tracker before being augmented into a billiards format. The system logs every shot over your game, one ball at a time, and gives you two numbers back: **accuracy** and **BPM**, a relative stat you can compare with friends (or no one).
 
-That's basically it. Want a sticker? [Grab one here](https://www.saymservices.com/store/p/breakbpmcom-rack-sticker).
+That's basically it. Want a sticker? **[Grab one here](https://www.saymservices.com/store/p/breakbpmcom-rack-sticker)**.
 
 ![A seasoned player leans over the table, cue in hand](/hustler.jpg)
 
@@ -112,7 +112,7 @@ Pass Unlocks:
 
 Passes can be purchased on-chain with crypto from your account page or redeemed with a code. Crypto passes are applied automatically on purchase once payment is confirmed.
 
-Prefer to pay by card? A **14 Day Pass** is [sold on our off-platform store](https://www.saymservices.com/store/p/breakbpm-14-day-pass) for $5.99. After purchase a redemption code will be emailed to you within 24 hours. You can try to get a free day pass from a Lifetime pass holder or [try your luck here](https://breakbpm.com/pool-stats-app).
+Prefer to pay by card? A **14 Day Pass [can be purchased on our off-platform store](https://www.saymservices.com/store/p/breakbpm-14-day-pass)** for $5.99. After purchase a redemption code will be emailed to you within 24 hours. You can try to get a free day pass from a Lifetime pass holder or **[try your luck here](https://breakbpm.com/pool-stats-app)**.
 
 All pass types are non-refundable. If you need assistance, use the Github first. Current pass prices can be found here; as of June 2026 they are (USD): Day Pass (24 Hours) $1.99, Month Pass (30 Days) $4.99, Year Pass (365 Days) $14.99, and Lifetime (No Expiry) $24.99.
 
