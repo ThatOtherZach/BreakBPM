@@ -842,7 +842,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                 <span
                                   style={{
                                     fontFamily: "'VT323',monospace",
-                                    fontSize: 22,
+                                    fontSize: 30,
                                     color: "#e8c8ff",
                                     wordBreak: "break-all",
                                     letterSpacing: 1,
