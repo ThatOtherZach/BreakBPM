@@ -886,8 +886,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                 style={{
                                   fontFamily: "monospace",
                                   fontSize: 10,
-                                  color: "#f4f4dc",
-                                  opacity: 0.65,
+                                  color: "#ffffff",
                                   wordBreak: "break-all",
                                   textAlign: "center",
                                 }}
