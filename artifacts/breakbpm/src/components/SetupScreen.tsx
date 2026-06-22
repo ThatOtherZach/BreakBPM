@@ -77,7 +77,7 @@ const RULE_SET_OPTIONS: {
 // The four states of the Team Mode toggle, cycled in order on each tap:
 //   auto   → automatic team assignment (Rule Set radios apply)
 //   manual → assign Solids/Stripes yourself (per-player dropdowns)
-//   chaos  → no teams, anyone sinks anything, winner recorded (Win Rule radios)
+//   chaos  → no teams, winner recorded (Win Rule radios)
 //   none   → no teams, no winner, free shoot-around with BPM tracking
 type TeamMode = 'auto' | 'manual' | 'chaos' | 'none';
 const TEAM_MODE_CYCLE: TeamMode[] = ['auto', 'manual', 'none', 'chaos'];
@@ -89,7 +89,7 @@ const TEAM_MODE_LABEL: Record<TeamMode, string> = {
 };
 const TEAM_MODE_SUBLABEL: Record<Exclude<TeamMode, 'auto'>, string> = {
   manual: 'Pick each player’s group yourself',
-  chaos: 'No teams, anyone sinks anything, winner recorded',
+  chaos: 'No teams, winner recorded',
   none: 'No teams, no winner. Track shots and BPM',
 };
 
