@@ -875,18 +875,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                   {giftCopied ? "✓" : "📋"}
                                 </span>
                               </div>
-                              {/* Redeem link */}
-                              <a
-                                href={redeemUrlFor(latest.code)}
-                                style={{
-                                  fontFamily: "monospace",
-                                  fontSize: 10,
-                                  color: "#444",
-                                  wordBreak: "break-all",
-                                }}
-                              >
-                                {redeemUrlFor(latest.code)}
-                              </a>
                               {/* Expiry status */}
                               {(() => {
                                 const dot = (color: string) => (
@@ -914,6 +902,18 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                                   </div>
                                 );
                               })()}
+                              {/* Redeem link */}
+                              <a
+                                href={redeemUrlFor(latest.code)}
+                                style={{
+                                  fontFamily: "monospace",
+                                  fontSize: 10,
+                                  color: "#444",
+                                  wordBreak: "break-all",
+                                }}
+                              >
+                                {redeemUrlFor(latest.code)}
+                              </a>
                             </div>
                           </div>
                         )}
