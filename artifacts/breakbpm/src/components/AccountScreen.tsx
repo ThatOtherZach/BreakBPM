@@ -533,7 +533,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     name in the middle, and the player's all-time BPM/accuracy
                     hero on the right. */}
                 <div
-                  className="fpp-card history-card mb-[5px]"
+                  className="fpp-card history-card mb-[0px]"
                   style={{
                     display: "flex",
                     alignItems: "center",
