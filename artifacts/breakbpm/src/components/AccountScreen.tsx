@@ -549,17 +549,17 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     {account.email && (
                       <span
                         style={{
-                          fontSize: 11,
+                          fontSize: 12,
                           color: "#b89ad8",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
                         }}
-                        className="text-[12px]">
+                      >
                         📮 {account.email}
                       </span>
                     )}
-                    <span style={{ fontSize: 11, color: "#b89ad8" }} className="text-[12px]">
+                    <span style={{ fontSize: 12, color: "#b89ad8" }}>
                       🗓️ Joined {fmtDate(account.createdAt)}
                     </span>
                   </div>
