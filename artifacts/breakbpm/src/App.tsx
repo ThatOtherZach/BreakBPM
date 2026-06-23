@@ -489,6 +489,7 @@ function WatchRoute({ params }: { params: { name: string } }) {
   const obs = sp.get("obs") === "1";
   const obsLog = sp.get("log") === "1";
   const obsScale = clampObsScale(parseFloat(sp.get("scale") ?? "1"));
+  const obsDemo = obs && sp.get("demo") === "1";
   return (
     <WatchByNameScreen
       name={name}
@@ -499,6 +500,7 @@ function WatchRoute({ params }: { params: { name: string } }) {
       obs={obs}
       obsLog={obsLog}
       obsScale={obsScale}
+      demo={obsDemo}
     />
   );
 }

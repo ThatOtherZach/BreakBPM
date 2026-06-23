@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import JoinedGameScreen from './JoinedGameScreen';
 import PlayerProfileScreen from './PlayerProfileScreen';
 import { ObsIdle, useObsBodyClass } from './ObsOverlay';
+import StreamWidget from './StreamWidget';
+import type { StreamWidgetData } from '../lib/streamWidget';
 import {
   useResolveWatchByName,
   getResolveWatchByNameQueryKey,
@@ -19,6 +21,77 @@ interface Props {
   obsLog?: boolean;
   /** CSS transform scale applied to the whole overlay. */
   obsScale?: number;
+  /**
+   * Render a static demo widget (no game resolution needed). Only meaningful
+   * when `obs=true`. Useful for previewing the overlay layout without a live
+   * game — visit /watch/<yourhandle>?obs=1&demo=1 to see it.
+   */
+  demo?: boolean;
+}
+
+/** Hardcoded demo snapshot rendered when ?obs=1&demo=1 is set. */
+function makeDemoData(handle: string): StreamWidgetData {
+  return {
+    handle,
+    watchUrl: null,
+    modeLabel: '8-BALL',
+    playerCount: 2,
+    bpm: 4.7,
+    bpmSubject: 'Alice',
+    bpmSubjectRainbow: false,
+    accuracy: 71,
+    accuracyMade: 5,
+    accuracyAttempts: 7,
+    elapsedMs: 7 * 60 * 1000 + 23 * 1000,
+    gameOver: false,
+    winnerName: null,
+    winnerRainbow: false,
+    winnerIsShark: false,
+    rackLayout: 'grouped',
+    rack: [
+      { ball: 1, sunk: true,  sunkByShark: false },
+      { ball: 2, sunk: true,  sunkByShark: false },
+      { ball: 3, sunk: false, sunkByShark: false },
+      { ball: 4, sunk: false, sunkByShark: false },
+      { ball: 5, sunk: true,  sunkByShark: false },
+      { ball: 6, sunk: false, sunkByShark: false },
+      { ball: 7, sunk: false, sunkByShark: false },
+      { ball: 8, sunk: false, sunkByShark: false },
+      { ball: 9, sunk: true,  sunkByShark: false },
+      { ball: 10, sunk: true,  sunkByShark: false },
+      { ball: 11, sunk: false, sunkByShark: false },
+      { ball: 12, sunk: false, sunkByShark: false },
+      { ball: 13, sunk: true,  sunkByShark: false },
+      { ball: 14, sunk: false, sunkByShark: false },
+      { ball: 15, sunk: false, sunkByShark: false },
+    ],
+    players: [
+      {
+        id: 0,
+        name: 'Alice',
+        rainbow: false,
+        teamLabel: 'Solids',
+        cleared: false,
+        sunk: [1, 2, 5],
+        active: true,
+        isHost: true,
+        hasLeft: false,
+        isShark: false,
+      },
+      {
+        id: 1,
+        name: 'Bob',
+        rainbow: false,
+        teamLabel: 'Stripes',
+        cleared: false,
+        sunk: [9, 10, 13],
+        active: false,
+        isHost: false,
+        hasLeft: false,
+        isShark: false,
+      },
+    ],
+  };
 }
 
 /**
@@ -40,7 +113,7 @@ const RESOLVE_FAST_MS = 4000;
 const RESOLVE_IDLE_MS = 30000;
 const RESOLVE_IDLE_AFTER_MS = 2 * 60 * 1000;
 
-export default function WatchByNameScreen({ name, onBack, onAbout, onAccount, onSignIn, obs = false, obsLog = false, obsScale = 1 }: Props) {
+export default function WatchByNameScreen({ name, onBack, onAbout, onAccount, onSignIn, obs = false, obsLog = false, obsScale = 1, demo = false }: Props) {
   const [liveCode, setLiveCode] = useState<string | null>(null);
   useObsBodyClass(obs);
 
@@ -116,6 +189,20 @@ export default function WatchByNameScreen({ name, onBack, onAbout, onAccount, on
         obsScale={obsScale}
         watchName={name}
       />
+    );
+  }
+
+  // Demo mode: render the widget with stub data so you can preview the overlay
+  // layout without a live game. Visit /watch/<handle>?obs=1&demo=1 to use it.
+  // The handle from the URL shows in the title bar so it looks realistic.
+  if (obs && demo) {
+    return (
+      <div
+        className="obs-overlay"
+        style={{ transform: `scale(${obsScale})`, transformOrigin: 'top left' }}
+      >
+        <StreamWidget data={makeDemoData(name)} />
+      </div>
     );
   }
 
