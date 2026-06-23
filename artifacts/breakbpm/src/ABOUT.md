@@ -97,11 +97,25 @@ The Stats page shows your shooting over time, including relative accuracy, pace,
 
 Sign in to save and view your own, as well as a free 24-hour global view. Use a pass to unlock your full game history to compare against everyone; data export included.
 
-Who's fastest? Use **[the Leaderboard](https://breakbpm.com/leaderboard)** to see your rank by BPM across recent 8-ball singles games (time weighted average). Pass holders can switch the ranking window to 90 days or all-time. Sign in to open the full leaderboard. 
+Who's fastest? Use **[the Leaderboard](https://breakbpm.com/leaderboard)** to see your rank by BPM across recent 8-ball singles games (time weighted average). Pass holders can switch the ranking window to 90 days or all-time.
+
+Earn themes as you play each mode, or buy a pass to unlock them all! Lifetime pass holders also get access to a special raindow effect. Sign in to open the full leaderboard.
 
 ![Leaderboard example](leaderboard-example.gif)
 
-Earn themes as you play each mode, or buy a pass to unlock them all! Lifetime pass holders also get access to a special raindow effect.
+
+### Local Leaderboards for Verified Halls
+
+Every Verified Hall has its own **House Leaderboard** — a ranking of the players who shoot there.
+
+Finished an 8-ball or 9-ball game at a verified hall? While you're still on-site, the host can tap **🏆 Tag Leaderboard** at the end of the game and pick the hall. We check your location to confirm you're actually there (within about 300 m), then add that game to the hall's board.
+
+You can also open any hall's board straight from **Find Players** — tap **🏆 House Leaderboard** on a verified hall's card.
+
+A few things to know:
+- Rankings come from one-on-one 8-ball and 9-ball games (the two boards are separate), scored on the same pace + accuracy blend as the global leaderboard.
+- Only the host can tag a game, only once, and only to the hall they're standing in.
+- Sign in to view a House Leaderboard. Free accounts see the last 30 days; pass holders unlock the 90-day and all-time windows.
 
 ## Passes
 
