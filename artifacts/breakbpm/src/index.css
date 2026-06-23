@@ -763,6 +763,11 @@ html, #root {
   border: 2px solid;
   border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
   overflow: hidden;
+  /* The app-body is a flex column scroll container; without this a tall panel
+     gets compressed by the default flex-shrink and `overflow: hidden` clips its
+     own content (e.g. the Close / Try again buttons on mobile). Keep panels at
+     their natural height and let the body scroll instead. */
+  flex-shrink: 0;
 }
 
 .panel-header {
