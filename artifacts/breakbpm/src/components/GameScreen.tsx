@@ -1455,7 +1455,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                     onClick={startAddToHall}
                     disabled={hallPhase === 'locating' || hallPhase === 'tagging'}
                   >
-                    {hallPhase === 'locating' ? 'Locating…' : '🏆 Add to Leaderboard'}
+                    {hallPhase === 'locating' ? 'Locating…' : '🏆 Tag Leaderboard'}
                   </button>
                 )
               ) : (
@@ -1471,19 +1471,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             then the result with a jump to that hall's House Leaderboard. */}
         {state.phase === 'ended' && !endUndoOpen && hallOpen && (
           <div className="panel" style={{ marginTop: 8 }}>
-            <div className="panel-header pt-[0px] pb-[0px]">
+            <div className="panel-header pt-[4px] pb-[4px]">
               <span>
                 <span className="stats-sec-emoji" aria-hidden="true">🏆</span>
                 Add to Verified Hall Leaderboard
               </span>
-              <button
-                className="btn"
-                style={{ padding: '2px 8px', fontSize: 11 }}
-                onClick={closeAddToHall}
-                aria-label="Close"
-              >
-                ✕
-              </button>
             </div>
             <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {hallPhase === 'locating' && (
@@ -1555,6 +1547,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                     onClick={() => navigate(`/leaderboard/hall/${taggedHall.id}`)}
                   >
                     🏆 House Leaderboard
+                  </button>
+                  <button className="btn w-full" onClick={closeAddToHall}>
+                    Close
                   </button>
                 </>
               )}
