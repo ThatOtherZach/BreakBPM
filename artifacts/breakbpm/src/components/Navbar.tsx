@@ -86,12 +86,12 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlay
               <span style={{ textDecoration: 'underline' }}>A</span>bout
             </button>
           )}
+          {onLeaderboard && !at('/leaderboard') && (
+            <button className="navbar-menu-item" onClick={() => { setOpen(false); onLeaderboard(); }}>
+              <span style={{ textDecoration: 'underline' }}>L</span>eaderboard
+            </button>
+          )}
           <SignedIn>
-            {onLeaderboard && !at('/leaderboard') && (
-              <button className="navbar-menu-item" onClick={() => { setOpen(false); onLeaderboard(); }}>
-                <span style={{ textDecoration: 'underline' }}>L</span>eaderboard
-              </button>
-            )}
             {onFindPlayers && !at('/find-players') && (
               <button className="navbar-menu-item" onClick={() => { setOpen(false); onFindPlayers(); }}>
                 <span style={{ textDecoration: 'underline' }}>F</span>ind Players
