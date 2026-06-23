@@ -168,6 +168,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
     query: { queryKey: getGetMyInviteCodeQueryKey(), enabled: me.data?.signedIn === true },
   });
   const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
+  const [inviteCodeCopied, setInviteCodeCopied] = useState(false);
 
   async function refetchInviteSideEffects() {
     await Promise.all([
@@ -384,6 +385,16 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
       setTimeout(() => setInviteLinkCopied(false), 2000);
     } catch {
       /* clipboard blocked — the link stays selectable in the field */
+    }
+  }
+
+  async function handleCopyInviteCode(code: string) {
+    try {
+      await navigator.clipboard.writeText(code);
+      setInviteCodeCopied(true);
+      setTimeout(() => setInviteCodeCopied(false), 2000);
+    } catch {
+      /* clipboard blocked — the code stays visible on the card */
     }
   }
 
@@ -1082,20 +1093,92 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
               <div style={{ fontFamily: "VT323", fontSize: 16 }}>Loading your link…</div>
             )}
             {!myInviteCode.isLoading && myInviteCode.data?.code && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <input
-                  type="text"
-                  readOnly
-                  value={inviteUrlFor(myInviteCode.data.code)}
-                  onFocus={(e) => e.currentTarget.select()}
-                  style={{ width: "100%", fontSize: 12, fontFamily: "VT323" }}
-                />
-                <button
-                  className="btn btn-primary w-full"
-                  onClick={() => handleCopyInviteLink(myInviteCode.data!.code)}
+              <div
+                className="fpp-card"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  padding: 8,
+                  backgroundColor: identityFelt.felt,
+                  boxShadow: `inset 0 0 0 2px ${identityFelt.feltShadow}, inset 0 2px 6px rgba(0,0,0,0.35)`,
+                  fontFamily: "'VT323',monospace",
+                  color: "#f4f4dc",
+                }}
+              >
+                {/* Info: code + title + invite link */}
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                  className="justify-center items-center"
                 >
-                  {inviteLinkCopied ? "Copied" : "Copy Invite Link"}
-                </button>
+                  {/* Code + 📋 to copy bare code */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <span className="cue-ball-icon" style={{ fontSize: 22, flexShrink: 0 }} aria-hidden="true" />
+                    <span
+                      style={{
+                        fontFamily: "'VT323',monospace",
+                        fontSize: 30,
+                        color: "#ffe98a",
+                        wordBreak: "break-all",
+                        letterSpacing: 1,
+                        textShadow: "1px 1px 0 #042414",
+                      }}
+                    >
+                      {myInviteCode.data.code}
+                    </span>
+                    <span
+                      role="button"
+                      title={inviteCodeCopied ? "Copied!" : "Copy code"}
+                      onClick={() => handleCopyInviteCode(myInviteCode.data!.code)}
+                      style={{ flexShrink: 0, fontSize: 16, cursor: "pointer", userSelect: "none" }}
+                    >
+                      {inviteCodeCopied ? "✓" : "📋"}
+                    </span>
+                  </div>
+                  {/* Title */}
+                  <div style={{ fontSize: 13, color: "#4ade80", letterSpacing: 0.5, lineHeight: 1.2 }}>
+                    {account.screenName} Invites you to BreakBPM.com
+                  </div>
+                  {/* Invite link */}
+                  <a
+                    href={inviteUrlFor(myInviteCode.data.code)}
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: 10,
+                      color: "#ffffff",
+                      wordBreak: "break-all",
+                      textAlign: "center",
+                    }}
+                  >
+                    {inviteUrlFor(myInviteCode.data.code)}
+                  </a>
+                  {/* Reward note */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "#4ade80" }}>
+                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#4ade80", display: "inline-block", flexShrink: 0 }} />
+                    New players unlock a free trial
+                  </div>
+                </div>
+                {/* QR + Copy link button — centred below the info */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <a
+                    href={inviteUrlFor(myInviteCode.data.code)}
+                    style={{ display: "block", lineHeight: 0, background: "#fff", padding: 4 }}
+                    title="Scan or tap to open the invite"
+                  >
+                    <QRCodeCanvas
+                      value={inviteUrlFor(myInviteCode.data.code)}
+                      size={140}
+                      level="M"
+                    />
+                  </a>
+                  <button
+                    className="btn"
+                    style={{ fontSize: 11, width: "100%", maxWidth: 148 }}
+                    onClick={() => handleCopyInviteLink(myInviteCode.data!.code)}
+                  >
+                    {inviteLinkCopied ? "Copied" : "Share URL"}
+                  </button>
+                </div>
               </div>
             )}
             {!myInviteCode.isLoading && !myInviteCode.data?.code && (
