@@ -22,12 +22,10 @@ import {
   getGetGameStateByCodeQueryKey,
   useLeaveGame,
 } from '@workspace/api-client-react';
-import { ObsIdle } from './ObsOverlay';
+import { ObsIdle, W98Frame } from './ObsOverlay';
 import { PlayerName } from './PlayerName';
 import { useAuth } from '../lib/authClient';
 import { THEME_FELT, THEME_ACCENT, themeColorOf } from '../lib/backgroundVariants';
-import StreamWidget from './StreamWidget';
-import { buildStreamWidgetData } from '../lib/streamWidget';
 
 const BALL_COLORS: Record<number, string> = {
   1: '#FDD307', 2: '#1F4E9E', 3: '#C3342B', 4: '#5B247A',
@@ -582,23 +580,18 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
   if (obs) {
     // No active game once it has ended → `:(` (never the winner banner/chrome).
     if (ended) return <ObsIdle scale={obsScale} />;
-    // The OBS overlay renders the shared Win98 widget (the same one the
-    // end-game Share image uses), not the CRT hudPanel. Title-bar handle uses
-    // the resolved watch name (falling back to the host's display name).
-    const obsWidget = buildStreamWidgetData({
-      state,
-      participants,
-      handle: watchName ?? hostName,
-      watchUrl: null,
-      elapsedMs: elapsed,
-      gameOver,
-    });
+    // The OBS overlay wraps the real CRT HUD in the Win98 title-bar frame so
+    // it composites on stream as a native-looking window. The handle shown in
+    // the title bar comes from the resolved /watch/:name (or the host's display
+    // name when spectating via share code directly).
     return (
       <div
         className="obs-overlay"
         style={{ transform: `scale(${obsScale})`, transformOrigin: 'top left' }}
       >
-        <StreamWidget data={obsWidget} />
+        <W98Frame handle={watchName ?? hostName}>
+          {hudPanel}
+        </W98Frame>
         {compactLog}
       </div>
     );

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 
 /**
  * OBS overlay primitives. The overlay variant of /watch/:name renders a
@@ -44,6 +44,41 @@ export function ObsIdle({ scale = 1 }: { scale?: number }) {
       style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}
     >
       <span className="obs-idle-face">:(</span>
+    </div>
+  );
+}
+
+/**
+ * Win98 window-chrome wrapper. Renders the BreakBPM title bar (with an
+ * optional @handle and the classic minimize/maximize/close decorations) and a
+ * padded body container, then renders `children` inside that body. This lets
+ * the OBS overlay host the real CRT HUD inside the Win98 frame without
+ * duplicating layout or content.
+ */
+export function W98Frame({
+  handle,
+  children,
+}: {
+  handle?: string | null;
+  children: ReactNode;
+}) {
+  return (
+    <div className="w98-widget">
+      <div className="w98-titlebar">
+        <span className="w98-titlebar-name">
+          <span className="w98-title-glyph" aria-hidden="true">●</span>
+          BreakBPM
+          {handle && <span className="w98-title-handle"> — @{handle}</span>}
+        </span>
+        <span className="w98-titlebar-ctrls" aria-hidden="true">
+          <span className="w98-tb-btn">_</span>
+          <span className="w98-tb-btn">▢</span>
+          <span className="w98-tb-btn">✕</span>
+        </span>
+      </div>
+      <div className="w98-body">
+        {children}
+      </div>
     </div>
   );
 }

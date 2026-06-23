@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import JoinedGameScreen from './JoinedGameScreen';
 import PlayerProfileScreen from './PlayerProfileScreen';
-import { ObsIdle, useObsBodyClass } from './ObsOverlay';
-import StreamWidget from './StreamWidget';
-import type { StreamWidgetData } from '../lib/streamWidget';
+import { ObsIdle, useObsBodyClass, W98Frame } from './ObsOverlay';
+import { WIDGET_BALL_COLORS } from '../lib/streamWidget';
+import { THEME_FELT } from '../lib/backgroundVariants';
 import {
   useResolveWatchByName,
   getResolveWatchByNameQueryKey,
@@ -29,69 +29,102 @@ interface Props {
   demo?: boolean;
 }
 
-/** Hardcoded demo snapshot rendered when ?obs=1&demo=1 is set. */
-function makeDemoData(handle: string): StreamWidgetData {
-  return {
-    handle,
-    watchUrl: null,
-    modeLabel: '8-BALL',
-    playerCount: 2,
-    bpm: 4.7,
-    bpmSubject: 'Alice',
-    bpmSubjectRainbow: false,
-    accuracy: 71,
-    accuracyMade: 5,
-    accuracyAttempts: 7,
-    elapsedMs: 7 * 60 * 1000 + 23 * 1000,
-    gameOver: false,
-    winnerName: null,
-    winnerRainbow: false,
-    winnerIsShark: false,
-    rackLayout: 'grouped',
-    rack: [
-      { ball: 1, sunk: true,  sunkByShark: false },
-      { ball: 2, sunk: true,  sunkByShark: false },
-      { ball: 3, sunk: false, sunkByShark: false },
-      { ball: 4, sunk: false, sunkByShark: false },
-      { ball: 5, sunk: true,  sunkByShark: false },
-      { ball: 6, sunk: false, sunkByShark: false },
-      { ball: 7, sunk: false, sunkByShark: false },
-      { ball: 8, sunk: false, sunkByShark: false },
-      { ball: 9, sunk: true,  sunkByShark: false },
-      { ball: 10, sunk: true,  sunkByShark: false },
-      { ball: 11, sunk: false, sunkByShark: false },
-      { ball: 12, sunk: false, sunkByShark: false },
-      { ball: 13, sunk: true,  sunkByShark: false },
-      { ball: 14, sunk: false, sunkByShark: false },
-      { ball: 15, sunk: false, sunkByShark: false },
-    ],
-    players: [
-      {
-        id: 0,
-        name: 'Alice',
-        rainbow: false,
-        teamLabel: 'Solids',
-        cleared: false,
-        sunk: [1, 2, 5],
-        active: true,
-        isHost: true,
-        hasLeft: false,
-        isShark: false,
-      },
-      {
-        id: 1,
-        name: 'Bob',
-        rainbow: false,
-        teamLabel: 'Stripes',
-        cleared: false,
-        sunk: [9, 10, 13],
-        active: false,
-        isHost: false,
-        hasLeft: false,
-        isShark: false,
-      },
-    ],
-  };
+/**
+ * Stub CRT HUD rendered in demo mode (?obs=1&demo=1). Uses the exact same
+ * CSS classes as the real hudPanel so the layout, typography, and ball chips
+ * are pixel-identical to a live game — just with hardcoded fixture data.
+ */
+const DEMO_SOLIDS  = [1, 2, 3, 4, 5, 6, 7];
+const DEMO_STRIPES = [9, 10, 11, 12, 13, 14, 15];
+const DEMO_SUNK_S  = new Set([1, 2, 5]);
+const DEMO_SUNK_T  = new Set([9, 10, 13]);
+const BOARD_ACTIVE = '#d8b4ff';
+const BOARD_BORDER = '#5a2a8a';
+const BOARD_TEXT   = '#d8b4ff';
+
+function DemoChip({ b, sunk = false }: { b: number; sunk?: boolean }) {
+  const cls = `hud-chip ${
+    b === 8 ? 'hud-chip-eight' : DEMO_SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'
+  }${sunk ? ' hud-chip-sunk' : ''}`;
+  return (
+    <span
+      className={cls}
+      data-number={b}
+      style={{ '--chip-color': WIDGET_BALL_COLORS[b] } as React.CSSProperties}
+      aria-label={`Ball ${b}${sunk ? ' (sunk)' : ''}`}
+    />
+  );
+}
+
+function DemoCrtHud() {
+  const felt = THEME_FELT.green;
+  const rowStyle = (active: boolean): React.CSSProperties => ({
+    display: 'flex', flexDirection: 'column', gap: 2,
+    padding: '3px 8px', marginTop: 3,
+    background: '#1a0a2e',
+    border: `1px solid ${active ? BOARD_ACTIVE : BOARD_BORDER}`,
+    fontFamily: "'VT323',monospace", fontSize: 14, color: BOARD_TEXT,
+  });
+  return (
+    <div className="hud-panel">
+      <div className="hud-top">
+        <div className="hud-bpm-block">
+          <div className="hud-bpm-label">BALLS/MIN</div>
+          <div className="hud-bpm-value">4.7</div>
+          <div className="hud-bpm-sub">ALICE</div>
+        </div>
+        <div className="hud-divider" />
+        <div className="hud-bpm-block">
+          <div className="hud-bpm-label">ACCURACY</div>
+          <div className="hud-bpm-value">71%</div>
+          <div className="hud-bpm-sub">5/7 MADE</div>
+        </div>
+        <div className="hud-divider" />
+        <div className="hud-right">
+          <div className="hud-right-row">
+            <span className="hud-meta-label">TIME</span>
+            <span className="hud-timer">07:23</span>
+          </div>
+          <div className="hud-right-row">
+            <span className="hud-meta-label">MODE</span>
+            <span className="hud-mode">8-BALL<span className="hud-mode-players"> · 2P</span></span>
+          </div>
+        </div>
+      </div>
+      <div
+        className="hud-terminal"
+        style={{ '--felt-color': felt.felt, '--felt-shadow': felt.feltShadow } as React.CSSProperties}
+      >
+        <div className="rack-grouped">
+          <div className="rack-side">{DEMO_SOLIDS.map(b => <DemoChip key={b} b={b} sunk={DEMO_SUNK_S.has(b)} />)}</div>
+          <div className="rack-eight"><DemoChip b={8} /></div>
+          <div className="rack-side">{DEMO_STRIPES.map(b => <DemoChip key={b} b={b} sunk={DEMO_SUNK_T.has(b)} />)}</div>
+        </div>
+      </div>
+      <div style={rowStyle(true)}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ minWidth: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
+            <span className="cue-ball-icon" />
+          </span>
+          <span style={{ fontSize: 16 }}>Alice ★</span>
+          <span style={{ fontSize: 12, opacity: 0.7 }}>· Solids</span>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', minHeight: 26 }}>
+          {[5, 2, 1].map(b => <DemoChip key={b} b={b} />)}
+        </div>
+      </div>
+      <div style={rowStyle(false)}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ minWidth: 12 }} aria-hidden="true" />
+          <span style={{ fontSize: 16 }}>Bob</span>
+          <span style={{ fontSize: 12, opacity: 0.7 }}>· Stripes</span>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', minHeight: 26 }}>
+          {[13, 10, 9].map(b => <DemoChip key={b} b={b} />)}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -192,16 +225,18 @@ export default function WatchByNameScreen({ name, onBack, onAbout, onAccount, on
     );
   }
 
-  // Demo mode: render the widget with stub data so you can preview the overlay
-  // layout without a live game. Visit /watch/<handle>?obs=1&demo=1 to use it.
-  // The handle from the URL shows in the title bar so it looks realistic.
+  // Demo mode: render the real CRT HUD with stub data so the overlay layout,
+  // typography, and ball chips look exactly like a live game — just no polling.
+  // Visit /watch/<yourhandle>?obs=1&demo=1 to preview it.
   if (obs && demo) {
     return (
       <div
         className="obs-overlay"
         style={{ transform: `scale(${obsScale})`, transformOrigin: 'top left' }}
       >
-        <StreamWidget data={makeDemoData(name)} />
+        <W98Frame handle={name}>
+          <DemoCrtHud />
+        </W98Frame>
       </div>
     );
   }
