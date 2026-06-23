@@ -1472,10 +1472,13 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         {state.phase === 'ended' && !endUndoOpen && hallOpen && (
           <div className="panel" style={{ marginTop: 8 }}>
             <div className="panel-header">
-              <span>🏆 Add to Verified Hall Leaderboard</span>
+              <span>
+                <span className="stats-sec-emoji" aria-hidden="true">🎱</span>
+                Add to Hall
+              </span>
               <button
                 className="btn"
-                style={{ padding: '2px 8px' }}
+                style={{ padding: '2px 8px', fontSize: 11 }}
                 onClick={closeAddToHall}
                 aria-label="Close"
               >
