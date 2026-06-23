@@ -38,8 +38,6 @@ import {
   type AccountProfileTheme,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import StreamWidget from "./StreamWidget";
-import type { StreamWidgetData } from "../lib/streamWidget";
 import Navbar from "./Navbar";
 import GameHistoryCard, { fmtDate } from "./GameHistoryCard";
 import LuckyBreakReveal from "./LuckyBreakReveal";
@@ -716,33 +714,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     params.push(`scale=${scaleNum}`);
                   }
                   const obsUrl = `${base}/watch/${encodeURIComponent(account.screenName)}?${params.join("&")}`;
-                  const preview: StreamWidgetData = {
-                    handle: account.screenName,
-                    watchUrl: null,
-                    modeLabel: "8-BALL",
-                    playerCount: 2,
-                    bpm: 4.2,
-                    bpmSubject: account.screenName,
-                    bpmSubjectRainbow: false,
-                    accuracy: 78,
-                    accuracyMade: 14,
-                    accuracyAttempts: 18,
-                    elapsedMs: 372000,
-                    gameOver: false,
-                    winnerName: null,
-                    winnerRainbow: false,
-                    winnerIsShark: false,
-                    rackLayout: "grouped",
-                    rack: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((b) => ({
-                      ball: b,
-                      sunk: [1, 2, 11, 14].includes(b),
-                      sunkByShark: false,
-                    })),
-                    players: [
-                      { id: 0, name: account.screenName, rainbow: false, teamLabel: "Solids", cleared: false, sunk: [2, 1], active: true, isHost: true, hasLeft: false, isShark: false },
-                      { id: 1, name: "Rival", rainbow: false, teamLabel: "Stripes", cleared: false, sunk: [14, 11], active: false, isHost: false, hasLeft: false, isShark: false },
-                    ],
-                  };
                   return (
                     <div
                       style={{
@@ -799,22 +770,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                       >
                         {obsCopied ? "✓ Copied" : "📋 Copy OBS URL"}
                       </button>
-                      <div style={{ fontSize: 11, color: "#b89ad8" }}>Live preview:</div>
-                      <div
-                        style={{
-                          overflow: "hidden",
-                          // Checkerboard hint that the overlay background is transparent.
-                          background:
-                            "repeating-conic-gradient(#2a2a3e 0% 25%, #1a1a2e 0% 50%) 50% / 20px 20px",
-                          padding: 10,
-                          display: "flex",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <div style={{ transform: `scale(${Number.isFinite(scaleNum) ? Math.min(scaleNum, 1) : 1})`, transformOrigin: "top center" }}>
-                          <StreamWidget data={preview} />
-                        </div>
-                      </div>
+
                     </div>
                   );
                 })()}
