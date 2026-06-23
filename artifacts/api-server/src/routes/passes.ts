@@ -194,6 +194,61 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
     ));
   } catch (err) {
     if (err instanceof RedeemFailure) {
+      // Not a discount / gift / Lucky Break code. If the code is simply unknown
+      // ("Invalid code"), it may instead be a personal invite code — fall back
+      // to the invite-trial path so both kinds of code redeem from this one box.
+      // A real discount-code refusal (expired / fully redeemed / already used by
+      // this caller) is surfaced as-is rather than masked by an invite attempt.
+      if (err.reason === "Invalid code") {
+        try {
+          const { pass: trialPass, trialDays } = await db.transaction((tx) =>
+            acceptInviteTx(
+              tx,
+              {
+                invitedUserId: user.id,
+                invitedUserCreatedAt: user.createdAt,
+                code,
+              },
+              { fx, redemptionId: newId() },
+            ),
+          );
+          req.log.info(
+            { userId: user.id, code, trialDays },
+            "Invite trial redeemed via code box",
+          );
+          res.json(
+            RedeemDiscountCodeResponse.parse({
+              success: true,
+              message: `Granted a ${trialDays}-day free trial!`,
+              pass: passToSummary(trialPass),
+            }),
+          );
+          return;
+        } catch (inviteErr) {
+          // A genuine invite code the caller can't use (self-invite, not a new
+          // user, already redeemed) surfaces its own specific reason. An unknown
+          // code (invalid_code) means it's neither a discount nor an invite code,
+          // so we fall through to the original "Invalid code" message below.
+          if (inviteErr instanceof InviteFailure) {
+            if (inviteErr.reason !== "invalid_code") {
+              res.json(
+                RedeemDiscountCodeResponse.parse({
+                  success: false,
+                  message: INVITE_FAILURE_MESSAGES[inviteErr.reason],
+                }),
+              );
+              return;
+            }
+          } else {
+            req.log.error(
+              { err: inviteErr, code, userId: user.id },
+              "Invite fallback failed",
+            );
+            res.status(500).json({ error: "Redeem failed" });
+            return;
+          }
+        }
+      }
       res.json(RedeemDiscountCodeResponse.parse({ success: false, message: err.reason }));
       return;
     }

@@ -64,7 +64,13 @@ import {
   uniqueCode,
   cleanup,
 } from "../test/factories";
-import { db, discountCodesTable, discountRedemptionsTable } from "@workspace/db";
+import {
+  db,
+  discountCodesTable,
+  discountRedemptionsTable,
+  usersTable,
+  inviteRedemptionsTable,
+} from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { GIFT_COOLDOWN_MS, GIFT_EXPIRY_MS } from "../lib/giftCodes";
 import { LUCKY_BREAK_WINDOW_DAYS } from "../lib/luckyBreak";
@@ -638,5 +644,154 @@ describe("POST /passes/redeem — Lucky Break code", () => {
     expect(await getRedemptions(user.id)).toHaveLength(1);
     expect((await getDiscountCode(code))!.redemptionCount).toBe(1);
     expect(await getLuckyBreakRolls(user.id)).toHaveLength(1);
+  });
+});
+
+describe("POST /passes/redeem — personal invite-code fallback", () => {
+  // Give a user a known personal invite code (lazily minted in prod; here we
+  // stamp one directly so the redeemer can submit it in the shared code box).
+  async function setInviteCode(userId: string, code: string): Promise<void> {
+    await db
+      .update(usersTable)
+      .set({ inviteCode: code })
+      .where(eq(usersTable.id, userId));
+  }
+
+  it("grants a trial pass when a new user redeems an inviter's invite code", async () => {
+    const inviter = await createUser();
+    const inviteCode = uniqueCode("INV");
+    await setInviteCode(inviter.id, inviteCode);
+
+    // A freshly-created user is within the signup window → eligible.
+    const invitee = await createUser();
+    mocks.currentUser = invitee;
+
+    const res = await request(app)
+      .post("/api/passes/redeem")
+      .send({ code: inviteCode });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toMatch(/free trial/i);
+    expect(res.body.pass).toBeDefined();
+
+    // A trial pass (day kind, finite duration) is granted.
+    const passes = await getPasses(invitee.id);
+    expect(passes).toHaveLength(1);
+    expect(passes[0]!.kind).toBe("day");
+    expect(passes[0]!.durationSeconds).toBeGreaterThan(0);
+
+    // The idempotency backstop row is written, attributed to the inviter.
+    const redemptions = await db
+      .select()
+      .from(inviteRedemptionsTable)
+      .where(eq(inviteRedemptionsTable.invitedUserId, invitee.id));
+    expect(redemptions).toHaveLength(1);
+    expect(redemptions[0]!.inviterUserId).toBe(inviter.id);
+
+    // The invite trial books a $0 comp in the sales ledger.
+    const sales = await getSaleEvents(invitee.id);
+    expect(sales).toHaveLength(1);
+    expect(sales[0]!.isComp).toBe(true);
+    expect(sales[0]!.grossCents).toBe(0);
+  });
+
+  it("refuses a user redeeming their own invite code (self_invite)", async () => {
+    const user = await createUser();
+    const inviteCode = uniqueCode("SELF");
+    await setInviteCode(user.id, inviteCode);
+    mocks.currentUser = user;
+
+    const res = await request(app)
+      .post("/api/passes/redeem")
+      .send({ code: inviteCode });
+
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/your own invite/i);
+    expect(await getPasses(user.id)).toHaveLength(0);
+  });
+
+  it("refuses a non-new user (signup window elapsed)", async () => {
+    const inviter = await createUser();
+    const inviteCode = uniqueCode("OLD");
+    await setInviteCode(inviter.id, inviteCode);
+
+    const invitee = await createUser();
+    // Back-date the account past the 30-minute signup window.
+    await db
+      .update(usersTable)
+      .set({ createdAt: new Date(Date.now() - 60 * 60 * 1000) })
+      .where(eq(usersTable.id, invitee.id));
+    mocks.currentUser = (
+      await db.select().from(usersTable).where(eq(usersTable.id, invitee.id))
+    )[0]!;
+
+    const res = await request(app)
+      .post("/api/passes/redeem")
+      .send({ code: inviteCode });
+
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/brand-new players/i);
+    expect(await getPasses(invitee.id)).toHaveLength(0);
+    // Nothing booked.
+    const redemptions = await db
+      .select()
+      .from(inviteRedemptionsTable)
+      .where(eq(inviteRedemptionsTable.invitedUserId, invitee.id));
+    expect(redemptions).toHaveLength(0);
+  });
+
+  it("refuses a second invite trial for the same user (already_redeemed)", async () => {
+    const inviter = await createUser();
+    const inviteCode = uniqueCode("AGAIN");
+    await setInviteCode(inviter.id, inviteCode);
+
+    const invitee = await createUser();
+    mocks.currentUser = invitee;
+
+    // First redemption succeeds.
+    const res1 = await request(app)
+      .post("/api/passes/redeem")
+      .send({ code: inviteCode });
+    expect(res1.body.success).toBe(true);
+    const passes = await getPasses(invitee.id);
+    expect(passes).toHaveLength(1);
+
+    // Expire the trial pass so the route-level active-pass pre-check no longer
+    // short-circuits — this forces the request to the canonical
+    // UNIQUE(invited_user_id) guard inside acceptInviteTx.
+    await expirePass(passes[0]!.id);
+
+    const res2 = await request(app)
+      .post("/api/passes/redeem")
+      .send({ code: inviteCode });
+    expect(res2.body.success).toBe(false);
+    expect(res2.body.message).toMatch(/already used a free trial/i);
+
+    // The rolled-back second attempt grants no extra pass or redemption row.
+    expect(await getPasses(invitee.id)).toHaveLength(1);
+    const redemptions = await db
+      .select()
+      .from(inviteRedemptionsTable)
+      .where(eq(inviteRedemptionsTable.invitedUserId, invitee.id));
+    expect(redemptions).toHaveLength(1);
+  });
+
+  it("does not mask a real discount-code refusal with the invite fallback", async () => {
+    // An expired discount code must surface its own message, never fall through
+    // to an invite attempt (the fallback only triggers on an unknown code).
+    const user = await createUser();
+    mocks.currentUser = user;
+    const code = uniqueCode("EXPNOINV");
+    await seedDiscountCode(code, "day", {
+      maxRedemptions: 1,
+      expiresAt: new Date(Date.now() - 60_000),
+    });
+
+    const res = await request(app).post("/api/passes/redeem").send({ code });
+
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/expired/i);
+    expect(await getPasses(user.id)).toHaveLength(0);
   });
 });
