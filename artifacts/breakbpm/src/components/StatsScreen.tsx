@@ -268,7 +268,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
 
   return (
     <div className="app-window app-window--page">
-      <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
+      <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onFindPlayers={onFindPlayers} onLeaderboard={onLeaderboard} onSignIn={onSignIn} />
       <div className="app-body">
         {/* ── Controls — only shown when signed in ── */}
         {isAuthenticated && <div className="panel">
