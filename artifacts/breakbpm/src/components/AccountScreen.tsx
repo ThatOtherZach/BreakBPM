@@ -772,6 +772,18 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                         Add a <b>Browser Source</b> in OBS with this URL for a transparent live overlay.
                       </div>
                       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                        <button
+                          className="btn"
+                          style={{ fontSize: 12, padding: "2px 10px" }}
+                          onClick={() => {
+                            navigator.clipboard.writeText(obsUrl).then(
+                              () => { setObsCopied(true); setTimeout(() => setObsCopied(false), 2000); },
+                              () => { setObsCopied(false); },
+                            );
+                          }}
+                        >
+                          {obsCopied ? "✓ Copied" : "📋 Copy OBS URL"}
+                        </button>
                         <label style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, cursor: "pointer" }}>
                           <input type="checkbox" checked={obsLogOn} onChange={(e) => setObsLogOn(e.target.checked)} />
                           Show shot log
@@ -796,18 +808,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                       >
                         {obsUrl}
                       </div>
-                      <button
-                        className="btn"
-                        style={{ fontSize: 12, padding: "2px 10px", alignSelf: "flex-start" }}
-                        onClick={() => {
-                          navigator.clipboard.writeText(obsUrl).then(
-                            () => { setObsCopied(true); setTimeout(() => setObsCopied(false), 2000); },
-                            () => { setObsCopied(false); },
-                          );
-                        }}
-                      >
-                        {obsCopied ? "✓ Copied" : "📋 Copy OBS URL"}
-                      </button>
 
                     </div>
                   );
