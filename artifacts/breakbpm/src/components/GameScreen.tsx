@@ -1472,7 +1472,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         {state.phase === 'ended' && !endUndoOpen && hallOpen && (
           <div className="panel" style={{ marginTop: 8 }}>
             <div className="panel-header">
-              <span>🎱 Add to Hall</span>
+              <span>🏆 Add to Verified Hall Leaderboard</span>
               <button
                 className="btn"
                 style={{ padding: '2px 8px' }}
@@ -1747,7 +1747,6 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           </div>
         </div>
       )}
-
       {/* Offscreen real HUD wrapped in the Win98 window frame — rendered only
           on the ended screen so the "Share Card" button can snapshot it to a
           PNG (the same real HUD the OBS overlay shows, so the image never
