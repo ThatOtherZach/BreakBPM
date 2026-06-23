@@ -1722,6 +1722,15 @@ html, #root {
   animation: hud-marquee 6s linear infinite;
 }
 
+/* Static winner text for the share-image snapshot: no marquee, pinned
+   centered + fully opaque so the capture never catches it scrolling
+   off-screen or mid-flash. */
+.hud-winner-text--static {
+  animation: none;
+  transform: translate(-50%, -50%);
+  opacity: 1;
+}
+
 .hud-winner-sub {
   font-family: 'Courier New', monospace;
   font-size: 10px;

@@ -1376,7 +1376,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       {state.phase === 'ended' && (
         <div className="hud-winner">
           <div className="hud-winner-scroll">
-            <span className="hud-winner-text">
+            <span className={`hud-winner-text${forImage ? ' hud-winner-text--static' : ''}`}>
               {state.winner ? (
                 <>
                   ★ {state.winner === SHARK_PLAYER_NAME && <SharkIcon size={21} />}
