@@ -835,6 +835,7 @@ html, #root {
   min-height: 36px;
   touch-action: manipulation;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .btn:focus-visible {
