@@ -2955,6 +2955,12 @@ components:
         candidates:
           type: array
           items: { $ref: "#/components/schemas/HallCandidate" }
+        # The single closest active Verified Hall regardless of the radius cap,
+        # so an empty-candidates error can tell the host how far off they are.
+        # Null only when there are no active halls at all.
+        nearestName: { type: ["string", "null"] }
+        # Distance in metres to nearestName (rounded). Null when nearestName is.
+        nearestDistanceMeters: { type: ["integer", "null"] }
 
     TagHallInput:
       type: object

@@ -1455,6 +1455,10 @@ export interface HallCandidatesResult {
   eligible: boolean;
   reason?: HallCandidatesResultReason;
   candidates: HallCandidate[];
+  /** @nullable */
+  nearestName?: string | null;
+  /** @nullable */
+  nearestDistanceMeters?: number | null;
 }
 
 export interface TagHallInput {

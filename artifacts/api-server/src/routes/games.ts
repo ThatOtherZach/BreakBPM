@@ -2645,17 +2645,28 @@ router.post("/games/hall-candidates", async (req, res): Promise<void> => {
     })
     .from(venuesTable)
     .where(eq(venuesTable.active, true));
-  const candidates = venues
+  const ranked = venues
     .map((v) => ({
       id: v.id,
       name: v.name,
       locality: v.locality,
       distanceMeters: Math.round(haversineMeters(latitude, longitude, v.latitude, v.longitude)),
     }))
+    .sort((a, b) => a.distanceMeters - b.distanceMeters);
+  const candidates = ranked
     .filter((c) => c.distanceMeters <= HALL_TAG_RADIUS_METERS)
-    .sort((a, b) => a.distanceMeters - b.distanceMeters)
     .slice(0, 5);
-  res.json(FindHallCandidatesResponse.parse({ eligible: true, candidates }));
+  // Surface the single closest hall (even outside the cap) so an empty-candidate
+  // result can tell the host how far off they are instead of a blind "no halls".
+  const nearest = ranked[0] ?? null;
+  res.json(
+    FindHallCandidatesResponse.parse({
+      eligible: true,
+      candidates,
+      nearestName: nearest?.name ?? null,
+      nearestDistanceMeters: nearest?.distanceMeters ?? null,
+    }),
+  );
 });
 
 /**

@@ -98,6 +98,10 @@ function hallDistanceLabel(meters: number): string {
   return meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`;
 }
 
+/** Display label for the server's fixed "Add to Hall" proximity cap
+ * (HALL_TAG_RADIUS_METERS = 300 in the api-server). Keep in lockstep. */
+const HALL_TAG_RADIUS_LABEL = '300 m';
+
 /** Friendly copy for an "Add to Hall" rejection reason (server-supplied). */
 function hallTagFailureMessage(reason: string | undefined): string {
   switch (reason) {
@@ -906,7 +910,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           }
           if (res.candidates.length === 0) {
             setHallPhase('error');
-            setHallError('No Verified Hall within range. You can only add a game to a hall you are at.');
+            setHallError(
+              res.nearestName && res.nearestDistanceMeters != null
+                ? `You're ~${hallDistanceLabel(res.nearestDistanceMeters)} from the nearest Verified Hall (${res.nearestName}). You must be within ${HALL_TAG_RADIUS_LABEL} of it to tag this game.`
+                : 'No Verified Hall within range. You can only add a game to a hall you are at.',
+            );
             return;
           }
           setHallCandidates(res.candidates);

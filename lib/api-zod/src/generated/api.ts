@@ -1157,7 +1157,9 @@ export const FindHallCandidatesResponse = zod.object({
   "name": zod.string(),
   "locality": zod.string().nullish(),
   "distanceMeters": zod.number()
-}))
+})),
+  "nearestName": zod.string().nullish(),
+  "nearestDistanceMeters": zod.number().nullish()
 })
 
 
