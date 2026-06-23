@@ -686,7 +686,22 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     fontFamily: "'VT323',monospace",
                     color: "#d8b4ff",
                   }}>
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                  <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <div style={{ background: "#fff", padding: 4, lineHeight: 0 }}>
+                      <QRCodeCanvas
+                        value={`@${account.screenName}`}
+                        size={72}
+                      />
+                    </div>
+                    <button
+                      className="btn"
+                      style={{ fontSize: 11, padding: "1px 8px", lineHeight: 1.2, width: "100%" }}
+                      onClick={handleCopyName}
+                    >
+                      {nameCopied ? "✓ Copied" : "📋Copy"}
+                    </button>
+                  </div>
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, minWidth: 0, alignItems: "flex-end", textAlign: "right" }}>
                     <div style={{ fontSize: 14 }}>
                       📺{" "}
                       <a
@@ -716,21 +731,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     <span style={{ fontSize: 12, color: "#b89ad8" }}>
                       🗓️ Joined {fmtDate(account.createdAt)}
                     </span>
-                  </div>
-                  <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <div style={{ background: "#fff", padding: 4, lineHeight: 0 }}>
-                      <QRCodeCanvas
-                        value={`@${account.screenName}`}
-                        size={72}
-                      />
-                    </div>
-                    <button
-                      className="btn"
-                      style={{ fontSize: 11, padding: "1px 8px", lineHeight: 1.2, width: "100%" }}
-                      onClick={handleCopyName}
-                    >
-                      {nameCopied ? "✓ Copied" : "📋Copy"}
-                    </button>
                   </div>
                 </div>
 
