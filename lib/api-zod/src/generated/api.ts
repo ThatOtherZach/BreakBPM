@@ -209,7 +209,8 @@ export const GetFreePassClaimStatusResponse = zod.object({
  * @summary The caller's personal invite code (for the invite link)
  */
 export const GetMyInviteCodeResponse = zod.object({
-  "code": zod.string()
+  "code": zod.string(),
+  "trialLabel": zod.string()
 })
 
 

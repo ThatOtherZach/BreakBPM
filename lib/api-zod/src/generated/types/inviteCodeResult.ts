@@ -8,4 +8,5 @@
 
 export interface InviteCodeResult {
   code: string;
+  trialLabel: string;
 }

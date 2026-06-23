@@ -257,17 +257,27 @@ export function dayPassPricing(): DayPassPricingParams {
   };
 }
 
-/** Default length (days) of the invite-link free trial pass. */
-export const INVITE_TRIAL_DAYS_DEFAULT = 3;
+/** Default length (hours) of the invite-link free trial pass. */
+export const INVITE_TRIAL_HOURS_DEFAULT = 6;
 
 /**
- * Length (in days) of the free trial pass granted when a NEW user redeems
- * someone's invite link. Read from `BREAKBPM_INVITE_TRIAL_DAYS`; defaults to 3
- * days. Blank/invalid values log a warning and fall back to the default.
+ * Length (in hours) of the free trial pass granted when a NEW user redeems
+ * someone's invite link. Read from `BREAKBPM_INVITE_TRIAL_HOURS`; defaults to 6
+ * hours. Blank/invalid values log a warning and fall back to the default.
  * Restart the API server after changing.
  */
-export function inviteTrialDays(): number {
-  return envInt("BREAKBPM_INVITE_TRIAL_DAYS", INVITE_TRIAL_DAYS_DEFAULT, 1);
+export function inviteTrialHours(): number {
+  return envInt("BREAKBPM_INVITE_TRIAL_HOURS", INVITE_TRIAL_HOURS_DEFAULT, 1);
+}
+
+/**
+ * Human-readable, adjectival label for the invite trial length (e.g. "6-hour").
+ * Single source of truth for trial-length copy: the server ships it to the
+ * client (InviteCodeResult.trialLabel) so the account-page copy never drifts
+ * from the configured duration.
+ */
+export function inviteTrialLabel(): string {
+  return `${inviteTrialHours()}-hour`;
 }
 
 /** Default splash QR target when no promo override is configured. */

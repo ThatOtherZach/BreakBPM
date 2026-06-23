@@ -57,6 +57,7 @@ import {
   isAdminEmail,
   luckyBreakLifetimeProbability,
   freePassMonthlyCap,
+  inviteTrialLabel,
 } from "../lib/config";
 import {
   LUCKY_BREAK_CODE_KIND,
@@ -201,7 +202,7 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
       // this caller) is surfaced as-is rather than masked by an invite attempt.
       if (err.reason === "Invalid code") {
         try {
-          const { pass: trialPass, trialDays } = await db.transaction((tx) =>
+          const { pass: trialPass, trialHours } = await db.transaction((tx) =>
             acceptInviteTx(
               tx,
               {
@@ -213,13 +214,13 @@ router.post("/passes/redeem", async (req, res): Promise<void> => {
             ),
           );
           req.log.info(
-            { userId: user.id, code, trialDays },
+            { userId: user.id, code, trialHours },
             "Invite trial redeemed via code box",
           );
           res.json(
             RedeemDiscountCodeResponse.parse({
               success: true,
-              message: `Granted a ${trialDays}-day free trial!`,
+              message: `Granted a ${trialHours}-hour free trial!`,
               pass: passToSummary(trialPass),
             }),
           );
@@ -549,7 +550,7 @@ router.get("/passes/invite", async (req, res): Promise<void> => {
     return;
   }
   const code = await getOrCreateInviteCode(user.id);
-  res.json(GetMyInviteCodeResponse.parse({ code }));
+  res.json(GetMyInviteCodeResponse.parse({ code, trialLabel: inviteTrialLabel() }));
 });
 
 /**
@@ -592,9 +593,9 @@ router.post("/passes/invite/accept", async (req, res): Promise<void> => {
   const redemptionId = newId();
 
   let pass: { kind: string; startedAt: Date; durationSeconds: number | null };
-  let trialDays: number;
+  let trialHours: number;
   try {
-    ({ pass, trialDays } = await db.transaction((tx) =>
+    ({ pass, trialHours } = await db.transaction((tx) =>
       acceptInviteTx(
         tx,
         {
@@ -621,11 +622,11 @@ router.post("/passes/invite/accept", async (req, res): Promise<void> => {
     return;
   }
 
-  req.log.info({ userId: user.id, code, trialDays }, "Invite trial granted");
+  req.log.info({ userId: user.id, code, trialHours }, "Invite trial granted");
   res.json(
     AcceptInviteTrialResponse.parse({
       success: true,
-      message: `Welcome! Your ${trialDays}-day free trial is active — enjoy.`,
+      message: `Welcome! Your ${trialHours}-hour free trial is active — enjoy.`,
       pass: passToSummary(pass),
     }),
   );

@@ -9,7 +9,7 @@ import {
 import { newId } from "./ids";
 import { issuePassTx } from "./passes";
 import { recordSaleEventTx } from "./saleEvents";
-import { inviteTrialDays } from "./config";
+import { inviteTrialHours } from "./config";
 import type { UsdCadRate } from "./fx";
 
 /**
@@ -136,7 +136,7 @@ export async function acceptInviteTx(
   tx: Pick<typeof db, "select" | "insert">,
   input: AcceptInviteInput,
   deps: AcceptInviteDeps,
-): Promise<{ pass: Pass; trialDays: number }> {
+): Promise<{ pass: Pass; trialHours: number }> {
   const [inviter] = await tx
     .select({ id: usersTable.id })
     .from(usersTable)
@@ -148,13 +148,13 @@ export async function acceptInviteTx(
   const ageMs = Date.now() - input.invitedUserCreatedAt.getTime();
   if (ageMs > INVITE_SIGNUP_WINDOW_MS) throw new InviteFailure("not_new_user");
 
-  const trialDays = inviteTrialDays();
+  const trialHours = inviteTrialHours();
   const pass = await issuePassTx(tx, {
     userId: input.invitedUserId,
     kind: "day",
     source: "grant",
     sourceRef: `invite:${input.code}`,
-    durationSeconds: trialDays * 24 * 60 * 60,
+    durationSeconds: trialHours * 60 * 60,
   });
 
   // One trial per new user, ever. UNIQUE(invited_user_id) is the race backstop:
@@ -183,10 +183,10 @@ export async function acceptInviteTx(
     paymentMethod: "code",
     grossCents: 0,
     isComp: true,
-    productLabel: `Invite Trial (${trialDays} ${trialDays === 1 ? "day" : "days"})`,
+    productLabel: `Invite Trial (${trialHours} ${trialHours === 1 ? "hour" : "hours"})`,
     fx: deps.fx,
     providerRef: deps.redemptionId,
   });
 
-  return { pass, trialDays };
+  return { pass, trialHours };
 }

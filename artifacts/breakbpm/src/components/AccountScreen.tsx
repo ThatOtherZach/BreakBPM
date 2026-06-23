@@ -1087,7 +1087,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
           <div className="panel-body">
             <p style={{ fontSize: 11, color: "#444", marginTop: 0, marginBottom: 8 }}>
               Share your personal link. New players who sign up through it unlock
-              a free trial pass — on the house.
+              a {myInviteCode.data?.trialLabel ? `${myInviteCode.data.trialLabel} ` : ""}free trial pass — on the house.
             </p>
             {myInviteCode.isLoading && (
               <div style={{ fontFamily: "VT323", fontSize: 16 }}>Loading your link…</div>
@@ -1137,7 +1137,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                   </div>
                   {/* Title */}
                   <div style={{ fontSize: 13, color: "#4ade80", letterSpacing: 0.5, lineHeight: 1.2 }}>
-                    {account.screenName} Invites you to a free trial on BreakBPM.com
+                    {account.screenName} Invites you to a {myInviteCode.data.trialLabel} free trial on BreakBPM.com
                   </div>
                   {/* Invite link */}
                   <a

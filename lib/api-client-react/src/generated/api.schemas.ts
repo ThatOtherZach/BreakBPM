@@ -644,6 +644,7 @@ export interface RedeemResult {
 
 export interface InviteCodeResult {
   code: string;
+  trialLabel: string;
 }
 
 export interface InviteAcceptInput {

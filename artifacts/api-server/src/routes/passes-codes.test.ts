@@ -795,3 +795,32 @@ describe("POST /passes/redeem — personal invite-code fallback", () => {
     expect(await getPasses(user.id)).toHaveLength(0);
   });
 });
+
+describe("GET /passes/invite — trial-length label", () => {
+  afterEach(() => {
+    delete process.env.BREAKBPM_INVITE_TRIAL_HOURS;
+  });
+
+  it("returns the caller's code plus the default 6-hour trial label", async () => {
+    const user = await createUser();
+    mocks.currentUser = user;
+
+    const res = await request(app).get("/api/passes/invite");
+
+    expect(res.status).toBe(200);
+    expect(typeof res.body.code).toBe("string");
+    expect(res.body.code.length).toBeGreaterThan(0);
+    expect(res.body.trialLabel).toBe("6-hour");
+  });
+
+  it("reflects an env override in the trial label (1 -> '1-hour')", async () => {
+    process.env.BREAKBPM_INVITE_TRIAL_HOURS = "1";
+    const user = await createUser();
+    mocks.currentUser = user;
+
+    const res = await request(app).get("/api/passes/invite");
+
+    expect(res.status).toBe(200);
+    expect(res.body.trialLabel).toBe("1-hour");
+  });
+});
