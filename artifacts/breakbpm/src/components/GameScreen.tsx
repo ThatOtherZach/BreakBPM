@@ -1442,7 +1442,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           return (
             <div className="grid-2" style={{ marginTop: 8 }}>
               <button className="btn btn-big" onClick={handleShareImage} disabled={sharingImage}>
-                {sharingImage ? 'Rendering…' : '📸 Share Card'}
+                {sharingImage ? 'Rendering…' : '📸 Share Game'}
               </button>
               {canTagHall ? (
                 hallPhase === 'done' ? (
