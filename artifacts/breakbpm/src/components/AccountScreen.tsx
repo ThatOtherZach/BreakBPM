@@ -782,7 +782,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                             );
                           }}
                         >
-                          {obsCopied ? "✓ Copied" : "📋 Copy OBS URL"}
+                          {obsCopied ? "✓ Copied" : "📋 Copy URL"}
                         </button>
                         <label style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, cursor: "pointer" }}>
                           <input type="checkbox" checked={obsLogOn} onChange={(e) => setObsLogOn(e.target.checked)} />
