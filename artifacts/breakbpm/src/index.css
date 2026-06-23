@@ -2431,6 +2431,9 @@ html, #root {
   color: #444;
   margin: 8px 0;
 }
+.fpp-venue-list .fpp-hint {
+  color: #ffffff;
+}
 .fpp-empty {
   font-family: 'VT323', monospace;
   font-size: 18px;

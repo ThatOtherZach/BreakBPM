@@ -794,7 +794,7 @@ export default function FindPlayersScreen({
                     ) : (
                       <>
                         {!userCoords && (
-                          <p className="fpp-hint text-[#ffffff]">
+                          <p className="fpp-hint">
                             Showing newest first — tap “Find the nearest hall”
                             above to sort by distance.
                           </p>
