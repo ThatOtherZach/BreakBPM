@@ -452,15 +452,18 @@ async function resolveHallTagEligibility(
 /**
  * Spectating (read-only watching) is a paid host feature: a game is only
  * watchable when its HOST has an active paid entitlement — either a
- * one-time pass OR an active subscription. Players claiming open seats
+ * one-time pass, an active subscription, OR admin effective-Lifetime status
+ * (email on the BREAKBPM_ADMIN_EMAILS allowlist). Players claiming open seats
  * pre-break are always free; this gate only applies to the spectator
  * (view-only) role. Watchers themselves never pay.
  */
 async function hostSpectatingEnabled(hostUserId: string): Promise<boolean> {
-  const [passes, subscription] = await Promise.all([
+  const [[hostRow], passes, subscription] = await Promise.all([
+    db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, hostUserId)).limit(1),
     getActivePasses(hostUserId),
     getActiveSubscription(hostUserId),
   ]);
+  if (hostRow && isAdminEmail(hostRow.email)) return true;
   return passes.length > 0 || subscription !== null;
 }
 

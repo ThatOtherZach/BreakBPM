@@ -254,6 +254,64 @@ describe("POST /games/join — slot allocation", () => {
     expect(parts.filter((p) => !p.isHost)).toHaveLength(1);
   });
 
+  it("allows spectating an admin host's game even with no real pass row", async () => {
+    const adminEmail = "admin-test@example.com";
+    vi.stubEnv("BREAKBPM_ADMIN_EMAILS", adminEmail);
+
+    const host = await createUser({ email: adminEmail }); // admin, no pass
+    const game = await seedGame(host.id, { maxPlayers: 2 });
+
+    const watcher = await createUser();
+    mocks.users.set(watcher.id, watcher);
+    const res = await request(app)
+      .post("/api/games/join")
+      .set("X-Forwarded-For", freshIp())
+      .set("x-test-user", watcher.id)
+      .send({ code: game.shareCode, spectatorOnly: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body.joined).toBe(true);
+    expect(res.body.role).toBe("spectator");
+    expect(res.body.reason).not.toBe("spectators_disabled");
+
+    vi.unstubAllEnvs();
+  });
+
+  it("still disables spectating for a non-admin host with no pass", async () => {
+    const host = await createUser(); // no email, no pass, not admin
+    const game = await seedGame(host.id, { maxPlayers: 2 });
+
+    const watcher = await createUser();
+    mocks.users.set(watcher.id, watcher);
+    const res = await request(app)
+      .post("/api/games/join")
+      .set("X-Forwarded-For", freshIp())
+      .set("x-test-user", watcher.id)
+      .send({ code: game.shareCode, spectatorOnly: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body.joined).toBe(false);
+    expect(res.body.reason).toBe("spectators_disabled");
+  });
+
+  it("allows spectating an admin host's full game (slot overflow → spectator)", async () => {
+    const adminEmail = "admin-overflow@example.com";
+    vi.stubEnv("BREAKBPM_ADMIN_EMAILS", adminEmail);
+
+    const host = await createUser({ email: adminEmail }); // admin, no pass
+    const game = await seedGame(host.id, { maxPlayers: 2 });
+    await seedParticipant(game.id, 1, { displayName: "Seat1" }); // game now full
+
+    const watcher = await createUser();
+    const res = await joinAs(watcher, game.shareCode);
+
+    expect(res.status).toBe(200);
+    expect(res.body.joined).toBe(true);
+    expect(res.body.role).toBe("spectator");
+
+    vi.unstubAllEnvs();
+  });
+
   it("downgrades a late signed-in joiner to spectator once the break has happened (paid host)", async () => {
     const host = await createUser();
     await seedPass(host.id, "lifetime");
