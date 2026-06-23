@@ -906,7 +906,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           }
           if (res.candidates.length === 0) {
             setHallPhase('error');
-            setHallError('No Verified Hall within range. You can only add a game to a hall you were at.');
+            setHallError('No Verified Hall within range. You can only add a game to a hall you are at.');
             return;
           }
           setHallCandidates(res.candidates);
