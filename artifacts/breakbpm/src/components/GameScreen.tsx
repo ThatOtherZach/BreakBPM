@@ -1471,7 +1471,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             then the result with a jump to that hall's House Leaderboard. */}
         {state.phase === 'ended' && !endUndoOpen && hallOpen && (
           <div className="panel" style={{ marginTop: 8 }}>
-            <div className="panel-header">
+            <div className="panel-header pt-[0px] pb-[0px]">
               <span>
                 <span className="stats-sec-emoji" aria-hidden="true">🏆</span>
                 Add to Verified Hall Leaderboard
