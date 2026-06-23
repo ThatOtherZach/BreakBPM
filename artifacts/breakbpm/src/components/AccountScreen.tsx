@@ -702,8 +702,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     </button>
                   </div>
                   <div
-                    style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, minWidth: 0, alignItems: "flex-end", textAlign: "right" }}
-                    className="justify-start items-start">
+                    style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, minWidth: 0, alignItems: "flex-start", textAlign: "left" }}>
                     <div style={{ fontSize: 14 }}>
                       📺{" "}
                       <a
