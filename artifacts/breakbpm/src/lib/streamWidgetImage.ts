@@ -1,7 +1,8 @@
-// Export helpers for the shareable <StreamWidget> image. The widget is rendered
-// to the DOM (offscreen) and snapshotted to a PNG with html-to-image, so the
-// share image is pixel-identical to the on-screen / OBS widget (ONE widget, two
-// surfaces). Mirrors redeemCard.ts's font-preload + download approach.
+// Export helpers for the end-game "Share Card" image. The real CRT HUD —
+// wrapped in the Win98 window frame (the same render the OBS overlay shows) — is
+// mounted offscreen and snapshotted to a PNG with html-to-image, so the share
+// image stays in lockstep with the live HUD. Mirrors redeemCard.ts's
+// font-preload + download approach.
 import { toBlob } from "html-to-image";
 
 /**

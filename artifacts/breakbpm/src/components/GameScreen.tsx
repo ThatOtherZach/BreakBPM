@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, Fragment, type CSSProperties } from 'react';
 import type { GameState, ShotLogEntry, RematchConfig } from '../lib/gameLogic';
-import { THEME_FELT, themeColorOf } from '../lib/backgroundVariants';
+import { THEME_FELT, THEME_ACCENT, themeColorOf } from '../lib/backgroundVariants';
 import Navbar from './Navbar';
 import {
   getLegalBalls, getRemainingBalls, getAllBalls, checkSinkResult,
@@ -16,8 +16,7 @@ import {
 import SharkIcon from './SharkIcon';
 import { PlayerName } from './PlayerName';
 import { QRCodeSVG } from 'qrcode.react';
-import StreamWidget from './StreamWidget';
-import { buildStreamWidgetData } from '../lib/streamWidget';
+import { W98Frame } from './ObsOverlay';
 import { shareWidgetImage, copyText } from '../lib/streamWidgetImage';
 import {
   useSaveGame,
@@ -127,7 +126,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     acct?.profileTheme === 'auto' || acct?.profileTheme === 'rainbow'
       ? (acct?.profileBackground ?? 'none')
       : (acct?.profileTheme ?? 'none');
-  const felt = THEME_FELT[themeColorOf(effectiveTheme)];
+  const themeColor = themeColorOf(effectiveTheme);
+  const felt = THEME_FELT[themeColor];
+  // W98 title-bar accent for the offscreen share-image window chrome — mirrors
+  // the OBS overlay (the green theme keeps the classic blue title bar).
+  const w98Accent = themeColor === 'green' ? null : THEME_ACCENT[themeColor];
   const savedRef = useRef(false);
   const forfeitedRef = useRef(false);
   const [state, setState] = useState<GameState>(initialState);
@@ -1017,87 +1020,76 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     : [];
   const winningNameSet = new Set(winningNames);
 
-  // Presentational data for the offscreen Win98 share widget (snapshotted to a
-  // PNG on "Share"). Built once the game has ended; reuses the same builder as
-  // the live OBS overlay so the image matches the broadcast widget.
-  const shareWidgetData = state.phase === 'ended'
-    ? buildStreamWidgetData({
-        state,
-        participants: rainbowParticipants,
-        handle: watchName,
-        watchUrl: joinUrl,
-        elapsedMs: dispTime,
-        gameOver: true,
-      })
-    : null;
+  // The dark CRT HUD panel. Rendered live in-app, and — wrapped in the Win98
+  // window frame — snapshotted for the end-game "Share Card" image (the same
+  // real HUD the OBS overlay shows, so the image cannot drift from the live
+  // HUD). `forImage` drops the interactive/non-share bits (the rotating text
+  // ads + the copy-code button) and pins the static TIME/MODE/CODE column.
+  const renderHudPanel = (forImage: boolean) => (
+    <div className="hud-panel">
 
-  return (
-    <div className="app-window">
-      <Navbar onAbout={onAbout} onAccount={onAccount} onStats={onStats} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
-      {/* ── Dark HUD panel (matches splash aesthetic) ── */}
-      <div className="hud-panel">
+      {/* Top row: BPM + right column */}
+      <div className="hud-top">
 
-        {/* Top row: BPM + right column */}
-        <div className="hud-top">
-
-          {/* BPM — the hero number */}
-          <div className="hud-bpm-block">
-            <div className="hud-bpm-label">BPM</div>
-            <div className={`hud-bpm-value${dispBpm === null ? ' hud-bpm-dim' : ''}`}>
-              {dispBpm !== null ? dispBpm.toFixed(1) : (awaitingPlay ? spinner : '--.-')}
-            </div>
-            <div className="hud-bpm-sub">
-              {dispBpm === null ? 'AWAITING PLAY' : remainingSubLabel}
-            </div>
+        {/* BPM — the hero number */}
+        <div className="hud-bpm-block">
+          <div className="hud-bpm-label">BPM</div>
+          <div className={`hud-bpm-value${dispBpm === null ? ' hud-bpm-dim' : ''}`}>
+            {dispBpm !== null ? dispBpm.toFixed(1) : (awaitingPlay ? spinner : '--.-')}
           </div>
-
-          {/* Divider */}
-          <div className="hud-divider" />
-
-          {/* Accuracy — twin hero number, equal weight to BPM */}
-          <div className="hud-bpm-block">
-            <div className="hud-bpm-label">ACCURACY</div>
-            <div className={`hud-bpm-value${dispAcc === null ? ' hud-bpm-dim' : ''}`}>
-              {dispAcc !== null ? `${dispAcc}%` : (awaitingPlay ? spinner : '--%')}
-            </div>
-            <div className="hud-bpm-sub text-[#00ff41]">
-              {dispAcc === null || dispAccCounts === null
-                ? 'AWAITING PLAY'
-                : `${dispAccCounts.made}/${dispAccCounts.attempts} MADE`}
-            </div>
+          <div className="hud-bpm-sub">
+            {dispBpm === null ? 'AWAITING PLAY' : remainingSubLabel}
           </div>
+        </div>
 
-          {/* Divider */}
-          <div className="hud-divider" />
+        {/* Divider */}
+        <div className="hud-divider" />
 
-          {/* Right: mode + timer + share. Long-pressing the 📋 swaps this
-              column for a join QR (see startCodeQrPress) for 8 seconds. */}
-          <div className="hud-right">
-            {showCodeQr ? (
-              <div
-                style={{ background: '#fff', padding: 6, lineHeight: 0, borderRadius: 2, alignSelf: 'center' }}
-                aria-label={`QR code to join game ${state.shareCode}`}
-              >
-                <QRCodeSVG value={`${baseOrigin}/join/${state.shareCode}`} size={92} level="M" />
+        {/* Accuracy — twin hero number, equal weight to BPM */}
+        <div className="hud-bpm-block">
+          <div className="hud-bpm-label">ACCURACY</div>
+          <div className={`hud-bpm-value${dispAcc === null ? ' hud-bpm-dim' : ''}`}>
+            {dispAcc !== null ? `${dispAcc}%` : (awaitingPlay ? spinner : '--%')}
+          </div>
+          <div className="hud-bpm-sub text-[#00ff41]">
+            {dispAcc === null || dispAccCounts === null
+              ? 'AWAITING PLAY'
+              : `${dispAccCounts.made}/${dispAccCounts.attempts} MADE`}
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="hud-divider" />
+
+        {/* Right: mode + timer + share. Long-pressing the 📋 swaps this
+            column for a join QR (see startCodeQrPress) for 8 seconds. */}
+        <div className="hud-right">
+          {!forImage && showCodeQr ? (
+            <div
+              style={{ background: '#fff', padding: 6, lineHeight: 0, borderRadius: 2, alignSelf: 'center' }}
+              aria-label={`QR code to join game ${state.shareCode}`}
+            >
+              <QRCodeSVG value={`${baseOrigin}/join/${state.shareCode}`} size={92} level="M" />
+            </div>
+          ) : (
+            <>
+              <div className="hud-right-row">
+                <span className="hud-meta-label">TIME</span>
+                <span className={`hud-timer${paused ? ' hud-timer-paused' : ''}`}>{formatTime(dispTime)}</span>
               </div>
-            ) : (
-              <>
-                <div className="hud-right-row">
-                  <span className="hud-meta-label">TIME</span>
-                  <span className={`hud-timer${paused ? ' hud-timer-paused' : ''}`}>{formatTime(dispTime)}</span>
-                </div>
-                <div className="hud-right-row">
-                  <span className="hud-meta-label">MODE</span>
-                  <span className="hud-mode">
-                    {isSharkGame(state) ? 'Shark'
-                      : state.gameType === 'practice' ? 'Practice'
-                      : state.gameType === '8ball' ? '8-Ball'
-                      : '9-Ball'}
-                  </span>
-                </div>
-                <div className="hud-right-row" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span className="hud-meta-label">CODE</span>
-                  <span className="hud-code">{state.shareCode}</span>
+              <div className="hud-right-row">
+                <span className="hud-meta-label">MODE</span>
+                <span className="hud-mode">
+                  {isSharkGame(state) ? 'Shark'
+                    : state.gameType === 'practice' ? 'Practice'
+                    : state.gameType === '8ball' ? '8-Ball'
+                    : '9-Ball'}
+                </span>
+              </div>
+              <div className="hud-right-row" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span className="hud-meta-label">CODE</span>
+                <span className="hud-code">{state.shareCode}</span>
+                {!forImage && (
                   <button
                     className="hud-copy-code-btn"
                     onClick={() => {
@@ -1125,157 +1117,167 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                   >
                     <span aria-hidden="true" style={{ fontSize: 18, lineHeight: 1, display: 'block' }}>📋</span>
                   </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Rack tray — in 8-ball (and the 8-ball practice rack) the rack
-            clusters solids on the left and stripes on the right with the
-            8-ball centered between them as the special winning ball; 9-ball
-            (and the 9-ball practice rack) shows a single line of 1–9.
-            A ball drains to an empty socket once it's pocketed. */}
-        <div
-          className="hud-terminal"
-          style={{ '--felt-color': felt.felt, '--felt-shadow': felt.feltShadow } as CSSProperties}
-        >
-          {state.gameType === '9ball' || (state.gameType === 'practice' && state.practiceRack === '9ball') ? (
-            <div className="rack-line">{allBalls.map(rackChip)}</div>
-          ) : (
-            <div className="rack-grouped">
-              <div className="rack-side">{SOLIDS.map(rackChip)}</div>
-              <div className="rack-eight">{rackChip(EIGHT_BALL)}</div>
-              <div className="rack-side">{STRIPES.map(rackChip)}</div>
-            </div>
+                )}
+              </div>
+            </>
           )}
         </div>
+      </div>
 
-        {/* Per-player / Shark scoreboard rows */}
-        {state.phase !== 'setup' && (() => {
-          const sharkBalls = state.sharkSunkBalls ?? [];
-          const rowStyle: React.CSSProperties = {
-            display: 'flex', flexDirection: 'column', gap: 2,
-            padding: '3px 8px', marginTop: 3,
-            background: '#1a0a2e', border: '1px solid #5a2a8a',
-            fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
-          };
-          const idLine: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 6 };
-          const ballsLine: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', minHeight: 26 };
-          const renderBalls = (balls: number[]) => balls.map((b, i) => (
-            <span
-              key={i}
-              className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}`}
-              data-number={b}
-              style={{ '--chip-color': BALL_COLORS[b] } as React.CSSProperties}
-              aria-label={`Ball ${b}`}
-            />
-          ));
-          // Text ad slotted into the scoreboard, only for non-paying viewers and
-          // only when there's an ad to show (see currentAd). Styled to read as a
-          // plain text ad within the retro HUD without dominating it.
-          const adPanel = currentAd ? (
-            <div style={{
-              ...rowStyle,
-              gap: 1,
-              border: '1px dashed #6a3a9a',
-              background: '#0a0a1e',
-            }}>
-              <span style={{ fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: '#7a6a9a' }}>
-                Ad{currentAd.sponsor ? ` · ${currentAd.sponsor}` : ''}
-              </span>
-              <span style={{ fontSize: 16, fontWeight: 'bold', color: '#e8c8ff', lineHeight: 1.1 }}>{currentAd.headline}</span>
-              <span style={{ fontSize: 13, color: '#b89ad8', lineHeight: 1.15 }}>{currentAd.tagline}</span>
-            </div>
-          ) : null;
-          // Where the ad sits among the non-shark player rows: after the first
-          // two players in doubles (4P), otherwise after the first player —
-          // which puts it between the two in singles, and below the lone player
-          // in practice (1P). Shark mode slots it before the Shark row instead.
-          const adAfterIndex = state.players.length >= 4 ? 1 : 0;
-          return (
-            <>
-              {state.players.map((p, i) => {
-                const active = state.phase === 'playing' && i === state.currentPlayerIndex && !pendingSharkPick;
-                const myGroup = p.team === 'solids' ? SOLIDS : p.team === 'stripes' ? STRIPES : [];
-                const cleared = myGroup.length > 0 && myGroup.every(b => state.sunkBalls.includes(b));
-                const mySunk = state.shotLog
-                  .filter(e => (e.type === 'sink' || e.type === 'win' || e.type === 'lose')
-                    && e.playerName === p.name && typeof e.ball === 'number')
-                  .map(e => e.ball as number);
-                const teamLabel = p.team ? (p.team === 'solids' ? 'Solids' : 'Stripes') : null;
-                return (
-                  <Fragment key={p.id}>
-                  <div style={{
-                    ...rowStyle,
-                    borderColor: active ? '#d8b4ff' : '#5a2a8a',
-                  }}>
-                    <div style={idLine}>
-                      <span style={{ minWidth: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
-                        {active ? <span className="cue-ball-icon" /> : null}
-                      </span>
-                      <span style={{ fontSize: 16, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {state.phase === 'ended' && winningNameSet.has(p.name) && <span style={{ color: 'var(--amber)' }}>★ </span>}
-                        <PlayerName name={p.name} rainbow={rainbowBySlot.get(i) ?? isRainbowName(p.name)} />
-                      </span>
-                      {teamLabel && (
-                        <span style={{ fontSize: 12, opacity: 0.7 }}>
-                          · {teamLabel}{cleared && ' ✓'}
-                        </span>
-                      )}
-                    </div>
-                    <div style={ballsLine}>
-                      {renderBalls(mySunk)}
-                    </div>
-                  </div>
-                  {!isSharkGame(state) && i === adAfterIndex && adPanel}
-                  </Fragment>
-                );
-              })}
-              {isSharkGame(state) && adPanel}
-              {isSharkGame(state) && (
-                <div style={{
-                  ...rowStyle,
-                  borderColor: pendingSharkPick ? '#d8b4ff' : '#5a2a8a',
-                }}>
-                  <div style={idLine}>
-                    <span style={{ minWidth: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
-                      {pendingSharkPick ? <span className="cue-ball-icon" /> : null}
-                    </span>
-                    <SharkIcon size={14} />
-                    <span style={{ fontSize: 16 }}>SHARK</span>
-                  </div>
-                  <div style={ballsLine}>
-                    {renderBalls(sharkBalls)}
-                  </div>
-                </div>
-              )}
-            </>
-          );
-        })()}
-
-        {/* Win/Loss flash — inside HUD */}
-        {state.phase === 'ended' && (
-          <div className="hud-winner">
-            <div className="hud-winner-scroll">
-              <span className="hud-winner-text">
-                {state.winner ? (
-                  <>
-                    ★ {state.winner === SHARK_PLAYER_NAME && <SharkIcon size={21} />}
-                    {winningNames.map((name, idx) => (
-                      <Fragment key={name}>
-                        {idx > 0 && ' & '}
-                        <PlayerName name={name} rainbow={isRainbowName(name)} upper />
-                      </Fragment>
-                    ))} WINS
-                  </>
-                ) : 'GAME OVER'}
-              </span>
-            </div>
-            <span className="hud-winner-sub text-[#00ff41] border-t-[#00ff41] border-r-[#00ff41] border-b-[#00ff41] border-l-[#00ff41]">{state.winMessage}</span>
+      {/* Rack tray — in 8-ball (and the 8-ball practice rack) the rack
+          clusters solids on the left and stripes on the right with the
+          8-ball centered between them as the special winning ball; 9-ball
+          (and the 9-ball practice rack) shows a single line of 1–9.
+          A ball drains to an empty socket once it's pocketed. */}
+      <div
+        className="hud-terminal"
+        style={{ '--felt-color': felt.felt, '--felt-shadow': felt.feltShadow } as CSSProperties}
+      >
+        {state.gameType === '9ball' || (state.gameType === 'practice' && state.practiceRack === '9ball') ? (
+          <div className="rack-line">{allBalls.map(rackChip)}</div>
+        ) : (
+          <div className="rack-grouped">
+            <div className="rack-side">{SOLIDS.map(rackChip)}</div>
+            <div className="rack-eight">{rackChip(EIGHT_BALL)}</div>
+            <div className="rack-side">{STRIPES.map(rackChip)}</div>
           </div>
         )}
       </div>
+
+      {/* Per-player / Shark scoreboard rows */}
+      {state.phase !== 'setup' && (() => {
+        const sharkBalls = state.sharkSunkBalls ?? [];
+        const rowStyle: React.CSSProperties = {
+          display: 'flex', flexDirection: 'column', gap: 2,
+          padding: '3px 8px', marginTop: 3,
+          background: '#1a0a2e', border: '1px solid #5a2a8a',
+          fontFamily: "'VT323',monospace", fontSize: 14, color: '#d8b4ff',
+        };
+        const idLine: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 6 };
+        const ballsLine: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', minHeight: 26 };
+        const renderBalls = (balls: number[]) => balls.map((b, i) => (
+          <span
+            key={i}
+            className={`hud-chip ${b === 8 ? 'hud-chip-eight' : SOLIDS.includes(b) ? 'hud-chip-solid' : 'hud-chip-stripe'}`}
+            data-number={b}
+            style={{ '--chip-color': BALL_COLORS[b] } as React.CSSProperties}
+            aria-label={`Ball ${b}`}
+          />
+        ));
+        // Text ad slotted into the scoreboard, only for non-paying viewers and
+        // only when there's an ad to show (see currentAd). Styled to read as a
+        // plain text ad within the retro HUD without dominating it.
+        const adPanel = (!forImage && currentAd) ? (
+          <div style={{
+            ...rowStyle,
+            gap: 1,
+            border: '1px dashed #6a3a9a',
+            background: '#0a0a1e',
+          }}>
+            <span style={{ fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: '#7a6a9a' }}>
+              Ad{currentAd.sponsor ? ` · ${currentAd.sponsor}` : ''}
+            </span>
+            <span style={{ fontSize: 16, fontWeight: 'bold', color: '#e8c8ff', lineHeight: 1.1 }}>{currentAd.headline}</span>
+            <span style={{ fontSize: 13, color: '#b89ad8', lineHeight: 1.15 }}>{currentAd.tagline}</span>
+          </div>
+        ) : null;
+        // Where the ad sits among the non-shark player rows: after the first
+        // two players in doubles (4P), otherwise after the first player —
+        // which puts it between the two in singles, and below the lone player
+        // in practice (1P). Shark mode slots it before the Shark row instead.
+        const adAfterIndex = state.players.length >= 4 ? 1 : 0;
+        return (
+          <>
+            {state.players.map((p, i) => {
+              const active = state.phase === 'playing' && i === state.currentPlayerIndex && !pendingSharkPick;
+              const myGroup = p.team === 'solids' ? SOLIDS : p.team === 'stripes' ? STRIPES : [];
+              const cleared = myGroup.length > 0 && myGroup.every(b => state.sunkBalls.includes(b));
+              const mySunk = state.shotLog
+                .filter(e => (e.type === 'sink' || e.type === 'win' || e.type === 'lose')
+                  && e.playerName === p.name && typeof e.ball === 'number')
+                .map(e => e.ball as number);
+              const teamLabel = p.team ? (p.team === 'solids' ? 'Solids' : 'Stripes') : null;
+              return (
+                <Fragment key={p.id}>
+                <div style={{
+                  ...rowStyle,
+                  borderColor: active ? '#d8b4ff' : '#5a2a8a',
+                }}>
+                  <div style={idLine}>
+                    <span style={{ minWidth: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
+                      {active ? <span className="cue-ball-icon" /> : null}
+                    </span>
+                    <span style={{ fontSize: 16, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {state.phase === 'ended' && winningNameSet.has(p.name) && <span style={{ color: 'var(--amber)' }}>★ </span>}
+                      <PlayerName name={p.name} rainbow={rainbowBySlot.get(i) ?? isRainbowName(p.name)} />
+                    </span>
+                    {teamLabel && (
+                      <span style={{ fontSize: 12, opacity: 0.7 }}>
+                        · {teamLabel}{cleared && ' ✓'}
+                      </span>
+                    )}
+                  </div>
+                  <div style={ballsLine}>
+                    {renderBalls(mySunk)}
+                  </div>
+                </div>
+                {!isSharkGame(state) && i === adAfterIndex && adPanel}
+                </Fragment>
+              );
+            })}
+            {isSharkGame(state) && adPanel}
+            {isSharkGame(state) && (
+              <div style={{
+                ...rowStyle,
+                borderColor: pendingSharkPick ? '#d8b4ff' : '#5a2a8a',
+              }}>
+                <div style={idLine}>
+                  <span style={{ minWidth: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
+                    {pendingSharkPick ? <span className="cue-ball-icon" /> : null}
+                  </span>
+                  <SharkIcon size={14} />
+                  <span style={{ fontSize: 16 }}>SHARK</span>
+                </div>
+                <div style={ballsLine}>
+                  {renderBalls(sharkBalls)}
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
+
+      {/* Win/Loss flash — inside HUD */}
+      {state.phase === 'ended' && (
+        <div className="hud-winner">
+          <div className="hud-winner-scroll">
+            <span className="hud-winner-text">
+              {state.winner ? (
+                <>
+                  ★ {state.winner === SHARK_PLAYER_NAME && <SharkIcon size={21} />}
+                  {winningNames.map((name, idx) => (
+                    <Fragment key={name}>
+                      {idx > 0 && ' & '}
+                      <PlayerName name={name} rainbow={isRainbowName(name)} upper />
+                    </Fragment>
+                  ))} WINS
+                </>
+              ) : 'GAME OVER'}
+            </span>
+          </div>
+          <span className="hud-winner-sub text-[#00ff41] border-t-[#00ff41] border-r-[#00ff41] border-b-[#00ff41] border-l-[#00ff41]">{state.winMessage}</span>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="app-window">
+      <Navbar onAbout={onAbout} onAccount={onAccount} onStats={onStats} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
+      {/* Live CRT HUD. The same render is reused (wrapped in the Win98
+          frame) for the offscreen "Share Card" snapshot below, so the
+          shared image cannot drift from the live HUD. */}
+      {renderHudPanel(false)}
       <div className="app-body">
 
         {/* Win screen action buttons. During the brief undo window the only
@@ -1490,16 +1492,34 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         </div>
       )}
 
-      {/* Offscreen Win98 widget — rendered only on the ended screen so the
-          "Share Card" button can snapshot it to a PNG. Positioned far off-screen
-          (not display:none) so html-to-image can measure + paint it. */}
-      {shareWidgetData && (
+      {/* Offscreen real HUD wrapped in the Win98 window frame — rendered only
+          on the ended screen so the "Share Card" button can snapshot it to a
+          PNG (the same real HUD the OBS overlay shows, so the image never
+          drifts). Positioned far off-screen (NOT display:none) so html-to-image
+          can measure + paint it. */}
+      {state.phase === 'ended' && (
         <div
           aria-hidden="true"
           style={{ position: 'fixed', left: -10000, top: 0, pointerEvents: 'none', opacity: 0 }}
         >
           <div ref={shareWidgetRef}>
-            <StreamWidget data={shareWidgetData} showQr />
+            <W98Frame handle={watchName} rainbow={rainbowBySlot.get(0) ?? isRainbowName(state.players[0]?.name)} accent={w98Accent}>
+              {renderHudPanel(true)}
+              {joinUrl && (
+                <div className="w98-footer">
+                  <div className="w98-footer-qr">
+                    <QRCodeSVG value={joinUrl} size={84} />
+                  </div>
+                  <div className="w98-footer-text">
+                    <div className="w98-footer-title">WATCH LIVE</div>
+                    <div className="w98-footer-url">
+                      {watchName ? `breakbpm.com/watch/${watchName}` : joinUrl}
+                    </div>
+                    <div className="w98-footer-hint">Scan to follow the table</div>
+                  </div>
+                </div>
+              )}
+            </W98Frame>
           </div>
         </div>
       )}
