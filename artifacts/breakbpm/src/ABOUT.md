@@ -106,6 +106,8 @@ Earn themes as you play each mode, or buy a pass to unlock them all! Lifetime pa
 
 ### Local Leaderboards for Verified Halls
 
+![Granville Club verified hall card showing House Leaderboard button](/hall-card-example.png)
+
 Every Verified Hall has its own **House Leaderboard** — a ranking of the players who shoot there.
 
 Finished an 8-ball or 9-ball game at a verified hall? While you're still on-site, the host can tap **🏆 Tag Leaderboard** at the end of the game and pick the hall. We check your location to confirm you're actually there (within about 300 m), then add that game to the hall's board.
