@@ -8,6 +8,7 @@ export const TAGLINES: string[] = [
   'BANK AND\nRANK IT',
   'THE ULTIMATE POOL TOOL',
   'STRAVA FOR POOL',
+  'TURN EACH RACK\nINTO STATS',
 ];
 
 export function pickTagline(): string {
