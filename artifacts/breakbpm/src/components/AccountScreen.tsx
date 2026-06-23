@@ -1137,7 +1137,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                   </div>
                   {/* Title */}
                   <div style={{ fontSize: 13, color: "#4ade80", letterSpacing: 0.5, lineHeight: 1.2 }}>
-                    {account.screenName} Invites you to BreakBPM.com
+                    {account.screenName} Invites you to a free trial on BreakBPM.com
                   </div>
                   {/* Invite link */}
                   <a
