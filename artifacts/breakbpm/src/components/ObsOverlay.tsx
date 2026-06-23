@@ -81,7 +81,7 @@ export function W98Frame({
       <div className="w98-titlebar" style={titleStyle}>
         <span className="w98-titlebar-name">
           <span className="w98-title-glyph" aria-hidden="true">●</span>
-          BreakBPM
+          BREAKBPM.COM
           {handle && (
             <span className="w98-title-handle">
               {' — @'}
