@@ -1,3 +1,4 @@
+import { useLocation } from "wouter";
 import type { GameHistoryEntry } from "@workspace/api-client-react";
 import SharkIcon from "./SharkIcon";
 import { SHARK_PLAYER_NAME, SOLIDS } from "../lib/gameLogic";
@@ -173,6 +174,7 @@ export default function GameHistoryCard({
    *  visitors). Shark games are unaffected — they show no real player name. */
   hideOpponent?: boolean;
 }) {
+  const [, setLocation] = useLocation();
   const modeLabel = GAME_TYPE_LABEL[g.gameType] ?? g.gameType;
   const hasBpm = g.bpm != null;
   const hasAcc = g.accuracy != null;
@@ -208,6 +210,31 @@ export default function GameHistoryCard({
           >
             {modeLabel}
           </span>
+          {g.venue && (
+            <button
+              type="button"
+              onClick={() => setLocation(`/leaderboard/hall/${g.venue!.id}`)}
+              title={`House Leaderboard · ${g.venue.name}`}
+              style={{
+                alignSelf: "flex-start",
+                maxWidth: "100%",
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                color: "#ffe9a8",
+                fontSize: 11,
+                lineHeight: 1.2,
+                textAlign: "left",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                textDecoration: "underline",
+              }}
+            >
+              🏠 @{g.venue.name}
+            </button>
+          )}
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#cdeccd", fontSize: 11 }}>
             <ResultBadge outcome={g.outcome} chaosMode={g.chaosMode} />
             {g.sharkMode ? (

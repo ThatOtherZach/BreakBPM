@@ -842,6 +842,68 @@ paths:
         "429":
           description: Too many requests
 
+  /games/hall-candidates:
+    post:
+      operationId: findHallCandidates
+      tags: [games]
+      summary: Nearby Verified Halls a finished game can be tagged to
+      description: >
+        Read-only pre-check for the "Add to Hall" flow. The signed-in HOST of a
+        finalized 8-ball/9-ball game posts their current geolocation; the server
+        confirms the game is taggable (caller is the host, the game is finalized,
+        its type is 8-ball/9-ball, and it is not already tagged) and returns the
+        active Verified Halls within the fixed radius cap, nearest first. No
+        mutation happens here — the client uses the list to confirm/pick a hall
+        before calling `tag-hall`. `eligible:false` (with a `reason`) means the
+        game cannot be tagged at all; an empty `candidates` list with
+        `eligible:true` means no hall is close enough.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HallCandidatesInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HallCandidatesResult" }
+        "400":
+          description: Invalid request body
+        "429":
+          description: Too many requests
+
+  /games/tag-hall:
+    post:
+      operationId: tagGameHall
+      tags: [games]
+      summary: Tag a finished game to a Verified Hall (host only)
+      description: >
+        Commits the "Add to Hall" tag. The signed-in HOST posts the chosen
+        venue id plus their current geolocation; the server re-validates every
+        condition (host, finalized, 8-ball/9-ball, not already tagged) and
+        re-computes the distance to the CHOSEN active venue server-side,
+        rejecting if it is outside the radius cap. Client-supplied distance is
+        never trusted. On success the game is linked to that hall and the
+        affected leaderboard cache is busted. Retagging is out of scope: a game
+        already tagged to a different hall is rejected, while re-tagging to the
+        same hall is an idempotent success.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TagHallInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TagHallResult" }
+        "400":
+          description: Invalid request body
+        "429":
+          description: Too many requests
+
   /leaderboard:
     get:
       operationId: getLeaderboard
@@ -887,6 +949,60 @@ paths:
               schema: { $ref: "#/components/schemas/LeaderboardResult" }
         "403":
           description: A pass is required for the requested window.
+        "429":
+          description: Too many requests
+
+  /leaderboard/hall:
+    get:
+      operationId: getHallLeaderboard
+      tags: [games]
+      summary: Per-hall (House) leaderboard for a Verified Hall
+      description: >
+        The same composite-skill ranking as `/leaderboard`, but scoped to games
+        that were tagged to one Verified Hall (by `venueId`) via "Add to Hall".
+        Unlike the global board, the 30-day window here also requires a signed-in
+        caller (there is no signed-out home-page widget for a single hall); the
+        90-day and all-time windows additionally require a pass, enforced
+        server-side. Returns the venue's identity alongside the ranking so the
+        screen can show the hall name. A `404` means the venue id is unknown; an
+        inactive (but still existing) hall is viewable.
+      parameters:
+        - name: venueId
+          in: query
+          required: true
+          schema: { type: string }
+          description: The Verified Hall id whose House Leaderboard to return.
+        - name: mode
+          in: query
+          required: false
+          schema: { type: string, enum: [8ball, 9ball], default: 8ball }
+          description: Which board to rank — 1-on-1 8-ball or 9-ball. Defaults to 8ball.
+        - name: window
+          in: query
+          required: false
+          schema: { type: string, enum: [30d, 90d, all], default: 30d }
+          description: >
+            Ranking window. All windows require sign-in; 90d and all require a pass.
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HallLeaderboardResult" }
+        "401":
+          description: Sign-in is required to view a House Leaderboard.
+        "403":
+          description: A pass is required for the requested window.
+        "404":
+          description: No Verified Hall with that id exists.
         "429":
           description: Too many requests
 
@@ -2203,7 +2319,7 @@ components:
 
     GameHistoryEntry:
       type: object
-      required: [id, gameType, outcome, durationMs, sunkBallsCount, endedAt, sharkMode]
+      required: [id, gameType, outcome, durationMs, sunkBallsCount, endedAt, sharkMode, venue]
       properties:
         id: { type: string }
         gameType: { type: string }
@@ -2266,6 +2382,15 @@ components:
         hostTheme:
           type: ["string", "null"]
           enum: [shark, pool-player, hustler, none]
+        # The Verified Hall this finalized game was tagged to via "Add to Hall",
+        # or null when untagged. Drives the @VENUE link on the history card that
+        # opens the hall's House Leaderboard. Always present (null when none).
+        venue:
+          type: ["object", "null"]
+          required: [id, name]
+          properties:
+            id: { type: string }
+            name: { type: string }
 
     MentionResolveResult:
       type: object
@@ -2781,6 +2906,98 @@ components:
         rows:
           type: array
           items: { $ref: "#/components/schemas/LeaderboardRow" }
+
+    # The identity of a Verified Hall a game is/was tagged to. A trimmed subset
+    # of Venue carried on history cards and the House-Leaderboard header.
+    TaggedHall:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        # Short locality label e.g. "Los Angeles, United States". May be null.
+        locality: { type: ["string", "null"] }
+
+    # A nearby active Verified Hall offered as an "Add to Hall" target.
+    HallCandidate:
+      type: object
+      required: [id, name, distanceMeters]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        locality: { type: ["string", "null"] }
+        # Server-computed great-circle distance from the caller, in metres,
+        # rounded to a whole number. Used to label the confirm prompt.
+        distanceMeters: { type: integer }
+
+    HallCandidatesInput:
+      type: object
+      required: [gameId, latitude, longitude]
+      properties:
+        gameId: { type: string }
+        # The caller's current geolocation in WGS84.
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+
+    HallCandidatesResult:
+      type: object
+      required: [eligible, candidates]
+      properties:
+        # Whether this game can be tagged at all (caller is the host, the game
+        # is a finalized 8-ball/9-ball game, and it is not already tagged).
+        eligible: { type: boolean }
+        # Set only when eligible is false, explaining why tagging is refused.
+        reason:
+          type: string
+          enum: [not_signed_in, not_found, not_host, not_finalized, wrong_type, already_tagged]
+        # Active Verified Halls within the radius cap, nearest first (top few).
+        # Empty when eligible is true but nothing is close enough.
+        candidates:
+          type: array
+          items: { $ref: "#/components/schemas/HallCandidate" }
+
+    TagHallInput:
+      type: object
+      required: [gameId, venueId, latitude, longitude]
+      properties:
+        gameId: { type: string }
+        # The chosen Verified Hall to tag the game to.
+        venueId: { type: string }
+        # The caller's current geolocation in WGS84 — re-validated server-side
+        # against the chosen venue's coordinates (client distance is ignored).
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+
+    TagHallResult:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+        # Set only on failure. "out_of_range" = the chosen hall is beyond the
+        # radius cap; "venue_not_found" = no such active hall.
+        reason:
+          type: string
+          enum: [not_signed_in, not_found, not_host, not_finalized, wrong_type, already_tagged, venue_not_found, out_of_range]
+        # The hall the game is now tagged to (present on success, including the
+        # idempotent re-tag of the same hall).
+        venue: { $ref: "#/components/schemas/TaggedHall" }
+
+    # A LeaderboardResult scoped to one Verified Hall, plus that hall's identity.
+    HallLeaderboardResult:
+      type: object
+      required: [mode, window, page, pageSize, totalPlayers, totalPages, rows, venue]
+      properties:
+        mode: { type: string, enum: [8ball, 9ball] }
+        window: { type: string, enum: [30d, 90d, all] }
+        page: { type: integer }
+        pageSize: { type: integer }
+        totalPlayers: { type: integer }
+        totalPages: { type: integer }
+        rows:
+          type: array
+          items: { $ref: "#/components/schemas/LeaderboardRow" }
+        # The Verified Hall this board is scoped to.
+        venue: { $ref: "#/components/schemas/TaggedHall" }
 
     FindPlayerPost:
       type: object

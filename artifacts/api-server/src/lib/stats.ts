@@ -809,6 +809,7 @@ function leaderboardCutoff(window: LeaderboardWindow): Date | null {
 async function computeLeaderboard(
   mode: LeaderboardMode,
   window: LeaderboardWindow,
+  venueId?: string,
 ): Promise<RankedEntry[]> {
   const cutoff = leaderboardCutoff(window);
   // Both modes require a standard 1-on-1 game (no teams, no shark/chaos). The
@@ -821,6 +822,11 @@ async function computeLeaderboard(
     isNull(gamesTable.sharkAggression),
     isNull(gamesTable.chaosMode),
   ];
+  // Per-hall (House) board: scope the ranked game pool to games tagged to this
+  // Verified Hall via "Add to Hall". Undefined = the global board (unchanged).
+  // Only the ranked-game eligibility is hall-scoped; per-player badges below
+  // (sharkLevel, winsToday) stay the player's global attributes.
+  if (venueId !== undefined) conds.push(eq(gamesTable.venueId, venueId));
   if (mode === "8ball") {
     // ruleSet grandfather, EXACTLY mirroring the legacy JSONB filter: a real
     // 'open-through-break', OR a NULL ruleSet only for games that ended before
@@ -1138,12 +1144,15 @@ export function clearLeaderboardCache(): void {
 async function resolveRanked(
   mode: LeaderboardMode,
   window: LeaderboardWindow,
+  venueId?: string,
 ): Promise<RankedEntry[]> {
-  const key = `leaderboard:${mode}:${window}`;
+  // Each (mode, window, venue) ranking caches independently; the global board
+  // keys on the literal "global" so per-hall boards never collide with it.
+  const key = `leaderboard:${mode}:${window}:${venueId ?? "global"}`;
   const now = Date.now();
   const hit = leaderboardCache.get(key);
   if (hit && hit.expiresAt > now) return hit.rows;
-  const rows = await computeLeaderboard(mode, window);
+  const rows = await computeLeaderboard(mode, window, venueId);
   leaderboardCache.set(key, { rows, expiresAt: now + STATS_CACHE_TTL_MS });
   return rows;
 }
@@ -1173,8 +1182,9 @@ function toPublicRow(e: RankedEntry): LeaderboardRow {
 export async function resolveLeaderboard(
   mode: LeaderboardMode,
   window: LeaderboardWindow,
+  venueId?: string,
 ): Promise<LeaderboardRow[]> {
-  return (await resolveRanked(mode, window)).map(toPublicRow);
+  return (await resolveRanked(mode, window, venueId)).map(toPublicRow);
 }
 
 /**

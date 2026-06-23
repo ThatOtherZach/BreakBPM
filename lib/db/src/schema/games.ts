@@ -3,6 +3,7 @@ import { pgTable, text, timestamp, integer, jsonb, boolean, index, uniqueIndex, 
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
+import { venuesTable } from "./venues";
 
 /**
  * Bump when the stored summary shape changes incompatibly. Parsers treat a
@@ -149,6 +150,13 @@ export const gamesTable = pgTable(
     endReason: text("end_reason"),
     /** Game-level distilled summary (see GameSummary). Empty `{}` until finalize. */
     summary: jsonb("summary").$type<GameSummary>().notNull().default(sql`'{}'::jsonb`),
+    /**
+     * The Verified Hall (venue) this finalized game was tagged to via the
+     * host-only "Add to Hall" flow, scoping it onto that hall's House
+     * Leaderboard. NULL = untagged (the default; no backfill needed). ON DELETE
+     * SET NULL so deleting/retiring a hall drops the tag rather than the game.
+     */
+    venueId: text("venue_id").references(() => venuesTable.id, { onDelete: "set null" }),
   },
   (t) => [
     index("games_user_ended_idx").on(t.userId, t.endedAt),
@@ -157,6 +165,10 @@ export const gamesTable = pgTable(
     // codes are only reserved for the cooldown window — we re-check at
     // generation time against active + recently-ended rows.
     index("games_share_code_idx").on(t.shareCode),
+    // Per-hall leaderboard scan: filter finalized games by the hall they were
+    // tagged to. Partial-ish via the index; the leaderboard query adds it as a
+    // conjunct to the existing eligibility filters.
+    index("games_venue_idx").on(t.venueId),
   ],
 );
 

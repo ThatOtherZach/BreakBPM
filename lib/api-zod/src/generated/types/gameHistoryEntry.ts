@@ -9,6 +9,7 @@ import type { GameHistoryEntryChaosMode } from './gameHistoryEntryChaosMode';
 import type { GameHistoryEntryEndReason } from './gameHistoryEntryEndReason';
 import type { GameHistoryEntryHostTheme } from './gameHistoryEntryHostTheme';
 import type { GameHistoryEntryPocketSequenceItem } from './gameHistoryEntryPocketSequenceItem';
+import type { GameHistoryEntryVenue } from './gameHistoryEntryVenue';
 
 export interface GameHistoryEntry {
   id: string;
@@ -34,4 +35,6 @@ export interface GameHistoryEntry {
   pocketSequence?: GameHistoryEntryPocketSequenceItem[];
   /** @nullable */
   hostTheme?: GameHistoryEntryHostTheme;
+  /** @nullable */
+  venue: GameHistoryEntryVenue;
 }

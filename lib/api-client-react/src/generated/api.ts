@@ -61,10 +61,14 @@ import type {
   GameStateSnapshot,
   GetGameHistoryParams,
   GetGameStateByCodeParams,
+  GetHallLeaderboardParams,
   GetLeaderboardParams,
   GetPublicProfileParams,
   GetStatsParams,
   GiftCodeIssueResult,
+  HallCandidatesInput,
+  HallCandidatesResult,
+  HallLeaderboardResult,
   HealthStatus,
   InviteAcceptInput,
   InviteAcceptResult,
@@ -105,6 +109,8 @@ import type {
   StatsResult,
   SubscriptionCheckoutInput,
   SubscriptionVerifyResult,
+  TagHallInput,
+  TagHallResult,
   VenueInput,
   VenueList,
   VenueMutationResult,
@@ -3228,6 +3234,152 @@ export function useGetStats<TData = Awaited<ReturnType<typeof getStats>>, TError
 
 
 
+export const getFindHallCandidatesUrl = () => {
+
+
+
+
+  return `/api/games/hall-candidates`
+}
+
+/**
+ * Read-only pre-check for the "Add to Hall" flow. The signed-in HOST of a finalized 8-ball/9-ball game posts their current geolocation; the server confirms the game is taggable (caller is the host, the game is finalized, its type is 8-ball/9-ball, and it is not already tagged) and returns the active Verified Halls within the fixed radius cap, nearest first. No mutation happens here — the client uses the list to confirm/pick a hall before calling `tag-hall`. `eligible:false` (with a `reason`) means the game cannot be tagged at all; an empty `candidates` list with `eligible:true` means no hall is close enough.
+
+ * @summary Nearby Verified Halls a finished game can be tagged to
+ */
+export const findHallCandidates = async (hallCandidatesInput: HallCandidatesInput, options?: RequestInit): Promise<HallCandidatesResult> => {
+
+  return customFetch<HallCandidatesResult>(getFindHallCandidatesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      hallCandidatesInput,)
+  }
+);}
+
+
+
+
+export const getFindHallCandidatesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof findHallCandidates>>, TError,{data: BodyType<HallCandidatesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof findHallCandidates>>, TError,{data: BodyType<HallCandidatesInput>}, TContext> => {
+
+const mutationKey = ['findHallCandidates'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof findHallCandidates>>, {data: BodyType<HallCandidatesInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  findHallCandidates(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FindHallCandidatesMutationResult = NonNullable<Awaited<ReturnType<typeof findHallCandidates>>>
+    export type FindHallCandidatesMutationBody = BodyType<HallCandidatesInput>
+    export type FindHallCandidatesMutationError = ErrorType<void>
+
+    /**
+ * @summary Nearby Verified Halls a finished game can be tagged to
+ */
+export const useFindHallCandidates = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof findHallCandidates>>, TError,{data: BodyType<HallCandidatesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof findHallCandidates>>,
+        TError,
+        {data: BodyType<HallCandidatesInput>},
+        TContext
+      > => {
+      return useMutation(getFindHallCandidatesMutationOptions(options));
+    }
+
+export const getTagGameHallUrl = () => {
+
+
+
+
+  return `/api/games/tag-hall`
+}
+
+/**
+ * Commits the "Add to Hall" tag. The signed-in HOST posts the chosen venue id plus their current geolocation; the server re-validates every condition (host, finalized, 8-ball/9-ball, not already tagged) and re-computes the distance to the CHOSEN active venue server-side, rejecting if it is outside the radius cap. Client-supplied distance is never trusted. On success the game is linked to that hall and the affected leaderboard cache is busted. Retagging is out of scope: a game already tagged to a different hall is rejected, while re-tagging to the same hall is an idempotent success.
+
+ * @summary Tag a finished game to a Verified Hall (host only)
+ */
+export const tagGameHall = async (tagHallInput: TagHallInput, options?: RequestInit): Promise<TagHallResult> => {
+
+  return customFetch<TagHallResult>(getTagGameHallUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tagHallInput,)
+  }
+);}
+
+
+
+
+export const getTagGameHallMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tagGameHall>>, TError,{data: BodyType<TagHallInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof tagGameHall>>, TError,{data: BodyType<TagHallInput>}, TContext> => {
+
+const mutationKey = ['tagGameHall'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof tagGameHall>>, {data: BodyType<TagHallInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  tagGameHall(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TagGameHallMutationResult = NonNullable<Awaited<ReturnType<typeof tagGameHall>>>
+    export type TagGameHallMutationBody = BodyType<TagHallInput>
+    export type TagGameHallMutationError = ErrorType<void>
+
+    /**
+ * @summary Tag a finished game to a Verified Hall (host only)
+ */
+export const useTagGameHall = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tagGameHall>>, TError,{data: BodyType<TagHallInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof tagGameHall>>,
+        TError,
+        {data: BodyType<TagHallInput>},
+        TContext
+      > => {
+      return useMutation(getTagGameHallMutationOptions(options));
+    }
+
 export const getGetLeaderboardUrl = (params?: GetLeaderboardParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -3302,6 +3454,92 @@ export function useGetLeaderboard<TData = Awaited<ReturnType<typeof getLeaderboa
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetLeaderboardQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetHallLeaderboardUrl = (params: GetHallLeaderboardParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/leaderboard/hall?${stringifiedParams}` : `/api/leaderboard/hall`
+}
+
+/**
+ * The same composite-skill ranking as `/leaderboard`, but scoped to games that were tagged to one Verified Hall (by `venueId`) via "Add to Hall". Unlike the global board, the 30-day window here also requires a signed-in caller (there is no signed-out home-page widget for a single hall); the 90-day and all-time windows additionally require a pass, enforced server-side. Returns the venue's identity alongside the ranking so the screen can show the hall name. A `404` means the venue id is unknown; an inactive (but still existing) hall is viewable.
+
+ * @summary Per-hall (House) leaderboard for a Verified Hall
+ */
+export const getHallLeaderboard = async (params: GetHallLeaderboardParams, options?: RequestInit): Promise<HallLeaderboardResult> => {
+
+  return customFetch<HallLeaderboardResult>(getGetHallLeaderboardUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetHallLeaderboardQueryKey = (params?: GetHallLeaderboardParams,) => {
+    return [
+    `/api/leaderboard/hall`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetHallLeaderboardQueryOptions = <TData = Awaited<ReturnType<typeof getHallLeaderboard>>, TError = ErrorType<void>>(params: GetHallLeaderboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHallLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetHallLeaderboardQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHallLeaderboard>>> = ({ signal }) => getHallLeaderboard(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHallLeaderboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetHallLeaderboardQueryResult = NonNullable<Awaited<ReturnType<typeof getHallLeaderboard>>>
+export type GetHallLeaderboardQueryError = ErrorType<void>
+
+
+/**
+ * @summary Per-hall (House) leaderboard for a Verified Hall
+ */
+
+export function useGetHallLeaderboard<TData = Awaited<ReturnType<typeof getHallLeaderboard>>, TError = ErrorType<void>>(
+ params: GetHallLeaderboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHallLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetHallLeaderboardQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

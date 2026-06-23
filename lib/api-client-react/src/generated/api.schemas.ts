@@ -945,6 +945,14 @@ export const GameHistoryEntryHostTheme = {
   none: 'none',
 } as const;
 
+/**
+ * @nullable
+ */
+export type GameHistoryEntryVenue = {
+  id: string;
+  name: string;
+} | null;
+
 export interface GameHistoryEntry {
   id: string;
   gameType: string;
@@ -969,6 +977,8 @@ export interface GameHistoryEntry {
   pocketSequence?: GameHistoryEntryPocketSequenceItem[];
   /** @nullable */
   hostTheme?: GameHistoryEntryHostTheme;
+  /** @nullable */
+  venue: GameHistoryEntryVenue;
 }
 
 export interface MentionResolveResult {
@@ -1398,6 +1408,116 @@ export interface LeaderboardResult {
   totalPlayers: number;
   totalPages: number;
   rows: LeaderboardRow[];
+}
+
+export interface TaggedHall {
+  id: string;
+  name: string;
+  /** @nullable */
+  locality?: string | null;
+}
+
+export interface HallCandidate {
+  id: string;
+  name: string;
+  /** @nullable */
+  locality?: string | null;
+  distanceMeters: number;
+}
+
+export interface HallCandidatesInput {
+  gameId: string;
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  latitude: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  longitude: number;
+}
+
+export type HallCandidatesResultReason = typeof HallCandidatesResultReason[keyof typeof HallCandidatesResultReason];
+
+
+export const HallCandidatesResultReason = {
+  not_signed_in: 'not_signed_in',
+  not_found: 'not_found',
+  not_host: 'not_host',
+  not_finalized: 'not_finalized',
+  wrong_type: 'wrong_type',
+  already_tagged: 'already_tagged',
+} as const;
+
+export interface HallCandidatesResult {
+  eligible: boolean;
+  reason?: HallCandidatesResultReason;
+  candidates: HallCandidate[];
+}
+
+export interface TagHallInput {
+  gameId: string;
+  venueId: string;
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  latitude: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  longitude: number;
+}
+
+export type TagHallResultReason = typeof TagHallResultReason[keyof typeof TagHallResultReason];
+
+
+export const TagHallResultReason = {
+  not_signed_in: 'not_signed_in',
+  not_found: 'not_found',
+  not_host: 'not_host',
+  not_finalized: 'not_finalized',
+  wrong_type: 'wrong_type',
+  already_tagged: 'already_tagged',
+  venue_not_found: 'venue_not_found',
+  out_of_range: 'out_of_range',
+} as const;
+
+export interface TagHallResult {
+  success: boolean;
+  reason?: TagHallResultReason;
+  venue?: TaggedHall;
+}
+
+export type HallLeaderboardResultMode = typeof HallLeaderboardResultMode[keyof typeof HallLeaderboardResultMode];
+
+
+export const HallLeaderboardResultMode = {
+  '8ball': '8ball',
+  '9ball': '9ball',
+} as const;
+
+export type HallLeaderboardResultWindow = typeof HallLeaderboardResultWindow[keyof typeof HallLeaderboardResultWindow];
+
+
+export const HallLeaderboardResultWindow = {
+  '30d': '30d',
+  '90d': '90d',
+  all: 'all',
+} as const;
+
+export interface HallLeaderboardResult {
+  mode: HallLeaderboardResultMode;
+  window: HallLeaderboardResultWindow;
+  page: number;
+  pageSize: number;
+  totalPlayers: number;
+  totalPages: number;
+  rows: LeaderboardRow[];
+  venue: TaggedHall;
 }
 
 export interface FindPlayerPost {
@@ -1931,6 +2051,48 @@ export type GetLeaderboardWindow = typeof GetLeaderboardWindow[keyof typeof GetL
 
 
 export const GetLeaderboardWindow = {
+  '30d': '30d',
+  '90d': '90d',
+  all: 'all',
+} as const;
+
+export type GetHallLeaderboardParams = {
+/**
+ * The Verified Hall id whose House Leaderboard to return.
+ */
+venueId: string;
+/**
+ * Which board to rank — 1-on-1 8-ball or 9-ball. Defaults to 8ball.
+ */
+mode?: GetHallLeaderboardMode;
+/**
+ * Ranking window. All windows require sign-in; 90d and all require a pass.
+
+ */
+window?: GetHallLeaderboardWindow;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+pageSize?: number;
+};
+
+export type GetHallLeaderboardMode = typeof GetHallLeaderboardMode[keyof typeof GetHallLeaderboardMode];
+
+
+export const GetHallLeaderboardMode = {
+  '8ball': '8ball',
+  '9ball': '9ball',
+} as const;
+
+export type GetHallLeaderboardWindow = typeof GetHallLeaderboardWindow[keyof typeof GetHallLeaderboardWindow];
+
+
+export const GetHallLeaderboardWindow = {
   '30d': '30d',
   '90d': '90d',
   all: 'all',

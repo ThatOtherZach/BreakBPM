@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { randomUUID } from "node:crypto";
 import { and, count, desc, eq, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
-import { db, gamesTable, gameParticipantsTable, usersTable, gameMentionsTable, passesTable, subscriptionsTable } from "@workspace/db";
+import { db, gamesTable, gameParticipantsTable, usersTable, gameMentionsTable, passesTable, subscriptionsTable, venuesTable } from "@workspace/db";
 import {
   StartGameBody,
   StartGameResponse,
@@ -35,6 +35,12 @@ import {
   ListMyInvitesResponse,
   AcceptInviteResponse,
   RemoveInviteResponse,
+  FindHallCandidatesBody,
+  FindHallCandidatesResponse,
+  TagGameHallBody,
+  TagGameHallResponse,
+  GetHallLeaderboardQueryParams,
+  GetHallLeaderboardResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser, getVerifiedSubject } from "../lib/auth";
 import {
@@ -48,6 +54,7 @@ import { sweepStaleGames, finalizeGameIfStale, INACTIVITY_FORFEIT_MS, MAX_GAME_D
 import { newId } from "../lib/ids";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
 import { isAdminEmail } from "../lib/config";
+import { haversineMeters } from "../lib/geocode";
 import {
   resolveUserProfileBackground,
   resolveUserEffectiveTheme,
@@ -317,6 +324,7 @@ function toHistoryEntry(
   subject: { slot: number | null; name: string | null },
   pace: { bpm: number | null; sunkBallsCount: number },
   summary: GameSummary | null = null,
+  venue: { id: string; name: string } | null = null,
 ) {
   const gs = g.gameState as Record<string, unknown> | null;
   // Host theme snapshotted onto gameState at /games/start (see return field).
@@ -372,8 +380,73 @@ function toHistoryEntry(
     // frozen in history and identical for every viewer. Null → default green
     // felt (also covers games created before the snapshot existed).
     hostTheme,
+    // The Verified Hall this game was tagged to via "Add to Hall" (8/9-ball
+    // only), or null. Lets history/profile cards link to the hall's House
+    // Leaderboard. Batch-resolved by the caller from games.venueId.
+    venue,
     ...(endReason ? { endReason } : {}),
   };
+}
+
+/** Fixed proximity cap (metres) for "Add to Hall": a game can only be tagged to
+ * a Verified Hall the host was physically at. Server-authoritative — the
+ * client's reported distance is never trusted. */
+const HALL_TAG_RADIUS_METERS = 300;
+
+/** Shape a venue row into the compact hall identity the hall endpoints return. */
+function toHallIdentity(v: { id: string; name: string; locality: string | null }) {
+  return { id: v.id, name: v.name, locality: v.locality };
+}
+
+/**
+ * Batch-fetch {id,name} for a set of venue ids so history/profile rows can carry
+ * their tagged hall without an N+1. Nulls are dropped; an empty input → empty
+ * map. Keyed by venue id.
+ */
+async function fetchVenueLabels(
+  venueIds: Array<string | null>,
+): Promise<Map<string, { id: string; name: string }>> {
+  const ids = [...new Set(venueIds.filter((v): v is string => v != null))];
+  if (ids.length === 0) return new Map();
+  const rows = await db
+    .select({ id: venuesTable.id, name: venuesTable.name })
+    .from(venuesTable)
+    .where(inArray(venuesTable.id, ids));
+  return new Map(rows.map((r) => [r.id, { id: r.id, name: r.name }]));
+}
+
+/** Structured reasons a game can't be tagged to a hall (no throw — both the
+ * pre-check and the commit map these to a 200 body). */
+type HallTagReason =
+  | "not_signed_in"
+  | "not_found"
+  | "not_host"
+  | "not_finalized"
+  | "wrong_type"
+  | "already_tagged";
+
+/**
+ * Shared eligibility gate for the "Add to Hall" flow (pre-check + commit). The
+ * caller must be the signed-in HOST of a FINALIZED 8-ball/9-ball game that is
+ * not already tagged. Returns the loaded game row when taggable, otherwise a
+ * structured reason. `targetVenueId` (commit only): a game already tagged to
+ * THIS same venue is reported taggable so the caller can treat a same-hall
+ * re-tag as an idempotent success; a tag to any OTHER hall is `already_tagged`.
+ */
+async function resolveHallTagEligibility(
+  user: { id: string } | null,
+  gameId: string,
+  targetVenueId?: string,
+): Promise<{ reason: HallTagReason } | { game: GameRow }> {
+  if (!user) return { reason: "not_signed_in" };
+  const rows = await db.select().from(gamesTable).where(eq(gamesTable.id, gameId)).limit(1);
+  const game = rows[0];
+  if (!game) return { reason: "not_found" };
+  if (game.userId !== user.id) return { reason: "not_host" };
+  if (game.endedAt == null) return { reason: "not_finalized" };
+  if (game.gameType !== "8ball" && game.gameType !== "9ball") return { reason: "wrong_type" };
+  if (game.venueId != null && game.venueId !== targetVenueId) return { reason: "already_tagged" };
+  return { game };
 }
 
 /**
@@ -2033,6 +2106,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
             )
         : [];
     const partByGame = new Map(parts.map((p) => [p.gameId, p]));
+    const venueLabels = await fetchVenueLabels(visible.map((g) => g.venueId));
     games = visible.map((g) => {
       const part = partByGame.get(g.id);
       const pace = resolveParticipantPace(
@@ -2051,6 +2125,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
         { slot: part?.slotIndex ?? null, name: host.screenName },
         pace,
         readGameSummary(g.summary),
+        g.venueId ? (venueLabels.get(g.venueId) ?? null) : null,
       );
     });
   }
@@ -2346,6 +2421,7 @@ router.get("/games/history", async (req, res): Promise<void> => {
           )
       : [];
   const myPartByGame = new Map(myParts.map((p) => [p.gameId, p]));
+  const venueLabels = await fetchVenueLabels(visible.map((g) => g.venueId));
 
   const games = visible.map((g) => {
     const part = myPartByGame.get(g.id);
@@ -2365,6 +2441,7 @@ router.get("/games/history", async (req, res): Promise<void> => {
       { slot: part?.slotIndex ?? null, name: user.screenName },
       pace,
       readGameSummary(g.summary),
+      g.venueId ? (venueLabels.get(g.venueId) ?? null) : null,
     );
   });
 
@@ -2527,6 +2604,193 @@ router.get("/leaderboard", async (req, res): Promise<void> => {
       totalPlayers,
       totalPages,
       rows,
+    }),
+  );
+});
+
+/**
+ * "Add to Hall" pre-check (read-only). The signed-in HOST of a finalized
+ * 8-ball/9-ball game posts their geolocation; we confirm the game is taggable
+ * and return the active Verified Halls within the radius cap, nearest first
+ * (top 5). No mutation. `eligible:false` (+reason) means the game can't be
+ * tagged at all; `eligible:true` with an empty list means nothing is close.
+ */
+router.post("/games/hall-candidates", async (req, res): Promise<void> => {
+  const ip = req.ip ?? "unknown";
+  if (!rateLimit(ip, "state")) {
+    res.status(429).json({ error: "rate_limited" });
+    return;
+  }
+  const parsed = FindHallCandidatesBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "invalid_body" });
+    return;
+  }
+  const { gameId, latitude, longitude } = parsed.data;
+  const user = await getOrCreateUser(req);
+  const elig = await resolveHallTagEligibility(user, gameId);
+  if ("reason" in elig) {
+    res.json(FindHallCandidatesResponse.parse({ eligible: false, reason: elig.reason, candidates: [] }));
+    return;
+  }
+  // Active Verified Halls within the radius cap, nearest first (top 5). Distance
+  // is computed server-side from the caller's reported coordinates.
+  const venues = await db
+    .select({
+      id: venuesTable.id,
+      name: venuesTable.name,
+      locality: venuesTable.locality,
+      latitude: venuesTable.latitude,
+      longitude: venuesTable.longitude,
+    })
+    .from(venuesTable)
+    .where(eq(venuesTable.active, true));
+  const candidates = venues
+    .map((v) => ({
+      id: v.id,
+      name: v.name,
+      locality: v.locality,
+      distanceMeters: Math.round(haversineMeters(latitude, longitude, v.latitude, v.longitude)),
+    }))
+    .filter((c) => c.distanceMeters <= HALL_TAG_RADIUS_METERS)
+    .sort((a, b) => a.distanceMeters - b.distanceMeters)
+    .slice(0, 5);
+  res.json(FindHallCandidatesResponse.parse({ eligible: true, candidates }));
+});
+
+/**
+ * "Add to Hall" commit. The signed-in HOST posts the chosen venue id + their
+ * geolocation; every eligibility condition is re-validated and the distance to
+ * the CHOSEN active venue is re-computed server-side (client distance is never
+ * trusted). On success the game is linked to that hall and the leaderboard cache
+ * is busted. A same-hall re-tag is an idempotent success; a different hall is
+ * rejected (`already_tagged`).
+ */
+router.post("/games/tag-hall", async (req, res): Promise<void> => {
+  const ip = req.ip ?? "unknown";
+  if (!rateLimit(ip, "tag-hall")) {
+    res.status(429).json({ error: "rate_limited" });
+    return;
+  }
+  const parsed = TagGameHallBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "invalid_body" });
+    return;
+  }
+  const { gameId, venueId, latitude, longitude } = parsed.data;
+  const user = await getOrCreateUser(req);
+  const elig = await resolveHallTagEligibility(user, gameId, venueId);
+  if ("reason" in elig) {
+    res.json(TagGameHallResponse.parse({ success: false, reason: elig.reason }));
+    return;
+  }
+  const game = elig.game;
+  // The chosen venue must be an active Verified Hall.
+  const vrows = await db.select().from(venuesTable).where(eq(venuesTable.id, venueId)).limit(1);
+  const venue = vrows[0];
+  if (!venue || !venue.active) {
+    res.json(TagGameHallResponse.parse({ success: false, reason: "venue_not_found" }));
+    return;
+  }
+  // Same-hall re-tag: already linked to this venue → idempotent success, no write.
+  if (game.venueId === venueId) {
+    res.json(TagGameHallResponse.parse({ success: true, venue: toHallIdentity(venue) }));
+    return;
+  }
+  // Server-authoritative proximity to the CHOSEN venue.
+  const distance = haversineMeters(latitude, longitude, venue.latitude, venue.longitude);
+  if (distance > HALL_TAG_RADIUS_METERS) {
+    res.json(TagGameHallResponse.parse({ success: false, reason: "out_of_range" }));
+    return;
+  }
+  // Link the game to the hall. Guard on venueId IS NULL so a concurrent tag
+  // can't overwrite an existing link (eligibility already rejected a different
+  // existing hall; this closes the race window). `.returning()` lets us detect
+  // the lost-race case: zero affected rows means another request tagged this
+  // game between our eligibility read and this write.
+  const linked = await db
+    .update(gamesTable)
+    .set({ venueId })
+    .where(and(eq(gamesTable.id, game.id), isNull(gamesTable.venueId)))
+    .returning({ id: gamesTable.id });
+  if (linked.length === 0) {
+    // Lost the race: re-read to report the authoritative outcome — idempotent
+    // success if the winner happened to pick THIS same hall, else already_tagged.
+    const cur = await db
+      .select({ venueId: gamesTable.venueId })
+      .from(gamesTable)
+      .where(eq(gamesTable.id, game.id))
+      .limit(1);
+    if (cur[0]?.venueId === venueId) {
+      res.json(TagGameHallResponse.parse({ success: true, venue: toHallIdentity(venue) }));
+      return;
+    }
+    res.json(TagGameHallResponse.parse({ success: false, reason: "already_tagged" }));
+    return;
+  }
+  clearLeaderboardCache();
+  res.json(TagGameHallResponse.parse({ success: true, venue: toHallIdentity(venue) }));
+});
+
+/**
+ * Per-hall (House) leaderboard: the same composite-skill ranking as
+ * `/leaderboard`, scoped to games tagged to one Verified Hall. Viewing requires
+ * sign-in for EVERY window (no signed-out single-hall widget); 90d/all stay
+ * pass-gated exactly like the global board. A 404 means the venue id is unknown;
+ * an inactive (but existing) hall is still viewable.
+ */
+router.get("/leaderboard/hall", async (req, res): Promise<void> => {
+  const ip = req.ip ?? "unknown";
+  if (!rateLimit(ip, "state")) {
+    res.status(429).json({ error: "rate_limited" });
+    return;
+  }
+  const parsed = GetHallLeaderboardQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "invalid_query" });
+    return;
+  }
+  const { venueId, mode, window, page, pageSize } = parsed.data;
+
+  // Sign-in is required to view any House Leaderboard window.
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "sign_in_required" });
+    return;
+  }
+  // The venue must exist; an inactive (but existing) hall is still viewable.
+  const vrows = await db.select().from(venuesTable).where(eq(venuesTable.id, venueId)).limit(1);
+  const venue = vrows[0];
+  if (!venue) {
+    res.status(404).json({ error: "not_found" });
+    return;
+  }
+
+  const entitlement = await computeEntitlement(user);
+  const isPass = entitlement.tier === "pass";
+  // Longer windows are a paid perk, mirroring the global board.
+  if (window !== "30d" && !isPass) {
+    res.status(403).json({ error: "pass_required" });
+    return;
+  }
+
+  const all = await resolveLeaderboard(mode as LeaderboardMode, window as LeaderboardWindow, venueId);
+  const totalPlayers = all.length;
+  const totalPages = Math.max(1, Math.ceil(totalPlayers / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const offset = (safePage - 1) * pageSize;
+  const rows = all.slice(offset, offset + pageSize);
+
+  res.json(
+    GetHallLeaderboardResponse.parse({
+      mode,
+      window,
+      page: safePage,
+      pageSize,
+      totalPlayers,
+      totalPages,
+      rows,
+      venue: toHallIdentity(venue),
     }),
   );
 });

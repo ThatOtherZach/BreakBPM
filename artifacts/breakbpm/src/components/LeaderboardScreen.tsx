@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useGetLeaderboard, useGetMe } from "@workspace/api-client-react";
+import {
+  useGetLeaderboard,
+  useGetHallLeaderboard,
+  getGetLeaderboardQueryKey,
+  getGetHallLeaderboardQueryKey,
+  useGetMe,
+} from "@workspace/api-client-react";
 import type { LeaderboardRow, GetLeaderboardWindow, GetLeaderboardMode } from "@workspace/api-client-react";
 import Navbar from "./Navbar";
 import { useAuth } from "../lib/authClient";
@@ -187,12 +193,19 @@ interface Props {
   onFindPlayers: () => void;
   onStats: () => void;
   onSignIn: () => void;
+  /**
+   * When set, this is a per-hall ("House") leaderboard scoped to a single
+   * Verified Hall: the same ranking, but only counting games tagged to this
+   * venue. Sign-in is required for every window (no signed-out hall widget).
+   */
+  venueId?: string;
 }
 
 /**
  * Full leaderboard page (login required). 50 standings per page with a
  * 30d / 90d / all-time window toggle — the longer windows are a pass perk
- * (also enforced server-side).
+ * (also enforced server-side). With `venueId` it renders the House Leaderboard
+ * for one hall, reusing the same ranking/pagination UI.
  */
 export default function LeaderboardScreen({
   onBack,
@@ -201,22 +214,45 @@ export default function LeaderboardScreen({
   onFindPlayers,
   onStats,
   onSignIn,
+  venueId,
 }: Props) {
   const [, setLocation] = useLocation();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const me = useGetMe();
   const isPass = me.data?.entitlement?.tier === "pass";
+  const isHall = venueId != null;
 
   const [mode, setMode] = useState<GetLeaderboardMode>("8ball");
   const [window, setWindow] = useState<GetLeaderboardWindow>("30d");
   const [page, setPage] = useState(1);
 
-  // The query always runs, but its result is only rendered for signed-in
-  // callers (see the `isAuthenticated` gates below). The default window is the
-  // public 30d, so an anonymous fetch never 403s.
-  const q = useGetLeaderboard({ mode, window, page, pageSize: PAGE_SIZE });
+  // Two queries, mutually gated by `enabled`. The GLOBAL query always runs (the
+  // default 30d window is public, so an anonymous fetch never 403s) but its
+  // result is only rendered for signed-in callers. The HALL query needs sign-in
+  // for every window, so it's gated on auth too. Per the generated-hook
+  // contract, passing any `query` option makes `queryKey` required.
+  const globalQ = useGetLeaderboard(
+    { mode, window, page, pageSize: PAGE_SIZE },
+    {
+      query: {
+        enabled: !isHall,
+        queryKey: getGetLeaderboardQueryKey({ mode, window, page, pageSize: PAGE_SIZE }),
+      },
+    },
+  );
+  const hallQ = useGetHallLeaderboard(
+    { venueId: venueId ?? "", mode, window, page, pageSize: PAGE_SIZE },
+    {
+      query: {
+        enabled: isHall && isAuthenticated,
+        queryKey: getGetHallLeaderboardQueryKey({ venueId: venueId ?? "", mode, window, page, pageSize: PAGE_SIZE }),
+      },
+    },
+  );
+  const q = isHall ? hallQ : globalQ;
   const data = q.data;
   const rows = data?.rows ?? [];
+  const hallVenue = hallQ.data?.venue;
 
   function chooseWindow(w: GetLeaderboardWindow) {
     if (w !== "30d" && !isPass) return;
@@ -242,7 +278,11 @@ export default function LeaderboardScreen({
       <div className="app-body">
         {isAuthenticated && <div className="panel">
           <div className="panel-header">
-            <span>🏆 Leaderboard</span>
+            <span>
+              {isHall
+                ? `🏆 ${hallVenue?.name ?? "House"} · House`
+                : "🏆 Leaderboard"}
+            </span>
             {data && (
               <span style={{ fontSize: 10, color: "#cdd9f0", fontWeight: "normal" }}>
                 {data.totalPlayers} {data.totalPlayers === 1 ? "player" : "players"}
@@ -250,8 +290,19 @@ export default function LeaderboardScreen({
             )}
           </div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {isHall && (
+              <button
+                className="btn"
+                style={{ alignSelf: "flex-start", padding: "4px 8px", fontSize: 11 }}
+                onClick={() => setLocation("/leaderboard")}
+              >
+                ← Global leaderboard
+              </button>
+            )}
             <p style={{ fontSize: 11, color: "#444", margin: 0, lineHeight: 1.4 }}>
-              Top pace &amp; accuracy, recent {MODE_LABEL[mode].toLowerCase()} 1-on-1 games only.
+              {isHall
+                ? `House standings${hallVenue?.locality ? ` · ${hallVenue.locality}` : ""} — recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games at this hall.`
+                : `Top pace & accuracy, recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games only.`}
             </p>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               {MODES.map((m) => {

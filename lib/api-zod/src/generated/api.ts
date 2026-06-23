@@ -782,7 +782,11 @@ export const GetPublicProfileResponse = zod.object({
   "ball": zod.number(),
   "player": zod.string()
 })).optional(),
-  "hostTheme": zod.enum(['shark', 'pool-player', 'hustler', 'none']).nullish()
+  "hostTheme": zod.enum(['shark', 'pool-player', 'hustler', 'none']).nullish(),
+  "venue": zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+}).nullable()
 })),
   "stats": zod.union([zod.object({
   "tier": zod.enum(['public', 'account', 'pass']),
@@ -945,7 +949,11 @@ export const GetGameHistoryResponse = zod.object({
   "ball": zod.number(),
   "player": zod.string()
 })).optional(),
-  "hostTheme": zod.enum(['shark', 'pool-player', 'hustler', 'none']).nullish()
+  "hostTheme": zod.enum(['shark', 'pool-player', 'hustler', 'none']).nullish(),
+  "venue": zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+}).nullable()
 }))
 })
 
@@ -1010,7 +1018,11 @@ export const ListMyInvitesResponse = zod.object({
   "ball": zod.number(),
   "player": zod.string()
 })).optional(),
-  "hostTheme": zod.enum(['shark', 'pool-player', 'hustler', 'none']).nullish()
+  "hostTheme": zod.enum(['shark', 'pool-player', 'hustler', 'none']).nullish(),
+  "venue": zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+}).nullable()
 })
 }))
 })
@@ -1119,6 +1131,68 @@ export const GetStatsResponse = zod.object({
 
 
 /**
+ * Read-only pre-check for the "Add to Hall" flow. The signed-in HOST of a finalized 8-ball/9-ball game posts their current geolocation; the server confirms the game is taggable (caller is the host, the game is finalized, its type is 8-ball/9-ball, and it is not already tagged) and returns the active Verified Halls within the fixed radius cap, nearest first. No mutation happens here — the client uses the list to confirm/pick a hall before calling `tag-hall`. `eligible:false` (with a `reason`) means the game cannot be tagged at all; an empty `candidates` list with `eligible:true` means no hall is close enough.
+
+ * @summary Nearby Verified Halls a finished game can be tagged to
+ */
+export const findHallCandidatesBodyLatitudeMin = -90;
+export const findHallCandidatesBodyLatitudeMax = 90;
+
+export const findHallCandidatesBodyLongitudeMin = -180;
+export const findHallCandidatesBodyLongitudeMax = 180;
+
+
+
+export const FindHallCandidatesBody = zod.object({
+  "gameId": zod.string(),
+  "latitude": zod.number().min(findHallCandidatesBodyLatitudeMin).max(findHallCandidatesBodyLatitudeMax),
+  "longitude": zod.number().min(findHallCandidatesBodyLongitudeMin).max(findHallCandidatesBodyLongitudeMax)
+})
+
+export const FindHallCandidatesResponse = zod.object({
+  "eligible": zod.boolean(),
+  "reason": zod.enum(['not_signed_in', 'not_found', 'not_host', 'not_finalized', 'wrong_type', 'already_tagged']).optional(),
+  "candidates": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "locality": zod.string().nullish(),
+  "distanceMeters": zod.number()
+}))
+})
+
+
+/**
+ * Commits the "Add to Hall" tag. The signed-in HOST posts the chosen venue id plus their current geolocation; the server re-validates every condition (host, finalized, 8-ball/9-ball, not already tagged) and re-computes the distance to the CHOSEN active venue server-side, rejecting if it is outside the radius cap. Client-supplied distance is never trusted. On success the game is linked to that hall and the affected leaderboard cache is busted. Retagging is out of scope: a game already tagged to a different hall is rejected, while re-tagging to the same hall is an idempotent success.
+
+ * @summary Tag a finished game to a Verified Hall (host only)
+ */
+export const tagGameHallBodyLatitudeMin = -90;
+export const tagGameHallBodyLatitudeMax = 90;
+
+export const tagGameHallBodyLongitudeMin = -180;
+export const tagGameHallBodyLongitudeMax = 180;
+
+
+
+export const TagGameHallBody = zod.object({
+  "gameId": zod.string(),
+  "venueId": zod.string(),
+  "latitude": zod.number().min(tagGameHallBodyLatitudeMin).max(tagGameHallBodyLatitudeMax),
+  "longitude": zod.number().min(tagGameHallBodyLongitudeMin).max(tagGameHallBodyLongitudeMax)
+})
+
+export const TagGameHallResponse = zod.object({
+  "success": zod.boolean(),
+  "reason": zod.enum(['not_signed_in', 'not_found', 'not_host', 'not_finalized', 'wrong_type', 'already_tagged', 'venue_not_found', 'out_of_range']).optional(),
+  "venue": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "locality": zod.string().nullish()
+}).optional()
+})
+
+
+/**
  * Ranking of registered players by a composite skill measure (recent pace scaled by accuracy, with games against registered opponents weighted above games against anonymous guests). 8-ball and 9-ball are ranked as separate boards selected by `mode` — they are never merged. The 30-day window is public (so the signed-out home-page widget works); the 90-day and all-time windows require a pass and are enforced server-side. Each (mode, window) ranking is computed once and cached for one hour, then paginated from the cache. BPM and accuracy are reported per row for display; the composite score itself is intentionally not exposed.
 
  * @summary Balls-Per-Minute leaderboard
@@ -1159,6 +1233,56 @@ export const GetLeaderboardResponse = zod.object({
   "winsToday": zod.number().default(getLeaderboardResponseRowsItemWinsTodayDefault),
   "rainbowName": zod.boolean()
 }))
+})
+
+
+/**
+ * The same composite-skill ranking as `/leaderboard`, but scoped to games that were tagged to one Verified Hall (by `venueId`) via "Add to Hall". Unlike the global board, the 30-day window here also requires a signed-in caller (there is no signed-out home-page widget for a single hall); the 90-day and all-time windows additionally require a pass, enforced server-side. Returns the venue's identity alongside the ranking so the screen can show the hall name. A `404` means the venue id is unknown; an inactive (but still existing) hall is viewable.
+
+ * @summary Per-hall (House) leaderboard for a Verified Hall
+ */
+export const getHallLeaderboardQueryModeDefault = `8ball`;
+export const getHallLeaderboardQueryWindowDefault = `30d`;
+export const getHallLeaderboardQueryPageDefault = 1;
+
+export const getHallLeaderboardQueryPageSizeDefault = 10;
+export const getHallLeaderboardQueryPageSizeMax = 50;
+
+
+
+export const GetHallLeaderboardQueryParams = zod.object({
+  "venueId": zod.coerce.string().describe('The Verified Hall id whose House Leaderboard to return.'),
+  "mode": zod.enum(['8ball', '9ball']).default(getHallLeaderboardQueryModeDefault).describe('Which board to rank — 1-on-1 8-ball or 9-ball. Defaults to 8ball.'),
+  "window": zod.enum(['30d', '90d', 'all']).default(getHallLeaderboardQueryWindowDefault).describe('Ranking window. All windows require sign-in; 90d and all require a pass.\n'),
+  "page": zod.coerce.number().min(1).default(getHallLeaderboardQueryPageDefault),
+  "pageSize": zod.coerce.number().min(1).max(getHallLeaderboardQueryPageSizeMax).default(getHallLeaderboardQueryPageSizeDefault)
+})
+
+export const getHallLeaderboardResponseRowsItemWinsTodayDefault = 0;
+
+export const GetHallLeaderboardResponse = zod.object({
+  "mode": zod.enum(['8ball', '9ball']),
+  "window": zod.enum(['30d', '90d', 'all']),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPlayers": zod.number(),
+  "totalPages": zod.number(),
+  "rows": zod.array(zod.object({
+  "rank": zod.number(),
+  "screenName": zod.string(),
+  "bpm": zod.number(),
+  "accuracy": zod.number().nullable(),
+  "gamesPlayed": zod.number(),
+  "sharkLevel": zod.number(),
+  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
+  "winsToday": zod.number().default(getHallLeaderboardResponseRowsItemWinsTodayDefault),
+  "rainbowName": zod.boolean()
+})),
+  "venue": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "locality": zod.string().nullish()
+})
 })
 
 

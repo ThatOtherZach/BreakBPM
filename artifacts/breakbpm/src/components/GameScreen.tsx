@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, Fragment, type CSSProperties } from 'react';
+import { useLocation } from 'wouter';
 import type { GameState, ShotLogEntry, RematchConfig } from '../lib/gameLogic';
 import { THEME_FELT, THEME_ACCENT, themeColorOf } from '../lib/backgroundVariants';
 import Navbar from './Navbar';
@@ -25,7 +26,10 @@ import {
   useGetGameStateByCode,
   getGetGameStateByCodeQueryKey,
   useListAds,
+  useFindHallCandidates,
+  useTagGameHall,
 } from '@workspace/api-client-react';
+import type { HallCandidate, TaggedHall } from '@workspace/api-client-react';
 import { FORFEIT_INACTIVITY_MS, MAX_GAME_DURATION_MS } from '../lib/forfeit';
 
 interface Props {
@@ -89,12 +93,54 @@ function ballClass(ball: number, legal: number[], sunk: number[], _gameType: str
   return base;
 }
 
+/** Human distance label for a hall candidate (meters → "120 m" / "1.4 km"). */
+function hallDistanceLabel(meters: number): string {
+  return meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`;
+}
+
+/** Friendly copy for an "Add to Hall" rejection reason (server-supplied). */
+function hallTagFailureMessage(reason: string | undefined): string {
+  switch (reason) {
+    case 'not_finalized':
+      return 'This game is still saving — try again in a moment.';
+    case 'already_tagged':
+      return 'This game is already linked to a hall.';
+    case 'wrong_type':
+      return 'Only 8-ball and 9-ball games can be added to a hall.';
+    case 'not_host':
+      return 'Only the game host can add a game to a hall.';
+    case 'not_signed_in':
+      return 'Sign in to add a game to a hall.';
+    case 'venue_not_found':
+      return 'That hall is no longer available.';
+    case 'out_of_range':
+      return "You're not close enough to that hall anymore.";
+    default:
+      return 'Could not add this game to a hall. Try again.';
+  }
+}
+
 export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, initialPausedDuration = 0, onNewGame, onRematch, isAuthenticated, onAbout, onAccount, onStats, onFindPlayers, onSignIn }: Props) {
+  const [, navigate] = useLocation();
   const saveGame = useSaveGame();
   const recordActivity = useRecordGameActivity();
   const me = useGetMe();
   const hasActivePass = me.data?.entitlement?.hasActivePass ?? false;
   const spectatingEnabled = me.data?.entitlement?.tier === 'pass';
+
+  // "Add to Hall" — a signed-in HOST can tag a finished 8-ball/9-ball game to
+  // the nearest active Verified Hall. The button replaces "Copy Link" on those
+  // modes (see the share row). The whole flow is geolocation → server-checked
+  // candidate list → confirm/pick → tag, with the server re-validating every
+  // condition and re-computing distance authoritatively.
+  const findHallCandidates = useFindHallCandidates();
+  const tagHall = useTagGameHall();
+  const [hallOpen, setHallOpen] = useState(false);
+  const [hallPhase, setHallPhase] = useState<'idle' | 'locating' | 'choose' | 'tagging' | 'done' | 'error'>('idle');
+  const [hallCandidates, setHallCandidates] = useState<HallCandidate[]>([]);
+  const [hallCoords, setHallCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [hallError, setHallError] = useState('');
+  const [taggedHall, setTaggedHall] = useState<TaggedHall | null>(null);
 
   // HUD text ads: shown only to non-paying viewers (anyone whose tier is not
   // `pass`). Anonymous / still-loading callers are treated as non-paid so they
@@ -827,6 +873,85 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     setTimeout(() => setToast(''), ok ? 2500 : 3000);
   }
 
+  // Open the "Add to Hall" panel and ask the browser for the host's location,
+  // then fetch the server-vetted list of nearby active Verified Halls. The
+  // server re-checks host/finalized/type/already-tagged and computes distance
+  // itself; we only forward coordinates. A 200 with `eligible:false` carries a
+  // structured reason we map to friendly copy.
+  function startAddToHall() {
+    if (!serverGameId) return;
+    setHallOpen(true);
+    setHallError('');
+    setTaggedHall(null);
+    setHallCandidates([]);
+    if (!('geolocation' in navigator)) {
+      setHallPhase('error');
+      setHallError('Location is unavailable on this device.');
+      return;
+    }
+    setHallPhase('locating');
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setHallCoords({ lat, lng });
+        try {
+          const res = await findHallCandidates.mutateAsync({
+            data: { gameId: serverGameId, latitude: lat, longitude: lng },
+          });
+          if (!res.eligible) {
+            setHallPhase('error');
+            setHallError(hallTagFailureMessage(res.reason));
+            return;
+          }
+          if (res.candidates.length === 0) {
+            setHallPhase('error');
+            setHallError('No Verified Hall within range. You can only add a game to a hall you were at.');
+            return;
+          }
+          setHallCandidates(res.candidates);
+          setHallPhase('choose');
+        } catch {
+          setHallPhase('error');
+          setHallError('Could not check nearby halls. Try again.');
+        }
+      },
+      () => {
+        setHallPhase('error');
+        setHallError('Location access is needed to add a game to a hall. Enable it and try again.');
+      },
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 60_000 },
+    );
+  }
+
+  // Commit the tag to the chosen hall. The server re-validates eligibility and
+  // re-computes proximity to THIS venue (rejecting out_of_range), so the value
+  // we send for distance is never trusted.
+  async function confirmAddToHall(candidate: HallCandidate) {
+    if (!serverGameId || !hallCoords) return;
+    setHallPhase('tagging');
+    try {
+      const res = await tagHall.mutateAsync({
+        data: { gameId: serverGameId, venueId: candidate.id, latitude: hallCoords.lat, longitude: hallCoords.lng },
+      });
+      if (!res.success || !res.venue) {
+        setHallPhase('error');
+        setHallError(hallTagFailureMessage(res.reason));
+        return;
+      }
+      setTaggedHall(res.venue);
+      setHallPhase('done');
+    } catch {
+      setHallPhase('error');
+      setHallError('Could not add this game to the hall. Try again.');
+    }
+  }
+
+  function closeAddToHall() {
+    setHallOpen(false);
+    setHallPhase('idle');
+  }
+
   async function handleRematch() {
     if (rematchPending) return;
     // The breaker inherits to the winner's slot; if there's no mappable winner
@@ -1305,15 +1430,146 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         {/* ── Share scorecard ──
             On the ended screen, snapshot the Win98 widget to an image for the
             native share sheet (PNG download fallback), plus a copy-link. Only
-            shown once the undo window has closed (game locked in). */}
-        {state.phase === 'ended' && !endUndoOpen && (
-          <div className="grid-2" style={{ marginTop: 8 }}>
-            <button className="btn btn-big" onClick={handleShareImage} disabled={sharingImage}>
-              {sharingImage ? 'Rendering…' : '📸 Share Card'}
-            </button>
-            <button className="btn btn-big" onClick={handleCopyWatchLink}>
-              🔗 Copy Link
-            </button>
+            shown once the undo window has closed (game locked in). For a
+            signed-in HOST of an 8-ball/9-ball game, "Add to Hall" REPLACES the
+            copy-link so the game can be tagged to a nearby Verified Hall; other
+            modes / signed-out players keep the copy-link unchanged. */}
+        {state.phase === 'ended' && !endUndoOpen && (() => {
+          const canTagHall =
+            isAuthenticated &&
+            serverGameId != null &&
+            (state.gameType === '8ball' || state.gameType === '9ball');
+          return (
+            <div className="grid-2" style={{ marginTop: 8 }}>
+              <button className="btn btn-big" onClick={handleShareImage} disabled={sharingImage}>
+                {sharingImage ? 'Rendering…' : '📸 Share Card'}
+              </button>
+              {canTagHall ? (
+                hallPhase === 'done' ? (
+                  <button className="btn btn-big" disabled>
+                    ✅ Added
+                  </button>
+                ) : (
+                  <button
+                    className="btn btn-big"
+                    onClick={startAddToHall}
+                    disabled={hallPhase === 'locating' || hallPhase === 'tagging'}
+                  >
+                    {hallPhase === 'locating' ? 'Locating…' : '🎱 Add to Hall'}
+                  </button>
+                )
+              ) : (
+                <button className="btn btn-big" onClick={handleCopyWatchLink}>
+                  🔗 Copy Link
+                </button>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── Add to Hall panel ── server-vetted nearby halls, confirm/pick,
+            then the result with a jump to that hall's House Leaderboard. */}
+        {state.phase === 'ended' && !endUndoOpen && hallOpen && (
+          <div className="panel" style={{ marginTop: 8 }}>
+            <div className="panel-header">
+              <span>🎱 Add to Hall</span>
+              <button
+                className="btn"
+                style={{ padding: '2px 8px' }}
+                onClick={closeAddToHall}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {hallPhase === 'locating' && (
+                <p style={{ fontFamily: 'VT323', fontSize: 18, margin: 0 }}>📍 Finding the nearest hall…</p>
+              )}
+
+              {hallPhase === 'choose' && hallCandidates.length === 1 && (
+                <>
+                  <p style={{ fontSize: 13, margin: 0, lineHeight: 1.4 }}>
+                    Add this game to <strong>{hallCandidates[0].name}</strong>
+                    {hallCandidates[0].locality ? ` · ${hallCandidates[0].locality}` : ''}{' '}
+                    (~{hallDistanceLabel(hallCandidates[0].distanceMeters)} away)?
+                  </p>
+                  <div className="grid-2">
+                    <button className="btn" onClick={closeAddToHall} disabled={tagHall.isPending}>
+                      Cancel
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => confirmAddToHall(hallCandidates[0])}
+                      disabled={tagHall.isPending}
+                    >
+                      Confirm
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {hallPhase === 'choose' && hallCandidates.length > 1 && (
+                <>
+                  <p style={{ fontSize: 13, margin: 0, lineHeight: 1.4 }}>Which hall are you at?</p>
+                  {hallCandidates.map((c) => (
+                    <div
+                      key={c.id}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}
+                    >
+                      <span style={{ fontSize: 13, minWidth: 0, lineHeight: 1.3 }}>
+                        {c.name}
+                        {c.locality ? ` · ${c.locality}` : ''}{' '}
+                        <span style={{ color: '#666' }}>(~{hallDistanceLabel(c.distanceMeters)})</span>
+                      </span>
+                      <button
+                        className="btn btn-primary"
+                        style={{ flexShrink: 0 }}
+                        onClick={() => confirmAddToHall(c)}
+                        disabled={tagHall.isPending}
+                      >
+                        Confirm
+                      </button>
+                    </div>
+                  ))}
+                  <button className="btn" onClick={closeAddToHall} disabled={tagHall.isPending}>
+                    Cancel
+                  </button>
+                </>
+              )}
+
+              {hallPhase === 'tagging' && (
+                <p style={{ fontFamily: 'VT323', fontSize: 18, margin: 0 }}>🎱 Adding to hall…</p>
+              )}
+
+              {hallPhase === 'done' && taggedHall && (
+                <>
+                  <p style={{ fontSize: 13, margin: 0, lineHeight: 1.4 }}>
+                    ✅ Added to <strong>{taggedHall.name}</strong>!
+                  </p>
+                  <button
+                    className="btn btn-primary w-full"
+                    onClick={() => navigate(`/leaderboard/hall/${taggedHall.id}`)}
+                  >
+                    🏆 House Leaderboard
+                  </button>
+                </>
+              )}
+
+              {hallPhase === 'error' && (
+                <>
+                  <p style={{ fontSize: 12, color: '#c00', margin: 0, lineHeight: 1.4 }}>⚠ {hallError}</p>
+                  <div className="grid-2">
+                    <button className="btn" onClick={closeAddToHall}>
+                      Close
+                    </button>
+                    <button className="btn btn-primary" onClick={startAddToHall}>
+                      Try again
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
 

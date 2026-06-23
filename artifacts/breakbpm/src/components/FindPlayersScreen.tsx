@@ -7,6 +7,7 @@
  * getUTC accessors and Date.UTC so the displayed value never drifts by locale.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
@@ -1060,6 +1061,7 @@ function VenueCard({
   venue: Venue;
   distanceKm: number | null;
 }) {
+  const [, setLocation] = useLocation();
   const distLabel =
     distanceKm == null
       ? null
@@ -1093,6 +1095,13 @@ function VenueCard({
         </div>
       )}
       <div className="fpp-card-actions">
+        <button
+          type="button"
+          className="btn"
+          onClick={() => setLocation(`/leaderboard/hall/${venue.id}`)}
+        >
+          🏆 House Leaderboard
+        </button>
         <a
           className="btn"
           href={`https://www.google.com/maps?q=${venue.latitude},${venue.longitude}`}
