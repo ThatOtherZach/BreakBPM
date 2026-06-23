@@ -1152,11 +1152,6 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                   >
                     {inviteUrlFor(myInviteCode.data.code)}
                   </a>
-                  {/* Reward note */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "#4ade80" }}>
-                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#4ade80", display: "inline-block", flexShrink: 0 }} />
-                    New players unlock a free trial
-                  </div>
                 </div>
                 {/* QR + Copy link button — centred below the info */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
