@@ -589,7 +589,11 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
         className="obs-overlay"
         style={{ transform: `scale(${obsScale})`, transformOrigin: 'top left' }}
       >
-        <W98Frame handle={watchName ?? hostName}>
+        <W98Frame
+          handle={watchName ?? hostName}
+          rainbow={isRainbowName(hostName)}
+          accent={themeColor === 'green' ? null : THEME_ACCENT[themeColor]}
+        >
           {hudPanel}
         </W98Frame>
         {compactLog}
