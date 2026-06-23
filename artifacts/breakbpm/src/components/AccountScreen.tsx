@@ -1086,8 +1086,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
           </div>
           <div className="panel-body">
             <p style={{ fontSize: 11, color: "#444", marginTop: 0, marginBottom: 8 }}>
-              Share your personal link. New players who sign up through it unlock
-              a {myInviteCode.data?.trialLabel ? `${myInviteCode.data.trialLabel} ` : ""}free trial pass — on the house.
+              Share your invite link and players who sign up through it unlock a free six hour trial free trial pass!
             </p>
             {myInviteCode.isLoading && (
               <div style={{ fontFamily: "VT323", fontSize: 16 }}>Loading your link…</div>
