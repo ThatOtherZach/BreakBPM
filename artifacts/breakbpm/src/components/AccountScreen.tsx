@@ -704,8 +704,11 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 {/* ── OBS Stream Setup ──
                     Builds the chrome-free Browser Source URL for the live
                     overlay (transparent Win98 widget) with log + scale toggles,
-                    a copy button, and a live preview of the actual widget. */}
-                {(() => {
+                    a copy button, and a live preview of the actual widget.
+                    Pass-gated: the /watch overlay only works for paid hosts
+                    (spectating requires tier === 'pass'); admins get an
+                    effective Lifetime so they're covered too. */}
+                {ent.tier === "pass" && (() => {
                   const base = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}`;
                   const scaleNum = Number(obsScale);
                   const params = ["obs=1"];
