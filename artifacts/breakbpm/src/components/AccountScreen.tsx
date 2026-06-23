@@ -1112,7 +1112,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 >
                   {/* Code + 📋 to copy bare code */}
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <span className="eight-ball-icon" style={{ fontSize: 22, flexShrink: 0 }} aria-hidden="true" />
+                    <span className="hud-chip hud-chip-eight" data-number="8" aria-label="8-ball" />
                     <span
                       style={{
                         fontFamily: "'VT323',monospace",
