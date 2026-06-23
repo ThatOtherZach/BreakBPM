@@ -1077,7 +1077,10 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
         {/* Invite a friend — every signed-in user gets a personal invite link.
             A NEW user who signs up through it gets a short free trial pass
             (granted once per new user; existing/already-paid users get nothing).
-            One-sided: there's no reward to the inviter. */}
+            One-sided: there's no reward to the inviter. Hidden for Lifetime pass
+            holders (nothing more to unlock), but admins keep it (their Lifetime
+            is synthesized — they still want to share invites). */}
+        {(!ent.activePass?.isLifetime || isAdmin) && (
         <div className="panel">
           <div className="panel-header">
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
@@ -1183,6 +1186,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
             )}
           </div>
         </div>
+        )}
 
         {/* Admin code generator — only rendered for accounts on the
             BREAKBPM_ADMIN_EMAILS allowlist (server enforces 403 regardless).
