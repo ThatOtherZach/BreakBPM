@@ -71,7 +71,15 @@ Join with the code (`breakbpm.com/join/CODE`) before the first pocketed ball and
 
 If the game is full (max 4 players), you join as a spectator only. You can also **Spectate by name** at `breakbpm.com/watch/USERNAME` to watch without a code.
 
-<!--**Streaming?** Add `?obs=1` to a watch link for an overlay you can drop straight into OBS as a browser source (`breakbpm.com/watch/USERNAME?obs=1`). Chain flags such as `&log=1` to add a compact shot log and `&scale=1.5` to resize.-->
+### Stream with BreakBPM
+
+Going live? BreakBPM gives you a free, transparent overlay for your stream.
+
+- **Grab the URL.** Open **Account** and find **Stream to OBS** — flip on the shot log if you want it, set the scale, and copy the Browser Source URL. (It's just your watch link with `?obs=1` added: `breakbpm.com/watch/USERNAME?obs=1`.)
+- **Add it to OBS.** In OBS Studio (or Streamlabs), add a **Browser Source** and paste the URL. The overlay has a transparent background, so it drops cleanly over your table cam or gameplay.
+- **Tweak it.** Chain flags onto the URL: `&log=1` shows a compact shot log, and `&scale=1.5` resizes the whole widget. Between games the overlay quietly collapses to a friendly idle face.
+
+It's the same Windows 98–styled scoreboard you can **Share** as an image at the end of a game — live BPM, accuracy, the rack, and the players, all in one tidy window.
 
 ### Link Friends In
 

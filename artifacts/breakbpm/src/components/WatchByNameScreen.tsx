@@ -114,6 +114,7 @@ export default function WatchByNameScreen({ name, onBack, onAbout, onAccount, on
         obs={obs}
         obsLog={obsLog}
         obsScale={obsScale}
+        watchName={name}
       />
     );
   }

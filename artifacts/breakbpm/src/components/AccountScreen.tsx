@@ -38,6 +38,8 @@ import {
   type AccountProfileTheme,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import StreamWidget from "./StreamWidget";
+import type { StreamWidgetData } from "../lib/streamWidget";
 import Navbar from "./Navbar";
 import GameHistoryCard, { fmtDate } from "./GameHistoryCard";
 import LuckyBreakReveal from "./LuckyBreakReveal";
@@ -105,6 +107,10 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   // carries splash artwork (stored on the code; the recipient's watch profile +
   // the card both wear it). Off → no card download and no artwork assigned.
   const [autoDownloadCard, setAutoDownloadCard] = useState(true);
+  // OBS Browser Source URL builder toggles.
+  const [obsLogOn, setObsLogOn] = useState(false);
+  const [obsScale, setObsScale] = useState("1");
+  const [obsCopied, setObsCopied] = useState(false);
   const [card, setCard] = useState<{
     code: string;
     kind: string;
@@ -696,6 +702,123 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                     </button>
                   </div>
                 </div>
+
+                {/* ── OBS Stream Setup ──
+                    Builds the chrome-free Browser Source URL for the live
+                    overlay (transparent Win98 widget) with log + scale toggles,
+                    a copy button, and a live preview of the actual widget. */}
+                {(() => {
+                  const base = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}`;
+                  const scaleNum = Number(obsScale);
+                  const params = ["obs=1"];
+                  if (obsLogOn) params.push("log=1");
+                  if (Number.isFinite(scaleNum) && scaleNum > 0 && scaleNum !== 1) {
+                    params.push(`scale=${scaleNum}`);
+                  }
+                  const obsUrl = `${base}/watch/${encodeURIComponent(account.screenName)}?${params.join("&")}`;
+                  const preview: StreamWidgetData = {
+                    handle: account.screenName,
+                    watchUrl: null,
+                    modeLabel: "8-BALL",
+                    playerCount: 2,
+                    bpm: 4.2,
+                    bpmSubject: account.screenName,
+                    bpmSubjectRainbow: false,
+                    accuracy: 78,
+                    accuracyMade: 14,
+                    accuracyAttempts: 18,
+                    elapsedMs: 372000,
+                    gameOver: false,
+                    winnerName: null,
+                    winnerRainbow: false,
+                    winnerIsShark: false,
+                    rackLayout: "grouped",
+                    rack: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((b) => ({
+                      ball: b,
+                      sunk: [1, 2, 11, 14].includes(b),
+                      sunkByShark: false,
+                    })),
+                    players: [
+                      { id: 0, name: account.screenName, rainbow: false, teamLabel: "Solids", cleared: false, sunk: [2, 1], active: true, isHost: true, hasLeft: false, isShark: false },
+                      { id: 1, name: "Rival", rainbow: false, teamLabel: "Stripes", cleared: false, sunk: [14, 11], active: false, isHost: false, hasLeft: false, isShark: false },
+                    ],
+                  };
+                  return (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                        padding: "8px 10px",
+                        background: "#0a0a1e",
+                        border: "1px dashed #6a3a9a",
+                        fontFamily: "'VT323',monospace",
+                        color: "#d8b4ff",
+                      }}
+                    >
+                      <div style={{ fontSize: 15, color: "#4ade80", textTransform: "uppercase" }}>
+                        🎥 Stream to OBS
+                      </div>
+                      <div style={{ fontSize: 12, color: "#b89ad8" }}>
+                        Add a <b>Browser Source</b> in OBS with this URL for a transparent live overlay.
+                      </div>
+                      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, cursor: "pointer" }}>
+                          <input type="checkbox" checked={obsLogOn} onChange={(e) => setObsLogOn(e.target.checked)} />
+                          Show shot log
+                        </label>
+                        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13 }}>
+                          Scale
+                          <input
+                            type="range"
+                            min={0.5}
+                            max={3}
+                            step={0.1}
+                            value={Number.isFinite(scaleNum) ? scaleNum : 1}
+                            onChange={(e) => setObsScale(e.target.value)}
+                            style={{ verticalAlign: "middle" }}
+                          />
+                          <span style={{ minWidth: 28, color: "#4ade80" }}>{(Number.isFinite(scaleNum) ? scaleNum : 1).toFixed(1)}×</span>
+                        </label>
+                      </div>
+                      <div
+                        className="hud-code"
+                        style={{ fontSize: 12, wordBreak: "break-all", background: "#000", padding: "4px 6px", color: "#4ade80" }}
+                      >
+                        {obsUrl}
+                      </div>
+                      <button
+                        className="btn"
+                        style={{ fontSize: 12, padding: "2px 10px", alignSelf: "flex-start" }}
+                        onClick={() => {
+                          navigator.clipboard.writeText(obsUrl).then(
+                            () => { setObsCopied(true); setTimeout(() => setObsCopied(false), 2000); },
+                            () => { setObsCopied(false); },
+                          );
+                        }}
+                      >
+                        {obsCopied ? "✓ Copied" : "📋 Copy OBS URL"}
+                      </button>
+                      <div style={{ fontSize: 11, color: "#b89ad8" }}>Live preview:</div>
+                      <div
+                        style={{
+                          overflow: "hidden",
+                          // Checkerboard hint that the overlay background is transparent.
+                          background:
+                            "repeating-conic-gradient(#2a2a3e 0% 25%, #1a1a2e 0% 50%) 50% / 20px 20px",
+                          padding: 10,
+                          display: "flex",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <div style={{ transform: `scale(${Number.isFinite(scaleNum) ? Math.min(scaleNum, 1) : 1})`, transformOrigin: "top center" }}>
+                          <StreamWidget data={preview} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {!canEditName && (
                   <div style={{ fontSize: 11, color: "#444", textAlign: "center" }}>
                     {"Set a custom username and theme with a "}

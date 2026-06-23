@@ -3262,3 +3262,242 @@ body.obs-mode #root {
   color: var(--green, #00ff41);
   text-shadow: 0 0 12px rgba(0, 255, 65, 0.5);
 }
+
+/* ── Stream widget (Windows 98, SCOPED) ──────────────────────────────────
+   The ONE reusable HUD/result widget rendered by <StreamWidget>. Used by the
+   end-game "Share" image export and the live OBS overlay. Deliberately styled
+   as a Windows-98 window (the rest of the app keeps its CRT look); every rule
+   is namespaced under `.w98-` so it never leaks into the CRT surfaces. */
+.w98-widget {
+  width: 440px;
+  max-width: 100%;
+  background: var(--silver);
+  color: var(--black);
+  font-family: 'Tahoma', 'MS Sans Serif', Geneva, Arial, sans-serif;
+  border: 2px solid;
+  border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
+  box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 var(--shadow), 2px 2px 0 rgba(0, 0, 0, 0.35);
+  padding: 3px;
+  user-select: none;
+}
+
+.w98-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 24px;
+  padding: 0 3px 0 5px;
+  background: linear-gradient(to right, var(--navy) 0%, var(--blue) 100%);
+  color: var(--white);
+  font-weight: bold;
+  font-size: 13px;
+}
+.w98-titlebar-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.w98-title-glyph { color: var(--green); font-size: 11px; }
+.w98-title-handle { font-weight: normal; opacity: 0.92; }
+.w98-titlebar-ctrls { display: inline-flex; gap: 2px; flex-shrink: 0; }
+.w98-tb-btn {
+  width: 18px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--silver);
+  color: var(--black);
+  font-size: 10px;
+  line-height: 1;
+  border: 1px solid;
+  border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
+}
+
+.w98-body { padding: 7px; display: flex; flex-direction: column; gap: 7px; }
+
+/* Sunken inset field — the Win98 "client area" look. */
+.w98-field {
+  background: #000;
+  border: 2px solid;
+  border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
+}
+
+.w98-heroes { display: flex; gap: 7px; }
+.w98-hero {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 4px 5px;
+  text-align: center;
+  background: #050b06;
+}
+.w98-hero-label {
+  font-family: 'Tahoma', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #7aba7a;
+}
+.w98-hero-value {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 52px;
+  line-height: 0.95;
+  color: var(--green);
+  text-shadow: 0 0 8px rgba(0, 255, 65, 0.45);
+}
+.w98-hero-value.w98-dim { color: #2f6f3f; text-shadow: none; }
+.w98-hero-sub {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 16px;
+  color: #8fcf8f;
+  text-transform: uppercase;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.w98-meta {
+  display: flex;
+  gap: 6px;
+}
+.w98-meta-cell {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  padding: 2px 6px;
+  background: var(--silver);
+  border: 2px solid;
+  border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
+}
+.w98-meta-label { font-size: 10px; letter-spacing: 0.06em; color: var(--darker); }
+.w98-meta-value {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 20px;
+  color: var(--navy);
+}
+.w98-meta-dim { color: var(--dark); }
+
+/* Rack tray — green felt inside the sunken field. */
+.w98-rack {
+  background: #0f5a2e;
+  padding: 6px 8px;
+}
+.w98-rack-line { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.w98-rack-grouped { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.w98-rack-side { display: flex; flex-wrap: wrap; gap: 4px; max-width: 168px; }
+.w98-rack-eight { flex-shrink: 0; }
+
+/* Ball token. */
+.w98-ball {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--w98-ball-color, #888);
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  box-shadow: inset -2px -2px 3px rgba(0, 0, 0, 0.4), inset 2px 2px 3px rgba(255, 255, 255, 0.35);
+  position: relative;
+}
+.w98-ball--stripe {
+  background:
+    linear-gradient(to bottom, #fff 0 30%, var(--w98-ball-color, #888) 30% 70%, #fff 70% 100%);
+}
+.w98-ball--eight { background: #111; }
+.w98-ball-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #fff;
+  color: #000;
+  font-family: 'Tahoma', sans-serif;
+  font-size: 8px;
+  font-weight: bold;
+  line-height: 1;
+}
+.w98-ball--eight .w98-ball-num { background: #fff; color: #000; }
+.w98-ball--sunk { opacity: 0.18; filter: grayscale(0.7); box-shadow: none; }
+
+/* Scoreboard rows. */
+.w98-players { display: flex; flex-direction: column; gap: 4px; }
+.w98-player {
+  padding: 3px 6px;
+  background: var(--white);
+  border: 1px solid var(--dark);
+  font-size: 13px;
+  color: var(--black);
+}
+.w98-player--active {
+  background: var(--navy);
+  color: var(--white);
+  border-color: var(--navy);
+}
+.w98-player--left { opacity: 0.55; }
+.w98-player-head { display: flex; align-items: center; gap: 6px; }
+.w98-player-cue { color: var(--green); font-size: 11px; min-width: 11px; }
+.w98-player-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: bold;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.w98-player-tag { font-size: 11px; opacity: 0.8; font-weight: normal; }
+.w98-player-balls { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
+
+/* Winner banner. */
+.w98-winner {
+  background: var(--navy);
+  padding: 6px;
+  text-align: center;
+}
+.w98-winner-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 26px;
+  color: var(--amber);
+  letter-spacing: 0.04em;
+}
+
+/* Footer: watch-handle QR + URL (share image only). */
+.w98-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px;
+  background: var(--silver);
+  border: 2px solid;
+  border-color: var(--highlight) var(--dshadow) var(--dshadow) var(--highlight);
+}
+.w98-footer-qr { background: #fff; padding: 4px; line-height: 0; flex-shrink: 0; }
+.w98-footer-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.w98-footer-title {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 20px;
+  color: var(--navy);
+  letter-spacing: 0.04em;
+}
+.w98-footer-url {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 17px;
+  color: var(--teal);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.w98-footer-hint { font-size: 11px; color: var(--darker); }

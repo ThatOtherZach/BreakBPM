@@ -16,6 +16,9 @@ import {
 import SharkIcon from './SharkIcon';
 import { PlayerName } from './PlayerName';
 import { QRCodeSVG } from 'qrcode.react';
+import StreamWidget from './StreamWidget';
+import { buildStreamWidgetData } from '../lib/streamWidget';
+import { shareWidgetImage, copyText } from '../lib/streamWidgetImage';
 import {
   useSaveGame,
   useRecordGameActivity,
@@ -196,6 +199,9 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   const [spinFrame, setSpinFrame] = useState(0);
   const [logOpen, setLogOpen] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
+  // Offscreen-rendered Win98 share widget, snapshotted to a PNG on "Share".
+  const shareWidgetRef = useRef<HTMLDivElement>(null);
+  const [sharingImage, setSharingImage] = useState(false);
 
   // Long-press on the share-CODE 📋 button reveals a join QR in place of the
   // Mode/Time/Code panel (mirrors the splash-screen QR easter egg). A short
@@ -791,6 +797,33 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
       .catch(() => { setToast(joinUrl); setTimeout(() => setToast(''), 3000); });
   }
 
+  // Snapshot the offscreen Win98 widget to a PNG and hand it to the native
+  // share sheet (falling back to a download). Used by the end-game "Share".
+  async function handleShareImage() {
+    const node = shareWidgetRef.current;
+    if (!node || sharingImage) return;
+    setSharingImage(true);
+    try {
+      const outcome = await shareWidgetImage({
+        node,
+        handle: watchName,
+        url: joinUrl,
+        title: 'BreakBPM',
+        text: state.winner ? `${state.winner} just won on BreakBPM!` : 'My BreakBPM game',
+      });
+      if (outcome === 'downloaded') { setToast('Image saved!'); setTimeout(() => setToast(''), 2500); }
+      else if (outcome === 'failed') { setToast('Could not create image'); setTimeout(() => setToast(''), 2500); }
+    } finally {
+      setSharingImage(false);
+    }
+  }
+
+  async function handleCopyWatchLink() {
+    const ok = await copyText(joinUrl);
+    setToast(ok ? 'Watch link copied!' : joinUrl);
+    setTimeout(() => setToast(''), ok ? 2500 : 3000);
+  }
+
   async function handleRematch() {
     if (rematchPending) return;
     // The breaker inherits to the winner's slot; if there's no mappable winner
@@ -983,6 +1016,20 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         : [state.winner])
     : [];
   const winningNameSet = new Set(winningNames);
+
+  // Presentational data for the offscreen Win98 share widget (snapshotted to a
+  // PNG on "Share"). Built once the game has ended; reuses the same builder as
+  // the live OBS overlay so the image matches the broadcast widget.
+  const shareWidgetData = state.phase === 'ended'
+    ? buildStreamWidgetData({
+        state,
+        participants: rainbowParticipants,
+        handle: watchName,
+        watchUrl: joinUrl,
+        elapsedMs: dispTime,
+        gameOver: true,
+      })
+    : null;
 
   return (
     <div className="app-window">
@@ -1253,6 +1300,21 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           )
         )}
 
+        {/* ── Share scorecard ──
+            On the ended screen, snapshot the Win98 widget to an image for the
+            native share sheet (PNG download fallback), plus a copy-link. Only
+            shown once the undo window has closed (game locked in). */}
+        {state.phase === 'ended' && !endUndoOpen && (
+          <div className="grid-2" style={{ marginTop: 8 }}>
+            <button className="btn btn-big" onClick={handleShareImage} disabled={sharingImage}>
+              {sharingImage ? 'Rendering…' : '📸 Share Card'}
+            </button>
+            <button className="btn btn-big" onClick={handleCopyWatchLink}>
+              🔗 Copy Link
+            </button>
+          </div>
+        )}
+
         {/* ── Ball selector ── */}
         {state.phase !== 'ended' && (
           <div>
@@ -1424,6 +1486,20 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
               <button className="btn btn-primary btn-big" onClick={onNewGame}>✅ Yes</button>
               <button className="btn btn-big" onClick={() => setConfirmNew(false)}>❌ Cancel • 消</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Offscreen Win98 widget — rendered only on the ended screen so the
+          "Share Card" button can snapshot it to a PNG. Positioned far off-screen
+          (not display:none) so html-to-image can measure + paint it. */}
+      {shareWidgetData && (
+        <div
+          aria-hidden="true"
+          style={{ position: 'fixed', left: -10000, top: 0, pointerEvents: 'none', opacity: 0 }}
+        >
+          <div ref={shareWidgetRef}>
+            <StreamWidget data={shareWidgetData} showQr />
           </div>
         </div>
       )}

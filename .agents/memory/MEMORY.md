@@ -49,3 +49,4 @@
 - [HUD text-ads gating & rotation](hud-text-ads-gating.md) — ads gate on `tier !== 'pass'` so anon/loading see them; advance every 3rd shot (floor(shots/3)), persist pointer only on game-end to avoid mid-game-refresh jumps.
 - [Banned-words blocklist matching](banned-words-blocklist.md) — BREAKBPM_BANNED_WORDS: length-tiered (≤3 letter-boundary, ≥4 substring) + full-token concat rule catches "pussyass"/"cuntycounty", spares "passes"/"assassin"; ads+names emoji-SWAPPED, screen names REJECTED. Client mirror in lockstep.
 - [Crypto day-pass slider](crypto-day-pass-slider.md) — "Add Days" 1–365 marginal-bracket pass (server-authoritative price, client mirror); keep legacy day/month/year passKind enums for verify compat — don't tidy them.
+- [Stream/share widget two surfaces](stream-widget-two-surfaces.md) — ONE React widget snapshotted via html-to-image (NOT canvas like redeemCard) feeds both end-game share PNG + OBS overlay; Win98 chrome scoped to .w98-* only.

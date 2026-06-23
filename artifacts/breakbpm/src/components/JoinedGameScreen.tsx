@@ -26,6 +26,8 @@ import { ObsIdle } from './ObsOverlay';
 import { PlayerName } from './PlayerName';
 import { useAuth } from '../lib/authClient';
 import { THEME_FELT, THEME_ACCENT, themeColorOf } from '../lib/backgroundVariants';
+import StreamWidget from './StreamWidget';
+import { buildStreamWidgetData } from '../lib/streamWidget';
 
 const BALL_COLORS: Record<number, string> = {
   1: '#FDD307', 2: '#1F4E9E', 3: '#C3342B', 4: '#5B247A',
@@ -58,6 +60,8 @@ interface Props {
   obsLog?: boolean;
   /** CSS transform scale applied to the whole overlay. */
   obsScale?: number;
+  /** The public watch handle (/watch/{name}) — shown in the OBS widget title bar. */
+  watchName?: string;
 }
 
 /**
@@ -68,7 +72,7 @@ interface Props {
  * Renders an overlay banner that explicitly states "View only — host is
  * scorekeeping" so joiners aren't confused about why they can't tap.
  */
-export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onSignIn, spectatorOnly = false, obs = false, obsLog = false, obsScale = 1 }: Props) {
+export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onSignIn, spectatorOnly = false, obs = false, obsLog = false, obsScale = 1, watchName }: Props) {
   const [, setLocation] = useLocation();
   const join = useJoinGame();
   const leave = useLeaveGame();
@@ -578,12 +582,23 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
   if (obs) {
     // No active game once it has ended → `:(` (never the winner banner/chrome).
     if (ended) return <ObsIdle scale={obsScale} />;
+    // The OBS overlay renders the shared Win98 widget (the same one the
+    // end-game Share image uses), not the CRT hudPanel. Title-bar handle uses
+    // the resolved watch name (falling back to the host's display name).
+    const obsWidget = buildStreamWidgetData({
+      state,
+      participants,
+      handle: watchName ?? hostName,
+      watchUrl: null,
+      elapsedMs: elapsed,
+      gameOver,
+    });
     return (
       <div
         className="obs-overlay"
         style={{ transform: `scale(${obsScale})`, transformOrigin: 'top left' }}
       >
-        {hudPanel}
+        <StreamWidget data={obsWidget} />
         {compactLog}
       </div>
     );
