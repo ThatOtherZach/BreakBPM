@@ -1113,7 +1113,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                 >
                   {/* Code + 📋 to copy bare code */}
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <span className="cue-ball-icon" style={{ fontSize: 22, flexShrink: 0 }} aria-hidden="true" />
+                    <span className="eight-ball-icon" style={{ fontSize: 22, flexShrink: 0 }} aria-hidden="true" />
                     <span
                       style={{
                         fontFamily: "'VT323',monospace",
