@@ -40,6 +40,7 @@ interface Props {
   onBack: () => void;
   onAbout: () => void;
   onAccount: () => void;
+  onLeaderboard: () => void;
   onSignIn: () => void;
   onPasses: () => void;
 }
@@ -325,6 +326,7 @@ export default function FindPlayersScreen({
   onBack,
   onAbout,
   onAccount,
+  onLeaderboard,
   onSignIn,
   onPasses,
 }: Props) {
@@ -597,7 +599,7 @@ export default function FindPlayersScreen({
 
   return (
     <div className="app-window app-window--page">
-      <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
+      <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onLeaderboard={onLeaderboard} onSignIn={onSignIn} />
       <div className="app-body">
         <SignedIn>
           {/* ── Create form (paid only, collapsible) ── */}

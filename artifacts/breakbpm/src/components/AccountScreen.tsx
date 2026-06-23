@@ -701,7 +701,9 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                       {nameCopied ? "✓ Copied" : "📋Copy"}
                     </button>
                   </div>
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, minWidth: 0, alignItems: "flex-end", textAlign: "right" }}>
+                  <div
+                    style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, minWidth: 0, alignItems: "flex-end", textAlign: "right" }}
+                    className="justify-start items-start">
                     <div style={{ fontSize: 14 }}>
                       📺{" "}
                       <a
