@@ -9,10 +9,11 @@ interface NavbarProps {
   onAccount?: () => void;
   onStats?: () => void;
   onFindPlayers?: () => void;
+  onLeaderboard?: () => void;
   onSignIn?: () => void;
 }
 
-export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlayers, onSignIn }: NavbarProps) {
+export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlayers, onLeaderboard, onSignIn }: NavbarProps) {
   const [open, setOpen] = useState(false);
   const me = useGetMe();
   const [location] = useLocation();
@@ -23,7 +24,7 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlay
   // Hide the menu item for the page the user is already on.
   const at = (path: string) => location === path;
 
-  const showHamburger = !!(onAbout || onAccount || onStats || onFindPlayers || onSignIn);
+  const showHamburger = !!(onAbout || onAccount || onStats || onFindPlayers || onLeaderboard || onSignIn);
 
   return (
     <div className="navbar-wrapper">
@@ -86,6 +87,11 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlay
             </button>
           )}
           <SignedIn>
+            {onLeaderboard && !at('/leaderboard') && (
+              <button className="navbar-menu-item" onClick={() => { setOpen(false); onLeaderboard(); }}>
+                <span style={{ textDecoration: 'underline' }}>L</span>eaderboard
+              </button>
+            )}
             {onFindPlayers && !at('/find-players') && (
               <button className="navbar-menu-item" onClick={() => { setOpen(false); onFindPlayers(); }}>
                 <span style={{ textDecoration: 'underline' }}>F</span>ind Players

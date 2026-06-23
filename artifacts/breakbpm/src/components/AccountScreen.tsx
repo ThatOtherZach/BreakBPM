@@ -62,6 +62,7 @@ interface Props {
   onAbout: () => void;
   onFindPlayers: () => void;
   onStats: () => void;
+  onLeaderboard: () => void;
   onSignIn: () => void;
 }
 
@@ -79,7 +80,7 @@ function fmtHoursUntil(target: Date | string | null): string | null {
   return `~${hours}h`;
 }
 
-export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers, onStats, onSignIn }: Props) {
+export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers, onStats, onLeaderboard, onSignIn }: Props) {
   const { logout: signOut } = useAuth();
   const qc = useQueryClient();
   const [, setLocation] = useLocation();
@@ -252,7 +253,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   if (me.isLoading) {
     return (
       <div className="app-window app-window--page">
-        <Navbar onBack={onBack} onAbout={onAbout} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
+        <Navbar onBack={onBack} onAbout={onAbout} onFindPlayers={onFindPlayers} onLeaderboard={onLeaderboard} onSignIn={onSignIn} />
         <div className="app-body">
           <p style={{ fontFamily: "VT323", fontSize: 18 }}>Loading…</p>
         </div>
@@ -263,7 +264,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   if (!me.data?.signedIn) {
     return (
       <div className="app-window app-window--page">
-        <Navbar onBack={onBack} onAbout={onAbout} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
+        <Navbar onBack={onBack} onAbout={onAbout} onFindPlayers={onFindPlayers} onLeaderboard={onLeaderboard} onSignIn={onSignIn} />
         <div className="app-body">
           <div className="panel">
             <div className="panel-header"><span>Account</span></div>
@@ -528,6 +529,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
         onAbout={onAbout}
         onStats={ent.tier === "pass" ? onStats : undefined}
         onFindPlayers={ent.tier === "pass" ? onFindPlayers : undefined}
+        onLeaderboard={onLeaderboard}
         onSignIn={onSignIn}
       />
       <div className="app-body">
