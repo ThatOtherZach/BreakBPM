@@ -1473,8 +1473,8 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           <div className="panel" style={{ marginTop: 8 }}>
             <div className="panel-header">
               <span>
-                <span className="stats-sec-emoji" aria-hidden="true">🎱</span>
-                Add to Hall
+                <span className="stats-sec-emoji" aria-hidden="true">🏆</span>
+                Add to Verified Hall Leaderboard
               </span>
               <button
                 className="btn"
