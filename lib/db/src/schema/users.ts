@@ -24,6 +24,13 @@ export const usersTable = pgTable(
      * Lifetime holders / admins; ignored for unpaid players.
      */
     profileTheme: text("profile_theme"),
+    /**
+     * Stable personal invite code, used to build the user's shareable invite
+     * link (`/invite/{code}`). Generated lazily on first request (see
+     * `getOrCreateInviteCode`), so it is NULL for users who have never opened
+     * the invite affordance. Unique across all users.
+     */
+    inviteCode: text("invite_code"),
     /** Null until the user confirms their screen name in onboarding. */
     onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -37,6 +44,8 @@ export const usersTable = pgTable(
     // Screen names double as the public /watch/{name} handle, so they must be
     // unique case-insensitively (and the lookup is case-insensitive too).
     uniqueIndex("users_screen_name_lower_unique").on(sql`lower(${t.screenName})`),
+    // Invite codes resolve a link back to the inviter, so they must be unique.
+    uniqueIndex("users_invite_code_unique").on(t.inviteCode),
   ],
 );
 

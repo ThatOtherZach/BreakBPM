@@ -22,6 +22,9 @@ import {
   ListAdminDiscountCodesResponse,
   ClaimFreePassResponse,
   GetFreePassClaimStatusResponse,
+  GetMyInviteCodeResponse,
+  AcceptInviteTrialBody,
+  AcceptInviteTrialResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser } from "../lib/auth";
 import { issuePassTx, grantPurchasedPassTx } from "../lib/passes";
@@ -65,6 +68,11 @@ import {
 import { gatherShotEntropy } from "../lib/luckyBreakEntropy";
 import { getUsdToCadRate } from "../lib/fx";
 import { redeemDiscountCodeForUserTx, RedeemFailure } from "../lib/redeemCore";
+import {
+  getOrCreateInviteCode,
+  acceptInviteTx,
+  InviteFailure,
+} from "../lib/invites";
 import {
   drawFreePassRewardTx,
   getFreePassClaimForUser,
@@ -461,6 +469,109 @@ router.get("/passes/claim/status", async (req, res): Promise<void> => {
       signedIn,
       alreadyClaimed,
       eligible,
+    }),
+  );
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// Invite link → free trial (#308)
+// ──────────────────────────────────────────────────────────────────────────
+
+/** Maps each InviteFailure reason to a user-facing message. */
+const INVITE_FAILURE_MESSAGES: Record<InviteFailure["reason"], string> = {
+  invalid_code: "That invite link is no longer valid.",
+  self_invite: "You can't use your own invite link.",
+  not_new_user: "Invite trials are for brand-new players only.",
+  has_pass: "You already have an active pass.",
+  already_redeemed: "You've already used a free trial invite.",
+};
+
+/** The caller's stable personal invite code (generated lazily). */
+router.get("/passes/invite", async (req, res): Promise<void> => {
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Sign in to get your invite link" });
+    return;
+  }
+  const code = await getOrCreateInviteCode(user.id);
+  res.json(GetMyInviteCodeResponse.parse({ code }));
+});
+
+/**
+ * Redeem an invite link for a free trial pass. New-user-only, one-sided, and
+ * granted at most once per new user (UNIQUE(invited_user_id) is the backstop).
+ * The whole resolve → issue → record-redemption → ledger sequence runs in one
+ * transaction via acceptInviteTx, which throws InviteFailure for any refusal
+ * path so pg rolls back partial writes. Booked as a $0 comp.
+ */
+router.post("/passes/invite/accept", async (req, res): Promise<void> => {
+  const parsed = AcceptInviteTrialBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Sign in to redeem an invite" });
+    return;
+  }
+
+  const code = parsed.data.code.trim().toUpperCase();
+
+  // Cheap pre-check before the tx so an already-paid caller doesn't burn work.
+  // The in-tx new-user + UNIQUE guards are authoritative.
+  const existing = await getActivePasses(user.id);
+  if (existing.length > 0) {
+    res.json(
+      AcceptInviteTrialResponse.parse({
+        success: false,
+        message: INVITE_FAILURE_MESSAGES.has_pass,
+        reason: "has_pass",
+      }),
+    );
+    return;
+  }
+
+  // Freeze today's USD→CAD rate for the ledger BEFORE the tx (fx never throws).
+  const fx = await getUsdToCadRate();
+  const redemptionId = newId();
+
+  let pass: { kind: string; startedAt: Date; durationSeconds: number | null };
+  let trialDays: number;
+  try {
+    ({ pass, trialDays } = await db.transaction((tx) =>
+      acceptInviteTx(
+        tx,
+        {
+          invitedUserId: user.id,
+          invitedUserCreatedAt: user.createdAt,
+          code,
+        },
+        { fx, redemptionId },
+      ),
+    ));
+  } catch (err) {
+    if (err instanceof InviteFailure) {
+      res.json(
+        AcceptInviteTrialResponse.parse({
+          success: false,
+          message: INVITE_FAILURE_MESSAGES[err.reason],
+          reason: err.reason,
+        }),
+      );
+      return;
+    }
+    req.log.error({ err, code, userId: user.id }, "Invite accept failed");
+    res.status(500).json({ error: "Invite redeem failed" });
+    return;
+  }
+
+  req.log.info({ userId: user.id, code, trialDays }, "Invite trial granted");
+  res.json(
+    AcceptInviteTrialResponse.parse({
+      success: true,
+      message: `Welcome! Your ${trialDays}-day free trial is active — enjoy.`,
+      pass: passToSummary(pass),
     }),
   );
 });

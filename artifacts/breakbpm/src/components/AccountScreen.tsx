@@ -8,6 +8,7 @@ import {
   drawRedeemCard,
   downloadCanvas,
   redeemUrlFor,
+  inviteUrlFor,
   cardFilename,
 } from "../lib/redeemCard";
 import type { BackgroundVariant } from "../lib/backgroundVariants";
@@ -28,6 +29,8 @@ import {
   useListMyInvites,
   useAcceptInvite,
   useRemoveInvite,
+  useGetMyInviteCode,
+  getGetMyInviteCodeQueryKey,
   getGetMeQueryKey,
   getGetGameHistoryQueryKey,
   getListMyGiftCodesQueryKey,
@@ -158,6 +161,13 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   const removeInvite = useRemoveInvite();
   const [inviteMsg, setInviteMsg] = useState("");
   const [inviteBusyId, setInviteBusyId] = useState<string | null>(null);
+
+  // Personal invite link: a stable per-user code (minted lazily on first read)
+  // that grants a NEW user a short free trial when they sign up via the link.
+  const myInviteCode = useGetMyInviteCode({
+    query: { queryKey: getGetMyInviteCodeQueryKey(), enabled: me.data?.signedIn === true },
+  });
+  const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
 
   async function refetchInviteSideEffects() {
     await Promise.all([
@@ -364,6 +374,16 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
       setTimeout(() => setGiftLinkCopied(false), 2000);
     } catch {
       setGiftMsg("Couldn't copy automatically — long-press to copy manually.");
+    }
+  }
+
+  async function handleCopyInviteLink(code: string) {
+    try {
+      await navigator.clipboard.writeText(inviteUrlFor(code));
+      setInviteLinkCopied(true);
+      setTimeout(() => setInviteLinkCopied(false), 2000);
+    } catch {
+      /* clipboard blocked — the link stays selectable in the field */
     }
   }
 
@@ -1040,6 +1060,50 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
                   )}
                 </div>
               )}
+          </div>
+        </div>
+
+        {/* Invite a friend — every signed-in user gets a personal invite link.
+            A NEW user who signs up through it gets a short free trial pass
+            (granted once per new user; existing/already-paid users get nothing).
+            One-sided: there's no reward to the inviter. */}
+        <div className="panel">
+          <div className="panel-header">
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <span aria-hidden="true" style={{ fontSize: 12, lineHeight: 1 }}>🎁</span>Invite a Friend
+            </span>
+          </div>
+          <div className="panel-body">
+            <p style={{ fontSize: 11, color: "#444", marginTop: 0, marginBottom: 8 }}>
+              Share your personal link. New players who sign up through it unlock
+              a free trial pass — on the house.
+            </p>
+            {myInviteCode.isLoading && (
+              <div style={{ fontFamily: "VT323", fontSize: 16 }}>Loading your link…</div>
+            )}
+            {!myInviteCode.isLoading && myInviteCode.data?.code && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <input
+                  type="text"
+                  readOnly
+                  value={inviteUrlFor(myInviteCode.data.code)}
+                  onFocus={(e) => e.currentTarget.select()}
+                  style={{ width: "100%", fontSize: 12, fontFamily: "VT323" }}
+                />
+                <button
+                  className="btn btn-primary w-full"
+                  onClick={() => handleCopyInviteLink(myInviteCode.data!.code)}
+                >
+                  {inviteLinkCopied ? "Copied" : "Copy Invite Link"}
+                </button>
+              </div>
+            )}
+            {!myInviteCode.isLoading && !myInviteCode.data?.code && (
+              <div className="notice">
+                <span>ℹ</span>
+                <span>Your invite link isn't available right now — try again later.</span>
+              </div>
+            )}
           </div>
         </div>
 

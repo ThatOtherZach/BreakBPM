@@ -3,6 +3,7 @@ export * from "./passes";
 export * from "./cryptoOrders";
 export * from "./subscriptions";
 export * from "./discountCodes";
+export * from "./inviteRedemptions";
 export * from "./luckyBreak";
 export * from "./freePassClaims";
 export * from "./games";

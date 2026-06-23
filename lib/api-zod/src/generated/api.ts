@@ -204,6 +204,42 @@ export const GetFreePassClaimStatusResponse = zod.object({
 
 
 /**
+ * Returns the signed-in caller's stable invite code, generating one on first request. The client builds the shareable `/invite/{code}` link from it. Sign-in required.
+
+ * @summary The caller's personal invite code (for the invite link)
+ */
+export const GetMyInviteCodeResponse = zod.object({
+  "code": zod.string()
+})
+
+
+/**
+ * Grants the signed-in caller a short, env-configurable free trial pass if they are a brand-new user redeeming someone else's invite code. The trial is one-sided (the inviter is not rewarded) and granted at most once per new user, ever. Returns success:false with a message when the code is invalid, the caller invited themselves, the caller is not a new user, already holds a pass, or already used their trial. Booked as a $0 comp in the sales ledger.
+
+ * @summary Redeem an invite link for a free trial pass (new users only)
+ */
+export const acceptInviteTrialBodyCodeMax = 64;
+
+
+
+export const AcceptInviteTrialBody = zod.object({
+  "code": zod.string().min(1).max(acceptInviteTrialBodyCodeMax)
+})
+
+export const AcceptInviteTrialResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "pass": zod.object({
+  "kind": zod.enum(['day', 'twoweek', 'month', 'year', 'lifetime']),
+  "startedAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date(),
+  "isLifetime": zod.boolean()
+}).optional(),
+  "reason": zod.enum(['invalid_code', 'self_invite', 'not_new_user', 'has_pass', 'already_redeemed']).optional()
+})
+
+
+/**
  * Returns the signed-in user's most recent gift codes (newest first) plus their cooldown state. Used by the Account screen to render the "Gift a Day Pass" section.
 
  * @summary List the caller's recently-generated Day-Pass gift codes

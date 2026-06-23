@@ -642,6 +642,36 @@ export interface RedeemResult {
   luckyBreak?: LuckyBreakResult;
 }
 
+export interface InviteCodeResult {
+  code: string;
+}
+
+export interface InviteAcceptInput {
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
+  code: string;
+}
+
+export type InviteAcceptResultReason = typeof InviteAcceptResultReason[keyof typeof InviteAcceptResultReason];
+
+
+export const InviteAcceptResultReason = {
+  invalid_code: 'invalid_code',
+  self_invite: 'self_invite',
+  not_new_user: 'not_new_user',
+  has_pass: 'has_pass',
+  already_redeemed: 'already_redeemed',
+} as const;
+
+export interface InviteAcceptResult {
+  success: boolean;
+  message: string;
+  pass?: PassSummary;
+  reason?: InviteAcceptResultReason;
+}
+
 export type FreePassClaimResultRewardKind = typeof FreePassClaimResultRewardKind[keyof typeof FreePassClaimResultRewardKind];
 
 

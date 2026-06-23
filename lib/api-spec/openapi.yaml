@@ -156,6 +156,51 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/FreePassClaimStatus" }
 
+  /passes/invite:
+    get:
+      operationId: getMyInviteCode
+      tags: [passes]
+      summary: The caller's personal invite code (for the invite link)
+      description: >
+        Returns the signed-in caller's stable invite code, generating one on
+        first request. The client builds the shareable `/invite/{code}` link
+        from it. Sign-in required.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InviteCodeResult" }
+        "401":
+          description: Sign in required
+
+  /passes/invite/accept:
+    post:
+      operationId: acceptInviteTrial
+      tags: [passes]
+      summary: Redeem an invite link for a free trial pass (new users only)
+      description: >
+        Grants the signed-in caller a short, env-configurable free trial pass if
+        they are a brand-new user redeeming someone else's invite code. The
+        trial is one-sided (the inviter is not rewarded) and granted at most once
+        per new user, ever. Returns success:false with a message when the code
+        is invalid, the caller invited themselves, the caller is not a new user,
+        already holds a pass, or already used their trial. Booked as a $0 comp in
+        the sales ledger.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InviteAcceptInput" }
+      responses:
+        "200":
+          description: Redeem result (granted, or rejected with a reason)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InviteAcceptResult" }
+        "401":
+          description: Sign in required
+
   /passes/discount-codes:
     get:
       operationId: listMyGiftCodes
@@ -1885,6 +1930,35 @@ components:
         pass: { $ref: "#/components/schemas/PassSummary" }
         # Present only when the redeemed code was a Lucky Break roll.
         luckyBreak: { $ref: "#/components/schemas/LuckyBreakResult" }
+
+    InviteCodeResult:
+      type: object
+      required: [code]
+      properties:
+        # The caller's stable personal invite code (the client builds the
+        # /invite/{code} link from it).
+        code: { type: string }
+
+    InviteAcceptInput:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, minLength: 1, maxLength: 64 }
+
+    InviteAcceptResult:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        # The granted trial pass — present only on success.
+        pass: { $ref: "#/components/schemas/PassSummary" }
+        # Machine-readable refusal reason on success:false, so the client can
+        # branch its messaging.
+        reason:
+          type: string
+          enum:
+            [invalid_code, self_invite, not_new_user, has_pass, already_redeemed]
 
     FreePassClaimResult:
       type: object

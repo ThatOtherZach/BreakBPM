@@ -257,6 +257,19 @@ export function dayPassPricing(): DayPassPricingParams {
   };
 }
 
+/** Default length (days) of the invite-link free trial pass. */
+export const INVITE_TRIAL_DAYS_DEFAULT = 3;
+
+/**
+ * Length (in days) of the free trial pass granted when a NEW user redeems
+ * someone's invite link. Read from `BREAKBPM_INVITE_TRIAL_DAYS`; defaults to 3
+ * days. Blank/invalid values log a warning and fall back to the default.
+ * Restart the API server after changing.
+ */
+export function inviteTrialDays(): number {
+  return envInt("BREAKBPM_INVITE_TRIAL_DAYS", INVITE_TRIAL_DAYS_DEFAULT, 1);
+}
+
 /** Default splash QR target when no promo override is configured. */
 export const DEFAULT_PROMO_QR_URL = "https://breakbpm.com";
 

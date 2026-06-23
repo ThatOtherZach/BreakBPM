@@ -78,6 +78,15 @@ export function redeemUrlFor(code: string): string {
   return `${base}/redeem/${encodeURIComponent(code)}`;
 }
 
+/**
+ * Build the personal invite URL for a code: window origin + app base path +
+ * /invite/<CODE>. New users who follow it get a short free trial at signup.
+ */
+export function inviteUrlFor(code: string): string {
+  const base = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}`;
+  return `${base}/invite/${encodeURIComponent(code)}`;
+}
+
 /** Safe download filename for a code's card image. */
 export function cardFilename(code: string): string {
   const safe = code.replace(/[^A-Za-z0-9_-]/g, "");

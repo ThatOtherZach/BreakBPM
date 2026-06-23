@@ -66,6 +66,9 @@ import type {
   GetStatsParams,
   GiftCodeIssueResult,
   HealthStatus,
+  InviteAcceptInput,
+  InviteAcceptResult,
+  InviteCodeResult,
   JoinGameInput,
   JoinGameResult,
   LeaderboardResult,
@@ -720,6 +723,158 @@ export function useGetFreePassClaimStatus<TData = Awaited<ReturnType<typeof getF
 
 
 
+
+export const getGetMyInviteCodeUrl = () => {
+
+
+
+
+  return `/api/passes/invite`
+}
+
+/**
+ * Returns the signed-in caller's stable invite code, generating one on first request. The client builds the shareable `/invite/{code}` link from it. Sign-in required.
+
+ * @summary The caller's personal invite code (for the invite link)
+ */
+export const getMyInviteCode = async ( options?: RequestInit): Promise<InviteCodeResult> => {
+
+  return customFetch<InviteCodeResult>(getGetMyInviteCodeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyInviteCodeQueryKey = () => {
+    return [
+    `/api/passes/invite`
+    ] as const;
+    }
+
+
+export const getGetMyInviteCodeQueryOptions = <TData = Awaited<ReturnType<typeof getMyInviteCode>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyInviteCode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyInviteCodeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyInviteCode>>> = ({ signal }) => getMyInviteCode({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyInviteCode>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyInviteCodeQueryResult = NonNullable<Awaited<ReturnType<typeof getMyInviteCode>>>
+export type GetMyInviteCodeQueryError = ErrorType<void>
+
+
+/**
+ * @summary The caller's personal invite code (for the invite link)
+ */
+
+export function useGetMyInviteCode<TData = Awaited<ReturnType<typeof getMyInviteCode>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyInviteCode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyInviteCodeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAcceptInviteTrialUrl = () => {
+
+
+
+
+  return `/api/passes/invite/accept`
+}
+
+/**
+ * Grants the signed-in caller a short, env-configurable free trial pass if they are a brand-new user redeeming someone else's invite code. The trial is one-sided (the inviter is not rewarded) and granted at most once per new user, ever. Returns success:false with a message when the code is invalid, the caller invited themselves, the caller is not a new user, already holds a pass, or already used their trial. Booked as a $0 comp in the sales ledger.
+
+ * @summary Redeem an invite link for a free trial pass (new users only)
+ */
+export const acceptInviteTrial = async (inviteAcceptInput: InviteAcceptInput, options?: RequestInit): Promise<InviteAcceptResult> => {
+
+  return customFetch<InviteAcceptResult>(getAcceptInviteTrialUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      inviteAcceptInput,)
+  }
+);}
+
+
+
+
+export const getAcceptInviteTrialMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptInviteTrial>>, TError,{data: BodyType<InviteAcceptInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptInviteTrial>>, TError,{data: BodyType<InviteAcceptInput>}, TContext> => {
+
+const mutationKey = ['acceptInviteTrial'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptInviteTrial>>, {data: BodyType<InviteAcceptInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  acceptInviteTrial(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptInviteTrialMutationResult = NonNullable<Awaited<ReturnType<typeof acceptInviteTrial>>>
+    export type AcceptInviteTrialMutationBody = BodyType<InviteAcceptInput>
+    export type AcceptInviteTrialMutationError = ErrorType<void>
+
+    /**
+ * @summary Redeem an invite link for a free trial pass (new users only)
+ */
+export const useAcceptInviteTrial = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptInviteTrial>>, TError,{data: BodyType<InviteAcceptInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptInviteTrial>>,
+        TError,
+        {data: BodyType<InviteAcceptInput>},
+        TContext
+      > => {
+      return useMutation(getAcceptInviteTrialMutationOptions(options));
+    }
 
 export const getListMyGiftCodesUrl = () => {
 

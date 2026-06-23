@@ -15,11 +15,13 @@ import LeaderboardScreen from "./components/LeaderboardScreen";
 import FindPlayersScreen from "./components/FindPlayersScreen";
 import PassesScreen from "./components/PassesScreen";
 import RedeemScreen from "./components/RedeemScreen";
+import InviteScreen from "./components/InviteScreen";
 import ClaimScreen from "./components/ClaimScreen";
 import PoolStatsAppScreen from "./components/PoolStatsAppScreen";
 import { SignInPage, SignUpPage } from "./components/SignInPage";
 import { readPendingRedeem } from "./lib/pendingRedeem";
 import { readPendingClaim } from "./lib/pendingClaim";
+import { readPendingInvite } from "./lib/pendingInvite";
 import type { GameType, GameState, Player, SharkAggression, RuleSet, ChaosMode, PracticeRack, RematchConfig } from "./lib/gameLogic";
 import {
   generateShareCode,
@@ -133,6 +135,11 @@ function RedeemResumer() {
     const pending = readPendingRedeem();
     if (pending) {
       setLocation(`/redeem/${encodeURIComponent(pending)}`);
+      return;
+    }
+    const pendingInvite = readPendingInvite();
+    if (pendingInvite) {
+      setLocation(`/invite/${encodeURIComponent(pendingInvite)}`);
       return;
     }
     if (readPendingClaim()) setLocation("/claim");
@@ -435,6 +442,19 @@ function RedeemRoute({ params }: { params: { code: string } }) {
   );
 }
 
+function InviteRoute({ params }: { params: { code: string } }) {
+  const [, setLocation] = useLocation();
+  return (
+    <InviteScreen
+      code={params.code}
+      onHome={() => setLocation("/")}
+      onAccount={() => setLocation("/account")}
+      onAbout={() => setLocation("/about")}
+      onSignUp={() => setLocation("/sign-up")}
+    />
+  );
+}
+
 function ClaimRoute() {
   const [, setLocation] = useLocation();
   return (
@@ -532,6 +552,7 @@ function Routes() {
       <Route path="/passes" component={PassesRoute} />
       <Route path="/pool-stats-app" component={PoolStatsAppRoute} />
       <Route path="/redeem/:code" component={RedeemRoute} />
+      <Route path="/invite/:code" component={InviteRoute} />
       <Route path="/claim" component={ClaimRoute} />
       <Route path="/join/:code" component={JoinRoute} />
       <Route path="/watch/:name" component={WatchRoute} />
