@@ -74,16 +74,26 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
 
       {open && showHamburger && (
         <div className="navbar-menu">
-          <SignedIn>
-            {onStats && !at('/stats') && (
-              <button className="navbar-menu-item" onClick={() => { setOpen(false); onStats(); }}>
-                <span style={{ textDecoration: 'underline' }}>S</span>tats
-              </button>
-            )}
-          </SignedIn>
           {!at('/pool-stats-app') && (
             <button className="navbar-menu-item" onClick={() => { setOpen(false); setLocation('/pool-stats-app'); }}>
               <span style={{ textDecoration: 'underline' }}>A</span>bout
+            </button>
+          )}
+          <SignedIn>
+            {onAccount && !at('/account') && (
+              <button className="navbar-menu-item" onClick={() => { setOpen(false); onAccount(); }}>
+                <span style={{ textDecoration: 'underline' }}>A</span>ccount
+              </button>
+            )}
+            {onFindPlayers && !at('/find-players') && (
+              <button className="navbar-menu-item" onClick={() => { setOpen(false); onFindPlayers(); }}>
+                <span style={{ textDecoration: 'underline' }}>F</span>ind Players
+              </button>
+            )}
+          </SignedIn>
+          {onLeaderboard && !at('/leaderboard') && (
+            <button className="navbar-menu-item" onClick={() => { setOpen(false); onLeaderboard(); }}>
+              <span style={{ textDecoration: 'underline' }}>L</span>eaderboard
             </button>
           )}
           {onManual && !at('/about') && (
@@ -91,23 +101,6 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
               <span style={{ textDecoration: 'underline' }}>M</span>anual
             </button>
           )}
-          {onLeaderboard && !at('/leaderboard') && (
-            <button className="navbar-menu-item" onClick={() => { setOpen(false); onLeaderboard(); }}>
-              <span style={{ textDecoration: 'underline' }}>L</span>eaderboard
-            </button>
-          )}
-          <SignedIn>
-            {onFindPlayers && !at('/find-players') && (
-              <button className="navbar-menu-item" onClick={() => { setOpen(false); onFindPlayers(); }}>
-                <span style={{ textDecoration: 'underline' }}>F</span>ind Players
-              </button>
-            )}
-            {onAccount && !at('/account') && (
-              <button className="navbar-menu-item" onClick={() => { setOpen(false); onAccount(); }}>
-                <span style={{ textDecoration: 'underline' }}>A</span>ccount
-              </button>
-            )}
-          </SignedIn>
           <SignedOut>
             {onSignIn && (
               <button className="navbar-menu-item" onClick={() => { setOpen(false); onSignIn(); }}>
@@ -115,6 +108,13 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
               </button>
             )}
           </SignedOut>
+          <SignedIn>
+            {onStats && !at('/stats') && (
+              <button className="navbar-menu-item" onClick={() => { setOpen(false); onStats(); }}>
+                <span style={{ textDecoration: 'underline' }}>S</span>tats
+              </button>
+            )}
+          </SignedIn>
         </div>
       )}
     </div>
