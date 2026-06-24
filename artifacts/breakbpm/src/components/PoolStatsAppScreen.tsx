@@ -6,9 +6,11 @@ import { LeaderboardWidget } from "./LeaderboardScreen";
 import { usePageMeta, PAGE_META } from "../lib/pageMeta";
 import {
   POOL_STATS_H1,
+  POOL_STATS_LORE,
   POOL_STATS_INTRO,
   POOL_STATS_MODES,
-  POOL_STATS_FEATURES,
+  POOL_STATS_SHOWCASE,
+  POOL_STATS_SYSREQ,
   POOL_STATS_FAQ,
 } from "../lib/landingContent";
 
@@ -27,7 +29,8 @@ interface Props {
  * prerenderer (vite.config.ts) emits a static, keyword-rich HTML version of this
  * same copy (sourced from `landingContent.ts`) plus SoftwareApplication + FAQPage
  * JSON-LD, so crawlers without JS still get the full page. Once the bundle loads,
- * this interactive version takes over and embeds the live free-pass claim CTA.
+ * this interactive version takes over and embeds the live free-pass claim CTA,
+ * live leaderboard widget, and back-of-the-box UI sneak peeks.
  */
 export default function PoolStatsAppScreen({
   onHome,
@@ -40,7 +43,6 @@ export default function PoolStatsAppScreen({
 }: Props) {
   usePageMeta(PAGE_META.poolStatsApp);
 
-  // app-window--page scrolls the document — land at the top on entry.
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -63,17 +65,41 @@ export default function PoolStatsAppScreen({
             </span>
           </div>
           <div className="panel-body lp-body">
+
+            {/* ── Front of the box ── */}
             <h1 className="lp-h1">{POOL_STATS_H1}</h1>
+            <p className="lp-lore">{POOL_STATS_LORE}</p>
             <p className="lp-intro">{POOL_STATS_INTRO}</p>
 
             <button className="btn btn-primary btn-big w-full" onClick={onHome}>
               ▶ Start Scoring — It's Free
             </button>
 
-            <img src="/breakbpm-poster.png" alt="BreakBPM — PC-98 Series Billiards Score Tracker" className="lp-img" />
+            <img
+              src="/breakbpm-poster.png"
+              alt="BreakBPM — PC-98 Series Billiards Score Tracker"
+              className="lp-img"
+            />
 
+            {/* ── Free pass claim ── */}
             <FreePassCTA />
 
+            {/* ── Back of the box: UI sneak peeks ── */}
+            {POOL_STATS_SHOWCASE.map((item) => (
+              <section key={item.title} className="lp-feature">
+                <img
+                  src={item.img}
+                  alt={item.imgAlt}
+                  className="lp-sneak-img"
+                  loading="lazy"
+                />
+                <h2 className="lp-h2">{item.title}</h2>
+                <p>{item.body}</p>
+              </section>
+            ))}
+
+            {/* ── Game modes ── */}
+            <h2 className="lp-h2">Four Ways to Play</h2>
             <div className="game-type-grid lp-mode-grid">
               {POOL_STATS_MODES.map((m) => (
                 <button key={m.name} className="btn type-btn lp-mode-btn" onClick={onHome}>
@@ -83,17 +109,31 @@ export default function PoolStatsAppScreen({
               ))}
             </div>
 
+            {/* ── Live leaderboard sneak peek ── */}
             <LeaderboardWidget />
 
-            {POOL_STATS_FEATURES.map((f) => (
-              <section key={f.title}>
-                <h2 className="lp-h2">{f.title}</h2>
-                <p>{f.body}</p>
-              </section>
-            ))}
+            {/* ── Spectate & share (mood shot) ── */}
+            <img
+              src="/hustler.jpg"
+              alt="A seasoned player leans over the table, cue in hand"
+              className="lp-img"
+            />
+            <section>
+              <h2 className="lp-h2">Spectate &amp; Share Your Stats</h2>
+              <p>Every game gets a 5-character share code. Friends can join an open seat before the break or spectate by name — seeing your live HUD, shot log, and BPM in real time. Link a registered friend with an @mention; no shared device needed. Going live? Grab the transparent OBS overlay URL from your Account page and drop it straight into OBS.</p>
+            </section>
 
-            <img src="/pool-player.jpg" alt="Player lining up a shot" className="lp-img" />
+            {/* ── System requirements ── */}
+            <div className="lp-sysreq">
+              <h2 className="lp-h2 lp-sysreq__heading">System Requirements</h2>
+              <ul className="lp-list">
+                {POOL_STATS_SYSREQ.map((r) => (
+                  <li key={r}>{r}</li>
+                ))}
+              </ul>
+            </div>
 
+            {/* ── Nav links ── */}
             <nav className="lp-links" aria-label="More BreakBPM pages">
               <button className="btn btn-big w-full" onClick={onPasses}>
                 Passes &amp; Pricing
@@ -103,6 +143,7 @@ export default function PoolStatsAppScreen({
               </button>
             </nav>
 
+            {/* ── FAQ ── */}
             <h2 className="lp-h2">Frequently Asked Questions (FAQ)</h2>
             <dl className="lp-faq">
               {POOL_STATS_FAQ.map((f) => (

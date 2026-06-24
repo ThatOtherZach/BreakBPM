@@ -3087,6 +3087,7 @@ html, #root {
   color: var(--navy);
   margin: 0;
 }
+.lp-lore { font-size: 11px; color: #666; font-style: italic; margin: -6px 0 0; text-align: center; }
 .lp-intro { font-size: 13px; color: #222; margin: 0; }
 .lp-h2 {
   font-family: 'VT323', monospace;
@@ -3098,6 +3099,26 @@ html, #root {
 }
 .lp-body section { margin: 0; }
 .lp-body section p { font-size: 13px; color: #222; margin: 0; }
+
+/* Sneak-peek feature cards */
+.lp-feature { margin: 0; }
+.lp-body .lp-feature p { font-size: 13px; color: #222; margin: 4px 0 0; }
+.lp-sneak-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 2px solid var(--navy);
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.45);
+}
+
+/* System requirements block */
+.lp-sysreq {
+  background: rgba(0,0,0,0.04);
+  border: 1px solid var(--dshadow);
+  padding: 8px 12px 10px;
+}
+.lp-sysreq__heading { margin: 0 0 2px !important; border-bottom: none !important; }
+
 .lp-list { margin: 0; padding-left: 20px; }
 .lp-list li { font-size: 13px; color: #222; margin: 3px 0; }
 .lp-faq { margin: 0; }

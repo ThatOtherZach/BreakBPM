@@ -9,8 +9,10 @@ import type { Plugin } from "vite";
 import {
   POOL_STATS_H1,
   POOL_STATS_INTRO,
+  POOL_STATS_LORE,
   POOL_STATS_MODES,
-  POOL_STATS_FEATURES,
+  POOL_STATS_SHOWCASE,
+  POOL_STATS_SYSREQ,
   POOL_STATS_FAQ,
 } from "./src/lib/landingContent";
 const require = createRequire(import.meta.url);
@@ -302,12 +304,18 @@ function poolStatsAppJsonLd(): string {
 }
 
 function buildPoolStatsAppBody(): string {
+  const PEEK_IMG = `width:100%;height:auto;display:block;border:2px solid #000080;box-shadow:2px 2px 0 rgba(0,0,0,0.4);margin-bottom:6px`;
+
   const modes = POOL_STATS_MODES.map(
     (m) =>
       `  <li><strong>${escapeHtml(m.name)}</strong> — ${escapeHtml(m.body)}</li>`,
   ).join("\n");
-  const features = POOL_STATS_FEATURES.map(
-    (f) => `  <h2>${escapeHtml(f.title)}</h2>\n  <p>${escapeHtml(f.body)}</p>`,
+  const showcase = POOL_STATS_SHOWCASE.map(
+    (f) =>
+      `  <div style="margin:1em 0">\n    <img src="${escapeHtml(f.img)}" alt="${escapeHtml(f.imgAlt)}" style="${PEEK_IMG}" />\n    <h2>${escapeHtml(f.title)}</h2>\n    <p>${escapeHtml(f.body)}</p>\n  </div>`,
+  ).join("\n");
+  const sysreq = POOL_STATS_SYSREQ.map(
+    (r) => `  <li>${escapeHtml(r)}</li>`,
   ).join("\n");
   const faq = POOL_STATS_FAQ.map(
     (f) => `  <h3>${escapeHtml(f.q)}</h3>\n  <p>${escapeHtml(f.a)}</p>`,
@@ -318,17 +326,27 @@ ${PRERENDER_STYLE}
 <div id="prerender-static">
   <nav><a href="/">← Home</a><a href="/passes">Passes &amp; Pricing</a><a href="/about">About</a><a href="/legal">Legal</a></nav>
   <h1>${escapeHtml(POOL_STATS_H1)}</h1>
+  <p style="font-size:.85rem;color:#555;font-style:italic">${escapeHtml(POOL_STATS_LORE)}</p>
   <p>${escapeHtml(POOL_STATS_INTRO)}</p>
   <p><strong><a href="/claim">Claim your free pass</a></strong> — every claim is a guaranteed win, from a Day pass up to a Lifetime pass via a Lucky Break roll, while the monthly free stock lasts.</p>
 
-  <h2>Track every shot across every pool game mode</h2>
+${showcase}
+
+  <h2>Four Ways to Play</h2>
   <ul>
 ${modes}
   </ul>
 
-${features}
+  <h2>Spectate &amp; Share Your Stats</h2>
+  <p>Every game gets a 5-character share code. Friends can join an open seat before the break or spectate by name — seeing your live HUD, shot log, and BPM. Link a registered friend with an @mention; no shared device needed.</p>
+  <img src="/hustler.jpg" alt="A seasoned player leans over the table, cue in hand" style="${PEEK_IMG}" />
 
-  <h2>Frequently asked questions</h2>
+  <h2>System Requirements</h2>
+  <ul>
+${sysreq}
+  </ul>
+
+  <h2>Frequently Asked Questions</h2>
 ${faq}
 
   <p style="margin-top:2em;font-size:.8rem;color:#888">Built by Saym Services Inc. · Vancouver, BC · <a href="/">Open BreakBPM</a></p>
