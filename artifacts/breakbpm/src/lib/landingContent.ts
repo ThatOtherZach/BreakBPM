@@ -88,9 +88,13 @@ export const POOL_STATS_SHOWCASE: ShowcaseItem[] = [
   {
     title: "The Global BPM Leaderboard",
     body: "Ranked by pace across recent 1-on-1 games with separate leaderboards for 8-ball and 9-ball. Users qualify after just two games. Show up, shoot, and climb the board!",
-    img: "/leaderboard-example.gif",
-    imgAlt: "BreakBPM leaderboard — ranked players with BPM scores",
     liveLeaderboard: true,
+  },
+  {
+    title: "Themes & Customization",
+    body: "Earn profile themes by playing games and tagging halls. Lifetime pass holders unlock custom screen names and a personalized public profile. Your style, your rack.",
+    img: "/leaderboard-example.gif",
+    imgAlt: "BreakBPM profile themes and customization",
   },
   {
     title: "Play at a Verified Hall — Tag the Board",
