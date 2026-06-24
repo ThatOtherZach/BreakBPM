@@ -4,7 +4,7 @@ import { SignedIn, SignedOut } from '../lib/authClient';
 import { useGetMe } from '@workspace/api-client-react';
 
 interface NavbarProps {
-  onAbout?: () => void;
+  onManual?: () => void;
   onBack?: () => void;
   onAccount?: () => void;
   onStats?: () => void;
@@ -13,10 +13,10 @@ interface NavbarProps {
   onSignIn?: () => void;
 }
 
-export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlayers, onLeaderboard, onSignIn }: NavbarProps) {
+export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPlayers, onLeaderboard, onSignIn }: NavbarProps) {
   const [open, setOpen] = useState(false);
   const me = useGetMe();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   const tier = me.data?.entitlement?.tier;
   const screenName = me.data?.account?.screenName ?? null;
@@ -24,15 +24,15 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlay
   // Hide the menu item for the page the user is already on.
   const at = (path: string) => location === path;
 
-  const showHamburger = !!(onAbout || onAccount || onStats || onFindPlayers || onLeaderboard || onSignIn);
+  const showHamburger = !!(onManual || onAccount || onStats || onFindPlayers || onLeaderboard || onSignIn);
 
   return (
     <div className="navbar-wrapper">
       {/* Always-present anchors for crawler discovery — visually hidden, not interactive */}
       <div style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
-        <a href="/pool-stats-app">Pool Stats App</a>
+        <a href="/pool-stats-app">About BreakBPM</a>
         <a href="/passes">Passes &amp; Pricing</a>
-        <a href="/about">About BreakBPM</a>
+        <a href="/about">BreakBPM Manual</a>
         <a href="/legal">Legal</a>
       </div>
       <div className="navbar">
@@ -81,9 +81,14 @@ export default function Navbar({ onAbout, onBack, onAccount, onStats, onFindPlay
               </button>
             )}
           </SignedIn>
-          {onAbout && !at('/about') && (
-            <button className="navbar-menu-item" onClick={() => { setOpen(false); onAbout(); }}>
+          {!at('/pool-stats-app') && (
+            <button className="navbar-menu-item" onClick={() => { setOpen(false); setLocation('/pool-stats-app'); }}>
               <span style={{ textDecoration: 'underline' }}>A</span>bout
+            </button>
+          )}
+          {onManual && !at('/about') && (
+            <button className="navbar-menu-item" onClick={() => { setOpen(false); onManual(); }}>
+              <span style={{ textDecoration: 'underline' }}>M</span>anual
             </button>
           )}
           {onLeaderboard && !at('/leaderboard') && (

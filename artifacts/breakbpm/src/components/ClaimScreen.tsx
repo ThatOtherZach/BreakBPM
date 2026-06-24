@@ -28,7 +28,7 @@ type Phase = "auth" | "claiming" | "rolling" | "result" | "done";
 interface Props {
   onHome: () => void;
   onAccount: () => void;
-  onAbout: () => void;
+  onManual: () => void;
   onSignUp: () => void;
 }
 
@@ -47,7 +47,7 @@ interface Props {
  * The stored intent is cleared on both success and failure so a claim isn't
  * re-run on a later visit.
  */
-export default function ClaimScreen({ onHome, onAccount, onAbout, onSignUp }: Props) {
+export default function ClaimScreen({ onHome, onAccount, onManual, onSignUp }: Props) {
   const { isAuthenticated, isLoading } = useAuth();
   const me = useGetMe();
   const qc = useQueryClient();
@@ -128,7 +128,7 @@ export default function ClaimScreen({ onHome, onAccount, onAbout, onSignUp }: Pr
 
   return (
     <div className="app-window app-window--page">
-      <Navbar onBack={onHome} onAbout={onAbout} onAccount={onAccount} onSignIn={onSignUp} />
+      <Navbar onBack={onHome} onManual={onManual} onAccount={onAccount} onSignIn={onSignUp} />
       <div className="app-body">
         <div className="panel">
           <div className="panel-header">

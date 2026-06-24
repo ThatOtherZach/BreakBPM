@@ -37,12 +37,12 @@ export const PAGE_META = {
     ogTitle: 'BreakBPM — Live Pool Score Tracker with Balls-Per-Minute',
     ogDescription: 'Track every shot, every ball, and your live Balls Per Minute across 8-ball, 9-ball, practice, and solo Shark mode. Free to play, no install required.',
   },
-  about: {
-    title: 'About BreakBPM — Billiards Score Tracker & Shot Stats App',
-    description: 'Learn about BreakBPM — the free live pool scorekeeper that calculates per-player Balls Per Minute for 8-ball, 9-ball, and solo Shark mode. Built for serious players.',
+  manual: {
+    title: 'BreakBPM Manual — How to Track Balls Per Minute & Use Every Feature',
+    description: 'The BreakBPM manual: how to score 8-ball, 9-ball, practice, and solo Shark mode, read per-player Balls Per Minute, spectate, link players with @mention, and use passes.',
     canonical: 'https://breakbpm.com/about',
-    ogTitle: 'About BreakBPM — Billiards Score Tracker & Shot Stats',
-    ogDescription: 'BreakBPM tracks every shot and every ball pocketed, calculating live Balls Per Minute per player. Learn how it works and who made it.',
+    ogTitle: 'BreakBPM Manual — How Everything Works',
+    ogDescription: 'How to use BreakBPM: scoring modes, live Balls Per Minute, spectating, share codes, @mention linking, and passes.',
   },
   legal: {
     title: 'Legal — BreakBPM Terms of Service, Privacy & Data Policy',

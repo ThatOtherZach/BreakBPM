@@ -37,7 +37,7 @@ const BALL_COLORS: Record<number, string> = {
 interface Props {
   code: string;
   onBack: () => void;
-  onAbout: () => void;
+  onManual: () => void;
   onAccount: () => void;
   onSignIn: () => void;
   /**
@@ -70,7 +70,7 @@ interface Props {
  * Renders an overlay banner that explicitly states "View only — host is
  * scorekeeping" so joiners aren't confused about why they can't tap.
  */
-export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onSignIn, spectatorOnly = false, obs = false, obsLog = false, obsScale = 1, watchName }: Props) {
+export default function JoinedGameScreen({ code, onBack, onManual, onAccount, onSignIn, spectatorOnly = false, obs = false, obsLog = false, obsScale = 1, watchName }: Props) {
   const [, setLocation] = useLocation();
   const join = useJoinGame();
   const leave = useLeaveGame();
@@ -260,7 +260,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
     if (obs) return <ObsIdle scale={obsScale} />;
     return (
       <div className="app-window">
-        <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
+        <Navbar onManual={onManual} onAccount={onAccount} onSignIn={onSignIn} />
         <div className="app-body">
           <div className="notice" style={{ color: '#c00' }}>
             <span>!</span><span>{joinError}</span>
@@ -279,7 +279,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
     if (obs) return <ObsIdle scale={obsScale} />;
     return (
       <div className="app-window">
-        <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
+        <Navbar onManual={onManual} onAccount={onAccount} onSignIn={onSignIn} />
         <div className="app-body">
           <div className="notice">Connecting to game {code}…</div>
         </div>
@@ -603,7 +603,7 @@ export default function JoinedGameScreen({ code, onBack, onAbout, onAccount, onS
 
   return (
     <div className="app-window">
-      <Navbar onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
+      <Navbar onManual={onManual} onAccount={onAccount} onSignIn={onSignIn} />
 
       {hudPanel}
 

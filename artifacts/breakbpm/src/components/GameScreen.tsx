@@ -59,7 +59,7 @@ interface Props {
    * logged-in players; signed-out players get a fresh New Game only.
    */
   isAuthenticated: boolean;
-  onAbout: () => void;
+  onManual: () => void;
   onAccount: () => void;
   onStats: () => void;
   onFindPlayers: () => void;
@@ -124,7 +124,7 @@ function hallTagFailureMessage(reason: string | undefined): string {
   }
 }
 
-export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, initialPausedDuration = 0, onNewGame, onRematch, isAuthenticated, onAbout, onAccount, onStats, onFindPlayers, onSignIn }: Props) {
+export default function GameScreen({ initialState, serverGameId, maxGameDurationMs, initialPausedDuration = 0, onNewGame, onRematch, isAuthenticated, onManual, onAccount, onStats, onFindPlayers, onSignIn }: Props) {
   const [, navigate] = useLocation();
   const saveGame = useSaveGame();
   const recordActivity = useRecordGameActivity();
@@ -1406,7 +1406,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
 
   return (
     <div className="app-window">
-      <Navbar onAbout={onAbout} onAccount={onAccount} onStats={onStats} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
+      <Navbar onManual={onManual} onAccount={onAccount} onStats={onStats} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
       {/* Live CRT HUD. The same render is reused (wrapped in the Win98
           frame) for the offscreen "Share Card" snapshot below, so the
           shared image cannot drift from the live HUD. */}

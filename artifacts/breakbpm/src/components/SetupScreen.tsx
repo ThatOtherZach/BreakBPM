@@ -119,7 +119,7 @@ interface Props {
   onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, serverShareCode: string | null, sharkAggression?: SharkAggression, ruleSet?: RuleSet, chaosMode?: ChaosMode, breakerIndex?: number, practiceRack?: PracticeRack) => void;
   /** Resume an existing game from the server-side in-progress snapshot. */
   onResume: (state: GameState, serverGameId: string | null, maxGameDurationMs: number | null, pausedDuration: number) => void;
-  onAbout: () => void;
+  onManual: () => void;
   onLegal: () => void;
   onAccount: () => void;
   onStats: () => void;
@@ -127,7 +127,7 @@ interface Props {
   onSignIn: () => void;
 }
 
-export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAccount, onStats, onFindPlayers, onSignIn }: Props) {
+export default function SetupScreen({ onStart, onResume, onManual, onLegal, onAccount, onStats, onFindPlayers, onSignIn }: Props) {
   usePageMeta(PAGE_META.home);
   const [, setLocation] = useLocation();
   const startGame = useStartGame();
@@ -564,7 +564,7 @@ export default function SetupScreen({ onStart, onResume, onAbout, onLegal, onAcc
     // appears for player-name input.
     <div className="app-window app-window--page">
       {/* Title bar */}
-      <Navbar onAbout={onAbout} onAccount={onAccount} onStats={onStats} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
+      <Navbar onManual={onManual} onAccount={onAccount} onStats={onStats} onFindPlayers={onFindPlayers} onSignIn={onSignIn} />
       {/* ── PC-98 Splash Panel ── */}
       <div className="splash-panel">
         {/* Left: 8-ball art in a CRT-style frame.

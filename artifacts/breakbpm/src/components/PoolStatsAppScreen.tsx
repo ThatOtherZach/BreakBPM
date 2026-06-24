@@ -43,7 +43,7 @@ function LatestHallWidget({
 
 interface Props {
   onHome: () => void;
-  onAbout: () => void;
+  onManual: () => void;
   onAccount: () => void;
   onStats: () => void;
   onFindPlayers: () => void;
@@ -61,7 +61,7 @@ interface Props {
  */
 export default function PoolStatsAppScreen({
   onHome,
-  onAbout,
+  onManual,
   onAccount,
   onStats,
   onFindPlayers,
@@ -78,7 +78,7 @@ export default function PoolStatsAppScreen({
     <div className="app-window app-window--page">
       <Navbar
         onBack={onHome}
-        onAbout={onAbout}
+        onManual={onManual}
         onAccount={onAccount}
         onStats={onStats}
         onFindPlayers={onFindPlayers}
@@ -170,8 +170,8 @@ export default function PoolStatsAppScreen({
               <button className="btn btn-big w-full" onClick={onPasses}>
                 Passes &amp; Pricing
               </button>
-              <button className="btn btn-big w-full" onClick={onAbout}>
-                About BreakBPM
+              <button className="btn btn-big w-full" onClick={onManual}>
+                BreakBPM Manual
               </button>
             </nav>
 

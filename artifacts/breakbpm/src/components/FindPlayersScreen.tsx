@@ -38,7 +38,7 @@ const BALL_COLORS: Record<number, string> = {
 
 interface Props {
   onBack: () => void;
-  onAbout: () => void;
+  onManual: () => void;
   onAccount: () => void;
   onLeaderboard: () => void;
   onSignIn: () => void;
@@ -324,7 +324,7 @@ function downloadIcs(post: FindPlayerPost) {
 
 export default function FindPlayersScreen({
   onBack,
-  onAbout,
+  onManual,
   onAccount,
   onLeaderboard,
   onSignIn,
@@ -599,7 +599,7 @@ export default function FindPlayersScreen({
 
   return (
     <div className="app-window app-window--page">
-      <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onLeaderboard={onLeaderboard} onSignIn={onSignIn} />
+      <Navbar onBack={onBack} onManual={onManual} onAccount={onAccount} onLeaderboard={onLeaderboard} onSignIn={onSignIn} />
       <div className="app-body">
         <SignedIn>
           {/* ── Create form (paid only, collapsible) ── */}

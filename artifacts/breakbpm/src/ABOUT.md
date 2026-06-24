@@ -1,4 +1,4 @@
-# BreakBPM
+# BreakBPM Manual
 
 BreakBPM was developed by Saym Software Systems in the late 1990s. However, due to the Y2K bug, the software was never officially released, until now!
 

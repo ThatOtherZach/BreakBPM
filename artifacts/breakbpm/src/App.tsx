@@ -319,7 +319,7 @@ function MainApp() {
   }
 
   const goSignIn = () => setLocation("/sign-in");
-  const goAbout = () => setLocation("/about");
+  const goManual = () => setLocation("/about");
   const goLegal = () => setLocation("/legal");
   const goAccount = () => setLocation("/account");
   const goStats = () => setLocation("/stats");
@@ -336,7 +336,7 @@ function MainApp() {
         onNewGame={handleNewGame}
         onRematch={handleRematch}
         isAuthenticated={isAuthenticated}
-        onAbout={goAbout}
+        onManual={goManual}
         onAccount={goAccount}
         onStats={goStats}
         onFindPlayers={goFindPlayers}
@@ -348,7 +348,7 @@ function MainApp() {
     <SetupScreen
       onStart={handleStart}
       onResume={handleResume}
-      onAbout={goAbout}
+      onManual={goManual}
       onLegal={goLegal}
       onAccount={goAccount}
       onStats={goStats}
@@ -364,7 +364,7 @@ function AccountRoute() {
     <AccountScreen
       onBack={() => setLocation("/")}
       onPasses={() => setLocation("/passes")}
-      onAbout={() => setLocation("/about")}
+      onManual={() => setLocation("/about")}
       onFindPlayers={() => setLocation("/find-players")}
       onStats={() => setLocation("/stats")}
       onLeaderboard={() => setLocation("/leaderboard")}
@@ -378,7 +378,7 @@ function StatsRoute() {
   return (
     <StatsScreen
       onBack={() => setLocation("/")}
-      onAbout={() => setLocation("/about")}
+      onManual={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onFindPlayers={() => setLocation("/find-players")}
       onSignIn={() => setLocation("/sign-in")}
@@ -393,7 +393,7 @@ function LeaderboardRoute() {
   return (
     <LeaderboardScreen
       onBack={() => setLocation("/")}
-      onAbout={() => setLocation("/about")}
+      onManual={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onFindPlayers={() => setLocation("/find-players")}
       onStats={() => setLocation("/stats")}
@@ -408,7 +408,7 @@ function HallLeaderboardRoute({ params }: { params: { venueId: string } }) {
     <LeaderboardScreen
       venueId={params.venueId}
       onBack={() => setLocation("/leaderboard")}
-      onAbout={() => setLocation("/about")}
+      onManual={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onFindPlayers={() => setLocation("/find-players")}
       onStats={() => setLocation("/stats")}
@@ -432,7 +432,7 @@ function FindPlayersRoute() {
   return (
     <FindPlayersScreen
       onBack={() => setLocation("/")}
-      onAbout={() => setLocation("/about")}
+      onManual={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onLeaderboard={() => setLocation("/leaderboard")}
       onSignIn={() => setLocation("/sign-in")}
@@ -453,7 +453,7 @@ function RedeemRoute({ params }: { params: { code: string } }) {
       code={params.code}
       onHome={() => setLocation("/")}
       onAccount={() => setLocation("/account")}
-      onAbout={() => setLocation("/about")}
+      onManual={() => setLocation("/about")}
       onSignUp={() => setLocation("/sign-up")}
     />
   );
@@ -466,7 +466,7 @@ function InviteRoute({ params }: { params: { code: string } }) {
       code={params.code}
       onHome={() => setLocation("/")}
       onAccount={() => setLocation("/account")}
-      onAbout={() => setLocation("/about")}
+      onManual={() => setLocation("/about")}
       onSignUp={() => setLocation("/sign-up")}
     />
   );
@@ -478,7 +478,7 @@ function ClaimRoute() {
     <ClaimScreen
       onHome={() => setLocation("/")}
       onAccount={() => setLocation("/account")}
-      onAbout={() => setLocation("/about")}
+      onManual={() => setLocation("/about")}
       onSignUp={() => setLocation("/sign-up")}
     />
   );
@@ -489,7 +489,7 @@ function PoolStatsAppRoute() {
   return (
     <PoolStatsAppScreen
       onHome={() => setLocation("/")}
-      onAbout={() => setLocation("/about")}
+      onManual={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onStats={() => setLocation("/stats")}
       onFindPlayers={() => setLocation("/find-players")}
@@ -505,7 +505,7 @@ function JoinRoute({ params }: { params: { code: string } }) {
     <JoinedGameScreen
       code={params.code.toUpperCase()}
       onBack={() => setLocation("/")}
-      onAbout={() => setLocation("/about")}
+      onManual={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onSignIn={() => setLocation("/sign-in")}
     />
@@ -531,7 +531,7 @@ function WatchRoute({ params }: { params: { name: string } }) {
     <WatchByNameScreen
       name={name}
       onBack={() => setLocation("/")}
-      onAbout={() => setLocation("/about")}
+      onManual={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onSignIn={() => setLocation("/sign-in")}
       obs={obs}

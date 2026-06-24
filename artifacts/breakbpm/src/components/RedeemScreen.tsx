@@ -28,7 +28,7 @@ interface Props {
   code: string;
   onHome: () => void;
   onAccount: () => void;
-  onAbout: () => void;
+  onManual: () => void;
   onSignUp: () => void;
 }
 
@@ -45,7 +45,7 @@ interface Props {
  * The stored code is cleared on both success and failure so it isn't
  * re-applied on a later visit.
  */
-export default function RedeemScreen({ code, onHome, onAccount, onAbout, onSignUp }: Props) {
+export default function RedeemScreen({ code, onHome, onAccount, onManual, onSignUp }: Props) {
   const { isAuthenticated, isLoading } = useAuth();
   const me = useGetMe();
   const qc = useQueryClient();
@@ -135,7 +135,7 @@ export default function RedeemScreen({ code, onHome, onAccount, onAbout, onSignU
 
   return (
     <div className="app-window app-window--page">
-      <Navbar onBack={onHome} onAbout={onAbout} onAccount={onAccount} onSignIn={onSignUp} />
+      <Navbar onBack={onHome} onManual={onManual} onAccount={onAccount} onSignIn={onSignUp} />
       <div className="app-body">
         <div className="panel">
           <div className="panel-header">

@@ -54,13 +54,13 @@ interface RouteMetaEntry {
 const PUBLIC_ROUTES: RouteMetaEntry[] = [
   {
     path: "about",
-    title: "About BreakBPM — Billiards Score Tracker & Shot Stats App",
+    title: "BreakBPM Manual — How to Track Balls Per Minute & Use Every Feature",
     description:
-      "Learn about BreakBPM — the free live pool scorekeeper that calculates per-player Balls Per Minute for 8-ball, 9-ball, and solo Shark mode. Built for serious players.",
+      "The BreakBPM manual: how to score 8-ball, 9-ball, practice, and solo Shark mode, read per-player Balls Per Minute, spectate, link players with @mention, and use passes.",
     canonical: "https://breakbpm.com/about",
-    ogTitle: "About BreakBPM — Billiards Score Tracker & Shot Stats",
+    ogTitle: "BreakBPM Manual — How Everything Works",
     ogDescription:
-      "BreakBPM tracks every shot and every ball pocketed, calculating live Balls Per Minute per player. Learn how it works and who made it.",
+      "How to use BreakBPM: scoring modes, live Balls Per Minute, spectating, share codes, @mention linking, and passes.",
   },
   {
     path: "legal",
@@ -173,7 +173,7 @@ function buildAboutBody(markedFn: (md: string) => string): string {
   return `
 ${PRERENDER_STYLE}
 <div id="prerender-static">
-  <nav><a href="/">← Home</a><a href="/passes">Passes &amp; Pricing</a><a href="/legal">Legal</a></nav>
+  <nav><a href="/">← Home</a><a href="/pool-stats-app">About</a><a href="/passes">Passes &amp; Pricing</a><a href="/legal">Legal</a></nav>
   ${aboutHtml}
   <p style="margin-top:2em;font-size:.8rem;color:#888">Built by Saym Services Inc. · Vancouver, BC</p>
 </div>`.trim();
@@ -193,7 +193,7 @@ function buildLegalBody(markedFn: (md: string) => string): string {
   return `
 ${PRERENDER_STYLE}
 <div id="prerender-static">
-  <nav><a href="/">← Home</a><a href="/about">About</a><a href="/passes">Pricing</a></nav>
+  <nav><a href="/">← Home</a><a href="/about">Manual</a><a href="/passes">Pricing</a></nav>
   <h1>Legal</h1>
   <p style="font-size:.85rem;color:#555">Terms of service, privacy policy, and data handling details for BreakBPM — operated by Saym Services Inc.</p>
   ${termsHtml}
@@ -219,7 +219,7 @@ function buildPassesBody(): string {
   return `
 ${PRERENDER_STYLE}
 <div id="prerender-static">
-  <nav><a href="/">← Home</a><a href="/about">About</a><a href="/legal">Legal</a></nav>
+  <nav><a href="/">← Home</a><a href="/about">Manual</a><a href="/legal">Legal</a></nav>
   <h1>BreakBPM Passes &amp; Pricing</h1>
   <p>A pass unlocks full stats history, extended windows, live game spectating, @mention player linking, leaderboard windows, and all paid features. Free play is always available — sign in to save your stats.</p>
 
@@ -324,7 +324,7 @@ function buildPoolStatsAppBody(): string {
   return `
 ${PRERENDER_STYLE}
 <div id="prerender-static">
-  <nav><a href="/">← Home</a><a href="/passes">Passes &amp; Pricing</a><a href="/about">About</a><a href="/legal">Legal</a></nav>
+  <nav><a href="/">← Home</a><a href="/passes">Passes &amp; Pricing</a><a href="/about">Manual</a><a href="/legal">Legal</a></nav>
   <h1>${escapeHtml(POOL_STATS_H1)}</h1>
   <p style="font-size:.85rem;color:#555;font-style:italic">${escapeHtml(POOL_STATS_LORE)}</p>
   <p>${escapeHtml(POOL_STATS_INTRO)}</p>

@@ -59,7 +59,7 @@ type RevealState = "idle" | "rolling" | "result";
 interface Props {
   onBack: () => void;
   onPasses: () => void;
-  onAbout: () => void;
+  onManual: () => void;
   onFindPlayers: () => void;
   onStats: () => void;
   onLeaderboard: () => void;
@@ -80,7 +80,7 @@ function fmtHoursUntil(target: Date | string | null): string | null {
   return `~${hours}h`;
 }
 
-export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers, onStats, onLeaderboard, onSignIn }: Props) {
+export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayers, onStats, onLeaderboard, onSignIn }: Props) {
   const { logout: signOut } = useAuth();
   const qc = useQueryClient();
   const [, setLocation] = useLocation();
@@ -253,7 +253,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   if (me.isLoading) {
     return (
       <div className="app-window app-window--page">
-        <Navbar onBack={onBack} onAbout={onAbout} onFindPlayers={onFindPlayers} onLeaderboard={onLeaderboard} onSignIn={onSignIn} />
+        <Navbar onBack={onBack} onManual={onManual} onFindPlayers={onFindPlayers} onLeaderboard={onLeaderboard} onSignIn={onSignIn} />
         <div className="app-body">
           <p style={{ fontFamily: "VT323", fontSize: 18 }}>Loading…</p>
         </div>
@@ -264,7 +264,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
   if (!me.data?.signedIn) {
     return (
       <div className="app-window app-window--page">
-        <Navbar onBack={onBack} onAbout={onAbout} onFindPlayers={onFindPlayers} onLeaderboard={onLeaderboard} onSignIn={onSignIn} />
+        <Navbar onBack={onBack} onManual={onManual} onFindPlayers={onFindPlayers} onLeaderboard={onLeaderboard} onSignIn={onSignIn} />
         <div className="app-body">
           <div className="panel">
             <div className="panel-header"><span>Account</span></div>
@@ -526,7 +526,7 @@ export default function AccountScreen({ onBack, onPasses, onAbout, onFindPlayers
     <div className="app-window app-window--page">
       <Navbar
         onBack={onBack}
-        onAbout={onAbout}
+        onManual={onManual}
         onStats={ent.tier === "pass" ? onStats : undefined}
         onFindPlayers={ent.tier === "pass" ? onFindPlayers : undefined}
         onLeaderboard={onLeaderboard}

@@ -9,9 +9,9 @@ Built and operated by Saym Services Inc. in Vancouver, Canada.
 ## Key pages
 
 - Home: https://breakbpm.com/
-- Pool Stats App (overview + free pass): https://breakbpm.com/pool-stats-app
+- About (overview + free pass): https://breakbpm.com/pool-stats-app
 - Passes & Pricing: https://breakbpm.com/passes
-- About: https://breakbpm.com/about
+- Manual (how it works): https://breakbpm.com/about
 - Legal: https://breakbpm.com/legal
 
 ## Source code

@@ -190,7 +190,7 @@ export function LeaderboardWidget() {
 
 interface Props {
   onBack: () => void;
-  onAbout: () => void;
+  onManual: () => void;
   onAccount: () => void;
   onFindPlayers: () => void;
   onStats: () => void;
@@ -211,7 +211,7 @@ interface Props {
  */
 export default function LeaderboardScreen({
   onBack,
-  onAbout,
+  onManual,
   onAccount,
   onFindPlayers,
   onStats,
@@ -271,7 +271,7 @@ export default function LeaderboardScreen({
     <div className="app-window app-window--page">
       <Navbar
         onBack={onBack}
-        onAbout={onAbout}
+        onManual={onManual}
         onAccount={onAccount}
         onFindPlayers={onFindPlayers}
         onStats={onStats}

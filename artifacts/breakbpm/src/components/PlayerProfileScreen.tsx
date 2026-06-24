@@ -11,7 +11,7 @@ import { VARIANT_IMAGE_URLS, type BackgroundVariant } from "../lib/backgroundVar
 interface Props {
   name: string;
   onBack: () => void;
-  onAbout: () => void;
+  onManual: () => void;
   onAccount: () => void;
   onSignIn: () => void;
 }
@@ -32,7 +32,7 @@ function fmtMemberSince(d: string): string {
  * just a showcase. WatchByNameScreen keeps polling in the background and swaps
  * to the live spectator view the moment they break.
  */
-export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, onSignIn }: Props) {
+export default function PlayerProfileScreen({ name, onBack, onManual, onAccount, onSignIn }: Props) {
   const [, setLocation] = useLocation();
   // Opponent names in the recent-games list are only revealed to signed-in
   // visitors; signed-out spectators see them redacted.
@@ -65,7 +65,7 @@ export default function PlayerProfileScreen({ name, onBack, onAbout, onAccount, 
 
   return (
     <div className="app-window app-window--page">
-      <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onSignIn={onSignIn} />
+      <Navbar onBack={onBack} onManual={onManual} onAccount={onAccount} onSignIn={onSignIn} />
       <div className="app-body">
         {profile.isLoading && (
           <div className="notice"><span>📡</span><span>Loading {name}'s profile…</span></div>

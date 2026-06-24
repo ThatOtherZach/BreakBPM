@@ -20,7 +20,7 @@ import { THEME_ACCENT, THEME_FELT, themeColorOf } from "../lib/backgroundVariant
 
 interface Props {
   onBack: () => void;
-  onAbout: () => void;
+  onManual: () => void;
   onAccount: () => void;
   onFindPlayers: () => void;
   onSignIn: () => void;
@@ -132,7 +132,7 @@ function SectionHeader({ emoji, title }: { emoji: string; title: string }) {
   );
 }
 
-export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers, onSignIn, onPasses, onLeaderboard }: Props) {
+export default function StatsScreen({ onBack, onManual, onAccount, onFindPlayers, onSignIn, onPasses, onLeaderboard }: Props) {
   const qc = useQueryClient();
   const { isAuthenticated, user } = useAuth();
 
@@ -268,7 +268,7 @@ export default function StatsScreen({ onBack, onAbout, onAccount, onFindPlayers,
 
   return (
     <div className="app-window app-window--page">
-      <Navbar onBack={onBack} onAbout={onAbout} onAccount={onAccount} onFindPlayers={onFindPlayers} onLeaderboard={onLeaderboard} onSignIn={onSignIn} />
+      <Navbar onBack={onBack} onManual={onManual} onAccount={onAccount} onFindPlayers={onFindPlayers} onLeaderboard={onLeaderboard} onSignIn={onSignIn} />
       <div className="app-body">
         {/* ── Controls — only shown when signed in ── */}
         {isAuthenticated && <div className="panel">

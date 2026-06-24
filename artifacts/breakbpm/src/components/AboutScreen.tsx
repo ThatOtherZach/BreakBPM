@@ -24,7 +24,7 @@ interface AboutScreenProps {
 }
 
 export default function AboutScreen({ onBack, onPasses }: AboutScreenProps) {
-  usePageMeta(PAGE_META.about);
+  usePageMeta(PAGE_META.manual);
   const html = useMemo(() => marked(aboutMd) as string, []);
 
   const [copyState, setCopyState] = useState<'idle' | 'ok' | 'fail'>('idle');
