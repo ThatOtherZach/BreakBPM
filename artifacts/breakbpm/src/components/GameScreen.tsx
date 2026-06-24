@@ -1570,7 +1570,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                       ❌ Close • 消
                     </button>
                     <button className="btn btn-primary" onClick={startAddToHall}>
-                      Try again
+                      Try Again :(
                     </button>
                   </div>
                 </>
