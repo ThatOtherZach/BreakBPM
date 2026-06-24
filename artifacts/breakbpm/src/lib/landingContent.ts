@@ -85,7 +85,7 @@ export const POOL_STATS_SHOWCASE: ShowcaseItem[] = [
   },
   {
     title: "The Global BPM Leaderboard",
-    body: "Ranked by accuracy-weighted pace across recent 1-on-1 games. Separate boards for 8-ball and 9-ball. You appear after just two qualifying games — show up, shoot straight, climb the board.",
+    body: "Ranked by pace across recent 1-on-1 games with separate leaderboards for 8-ball and 9-ball. Users qualify after just two games. Show up, shoot, and climb the board!",
     img: "/leaderboard-example.gif",
     imgAlt: "BreakBPM leaderboard — ranked players with BPM scores",
   },
