@@ -1506,7 +1506,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                       onClick={() => confirmAddToHall(hallCandidates[0])}
                       disabled={tagHall.isPending}
                     >
-                      Confirm
+                      ✅ Confirm
                     </button>
                   </div>
                 </>
@@ -1531,7 +1531,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                         onClick={() => confirmAddToHall(c)}
                         disabled={tagHall.isPending}
                       >
-                        Confirm
+                        ✅ Confirm
                       </button>
                     </div>
                   ))}
