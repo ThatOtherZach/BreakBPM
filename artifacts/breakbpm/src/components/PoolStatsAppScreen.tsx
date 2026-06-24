@@ -88,7 +88,7 @@ export default function PoolStatsAppScreen({
         <div className="panel">
           <div className="panel-header">
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <span aria-hidden="true">🎱</span>BreakBPM.com
+              <span aria-hidden="true" className="ball-btn eight" style={{ width: 16, height: 16, flexShrink: 0, pointerEvents: 'none' }}><span className="ball-num" style={{ width: 12, height: 12, fontSize: 7 }}>8</span></span>BreakBPM.com
             </span>
           </div>
           <div className="panel-body lp-body">
