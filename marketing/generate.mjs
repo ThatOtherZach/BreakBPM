@@ -193,6 +193,86 @@ function publisher(ctx, x, y, size = 18) {
   txt(ctx, "SAYM SOFTWARE SYSTEMS", x, y, { fam: "PS2P", size, color: C.amber, align: "left", track: 2 });
 }
 
+// ── Real-UI screenshots (captured live from the running app) ─────────────────
+const SHOTS = join(HERE, "screenshots");
+const ui = {};
+for (const [k, f] of Object.entries({
+  setup: "ui-setup-mobile.jpg", hud: "ui-hud-mobile.jpg", stats: "ui-stats-mobile.jpg",
+})) {
+  // These are required, real screenshots — fail loudly rather than ship a blank
+  // "REAL APP SCREEN" graphic if one goes missing.
+  try { ui[k] = await loadImage(join(SHOTS, f)); }
+  catch (e) { throw new Error(`Required screenshot missing/invalid: ${join(SHOTS, f)} (${e.message})`); }
+}
+
+// rounded-rect path
+function rr(ctx, x, y, w, h, r) {
+  const m = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + m, y);
+  ctx.arcTo(x + w, y, x + w, y + h, m);
+  ctx.arcTo(x + w, y + h, x, y + h, m);
+  ctx.arcTo(x, y + h, x, y, m);
+  ctx.arcTo(x, y, x + w, y, m);
+  ctx.closePath();
+}
+
+// teal Win98 desktop (no window chrome) — backdrop for device shots
+function desktopBg(ctx, W, H) {
+  ctx.fillStyle = C.teal; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "rgba(0,0,0,0.06)";
+  for (let yy = 0; yy < H; yy += 4) ctx.fillRect(0, yy, W, 1);
+  vignette(ctx, 0, 0, W, H);
+}
+
+// a phone device with a real screenshot covering its screen (anchored top)
+function phone(ctx, sx, sy, sw, sh, img) {
+  const bz = Math.max(10, Math.round(sw * 0.05));
+  const bx = sx - bz, by = sy - bz, bw = sw + bz * 2, bh = sh + bz * 2;
+  const R = bz * 2.4, sr = bz * 1.2;
+  // drop shadow
+  ctx.save(); ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 38; ctx.shadowOffsetY = 22;
+  ctx.fillStyle = "#000"; rr(ctx, bx, by, bw, bh, R); ctx.fill(); ctx.restore();
+  // body
+  const g = ctx.createLinearGradient(bx, by, bx, by + bh);
+  g.addColorStop(0, "#2c2c2e"); g.addColorStop(1, "#0a0a0b");
+  ctx.save(); rr(ctx, bx, by, bw, bh, R); ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,0.18)"; ctx.stroke(); ctx.restore();
+  // screen
+  ctx.save(); rr(ctx, sx, sy, sw, sh, sr); ctx.clip();
+  if (img) {
+    const s = Math.max(sw / img.width, sh / img.height);
+    const dw = img.width * s, dh = img.height * s;
+    ctx.drawImage(img, sx + (sw - dw) / 2, sy, dw, dh); // anchor top
+  } else { ctx.fillStyle = C.crt; ctx.fillRect(sx, sy, sw, sh); }
+  ctx.restore();
+  // green phosphor glow rim
+  ctx.save(); ctx.shadowColor = C.green; ctx.shadowBlur = 20;
+  ctx.strokeStyle = "rgba(0,255,65,0.45)"; ctx.lineWidth = 3;
+  rr(ctx, bx, by, bw, bh, R); ctx.stroke(); ctx.restore();
+  // speaker pill + camera dot in the top bezel
+  const spW = sw * 0.16, spH = Math.max(4, bz * 0.16);
+  ctx.fillStyle = "#000"; rr(ctx, sx + sw / 2 - spW / 2, by + bz / 2 - spH / 2, spW, spH, spH / 2); ctx.fill();
+  ctx.fillStyle = "#14323f";
+  ctx.beginPath(); ctx.arc(sx + sw / 2 + spW / 2 + bz * 0.5, by + bz / 2, Math.max(2, bz * 0.13), 0, Math.PI * 2); ctx.fill();
+}
+
+// amber ▸ bullet line
+function bullet(ctx, x, y, s, size = 40) {
+  tri(ctx, x + 8, y - size * 0.30, size * 0.16, C.amber);
+  txt(ctx, s, x + 34, y, { fam: "VT323", size, color: C.green });
+}
+
+// small amber outlined chip; returns its drawn width
+function chip(ctx, x, y, label, size = 18) {
+  setFont(ctx, "PS2P", size);
+  const w = ctx.measureText(label).width, padX = 16, h = size + 26, cw = w + padX * 2;
+  ctx.save(); ctx.fillStyle = "rgba(255,179,0,0.10)"; ctx.strokeStyle = C.amber; ctx.lineWidth = 2;
+  rr(ctx, x, y, cw, h, 8); ctx.fill(); ctx.stroke(); ctx.restore();
+  txt(ctx, label, x + padX, y + h / 2 + size * 0.38, { fam: "PS2P", size, color: C.amber });
+  return cw;
+}
+
 // ── Asset renderers ──────────────────────────────────────────────────────────
 const assets = {};
 
@@ -397,12 +477,73 @@ function tri2Down(ctx, cx, cy, s, color) {
   ctx.closePath(); ctx.fill(); ctx.restore();
 }
 
+// ── Real-UI asset renderers (frame live screenshots) ────────────────────────
+assets["09-app-hud-square"] = async (ctx, W, H) => {
+  desktopBg(ctx, W, H);
+  publisher(ctx, 50, 64, 18);
+  txt(ctx, "v0.9", W - 50, 66, { fam: "VT323", size: 30, color: C.greenDim, align: "right" });
+  phone(ctx, W - 384 - 66, 110, 384, 792, ui.hud);
+  txt(ctx, "SCORE IT", 58, 320, { fam: "VT323", size: 118, color: C.green, bold: true, glow: 16 });
+  txt(ctx, "LIVE.", 58, 432, { fam: "VT323", size: 118, color: C.amber, bold: true, glow: 16 });
+  let by = 540;
+  for (const b of ["BPM + accuracy, live", "Tap to log every shot", "8 / 9-Ball + Practice"]) { bullet(ctx, 62, by, b); by += 66; }
+  chip(ctx, 62, by + 6, "REAL APP SCREEN");
+  ctaStrip(ctx, { x: 0, y: 0, w: W, h: H });
+};
+
+assets["10-app-stats-square"] = async (ctx, W, H) => {
+  desktopBg(ctx, W, H);
+  publisher(ctx, 50, 64, 18);
+  txt(ctx, "v0.9", W - 50, 66, { fam: "VT323", size: 30, color: C.greenDim, align: "right" });
+  phone(ctx, W - 384 - 66, 110, 384, 792, ui.stats);
+  txt(ctx, "KNOW YOUR", 58, 320, { fam: "VT323", size: 104, color: C.green, bold: true, glow: 16 });
+  txt(ctx, "NUMBERS.", 58, 428, { fam: "VT323", size: 104, color: C.amber, bold: true, glow: 16 });
+  let by = 540;
+  for (const b of ["Accuracy, finish, fouls", "Balls-Per-Minute pace", "Ranked after 2 games"]) { bullet(ctx, 62, by, b); by += 66; }
+  chip(ctx, 62, by + 6, "REAL APP SCREEN");
+  ctaStrip(ctx, { x: 0, y: 0, w: W, h: H }, "TRACK YOURS  —  BREAKBPM.COM");
+};
+
+assets["11-app-flow-square"] = async (ctx, W, H) => {
+  desktopBg(ctx, W, H);
+  publisher(ctx, W / 2 - measure(ctx, "SAYM SOFTWARE SYSTEMS", "PS2P", 18) / 2 - 14, 70, 18);
+  txt(ctx, "FROM BREAK", W / 2, 170, { fam: "VT323", size: 92, color: C.green, align: "center", bold: true, glow: 14 });
+  txt(ctx, "TO BREAKDOWN", W / 2, 262, { fam: "VT323", size: 92, color: C.amber, align: "center", bold: true, glow: 14 });
+  txt(ctx, "The whole game — in one browser tab.", W / 2, 312, { fam: "VT323", size: 40, color: C.green, align: "center" });
+  const shots = [["1 · PICK A MODE", ui.setup], ["2 · SCORE LIVE", ui.hud], ["3 · SEE STATS", ui.stats]];
+  const sh = 560, sw = Math.round(sh * 0.446), gap = 44;
+  const total = sw * 3 + gap * 2, startX = (W - total) / 2, sy = 350;
+  shots.forEach(([label, img], i) => {
+    const sx = startX + i * (sw + gap);
+    phone(ctx, sx, sy, sw, sh, img);
+    txt(ctx, label, sx + sw / 2, sy + sh + 56, { fam: "PS2P", size: 17, color: C.amber, align: "center", track: 1 });
+  });
+  ctaStrip(ctx, { x: 0, y: 0, w: W, h: H }, "PLAY FREE  —  BREAKBPM.COM");
+};
+
+assets["12-app-hud-story"] = async (ctx, W, H) => {
+  desktopBg(ctx, W, H);
+  publisher(ctx, W / 2 - measure(ctx, "SAYM SOFTWARE SYSTEMS", "PS2P", 22) / 2 - 22, 120, 22);
+  txt(ctx, "WATCH YOUR", W / 2, 340, { fam: "VT323", size: 150, color: C.green, align: "center", bold: true, glow: 20 });
+  txt(ctx, "GAME LIVE.", W / 2, 500, { fam: "VT323", size: 150, color: C.amber, align: "center", bold: true, glow: 20 });
+  txt(ctx, "Real scoring. Real pace. Real screen.", W / 2, 575, { fam: "VT323", size: 50, color: C.green, align: "center" });
+  const sh = 1020, sw = Math.round(sh * 0.446), sx = (W - sw) / 2, sy = 640;
+  phone(ctx, sx, sy, sw, sh, ui.hud);
+  const lbl = "REAL APP SCREEN — NOT A MOCKUP";
+  setFont(ctx, "PS2P", 18);
+  const cw = ctx.measureText(lbl).width + 32;
+  chip(ctx, W / 2 - cw / 2, sy + sh + 34, lbl, 18);
+  ctaStrip(ctx, { x: 0, y: 0, w: W, h: H });
+};
+
 // ── Run ──────────────────────────────────────────────────────────────────────
 const SIZES = {
   "01-hero-square": [1080, 1080], "02-what-square": [1080, 1080],
   "03-shark-square": [1080, 1080], "04-leaderboard-square": [1080, 1080],
   "05-free-square": [1080, 1080], "06-hero-story": [1080, 1920],
   "07-shark-story": [1080, 1920], "08-free-story": [1080, 1920],
+  "09-app-hud-square": [1080, 1080], "10-app-stats-square": [1080, 1080],
+  "11-app-flow-square": [1080, 1080], "12-app-hud-story": [1080, 1920],
 };
 
 for (const [name, fn] of Object.entries(assets)) {

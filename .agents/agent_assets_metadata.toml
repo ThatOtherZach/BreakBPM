@@ -50,6 +50,30 @@ type = "image"
 title = "Story 3 — Free to Play"
 
 [[outputs]]
+id = "Hk2pV7nQxR3mYtLcW9aBd"
+uri = "file://marketing/instagram/09-app-hud-square.png"
+type = "image"
+title = "Feed — Real UI: Live HUD (1080x1080)"
+
+[[outputs]]
+id = "Tz5rN8wK4vH1gJpXsQ2eU"
+uri = "file://marketing/instagram/10-app-stats-square.png"
+type = "image"
+title = "Feed — Real UI: Stats (1080x1080)"
+
+[[outputs]]
+id = "Lm9cD3bF7yV6tZqWnRk0A"
+uri = "file://marketing/instagram/11-app-flow-square.png"
+type = "image"
+title = "Feed — Real UI: Flow triptych (1080x1080)"
+
+[[outputs]]
+id = "Qp4xS1jM8hG5dBvYwNc2T"
+uri = "file://marketing/instagram/12-app-hud-story.png"
+type = "image"
+title = "Story — Real UI: Live HUD (1080x1920)"
+
+[[outputs]]
 id = "VKhzfVDdf_YuRYAWhm60U"
 uri = "file://marketing/instagram/CAPTIONS.txt"
 type = "text"

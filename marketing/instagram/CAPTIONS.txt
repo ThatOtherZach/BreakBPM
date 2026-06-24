@@ -1,13 +1,17 @@
 BREAKBPM — INSTAGRAM POST KIT
 =============================
-8 ready-to-post graphics in the app's retro Win98 / CRT brand.
+12 ready-to-post graphics in the app's retro Win98 / CRT brand.
+- 5 stylized squares (01-05) + 3 stylized stories (06-08)
+- 3 "real UI" squares (09-11) + 1 "real UI" story (12) that show actual app screenshots
 Square posts = 1080x1080 (feed). Story posts = 1080x1920 (stories/reels cover).
 Link to put everywhere: https://breakbpm.com
 
 HOW TO USE
-- Feed: post the 5 squares as a carousel (recommended order below) OR space them out as single posts.
-- Stories: post the 3 story graphics with a Link sticker pointing to breakbpm.com.
+- Feed: post the 8 squares as a carousel (recommended order below) OR space them out as single posts.
+- A strong carousel mixes a hook + the real app: e.g. 01-hero → 09-app-hud → 02-what → 10-app-stats → 11-app-flow → 04-leaderboard.
+- Stories: post the 4 story graphics with a Link sticker pointing to breakbpm.com.
 - Pin "01-hero" as your first carousel slide / grid anchor.
+- The "real UI" graphics (09-12) are great for "show, don't tell" posts and replies to "is this a real app?" comments.
 
 
 ==================================================================
@@ -71,6 +75,39 @@ game in seconds → breakbpm.com
 #retro #windows98 #breakbpm
 
 
+-- 09-app-hud-square.png  (REAL UI) ------------------------------
+This is the actual app. 🎱
+
+No mockup — this is BreakBPM's live scoreboard. Tap a ball and it logs the
+shot, then updates your accuracy % and Balls Per Minute on the spot, mid-rack.
+8-ball, 9-ball, or practice. No spreadsheet, no stopwatch. → breakbpm.com
+
+#pool #billiards #8ball #9ball #poolstats #cuesports #poolapp
+#realtime #breakbpm #retrogaming
+
+
+-- 10-app-stats-square.png  (REAL UI) ----------------------------
+Your session, by the numbers. 📊
+
+A real BreakBPM stats screen: finish rate, accuracy %, foul rate, and your
+average Balls Per Minute — tracked automatically, every game. Get ranked
+after just 2. Stop guessing if you're improving → breakbpm.com
+
+#pool #billiards #poolstats #cuesports #8ball #9ball #getbetter
+#poolpractice #breakbpm #datadriven
+
+
+-- 11-app-flow-square.png  (REAL UI) -----------------------------
+From break to breakdown, in three taps. 🎱
+
+These are real screens from the app: 1) pick a mode, 2) score the game live,
+3) see your stats. The whole thing runs in one browser tab — free, nothing
+to install. That's it. → breakbpm.com
+
+#pool #billiards #8ball #9ball #browsergame #freegame #cuesports
+#poolapp #breakbpm #howitworks
+
+
 ==================================================================
 STORY GRAPHICS (1080x1920)
 ==================================================================
@@ -80,6 +117,7 @@ Post these to Stories with a LINK sticker → https://breakbpm.com
 -- 06-hero-story.png --  Brand hook. Use as your main story / highlight cover.
 -- 07-shark-story.png -- Shark Mode teaser. Add a poll sticker: "Could you beat the Shark? YES / NO".
 -- 08-free-story.png  -- Call to action. Drop the link sticker right under the BREAKBPM.COM button.
+-- 12-app-hud-story.png  (REAL UI) -- The live scoreboard in action. Best "show, don't tell" story; pair with a "PLAY FREE" link sticker.
 
 
 ==================================================================
