@@ -1418,7 +1418,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             game is saved. Signed-in players then get New Game + Rematch (Rematch
             starts a fresh game with the same mode/players/settings); signed-out
             players get a full-width New Game only. */}
-        {state.phase === 'ended' && (
+        {state.phase === 'ended' && !hallOpen && (
           endUndoOpen ? (
             <button className="btn btn-big w-full" onClick={handleUndo} style={{ marginTop: 0 }}>
               <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo ({endUndoLeft})
@@ -1442,7 +1442,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             signed-in HOST of an 8-ball/9-ball game, "Add to Hall" REPLACES the
             copy-link so the game can be tagged to a nearby Verified Hall; other
             modes / signed-out players keep the copy-link unchanged. */}
-        {state.phase === 'ended' && !endUndoOpen && (() => {
+        {state.phase === 'ended' && !endUndoOpen && !hallOpen && (() => {
           const canTagHall =
             isAuthenticated &&
             serverGameId != null &&
