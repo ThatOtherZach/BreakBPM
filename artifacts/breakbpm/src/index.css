@@ -3078,7 +3078,7 @@ html, #root {
 }
 
 /* ── Pool Stats App landing page (/pool-stats-app) ── */
-.lp-img { width: 100%; height: auto; display: block; border: 2px solid var(--navy); }
+.lp-img { width: 100%; height: auto; display: block; }
 .lp-body { display: flex; flex-direction: column; gap: 14px; }
 .lp-h1 {
   font-family: 'VT323', monospace;
@@ -3107,8 +3107,6 @@ html, #root {
   width: 100%;
   height: auto;
   display: block;
-  border: 2px solid var(--navy);
-  box-shadow: 2px 2px 0 rgba(0,0,0,0.45);
 }
 
 /* System requirements block */
