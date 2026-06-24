@@ -3259,8 +3259,8 @@ html, #root {
 .crypto-days__unit {
   font-size: 11px; color: #cfe8d2; text-transform: uppercase; letter-spacing: .5px;
 }
-/* Day slider: the unfilled portion (right of the thumb) is an animated rainbow;
-   the filled (left) portion is plain felt. The thumb is our custom 8-ball, drawn
+/* Day slider: the filled portion (left of the thumb) is an animated rainbow;
+   the rest of the track is plain felt. The thumb is our custom 8-ball, drawn
    as an inline SVG (the HUD .hud-chip-eight look: black ball + white inner
    disc + "8") so it matches the HUD balls without an external image. The fill
    width is fed in as --fill (a 0–100% set inline from the React value). */
@@ -3276,15 +3276,15 @@ html, #root {
     url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2026%2026'%3E%3Ccircle%20cx='13'%20cy='13'%20r='12'%20fill='%231f1f1f'%20stroke='%23000000'%20stroke-width='1.5'/%3E%3Ccircle%20cx='13'%20cy='13'%20r='6.5'%20fill='%23fffef2'%20stroke='%231f1f1f'%20stroke-width='1.5'/%3E%3Ctext%20x='13'%20y='13'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Courier%20New,monospace'%20font-weight='900'%20font-size='10'%20fill='%231f1f1f'%3E8%3C/text%3E%3C/svg%3E");
 }
 .crypto-days__slider:disabled { cursor: default; opacity: .6; }
-/* Pan only the rainbow layer; the neutral mask layer (pinned left) holds still
-   so the rainbow never bleeds before the thumb. */
+/* Pan only the rainbow layer; the neutral mask layer (pinned right) holds still
+   so the rainbow never bleeds past the thumb. */
 @keyframes crypto-days-rainbow-pan {
-  from { background-position: left center, left center; }
-  to { background-position: left center, 200% center; }
+  from { background-position: right center, left center; }
+  to { background-position: right center, 200% center; }
 }
 /* Two background layers (topmost first): a felt-coloured mask covering the
-   left fill of the track, over a wide rainbow that only shows through on the
-   right (unfilled) portion. background-color is the felt base behind both. */
+   right of the track, over a wide rainbow that only shows through on the left
+   fill. background-color is the felt base behind both. */
 .crypto-days__slider::-webkit-slider-runnable-track {
   height: 8px;
   border-radius: 5px;
@@ -3297,27 +3297,27 @@ html, #root {
       #ff004d, #ff8a00, #ffe600, #00e676, #00b0ff, #d500f9, #ff004d
     );
   background-repeat: no-repeat, no-repeat;
-  background-size: var(--fill, 0%) 100%, 200% 100%;
-  background-position: left center, left center;
+  background-size: calc(100% - var(--fill, 0%)) 100%, 200% 100%;
+  background-position: right center, left center;
   animation: crypto-days-rainbow-pan 2.5s linear infinite;
 }
 .crypto-days__slider::-moz-range-track {
   height: 8px;
   border-radius: 5px;
   border: 1px solid rgba(0, 0, 0, 0.45);
+  background: #0a3f22;
+}
+/* Firefox: the filled (left) portion is its own pseudo-element, so the rainbow
+   lives here and the track above stays plain felt. */
+.crypto-days__slider::-moz-range-progress {
+  height: 8px;
+  border-radius: 5px;
   background-image: linear-gradient(
     90deg,
     #ff004d, #ff8a00, #ffe600, #00e676, #00b0ff, #d500f9, #ff004d
   );
   background-size: 200% auto;
   animation: rainbow-name-pan 2.5s linear infinite;
-}
-/* Firefox: the filled (left) portion is its own pseudo-element, so the felt
-   mask lives here and the track behind it keeps the rainbow on the right. */
-.crypto-days__slider::-moz-range-progress {
-  height: 8px;
-  border-radius: 5px;
-  background: #0a3f22;
 }
 /* Thumb = our custom 8-ball (the inline SVG set on --eight-ball above) with a
    soft drop shadow. */
