@@ -3171,14 +3171,28 @@ html, #root {
     inset 0 2px 6px rgba(0, 0, 0, 0.35),
     0 0 8px rgba(255, 200, 60, 0.45);
 }
+/* Selector = our custom cue ball WITH the red foul dot (same radial-gradient
+   recipe as .cue-ball-icon): dimmed when unselected, full-opacity with a gold
+   ring + glow when its option is active. */
 .crypto-option__radio {
-  flex: 0 0 auto; width: 14px; height: 14px; border-radius: 50%;
-  border: 2px solid #eaf6ea;
-  background: radial-gradient(circle at 50% 50%, #1f1f1f 0 4px, transparent 5px);
+  flex: 0 0 auto; width: 16px; height: 16px; border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, #c8161d 0 2px, transparent 2.5px),
+    radial-gradient(circle at 32% 30%, #ffffff 0 3px, rgba(255, 255, 255, 0) 6px),
+    radial-gradient(circle at 65% 70%, #c8c8c8 0%, #ffffff 60%);
+  box-shadow:
+    inset 0 0 0 1px #000,
+    inset -1px -1px 0 rgba(0, 0, 0, 0.25);
+  opacity: .5;
+  transition: opacity .12s ease, box-shadow .12s ease;
 }
 .crypto-option--active .crypto-option__radio {
-  border-color: #ffce3a;
-  background: radial-gradient(circle at 32% 30%, #ffffff 0 4px, #c8c8c8 60%, #ffffff 100%);
+  opacity: 1;
+  box-shadow:
+    inset 0 0 0 1px #000,
+    inset -1px -1px 0 rgba(0, 0, 0, 0.25),
+    0 0 0 2px #ffce3a,
+    0 0 6px rgba(255, 200, 60, 0.55);
 }
 .crypto-option__text { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
 .crypto-option__name {
