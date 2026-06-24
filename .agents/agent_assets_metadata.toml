@@ -1,0 +1,56 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "XvfKlmIkgwkIbZp3uL4uD"
+uri = "file://marketing/instagram/01-hero-square.png"
+type = "image"
+title = "Feed 1 — Hero (Nice Rack, Track It)"
+
+[[outputs]]
+id = "pOafCWe9xPBxRTlDrkyfP"
+uri = "file://marketing/instagram/02-what-square.png"
+type = "image"
+title = "Feed 2 — What it is (Every Shot, Measured)"
+
+[[outputs]]
+id = "4bXUs9TdQ-qtt-hm_ervp"
+uri = "file://marketing/instagram/03-shark-square.png"
+type = "image"
+title = "Feed 3 — Shark Mode"
+
+[[outputs]]
+id = "oVPsCWl1ZlQ93BHBhXszB"
+uri = "file://marketing/instagram/04-leaderboard-square.png"
+type = "image"
+title = "Feed 4 — Leaderboard"
+
+[[outputs]]
+id = "VAmwr1AVywkJI1CK_QFQg"
+uri = "file://marketing/instagram/05-free-square.png"
+type = "image"
+title = "Feed 5 — Free to Play (setup.exe)"
+
+[[outputs]]
+id = "AfJjhWmGEi8GSLKOFDz3X"
+uri = "file://marketing/instagram/06-hero-story.png"
+type = "image"
+title = "Story 1 — Hero"
+
+[[outputs]]
+id = "2mLUZ6oYCrHzzUJUc8Jyn"
+uri = "file://marketing/instagram/07-shark-story.png"
+type = "image"
+title = "Story 2 — Shark Mode"
+
+[[outputs]]
+id = "aQjUYWujJeD1ZbuibEFC-"
+uri = "file://marketing/instagram/08-free-story.png"
+type = "image"
+title = "Story 3 — Free to Play"
+
+[[outputs]]
+id = "VKhzfVDdf_YuRYAWhm60U"
+uri = "file://marketing/instagram/CAPTIONS.txt"
+type = "text"
+title = "Captions + hashtags for every post"

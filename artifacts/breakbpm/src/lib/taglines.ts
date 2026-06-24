@@ -7,7 +7,7 @@ export const TAGLINES: string[] = [
   'NICE RACK!',
   'BANK AND\nRANK IT',
   'THE ULTIMATE POOL TOOL',
-  'STRAVA FOR POOL',
+  'MEASURE EVERY SHOT\nOR HIT UNDO ;)',
   'TURN EACH RACK\nINTO STATS',
 ];
 
