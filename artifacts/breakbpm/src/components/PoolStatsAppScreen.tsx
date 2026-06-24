@@ -87,14 +87,24 @@ export default function PoolStatsAppScreen({
             {/* ── Back of the box: UI sneak peeks ── */}
             {POOL_STATS_SHOWCASE.map((item) => (
               <section key={item.title} className="lp-feature">
-                <img
-                  src={item.img}
-                  alt={item.imgAlt}
-                  className="lp-sneak-img"
-                  loading="lazy"
-                />
+                {!item.imgAfter && (
+                  <img
+                    src={item.img}
+                    alt={item.imgAlt}
+                    className="lp-sneak-img"
+                    loading="lazy"
+                  />
+                )}
                 <h2 className="lp-h2">{item.title}</h2>
                 <p>{item.body}</p>
+                {item.imgAfter && (
+                  <img
+                    src={item.img}
+                    alt={item.imgAlt}
+                    className="lp-sneak-img"
+                    loading="lazy"
+                  />
+                )}
               </section>
             ))}
 
