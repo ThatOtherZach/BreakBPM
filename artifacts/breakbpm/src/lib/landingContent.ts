@@ -79,7 +79,7 @@ export const POOL_STATS_SHOWCASE: ShowcaseItem[] = [
   },
   {
     title: "Stats That Sharpen the More You Play",
-    body: "The CRT stats page shows accuracy, pace, and ball/pattern breakdowns over time. Sign in free to save your stats. Pass holders unlock the full history window, on-demand refresh, and a global BPM bell curve to see exactly where your pace ranks.",
+    body: "The Stats page shows accuracy, pace, and ball/pattern breakdowns over time. You can play for free, but you need to sign in to save your stats. Pass holders unlock the full history, on-demand refresh, and more!",
     img: "/bpm-bell-curve.gif",
     imgAlt: "BPM bell curve — where your pace ranks against all players",
   },
