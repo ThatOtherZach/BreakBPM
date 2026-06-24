@@ -92,7 +92,7 @@ export const POOL_STATS_SHOWCASE: ShowcaseItem[] = [
   },
   {
     title: "Themes & Customization",
-    body: "Your style, your rack. Earn profile themes by playing and winning games. Lifetime pass holders unlock custom screen names and a special rainbow effect. Your leaderboard card shows your wins (cue ball if zero), BPM, Accuracy, and your Shark Level (wins in Shark Mode).",
+    body: "Earn themes by playing and winning. Lifetime pass holders get custom screen names and a rainbow leaderboard effect. Your card shows wins, BPM, accuracy, and Shark Level.",
     img: "/leaderboard-example.gif",
     imgAlt: "BreakBPM profile themes and customization",
   },
