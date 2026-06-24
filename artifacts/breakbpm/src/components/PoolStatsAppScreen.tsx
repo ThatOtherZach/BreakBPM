@@ -114,6 +114,8 @@ export default function PoolStatsAppScreen({
             {/* ── Back of the box: UI sneak peeks ── */}
             {POOL_STATS_SHOWCASE.map((item) => (
               <section key={item.title} className="lp-feature">
+                <h2 className="lp-h2">{item.title}</h2>
+                <p>{item.body}</p>
                 {item.liveHall ? (
                   <LatestHallWidget
                     fallbackImg={item.img}
@@ -127,8 +129,6 @@ export default function PoolStatsAppScreen({
                     loading="lazy"
                   />
                 ) : null}
-                <h2 className="lp-h2">{item.title}</h2>
-                <p>{item.body}</p>
               </section>
             ))}
 
