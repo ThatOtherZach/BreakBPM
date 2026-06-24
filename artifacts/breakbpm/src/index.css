@@ -3143,23 +3143,29 @@ html, #root {
   width: 100%; padding: 8px 10px; cursor: pointer; text-align: left;
   font-family: inherit;
   /* Pool-table "felt" skin — matches the main-menu format options
-     (.rule-set-opt) and Recent Games history cards: green baize with a
-     crosshatch weave, a wooden outset rail, and inset depth. */
+     (.rule-set-opt) and Recent Games history cards: baize with a crosshatch
+     weave, a wooden outset rail, and inset depth. The felt color follows the
+     buyer's profile theme via --n / --n-shadow (set on the panel), defaulting
+     to green. */
   position: relative;
   overflow: hidden;
-  background-color: #0f5a2e;
+  background-color: var(--n, #0f5a2e);
   background-image:
     repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.10) 0 2px, transparent 2px 4px),
     repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 4px);
   border: 3px outset #7a4a22;
-  box-shadow: inset 0 0 0 2px #0a4322, inset 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 0 0 2px var(--n-shadow, #0a4322), inset 0 2px 6px rgba(0, 0, 0, 0.35);
   transition: box-shadow 0.12s ease, background-color 0.12s ease;
 }
 .crypto-option:disabled { cursor: default; opacity: .6; }
 .crypto-option:focus-visible { outline: 2px solid #00ff41; outline-offset: 2px; }
 .crypto-option--active {
-  /* Lit felt: brighter baize with a warm gold inner rail + glow. */
-  background-color: #147a3e;
+  /* Selected = "lit" felt: same themed baize, brightened by a translucent
+     overlay (so it works for any theme color) + a warm gold inner rail & glow. */
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.10)),
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.10) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 4px);
   box-shadow:
     inset 0 0 0 2px #ffce3a,
     inset 0 2px 6px rgba(0, 0, 0, 0.35),
@@ -3192,12 +3198,12 @@ html, #root {
   display: flex; flex-direction: column;
   position: relative;
   overflow: hidden;
-  background-color: #0f5a2e;
+  background-color: var(--n, #0f5a2e);
   background-image:
     repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.10) 0 2px, transparent 2px 4px),
     repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 4px);
   border: 3px outset #7a4a22;
-  box-shadow: inset 0 0 0 2px #0a4322, inset 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 0 0 2px var(--n-shadow, #0a4322), inset 0 2px 6px rgba(0, 0, 0, 0.35);
   transition: box-shadow 0.12s ease, background-color 0.12s ease;
 }
 .crypto-days .crypto-days__head {
@@ -3209,7 +3215,10 @@ html, #root {
   box-shadow: none;
 }
 .crypto-days--active {
-  background-color: #147a3e;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.10)),
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.10) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 4px);
   box-shadow:
     inset 0 0 0 2px #ffce3a,
     inset 0 2px 6px rgba(0, 0, 0, 0.35),

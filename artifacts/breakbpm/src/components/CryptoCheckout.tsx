@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useCreateCryptoQuote,
   useVerifyCryptoPayment,
+  useGetMe,
   getGetMeQueryKey,
   type CryptoCatalog,
   type CryptoOrderQuote,
@@ -11,6 +12,7 @@ import {
   type LuckyBreakResult,
 } from "@workspace/api-client-react";
 import { computeDayPassPriceCents } from "../lib/dayPassPricing";
+import { THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const LS_KEY = "breakbpm.crypto.pending";
@@ -96,6 +98,20 @@ export default function CryptoCheckout({
   const qc = useQueryClient();
   const createQuote = useCreateCryptoQuote();
   const verify = useVerifyCryptoPayment();
+
+  // Pool-table felt skin follows the buyer's applied profile theme (same
+  // derivation as StatsScreen): an explicit theme maps straight to its felt;
+  // "auto"/"rainbow" fall back to the earned background; anything unrecognized
+  // is green. Exposed as --n / --n-shadow on the panel for the felt-skinned
+  // pass cards below.
+  const meQuery = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
+  const feltAccount = meQuery.data?.account;
+  const feltRawTheme = feltAccount?.profileTheme ?? "none";
+  const feltTheme =
+    feltRawTheme === "auto" || feltRawTheme === "rainbow"
+      ? (feltAccount?.profileBackground ?? "none")
+      : feltRawTheme;
+  const felt = THEME_FELT[themeColorOf(feltTheme)];
 
   const passes = catalog.passes;
   const dayPass = catalog.dayPass;
@@ -320,7 +336,10 @@ export default function CryptoCheckout({
       : (PASS_BLURB[kind] ?? "One-time pass");
 
   return (
-    <div className="panel">
+    <div
+      className="panel"
+      style={{ "--n": felt.felt, "--n-shadow": felt.feltShadow } as React.CSSProperties}
+    >
       <div className="panel-header">
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
           <span aria-hidden="true">⛓️</span>Pay with Crypto
