@@ -1463,7 +1463,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                     onClick={startAddToHall}
                     disabled={hallPhase === 'locating' || hallPhase === 'tagging'}
                   >
-                    {hallPhase === 'locating' ? 'Locating…' : '🏆 Tag Leaderboard'}
+                    {hallPhase === 'locating' ? 'Locating…' : '🏆 Tag Leaderboard • 排行'}
                   </button>
                 )
               ) : (
