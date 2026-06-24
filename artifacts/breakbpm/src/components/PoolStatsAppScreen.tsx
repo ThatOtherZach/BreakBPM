@@ -94,7 +94,7 @@ export default function PoolStatsAppScreen({
           <div className="panel-body lp-body">
 
             {/* ── Front of the box ── */}
-            <h1 className="lp-h1">{POOL_STATS_H1}</h1>
+            <h1 className="lp-h1 text-center">{POOL_STATS_H1}</h1>
             <p className="lp-lore">{POOL_STATS_LORE}</p>
             <p className="lp-intro">{POOL_STATS_INTRO}</p>
 
