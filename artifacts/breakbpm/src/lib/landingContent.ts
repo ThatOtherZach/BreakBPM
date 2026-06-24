@@ -67,7 +67,7 @@ export const POOL_STATS_MODES: NamedBlock[] = [
 export const POOL_STATS_SHOWCASE: ShowcaseItem[] = [
   {
     title: "Live Per-Player BPM — Ball by Ball",
-    body: "The HUD updates on every shot. Pocket a ball and your Balls Per Minute ticks live — anchored at your first pocket, running to your last. One screen handles the score, the shot log, and the rack.",
+    body: "Log every shot as you pocket them minute by minute; from the first to the last. Just pick the mode and get started!",
     img: "/screenshot-home.gif",
     imgAlt: "BreakBPM live scoreboard — live BPM, accuracy, and the ball rack",
   },
