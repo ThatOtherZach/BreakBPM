@@ -3243,8 +3243,82 @@ html, #root {
 .crypto-days__unit {
   font-size: 11px; color: #cfe8d2; text-transform: uppercase; letter-spacing: .5px;
 }
+/* Day slider: an animated rainbow track with our custom 8-ball as the thumb.
+   The 8-ball image URL is passed in via --ball-img (JS import so it picks up
+   the Vite base path); the rainbow track reuses the .rainbow-name pan keyframe. */
 .crypto-days__slider {
-  width: 100%; margin: 6px 0 2px; accent-color: #ffce3a;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  margin: 8px 0 2px;
+  height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+.crypto-days__slider:disabled { cursor: default; opacity: .6; }
+.crypto-days__slider::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  background-image: linear-gradient(
+    90deg,
+    #ff004d, #ff8a00, #ffe600, #00e676, #00b0ff, #d500f9, #ff004d
+  );
+  background-size: 200% auto;
+  animation: rainbow-name-pan 2.5s linear infinite;
+}
+.crypto-days__slider::-moz-range-track {
+  height: 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  background-image: linear-gradient(
+    90deg,
+    #ff004d, #ff8a00, #ffe600, #00e676, #00b0ff, #d500f9, #ff004d
+  );
+  background-size: 200% auto;
+  animation: rainbow-name-pan 2.5s linear infinite;
+}
+/* Firefox splits the bar: the filled (left) portion is its own pseudo-element,
+   so it needs the same rainbow skin or it falls back to the default fill. */
+.crypto-days__slider::-moz-range-progress {
+  height: 8px;
+  border-radius: 5px;
+  background-image: linear-gradient(
+    90deg,
+    #ff004d, #ff8a00, #ffe600, #00e676, #00b0ff, #d500f9, #ff004d
+  );
+  background-size: 200% auto;
+  animation: rainbow-name-pan 2.5s linear infinite;
+}
+.crypto-days__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -8px; /* center the 22px ball over the 8px track */
+  border-radius: 50%;
+  background: var(--ball-img) center / contain no-repeat;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+.crypto-days__slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: var(--ball-img) center / contain no-repeat;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+.crypto-days__slider:focus-visible { outline: none; }
+.crypto-days__slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(255, 206, 58, 0.7);
+}
+.crypto-days__slider:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(255, 206, 58, 0.7);
+}
+@media (prefers-reduced-motion: reduce) {
+  .crypto-days__slider::-webkit-slider-runnable-track,
+  .crypto-days__slider::-moz-range-track,
+  .crypto-days__slider::-moz-range-progress { animation: none; }
 }
 .crypto-days__ends {
   display: flex; justify-content: space-between;

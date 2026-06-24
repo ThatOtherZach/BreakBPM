@@ -13,6 +13,7 @@ import {
 } from "@workspace/api-client-react";
 import { computeDayPassPriceCents } from "../lib/dayPassPricing";
 import { THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
+import ballImg from "/eightball_nobg.png";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const LS_KEY = "breakbpm.crypto.pending";
@@ -409,6 +410,7 @@ export default function CryptoCheckout({
                     value={days}
                     disabled={locked}
                     aria-label="Pass length in days"
+                    style={{ "--ball-img": `url(${ballImg})` } as React.CSSProperties}
                     onChange={(e) => setDays(Number(e.target.value))}
                   />
                   <div className="crypto-days__ends">
