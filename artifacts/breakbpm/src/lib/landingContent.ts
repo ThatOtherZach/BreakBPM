@@ -73,7 +73,7 @@ export const POOL_STATS_SHOWCASE: ShowcaseItem[] = [
   },
   {
     title: "Face The Shark",
-    body: "Shark Mode is solo 8-ball against an opponent you can't see. Normal aggression: the Shark steals a ball on every foul. Hard aggression: it steals on every miss and foul. The honour system keeps it honest — you lift the Shark's ball off the table yourself.",
+    body: "Shark Mode is for solo 8-ball players verses The Shark (CPU). Set the aggression and break the rack! The Shark will steal a ball on every foul, or in every miss AND foul. When that happens, just remove a ball from the table. It's honour system based, so be honest.",
     img: "/shark.jpg",
     imgAlt: "Shark Mode — solo 8-ball against an invisible opponent",
   },
