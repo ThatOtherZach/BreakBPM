@@ -31,6 +31,9 @@ export interface ShowcaseItem {
   body: string;
   img?: string;
   imgAlt?: string;
+  /** When true, the screen renders a live widget (the latest verified hall),
+   *  falling back to `img` when there is no live data yet. */
+  liveHall?: boolean;
 }
 
 export const POOL_STATS_H1 =
@@ -89,6 +92,9 @@ export const POOL_STATS_SHOWCASE: ShowcaseItem[] = [
   {
     title: "Play at a Verified Hall — Tag the Board",
     body: "Every Verified Hall on BreakBPM has its own House Leaderboard. Finish a game on location and tag it — BreakBPM confirms you're within 300m, then adds it to the hall's board. Find your local spot via Find Players.",
+    img: "/hall-card-example.png",
+    imgAlt: "Granville Club verified hall card with House Leaderboard button",
+    liveHall: true,
   },
 ];
 

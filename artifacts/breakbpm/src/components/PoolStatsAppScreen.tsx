@@ -16,14 +16,29 @@ import {
   POOL_STATS_FAQ,
 } from "../lib/landingContent";
 
-function LatestHallWidget() {
+function LatestHallWidget({
+  fallbackImg,
+  fallbackAlt,
+}: {
+  fallbackImg?: string;
+  fallbackAlt?: string;
+}) {
   const { data } = useListVenues(
     { page: 1, limit: 1 },
     { query: { queryKey: getListVenuesQueryKey({ page: 1, limit: 1 }) } },
   );
   const venue = data?.venues?.[0];
-  if (!venue) return null;
-  return <VenueCard venue={venue} distanceKm={null} />;
+  if (venue) return <VenueCard venue={venue} distanceKm={null} />;
+  if (fallbackImg)
+    return (
+      <img
+        src={fallbackImg}
+        alt={fallbackAlt}
+        className="lp-sneak-img"
+        loading="lazy"
+      />
+    );
+  return null;
 }
 
 interface Props {
@@ -99,16 +114,19 @@ export default function PoolStatsAppScreen({
             {/* ── Back of the box: UI sneak peeks ── */}
             {POOL_STATS_SHOWCASE.map((item) => (
               <section key={item.title} className="lp-feature">
-                {item.img ? (
+                {item.liveHall ? (
+                  <LatestHallWidget
+                    fallbackImg={item.img}
+                    fallbackAlt={item.imgAlt}
+                  />
+                ) : item.img ? (
                   <img
                     src={item.img}
                     alt={item.imgAlt}
                     className="lp-sneak-img"
                     loading="lazy"
                   />
-                ) : (
-                  <LatestHallWidget />
-                )}
+                ) : null}
                 <h2 className="lp-h2">{item.title}</h2>
                 <p>{item.body}</p>
               </section>
