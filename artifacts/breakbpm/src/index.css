@@ -3190,8 +3190,7 @@ html, #root {
   box-shadow:
     inset 0 0 0 1px #000,
     inset -1px -1px 0 rgba(0, 0, 0, 0.25),
-    0 0 0 2px #ffce3a,
-    0 0 6px rgba(255, 200, 60, 0.55);
+    0 0 0 2px #ffce3a;
 }
 .crypto-option__text { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
 .crypto-option__name {
