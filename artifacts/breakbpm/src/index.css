@@ -3141,37 +3141,81 @@ html, #root {
 .crypto-option {
   display: flex; align-items: center; gap: 10px;
   width: 100%; padding: 8px 10px; cursor: pointer; text-align: left;
-  background: var(--white); border: 2px solid;
-  border-color: var(--dshadow) var(--highlight) var(--highlight) var(--dshadow);
   font-family: inherit;
+  /* Pool-table "felt" skin — matches the main-menu format options
+     (.rule-set-opt) and Recent Games history cards: green baize with a
+     crosshatch weave, a wooden outset rail, and inset depth. */
+  position: relative;
+  overflow: hidden;
+  background-color: #0f5a2e;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.10) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 4px);
+  border: 3px outset #7a4a22;
+  box-shadow: inset 0 0 0 2px #0a4322, inset 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: box-shadow 0.12s ease, background-color 0.12s ease;
 }
 .crypto-option:disabled { cursor: default; opacity: .6; }
-.crypto-option:focus-visible { outline: 1px dotted var(--black); outline-offset: -4px; }
-.crypto-option--active { border: 2px solid var(--navy); background: #eaf1ff; }
+.crypto-option:focus-visible { outline: 2px solid #00ff41; outline-offset: 2px; }
+.crypto-option--active {
+  /* Lit felt: brighter baize with a warm gold inner rail + glow. */
+  background-color: #147a3e;
+  box-shadow:
+    inset 0 0 0 2px #ffce3a,
+    inset 0 2px 6px rgba(0, 0, 0, 0.35),
+    0 0 8px rgba(255, 200, 60, 0.45);
+}
 .crypto-option__radio {
   flex: 0 0 auto; width: 14px; height: 14px; border-radius: 50%;
-  border: 2px solid var(--dark); background: var(--white);
+  border: 2px solid #eaf6ea;
+  background: radial-gradient(circle at 50% 50%, #1f1f1f 0 4px, transparent 5px);
 }
 .crypto-option--active .crypto-option__radio {
-  border-color: var(--navy);
-  background: radial-gradient(var(--navy) 0 42%, var(--white) 48%);
+  border-color: #ffce3a;
+  background: radial-gradient(circle at 32% 30%, #ffffff 0 4px, #c8c8c8 60%, #ffffff 100%);
 }
 .crypto-option__text { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
-.crypto-option__name { font-family: 'VT323', monospace; font-size: 22px; color: var(--navy); line-height: 1; }
-.crypto-option__sub { font-size: 10px; color: #666; }
-.crypto-option__price { font-weight: bold; font-size: 14px; white-space: nowrap; margin-left: auto; }
+.crypto-option__name {
+  font-family: 'VT323', monospace; font-size: 22px; line-height: 1;
+  color: #f4f4dc; text-shadow: 1px 1px 0 #042414;
+}
+.crypto-option__sub { font-size: 10px; color: #cfe8d2; }
+.crypto-option__price {
+  font-weight: bold; font-size: 14px; white-space: nowrap; margin-left: auto;
+  color: #ffce3a; text-shadow: 1px 1px 0 #042414;
+}
 /* "Purchase Days of Access" — header + day slider as ONE seamless card. When
-   active the whole group shares a single navy border + tint; the inner header
-   button drops its own border/background so there is no divider line between
-   the title row and the slider. */
-.crypto-days { display: flex; flex-direction: column; }
+   active the whole group shares a single felt skin; the inner header button
+   drops its own border/background so there is no divider line between the
+   title row and the slider. */
+.crypto-days {
+  display: flex; flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background-color: #0f5a2e;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.10) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 4px);
+  border: 3px outset #7a4a22;
+  box-shadow: inset 0 0 0 2px #0a4322, inset 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: box-shadow 0.12s ease, background-color 0.12s ease;
+}
+.crypto-days .crypto-days__head {
+  /* The head button rides on the group's felt — drop its own skin. */
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
 .crypto-days--active {
-  border: 2px solid var(--navy);
-  background: #eaf1ff;
+  background-color: #147a3e;
+  box-shadow:
+    inset 0 0 0 2px #ffce3a,
+    inset 0 2px 6px rgba(0, 0, 0, 0.35),
+    0 0 8px rgba(255, 200, 60, 0.45);
 }
 .crypto-days--active .crypto-days__head {
-  border: none;
-  background: transparent;
   padding-bottom: 2px;
 }
 .crypto-days__config {
@@ -3182,19 +3226,19 @@ html, #root {
 .crypto-days__readout { display: flex; align-items: baseline; gap: 7px; }
 .crypto-days__count {
   font-family: 'VT323', monospace; font-size: 30px; line-height: 1;
-  color: var(--navy);
+  color: #ffce3a; text-shadow: 1px 1px 0 #042414;
 }
 .crypto-days__unit {
-  font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: .5px;
+  font-size: 11px; color: #cfe8d2; text-transform: uppercase; letter-spacing: .5px;
 }
 .crypto-days__slider {
-  width: 100%; margin: 6px 0 2px; accent-color: var(--navy);
+  width: 100%; margin: 6px 0 2px; accent-color: #ffce3a;
 }
 .crypto-days__ends {
   display: flex; justify-content: space-between;
-  font-size: 10px; color: #8a93a6;
+  font-size: 10px; color: #9ec7a3;
 }
-.crypto-days__note { font-size: 10px; color: #666; margin-top: 4px; }
+.crypto-days__note { font-size: 10px; color: #cfe8d2; margin-top: 4px; }
 .crypto-assets { display: flex; gap: 6px; }
 .crypto-assets .btn { flex: 1; }
 .crypto-wallet {
