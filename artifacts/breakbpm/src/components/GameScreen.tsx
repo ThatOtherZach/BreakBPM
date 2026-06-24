@@ -1219,10 +1219,10 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                     : '9-Ball'}
                 </span>
               </div>
-              <div className="hud-right-row" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span className="hud-meta-label">CODE</span>
-                <span className="hud-code">{state.shareCode}</span>
-                {!forImage && (
+              {!forImage && (
+                <div className="hud-right-row" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span className="hud-meta-label">CODE</span>
+                  <span className="hud-code">{state.shareCode}</span>
                   <button
                     className="hud-copy-code-btn"
                     onClick={() => {
@@ -1250,8 +1250,8 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                   >
                     <span aria-hidden="true" style={{ fontSize: 18, lineHeight: 1, display: 'block' }}>📋</span>
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </>
           )}
         </div>
