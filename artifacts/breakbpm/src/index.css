@@ -169,13 +169,16 @@ html, #root {
 .navbar-menu {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   background: var(--silver);
   border-bottom: 2px solid;
   border-color: var(--dshadow);
   flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.navbar-menu::-webkit-scrollbar { display: none; }
 
 .navbar-menu-item {
   padding: 5px 14px;
