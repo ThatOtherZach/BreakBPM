@@ -1427,7 +1427,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             <div className="grid-2" style={{ marginTop: 0 }}>
               <button className="btn btn-primary btn-big" onClick={onNewGame} disabled={rematchPending}>▶ New Game • 新局</button>
               <button className="btn btn-big" onClick={handleRematch} disabled={rematchPending}>
-                {rematchPending ? 'Starting…' : '🔄 Rematch'}
+                {rematchPending ? 'Starting…' : '🔄 Rematch • 再战'}
               </button>
             </div>
           ) : (
