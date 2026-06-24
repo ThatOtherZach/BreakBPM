@@ -1045,7 +1045,7 @@ function PostCard({
  * The contact field can hold a phone, email, or URL — only return a link for
  * things that look like a web address (never phones or emails).
  */
-export function venueWebsiteUrl(contact?: string | null): string | null {
+function venueWebsiteUrl(contact?: string | null): string | null {
   if (!contact) return null;
   const s = contact.trim();
   if (!s || s.includes("@")) return null;
@@ -1056,7 +1056,7 @@ export function venueWebsiteUrl(contact?: string | null): string | null {
 
 /** Verified pool-hall card shown in the list under the Nearest Hall compass.
  *  `distanceKm` is null until the user's location is known (newest-first mode). */
-export function VenueCard({
+function VenueCard({
   venue,
   distanceKm,
 }: {

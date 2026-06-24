@@ -312,7 +312,7 @@ function buildPoolStatsAppBody(): string {
   ).join("\n");
   const showcase = POOL_STATS_SHOWCASE.map(
     (f) =>
-      `  <div style="margin:1em 0">${f.img ? `\n    <img src="${escapeHtml(f.img)}" alt="${escapeHtml(f.imgAlt ?? "")}" style="${PEEK_IMG}" />` : ""}\n    <h2>${escapeHtml(f.title)}</h2>\n    <p>${escapeHtml(f.body)}</p>\n  </div>`,
+      `  <div style="margin:1em 0">\n    <img src="${escapeHtml(f.img)}" alt="${escapeHtml(f.imgAlt)}" style="${PEEK_IMG}" />\n    <h2>${escapeHtml(f.title)}</h2>\n    <p>${escapeHtml(f.body)}</p>\n  </div>`,
   ).join("\n");
   const sysreq = POOL_STATS_SYSREQ.map(
     (r) => `  <li>${escapeHtml(r)}</li>`,
