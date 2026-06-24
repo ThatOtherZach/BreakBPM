@@ -434,7 +434,13 @@ export default function CryptoCheckout({
                 >
                   <span className="crypto-option__radio" aria-hidden="true" />
                   <span className="crypto-option__text">
-                    <span className="crypto-option__name">{p.name}</span>
+                    <span className="crypto-option__name">
+                      {p.passKind === "lifetime" ? (
+                        <span className="rainbow-name">{p.name}</span>
+                      ) : (
+                        p.name
+                      )}
+                    </span>
                     <span className="crypto-option__sub">
                       {blurbFor(p.passKind)}
                     </span>
