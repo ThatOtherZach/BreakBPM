@@ -90,7 +90,7 @@ export default function PoolStatsAppScreen({
                 <img
                   src={item.img}
                   alt={item.imgAlt}
-                  className="lp-sneak-img"
+                  className="lp-sneak-img border-t-[0px] border-r-[0px] border-b-[0px] border-l-[0px]"
                   loading="lazy"
                 />
                 <h2 className="lp-h2">{item.title}</h2>
