@@ -1567,7 +1567,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                   <p style={{ fontSize: 12, color: '#c00', margin: 0, lineHeight: 1.4 }}>⚠ {hallError}</p>
                   <div className="grid-2">
                     <button className="btn" onClick={closeAddToHall}>
-                      Close
+                      ❌ Close • 消
                     </button>
                     <button className="btn btn-primary" onClick={startAddToHall}>
                       Try again
