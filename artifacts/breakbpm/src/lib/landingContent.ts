@@ -69,7 +69,7 @@ export const POOL_STATS_SHOWCASE: ShowcaseItem[] = [
     imgAlt: "BreakBPM live scoreboard — live BPM, accuracy, and the ball rack",
   },
   {
-    title: "Face the Invisible Shark",
+    title: "Face The Shark",
     body: "Shark Mode is solo 8-ball against an opponent you can't see. Normal aggression: the Shark steals a ball on every foul. Hard aggression: it steals on every miss and foul. The honour system keeps it honest — you lift the Shark's ball off the table yourself.",
     img: "/shark.jpg",
     imgAlt: "Shark Mode — solo 8-ball against an invisible opponent",
