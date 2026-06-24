@@ -41,7 +41,7 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
             <button className="navbar-back-btn" onClick={onBack}>← Back</button>
           ) : (
             <>
-              <span className="hud-chip hud-chip-eight" data-number="8" aria-label="8-ball" />
+              <img src="/eightball_nobg.png" alt="8-ball" className="navbar-icon-img" />
               <span className="navbar-title">BreakBPM</span>
               {screenName && (
                 <span
