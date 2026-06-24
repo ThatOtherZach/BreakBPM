@@ -129,6 +129,7 @@ export default function PoolStatsAppScreen({
                     loading="lazy"
                   />
                 ) : null}
+                {item.liveLeaderboard ? <LeaderboardWidget /> : null}
               </section>
             ))}
 
@@ -142,9 +143,6 @@ export default function PoolStatsAppScreen({
                 </button>
               ))}
             </div>
-
-            {/* ── Live leaderboard sneak peek ── */}
-            <LeaderboardWidget />
 
             {/* ── Spectate & share (mood shot) ── */}
             <img

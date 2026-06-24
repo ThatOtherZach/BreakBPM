@@ -34,6 +34,8 @@ export interface ShowcaseItem {
   /** When true, the screen renders a live widget (the latest verified hall),
    *  falling back to `img` when there is no live data yet. */
   liveHall?: boolean;
+  /** When true, the screen renders the live LeaderboardWidget after the image. */
+  liveLeaderboard?: boolean;
 }
 
 export const POOL_STATS_H1 =
@@ -88,6 +90,7 @@ export const POOL_STATS_SHOWCASE: ShowcaseItem[] = [
     body: "Ranked by pace across recent 1-on-1 games with separate leaderboards for 8-ball and 9-ball. Users qualify after just two games. Show up, shoot, and climb the board!",
     img: "/leaderboard-example.gif",
     imgAlt: "BreakBPM leaderboard — ranked players with BPM scores",
+    liveLeaderboard: true,
   },
   {
     title: "Play at a Verified Hall — Tag the Board",
