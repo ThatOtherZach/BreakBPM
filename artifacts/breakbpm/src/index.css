@@ -181,12 +181,12 @@ html, #root {
 .navbar-menu::-webkit-scrollbar { display: none; }
 
 .navbar-menu-item {
-  padding: 5px 14px;
+  padding: 5px 9px;
   background: none;
   border: none;
   border-right: 1px solid var(--dark);
   font-family: 'MS Sans Serif', 'Tahoma', Geneva, Arial, sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--black);
   cursor: pointer;
   white-space: nowrap;
