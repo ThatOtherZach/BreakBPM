@@ -3259,9 +3259,11 @@ html, #root {
 .crypto-days__unit {
   font-size: 11px; color: #cfe8d2; text-transform: uppercase; letter-spacing: .5px;
 }
-/* Day slider: an animated rainbow track with our custom 8-ball as the thumb.
-   The 8-ball image URL is passed in via --ball-img (JS import so it picks up
-   the Vite base path); the rainbow track reuses the .rainbow-name pan keyframe. */
+/* Day slider: the filled portion (left of the thumb) is an animated rainbow;
+   the rest of the track is plain felt. The thumb is our custom 8-ball, drawn
+   as an inline SVG (the HUD .hud-chip-eight look: black ball + white inner
+   disc + "8") so it matches the HUD balls without an external image. The fill
+   width is fed in as --fill (a 0–100% set inline from the React value). */
 .crypto-days__slider {
   -webkit-appearance: none;
   appearance: none;
@@ -3270,32 +3272,43 @@ html, #root {
   height: 24px;
   background: transparent;
   cursor: pointer;
+  --eight-ball:
+    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2026%2026'%3E%3Ccircle%20cx='13'%20cy='13'%20r='12'%20fill='%231f1f1f'%20stroke='%23000000'%20stroke-width='1.5'/%3E%3Ccircle%20cx='13'%20cy='13'%20r='6.5'%20fill='%23fffef2'%20stroke='%231f1f1f'%20stroke-width='1.5'/%3E%3Ctext%20x='13'%20y='13'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Courier%20New,monospace'%20font-weight='900'%20font-size='10'%20fill='%231f1f1f'%3E8%3C/text%3E%3C/svg%3E");
 }
 .crypto-days__slider:disabled { cursor: default; opacity: .6; }
+/* Pan only the rainbow layer; the neutral mask layer (pinned right) holds still
+   so the rainbow never bleeds past the thumb. */
+@keyframes crypto-days-rainbow-pan {
+  from { background-position: right center, left center; }
+  to { background-position: right center, 200% center; }
+}
+/* Two background layers (topmost first): a felt-coloured mask covering the
+   right of the track, over a wide rainbow that only shows through on the left
+   fill. background-color is the felt base behind both. */
 .crypto-days__slider::-webkit-slider-runnable-track {
   height: 8px;
   border-radius: 5px;
   border: 1px solid rgba(0, 0, 0, 0.45);
-  background-image: linear-gradient(
-    90deg,
-    #ff004d, #ff8a00, #ffe600, #00e676, #00b0ff, #d500f9, #ff004d
-  );
-  background-size: 200% auto;
-  animation: rainbow-name-pan 2.5s linear infinite;
+  background-color: #0a3f22;
+  background-image:
+    linear-gradient(#0a3f22, #0a3f22),
+    linear-gradient(
+      90deg,
+      #ff004d, #ff8a00, #ffe600, #00e676, #00b0ff, #d500f9, #ff004d
+    );
+  background-repeat: no-repeat, no-repeat;
+  background-size: calc(100% - var(--fill, 0%)) 100%, 200% 100%;
+  background-position: right center, left center;
+  animation: crypto-days-rainbow-pan 2.5s linear infinite;
 }
 .crypto-days__slider::-moz-range-track {
   height: 8px;
   border-radius: 5px;
   border: 1px solid rgba(0, 0, 0, 0.45);
-  background-image: linear-gradient(
-    90deg,
-    #ff004d, #ff8a00, #ffe600, #00e676, #00b0ff, #d500f9, #ff004d
-  );
-  background-size: 200% auto;
-  animation: rainbow-name-pan 2.5s linear infinite;
+  background: #0a3f22;
 }
-/* Firefox splits the bar: the filled (left) portion is its own pseudo-element,
-   so it needs the same rainbow skin or it falls back to the default fill. */
+/* Firefox: the filled (left) portion is its own pseudo-element, so the rainbow
+   lives here and the track above stays plain felt. */
 .crypto-days__slider::-moz-range-progress {
   height: 8px;
   border-radius: 5px;
@@ -3306,9 +3319,8 @@ html, #root {
   background-size: 200% auto;
   animation: rainbow-name-pan 2.5s linear infinite;
 }
-/* Thumb = our custom cue ball (same radial-gradient recipe as .cue-ball-icon,
-   minus the red foul dot): a glossy white sphere with a top-left shine, a thin
-   dark rim, and a soft drop shadow. */
+/* Thumb = our custom 8-ball (the inline SVG set on --eight-ball above) with a
+   soft drop shadow. */
 .crypto-days__slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -3316,39 +3328,23 @@ html, #root {
   height: 22px;
   margin-top: -8px; /* center the 22px ball over the 8px track */
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 32% 30%, #ffffff 0 4px, rgba(255, 255, 255, 0) 9px),
-    radial-gradient(circle at 65% 70%, #c8c8c8 0%, #ffffff 60%);
-  box-shadow:
-    inset 0 0 0 1px #000,
-    inset -1px -1px 0 rgba(0, 0, 0, 0.25),
-    0 1px 2px rgba(0, 0, 0, 0.55);
+  background: var(--eight-ball) center / contain no-repeat;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
 }
 .crypto-days__slider::-moz-range-thumb {
   width: 22px;
   height: 22px;
   border: none;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 32% 30%, #ffffff 0 4px, rgba(255, 255, 255, 0) 9px),
-    radial-gradient(circle at 65% 70%, #c8c8c8 0%, #ffffff 60%);
-  box-shadow:
-    inset 0 0 0 1px #000,
-    inset -1px -1px 0 rgba(0, 0, 0, 0.25),
-    0 1px 2px rgba(0, 0, 0, 0.55);
+  background: var(--eight-ball) center / contain no-repeat;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
 }
 .crypto-days__slider:focus-visible { outline: none; }
 .crypto-days__slider:focus-visible::-webkit-slider-thumb {
-  box-shadow:
-    inset 0 0 0 1px #000,
-    inset -1px -1px 0 rgba(0, 0, 0, 0.25),
-    0 0 0 3px rgba(255, 206, 58, 0.7);
+  box-shadow: 0 0 0 3px rgba(255, 206, 58, 0.7);
 }
 .crypto-days__slider:focus-visible::-moz-range-thumb {
-  box-shadow:
-    inset 0 0 0 1px #000,
-    inset -1px -1px 0 rgba(0, 0, 0, 0.25),
-    0 0 0 3px rgba(255, 206, 58, 0.7);
+  box-shadow: 0 0 0 3px rgba(255, 206, 58, 0.7);
 }
 @media (prefers-reduced-motion: reduce) {
   .crypto-days__slider::-webkit-slider-runnable-track,

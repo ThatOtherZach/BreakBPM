@@ -409,6 +409,17 @@ export default function CryptoCheckout({
                     value={days}
                     disabled={locked}
                     aria-label="Pass length in days"
+                    style={
+                      {
+                        "--fill": `${
+                          dayPass.maxDays > dayPass.minDays
+                            ? ((days - dayPass.minDays) /
+                                (dayPass.maxDays - dayPass.minDays)) *
+                              100
+                            : 0
+                        }%`,
+                      } as React.CSSProperties
+                    }
                     onChange={(e) => setDays(Number(e.target.value))}
                   />
                   <div className="crypto-days__ends">
