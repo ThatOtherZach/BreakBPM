@@ -1482,7 +1482,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             <div className="panel-header">
               <span>
                 <span className="stats-sec-emoji" aria-hidden="true">🏆</span>
-                Tag a Verified Hall's Leaderboard
+                Tag a Verified Hall's Leaderboard • 标记本
               </span>
             </div>
             <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
