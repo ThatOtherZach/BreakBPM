@@ -3,6 +3,8 @@ import Navbar from "./Navbar";
 import FreePassCTA from "./FreePassCTA";
 import LegalDisclosure from "./LegalDisclosure";
 import { LeaderboardWidget } from "./LeaderboardScreen";
+import { VenueCard } from "./FindPlayersScreen";
+import { useListVenues, getListVenuesQueryKey } from "@workspace/api-client-react";
 import { usePageMeta, PAGE_META } from "../lib/pageMeta";
 import {
   POOL_STATS_H1,
@@ -13,6 +15,16 @@ import {
   POOL_STATS_SYSREQ,
   POOL_STATS_FAQ,
 } from "../lib/landingContent";
+
+function LatestHallWidget() {
+  const { data } = useListVenues(
+    { page: 1, limit: 1 },
+    { query: { queryKey: getListVenuesQueryKey({ page: 1, limit: 1 }) } },
+  );
+  const venue = data?.venues?.[0];
+  if (!venue) return null;
+  return <VenueCard venue={venue} distanceKm={null} />;
+}
 
 interface Props {
   onHome: () => void;
@@ -87,12 +99,16 @@ export default function PoolStatsAppScreen({
             {/* ── Back of the box: UI sneak peeks ── */}
             {POOL_STATS_SHOWCASE.map((item) => (
               <section key={item.title} className="lp-feature">
-                <img
-                  src={item.img}
-                  alt={item.imgAlt}
-                  className="lp-sneak-img"
-                  loading="lazy"
-                />
+                {item.img ? (
+                  <img
+                    src={item.img}
+                    alt={item.imgAlt}
+                    className="lp-sneak-img"
+                    loading="lazy"
+                  />
+                ) : (
+                  <LatestHallWidget />
+                )}
                 <h2 className="lp-h2">{item.title}</h2>
                 <p>{item.body}</p>
               </section>
