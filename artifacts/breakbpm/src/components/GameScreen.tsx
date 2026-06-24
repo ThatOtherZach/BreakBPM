@@ -1421,7 +1421,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         {state.phase === 'ended' && !hallOpen && (
           endUndoOpen ? (
             <button className="btn btn-big w-full" onClick={handleUndo} style={{ marginTop: 0 }}>
-              <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo ({endUndoLeft})
+              <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo ({endUndoLeft}) • 戻
             </button>
           ) : isAuthenticated ? (
             <div className="grid-2" style={{ marginTop: 0 }}>
