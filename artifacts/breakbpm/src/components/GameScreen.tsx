@@ -1476,7 +1476,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         })()}
 
         {/* ── Add to Hall panel ── server-vetted nearby halls, confirm/pick,
-            then the result with a jump to that hall's House Leaderboard. */}
+            then the result with a jump to that hall's Local Leaderboard. */}
         {state.phase === 'ended' && !endUndoOpen && hallOpen && (
           <div className="panel" style={{ marginTop: 8 }}>
             <div className="panel-header">
@@ -1554,7 +1554,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                     className="btn btn-primary w-full"
                     onClick={() => navigate(`/leaderboard/hall/${taggedHall.id}`)}
                   >
-                    🏆 House Leaderboard
+                    🏆 Local Leaderboard
                   </button>
                   <button className="btn w-full" onClick={closeAddToHall}>
                     Close

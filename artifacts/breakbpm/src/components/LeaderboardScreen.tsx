@@ -196,7 +196,7 @@ interface Props {
   onStats: () => void;
   onSignIn: () => void;
   /**
-   * When set, this is a per-hall ("House") leaderboard scoped to a single
+   * When set, this is a per-hall ("Local") leaderboard scoped to a single
    * Verified Hall: the same ranking, but only counting games tagged to this
    * venue. Sign-in is required for every window (no signed-out hall widget).
    */
@@ -206,7 +206,7 @@ interface Props {
 /**
  * Full leaderboard page (login required). 50 standings per page with a
  * 30d / 90d / all-time window toggle — the longer windows are a pass perk
- * (also enforced server-side). With `venueId` it renders the House Leaderboard
+ * (also enforced server-side). With `venueId` it renders the Local Leaderboard
  * for one hall, reusing the same ranking/pagination UI.
  */
 export default function LeaderboardScreen({
@@ -327,7 +327,7 @@ export default function LeaderboardScreen({
           <div className="panel-header">
             <span>
               {isHall
-                ? `🏆 ${hallVenue?.name ?? "House"} · House`
+                ? `🏆 ${hallVenue?.name ?? "Local"} · Local`
                 : "🏆 Leaderboard"}
             </span>
             {data && (
@@ -348,7 +348,7 @@ export default function LeaderboardScreen({
             )}
             <p style={{ fontSize: 11, color: "#444", margin: 0, lineHeight: 1.4 }}>
               {isHall
-                ? `House standings${hallVenue?.locality ? ` · ${hallVenue.locality}` : ""} — recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games at this hall.`
+                ? `Local standings${hallVenue?.locality ? ` · ${hallVenue.locality}` : ""} — recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games at this hall.`
                 : `Top pace & accuracy, recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games only.`}
             </p>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>

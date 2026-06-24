@@ -105,18 +105,18 @@ Earn themes as you play each mode, or buy a pass to unlock them all! Lifetime pa
 
 ### Local Leaderboards for Verified Halls
 
-Every **[Verified Hall](https://breakbpm.com/find-players)** has its own **House Leaderboard**, a ranked list of the players who shoot there.
+Every **[Verified Hall](https://breakbpm.com/find-players)** has its own **Local Leaderboard**, a ranked list of the players who shoot there.
 
 When you finish an 8-ball or 9-ball game, use the **🏆 Tag Leaderboard** button to locate the venue. The venue must be verified on BreakBPM and you'll need to tag the game while on location, after the game is done. We check your location to confirm you're actually there (within  300m), then add that game to the hall's leaderboard.
 
-![Granville Club verified hall card showing House Leaderboard button](/hall-card-example.png)
+![Granville Club verified hall card showing Local Leaderboard button](/hall-card-example.png)
 
-You can also open any hall's leaderboard straight from **[Find Players](https://breakbpm.com/find-players)** and then click **🏆 House Leaderboard** on the verified hall's cards to view. Note that Free accounts see the last 30 days; pass holders unlock the 90-day and all-time windows.
+You can also open any hall's leaderboard straight from **[Find Players](https://breakbpm.com/find-players)** and then click **🏆 Local Leaderboard** on the verified hall's cards to view. Note that Free accounts see the last 30 days; pass holders unlock the 90-day and all-time windows.
 
 **A few things to know:**
 - Rankings come from 1-on-1 8-Ball and 9-Ball games (seperate leadersboards for each).
 - Only the host can tag a game, only once, and only to the hall they're standing in.
-- Sign in to view a House Leaderboard.
+- Sign in to view a Local Leaderboard.
 
 ## Passes
 
