@@ -1425,13 +1425,13 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             </button>
           ) : isAuthenticated ? (
             <div className="grid-2" style={{ marginTop: 0 }}>
-              <button className="btn btn-primary btn-big" onClick={onNewGame} disabled={rematchPending}>▶ New Game • 新局</button>
+              <button className="btn btn-primary btn-big" onClick={onNewGame} disabled={rematchPending}><span className="cue-ball-icon" aria-hidden="true" style={{ marginRight: 5 }} />New Game • 新局</button>
               <button className="btn btn-big" onClick={handleRematch} disabled={rematchPending}>
                 {rematchPending ? 'Starting…' : '🔄 Rematch • 再战'}
               </button>
             </div>
           ) : (
-            <button className="btn btn-primary btn-big w-full" onClick={onNewGame} style={{ marginTop: 0 }}>▶ New Game</button>
+            <button className="btn btn-primary btn-big w-full" onClick={onNewGame} style={{ marginTop: 0 }}><span className="cue-ball-icon" aria-hidden="true" style={{ marginRight: 5 }} />New Game</button>
           )
         )}
 
