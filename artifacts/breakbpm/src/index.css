@@ -3196,9 +3196,14 @@ html, #root {
   font-family: 'VT323', monospace; font-size: 22px; line-height: 1;
   color: #f4f4dc; text-shadow: 1px 1px 0 #042414;
 }
-/* Lifetime title gets the animated rainbow fill; clear the inherited
-   text-shadow so the transparent glyphs don't cast a dark halo. */
-.crypto-option__name .rainbow-name { text-shadow: none; }
+/* Lifetime title gets the animated rainbow fill. Its glyphs are filled
+   transparently via bg-clip:text, so clear the inherited text-shadow (it would
+   cast a dark halo) and use a drop-shadow filter — which acts on the rendered
+   rainbow text — for legibility. */
+.crypto-option__name .rainbow-name {
+  text-shadow: none;
+  filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.55));
+}
 .crypto-option__sub { font-size: 10px; color: #cfe8d2; }
 .crypto-option__price {
   font-weight: bold; font-size: 14px; white-space: nowrap; margin-left: auto;
