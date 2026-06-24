@@ -1283,7 +1283,15 @@ export const GetHallLeaderboardResponse = zod.object({
   "venue": zod.object({
   "id": zod.string(),
   "name": zod.string(),
-  "locality": zod.string().nullish()
+  "latitude": zod.number(),
+  "longitude": zod.number(),
+  "locality": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "tableCount": zod.number().nullish(),
+  "contact": zod.string().nullish(),
+  "paymentType": zod.enum(['free', 'per_game', 'hourly']).nullish(),
+  "active": zod.boolean(),
+  "paidThroughAt": zod.coerce.date().nullish()
 })
 })
 

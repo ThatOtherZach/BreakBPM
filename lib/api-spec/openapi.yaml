@@ -3002,8 +3002,9 @@ components:
         rows:
           type: array
           items: { $ref: "#/components/schemas/LeaderboardRow" }
-        # The Verified Hall this board is scoped to.
-        venue: { $ref: "#/components/schemas/TaggedHall" }
+        # The Verified Hall this board is scoped to — full Venue shape so the
+        # leaderboard page can render the hall card (tables, maps link, etc.).
+        venue: { $ref: "#/components/schemas/Venue" }
 
     FindPlayerPost:
       type: object

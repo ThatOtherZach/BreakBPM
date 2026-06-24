@@ -8,7 +8,7 @@
 import type { HallLeaderboardResultMode } from './hallLeaderboardResultMode';
 import type { HallLeaderboardResultWindow } from './hallLeaderboardResultWindow';
 import type { LeaderboardRow } from './leaderboardRow';
-import type { TaggedHall } from './taggedHall';
+import type { Venue } from './venue';
 
 export interface HallLeaderboardResult {
   mode: HallLeaderboardResultMode;
@@ -18,5 +18,5 @@ export interface HallLeaderboardResult {
   totalPlayers: number;
   totalPages: number;
   rows: LeaderboardRow[];
-  venue: TaggedHall;
+  venue: Venue;
 }

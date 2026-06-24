@@ -2804,7 +2804,18 @@ router.get("/leaderboard/hall", async (req, res): Promise<void> => {
       totalPlayers,
       totalPages,
       rows,
-      venue: toHallIdentity(venue),
+      venue: {
+        id: venue.id,
+        name: venue.name,
+        latitude: venue.latitude,
+        longitude: venue.longitude,
+        locality: venue.locality,
+        address: venue.address,
+        tableCount: venue.tableCount,
+        contact: venue.contact,
+        paymentType: venue.paymentType,
+        active: venue.active,
+      },
     }),
   );
 });

@@ -1513,6 +1513,38 @@ export const HallLeaderboardResultWindow = {
   all: 'all',
 } as const;
 
+/**
+ * @nullable
+ */
+export type VenuePaymentType = typeof VenuePaymentType[keyof typeof VenuePaymentType] | null;
+
+
+export const VenuePaymentType = {
+  free: 'free',
+  per_game: 'per_game',
+  hourly: 'hourly',
+} as const;
+
+export interface Venue {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  /** @nullable */
+  locality?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  tableCount?: number | null;
+  /** @nullable */
+  contact?: string | null;
+  /** @nullable */
+  paymentType?: VenuePaymentType;
+  active: boolean;
+  /** @nullable */
+  paidThroughAt?: string | null;
+}
+
 export interface HallLeaderboardResult {
   mode: HallLeaderboardResultMode;
   window: HallLeaderboardResultWindow;
@@ -1521,7 +1553,7 @@ export interface HallLeaderboardResult {
   totalPlayers: number;
   totalPages: number;
   rows: LeaderboardRow[];
-  venue: TaggedHall;
+  venue: Venue;
 }
 
 export interface FindPlayerPost {
@@ -1586,38 +1618,6 @@ export interface CancelFindPlayerPostResult {
   success: boolean;
   reason?: string;
   post?: FindPlayerPost;
-}
-
-/**
- * @nullable
- */
-export type VenuePaymentType = typeof VenuePaymentType[keyof typeof VenuePaymentType] | null;
-
-
-export const VenuePaymentType = {
-  free: 'free',
-  per_game: 'per_game',
-  hourly: 'hourly',
-} as const;
-
-export interface Venue {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  /** @nullable */
-  locality?: string | null;
-  /** @nullable */
-  address?: string | null;
-  /** @nullable */
-  tableCount?: number | null;
-  /** @nullable */
-  contact?: string | null;
-  /** @nullable */
-  paymentType?: VenuePaymentType;
-  active: boolean;
-  /** @nullable */
-  paidThroughAt?: string | null;
 }
 
 /**

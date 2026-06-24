@@ -13,6 +13,8 @@ import { useAuth } from "../lib/authClient";
 import { THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
 import { WinsTodayChip } from "./WinsTodayChip";
 import { PlayerName } from "./PlayerName";
+import { venueWebsiteUrl } from "./FindPlayersScreen";
+import { venuePaymentBadge } from "../lib/venuePaymentType";
 
 const PAGE_SIZE = 50;
 const WIDGET_SIZE = 10;
@@ -276,6 +278,51 @@ export default function LeaderboardScreen({
         onSignIn={onSignIn}
       />
       <div className="app-body">
+        {isHall && hallVenue && (() => {
+          const websiteUrl = venueWebsiteUrl(hallVenue.contact);
+          const pay = venuePaymentBadge(hallVenue.paymentType);
+          return (
+            <div className="fpp-list fpp-venue-list">
+              <div className="fpp-card fpp-card--venue">
+                <div className="fpp-card-head">
+                  <span className="fpp-card-name">⭐ {hallVenue.name}</span>
+                  <span className="fpp-card-rank">
+                    <span className="hud-chip hud-chip-eight" data-number="8" aria-hidden="true" />
+                  </span>
+                </div>
+                {hallVenue.locality && <div className="fpp-card-loc">📍 {hallVenue.locality}</div>}
+                {hallVenue.tableCount != null && (
+                  <div className="fpp-card-loc">🎱 {hallVenue.tableCount} tables</div>
+                )}
+                {pay && (
+                  <div className="fpp-card-pay">
+                    <span className="fpp-pay-badge">{pay.icon} {pay.label}</span>
+                  </div>
+                )}
+                <div className="fpp-card-actions">
+                  <a
+                    className="btn"
+                    href={`https://www.google.com/maps?q=${hallVenue.latitude},${hallVenue.longitude}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    🗺️ Open in Maps
+                  </a>
+                  {websiteUrl && (
+                    <a
+                      className="btn"
+                      href={websiteUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      🌐 Website
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
         {isAuthenticated && <div className="panel">
           <div className="panel-header">
             <span>
