@@ -78,3 +78,9 @@ id = "VKhzfVDdf_YuRYAWhm60U"
 uri = "file://marketing/instagram/CAPTIONS.txt"
 type = "text"
 title = "Captions + hashtags for every post"
+
+[[outputs]]
+id = "Wb7nK2pQ9xR4mYtLcV1aD"
+uri = "file://marketing/social/X-AND-LINKEDIN-POSTS.md"
+type = "text"
+title = "X + LinkedIn posts (business logic + mythos)"
