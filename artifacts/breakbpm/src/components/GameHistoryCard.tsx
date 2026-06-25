@@ -182,6 +182,17 @@ export default function GameHistoryCard({
   // `hostTheme`), so every viewer sees the host's table — not their own theme.
   // No host theme → green (the default felt). Mirrors the leaderboard card felt.
   const felt = THEME_FELT[themeColorOf(g.hostTheme)];
+  // Shark verdict: only render a decisive result. A Shark win sets `winner` to
+  // the literal Shark name; a player win is the subject-relative "won" outcome.
+  // An unfinished Shark game (DNF — forfeit / 60-min cap / inactivity sweep) has
+  // no winner, so it shows no verdict at all (the ResultBadge already reads
+  // "DNF") rather than falsely claiming the player "Beat the Shark".
+  const sharkVerdict =
+    g.winner === SHARK_PLAYER_NAME
+      ? "Shark'd"
+      : g.outcome === "won"
+        ? "Beat the Shark"
+        : null;
   return (
     <div
       className="fpp-card history-card"
@@ -238,12 +249,14 @@ export default function GameHistoryCard({
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#cdeccd", fontSize: 11 }}>
             <ResultBadge outcome={g.outcome} chaosMode={g.chaosMode} />
             {g.sharkMode ? (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
-                <SharkIcon size={12} />
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {g.winner === SHARK_PLAYER_NAME ? "Shark'd" : "Beat the Shark"}
+              sharkVerdict ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
+                  <SharkIcon size={12} />
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {sharkVerdict}
+                  </span>
                 </span>
-              </span>
+              ) : null
             ) : g.opponent ? (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
