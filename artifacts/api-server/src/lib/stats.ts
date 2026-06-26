@@ -584,9 +584,13 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
   core.eightBallDecidedGames = eightDecided;
   core.eightBallSinkRate = eightDecided > 0 ? round3(eightClean / eightDecided) : null;
   core.playTimeByType = rollUpPlayTime(byType);
+  // EVERY ball the player pocketed, sorted most-shot first (so `topBalls[0]`
+  // stays the single top ball used for the hero emoji). The Stats screen and
+  // watch profile render a FULL rack (balls 1–15) and look up each ball's count
+  // in this array, so truncating to a top-N made every other ball falsely read
+  // ×0 — making a multi-game history look like it only counted one game.
   core.topBalls = [...ballCounts.entries()]
     .sort((a, b) => b[1] - a[1] || a[0] - b[0])
-    .slice(0, 3)
     .map(([ball, count]) => ({ ball, count }));
   core.sharkWinRate = core.sharkGames > 0 ? round3(sharkWins / core.sharkGames) : null;
 
