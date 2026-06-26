@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { writeFinalizedSummary } from "../lib/gameSummaryWriter";
 import {
   db,
@@ -284,6 +284,25 @@ export async function seedGame(
  */
 export async function finalizeSeededGame(gameId: string): Promise<void> {
   await writeFinalizedSummary(gameId);
+}
+
+/**
+ * Force a finished game's game-level + per-slot summaries to a STALE version
+ * blob (`{ v: 0 }`). Unlike the default empty `{}` (which the read-path
+ * self-heal repairs on the next personal read), a stale-version summary is NOT
+ * matched by the self-heal (`summary = '{}'` only), so it survives into the
+ * bulk readers and exercises their "absent not corrupt" skip — the row is
+ * dropped from BOTH the numerator and the denominator until a standalone
+ * backfill rewrites it. Models the transient window after a
+ * `GAME_SUMMARY_VERSION` bump, before the backfill reruns.
+ */
+export async function setStaleSummary(gameId: string): Promise<void> {
+  const stale = sql`'{"v":0}'::jsonb`;
+  await db.update(gamesTable).set({ summary: stale }).where(eq(gamesTable.id, gameId));
+  await db
+    .update(gameParticipantsTable)
+    .set({ summary: stale })
+    .where(eq(gameParticipantsTable.gameId, gameId));
 }
 
 /** Insert a (non-host) participant row into an existing game. */
