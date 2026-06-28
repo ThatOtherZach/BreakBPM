@@ -229,6 +229,8 @@ export default function LeaderboardScreen({
   const [mode, setMode] = useState<GetLeaderboardMode>("8ball");
   const [window, setWindow] = useState<GetLeaderboardWindow>("30d");
   const [page, setPage] = useState(1);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [linkCopyFailed, setLinkCopyFailed] = useState(false);
 
   // Two queries, mutually gated by `enabled`. The GLOBAL query always runs (the
   // default 30d window is public, so an anonymous fetch never 403s) but its
@@ -356,7 +358,31 @@ export default function LeaderboardScreen({
                 <div className="fpp-card-head">
                   <span className="fpp-card-name">⭐ {hallVenue.name}</span>
                   <span className="fpp-card-rank">
-                    <span className="hud-chip hud-chip-eight" data-number="8" aria-hidden="true" />
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{ padding: "2px 8px", fontSize: 11, whiteSpace: "nowrap" }}
+                      title="Copy this hall's leaderboard link"
+                      onClick={() => {
+                        // `window` is shadowed by the window-state var here, so reach
+                        // the browser global via `globalThis`. Copy the current page's
+                        // canonical URL (no query/hash) so it stays correct whether the
+                        // path uses the raw id today or a readable slug later.
+                        const url = `${globalThis.location.origin}${globalThis.location.pathname}`;
+                        navigator.clipboard.writeText(url).then(
+                          () => {
+                            setLinkCopied(true);
+                            setTimeout(() => setLinkCopied(false), 2000);
+                          },
+                          () => {
+                            setLinkCopyFailed(true);
+                            setTimeout(() => setLinkCopyFailed(false), 2000);
+                          },
+                        );
+                      }}
+                    >
+                      {linkCopied ? "✓ Copied" : linkCopyFailed ? "⚠ Copy failed" : "🔗 Copy link"}
+                    </button>
                   </span>
                 </div>
                 {hallVenue.locality && <div className="fpp-card-loc">📍 {hallVenue.locality}</div>}
