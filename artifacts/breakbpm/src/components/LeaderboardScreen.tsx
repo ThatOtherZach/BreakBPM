@@ -363,7 +363,9 @@ export default function LeaderboardScreen({
             <div className="fpp-list fpp-venue-list">
               <div className="fpp-card fpp-card--venue">
                 <div className="fpp-card-head">
-                  <span className="fpp-card-name">⭐ {hallVenue.name}</span>
+                  <span className="fpp-card-name">
+                    <span className="cue-ball-icon" aria-hidden="true" /> {hallVenue.name}
+                  </span>
                   <span className="fpp-card-rank">
                     <button
                       type="button"
