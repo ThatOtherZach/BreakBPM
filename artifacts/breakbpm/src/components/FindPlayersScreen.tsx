@@ -1113,7 +1113,6 @@ export function VenueCard({
       <div className="fpp-card-head">
         <span className="fpp-card-name">⭐ {venue.name}</span>
       </div>
-      {distLabel && <div className="fpp-card-when">{distLabel} away</div>}
       {gameCount != null && (
         <div className="fpp-card-loc">
           🔥 {gameCount} {gameCount === 1 ? "game" : "games"} played
