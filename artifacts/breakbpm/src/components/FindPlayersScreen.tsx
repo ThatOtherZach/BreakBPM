@@ -1120,7 +1120,7 @@ export function VenueCard({
       )}
       {venue.locality && <div className="fpp-card-loc">📍 {venue.locality}</div>}
       {venue.tableCount != null && (
-        <div className="fpp-card-loc">🎱 {venue.tableCount} tables</div>
+        <div className="fpp-card-loc">🎱 {venue.tableCount} Tables</div>
       )}
       {pay && (
         <div className="fpp-card-pay">
