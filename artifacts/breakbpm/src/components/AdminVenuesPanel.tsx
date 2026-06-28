@@ -554,6 +554,14 @@ export default function AdminVenuesPanel() {
                         ? ` · paid → ${isoToDateInput(v.paidThroughAt)}`
                         : ""}
                     </span>
+                    <a
+                      className="avp-row-lb-link"
+                      href={`/leaderboard/hall/${v.slug ?? v.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      House Leaderboard ↗
+                    </a>
                   </div>
                   <div className="avp-row-actions">
                     <button className="btn" onClick={() => startEdit(v)} disabled={busy}>

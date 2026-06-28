@@ -2914,6 +2914,14 @@ html, #root {
   color: #666;
   font-family: 'Courier New', monospace;
 }
+.avp-row-lb-link {
+  font-size: 11px;
+  color: #1a6fb0;
+  text-decoration: none;
+}
+.avp-row-lb-link:hover {
+  text-decoration: underline;
+}
 .avp-row-actions {
   display: flex;
   gap: 6px;
