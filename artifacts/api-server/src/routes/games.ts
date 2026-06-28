@@ -2531,9 +2531,13 @@ router.get("/stats", async (req, res): Promise<void> => {
 
   // For personal stats, fetch the global 24h average (same mode) so the hero
   // can show an above/below-average arrow. Global scope needs no comparison.
-  // If the mode-specific global 24h average is null (no global games in that
-  // mode recently), fall back to the all-modes global 24h average so the bell
-  // curve still renders with a meaningful comparison point.
+  // Fallback chain (each step only runs if the previous returned null):
+  //   1. mode-specific global 24h  (the normal case)
+  //   2. all-modes global 24h      (quiet mode — no recent games in this mode)
+  //   3. mode-specific global all  (quiet day — no recent games at all)
+  //   4. all-modes global all      (last resort — any qualifying global games ever)
+  // Steps 3–4 are the "quiet-period" extension: on days with no global 24h games
+  // the bell curve keeps showing "you vs. the field" using all-time global data.
   let globalAvgBpm: number | null = null;
   if (appliedScope === "personal") {
     const { core: globalCore } = await resolveStats("global", "24h", null, false, appliedGameMode);
@@ -2541,6 +2545,14 @@ router.get("/stats", async (req, res): Promise<void> => {
     if (globalAvgBpm == null && appliedGameMode !== "all") {
       const { core: globalFallback } = await resolveStats("global", "24h", null, false, "all");
       globalAvgBpm = globalFallback.avgBpm ?? null;
+    }
+    if (globalAvgBpm == null) {
+      const { core: globalAllTime } = await resolveStats("global", "all", null, false, appliedGameMode);
+      globalAvgBpm = globalAllTime.avgBpm ?? null;
+      if (globalAvgBpm == null && appliedGameMode !== "all") {
+        const { core: globalAllTimeFallback } = await resolveStats("global", "all", null, false, "all");
+        globalAvgBpm = globalAllTimeFallback.avgBpm ?? null;
+      }
     }
   }
 
