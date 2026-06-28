@@ -488,8 +488,8 @@ export default function LeaderboardScreen({
             <div className="panel-body panel--wood" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
               {rows.length === 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                  <p style={{ fontSize: 13, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.6)", margin: 0, textAlign: "center" }}>
-                    🎱 No ranked players yet.
+                  <p style={{ fontSize: 13, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.6)", margin: 0, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <span className="eight-ball-icon" aria-hidden="true" /> No ranked players yet.
                   </p>
                   <p style={{ fontSize: 12, color: "#cde8cd", textShadow: "0 1px 2px rgba(0,0,0,0.5)", margin: 0, textAlign: "center" }}>
                     Looking for a game?
