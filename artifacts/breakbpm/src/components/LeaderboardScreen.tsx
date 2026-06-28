@@ -409,7 +409,7 @@ export default function LeaderboardScreen({
                 </div>
                 {hallVenue.locality && <div className="fpp-card-loc">📍 {hallVenue.locality}</div>}
                 {hallVenue.tableCount != null && (
-                  <div className="fpp-card-loc">🎱 {hallVenue.tableCount} tables</div>
+                  <div className="fpp-card-loc">🎱 {hallVenue.tableCount} Tables</div>
                 )}
                 {data?.totalPlayers != null && (
                   <div className="fpp-card-loc">🙋‍♂️ {data.totalPlayers} {data.totalPlayers === 1 ? "Player" : "Players"}</div>
