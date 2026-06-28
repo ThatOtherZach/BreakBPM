@@ -232,6 +232,7 @@ export async function seedGame(
     endedAt?: Date | null;
     startedAt?: Date;
     winner?: string | null;
+    venueId?: string | null;
   } = {},
 ): Promise<Game> {
   const id = rid();
@@ -258,6 +259,7 @@ export async function seedGame(
       endedAt: opts.endedAt ?? null,
       outcome: opts.endedAt ? "completed" : null,
       winner: opts.winner ?? null,
+      venueId: opts.venueId ?? null,
     })
     .returning();
   createdGameIds.push(id);

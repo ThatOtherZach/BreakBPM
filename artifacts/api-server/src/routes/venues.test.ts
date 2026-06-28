@@ -24,7 +24,7 @@ vi.mock("../lib/geocode", async (importOriginal) => {
 });
 
 import venuesRouter from "./venues";
-import { createUser, seedVenue, getVenue, cleanup } from "../test/factories";
+import { createUser, seedVenue, seedGame, getVenue, cleanup } from "../test/factories";
 
 const ADMIN_EMAIL = "venue-admin-test@breakbpm.test";
 let prevAdminEmails: string | undefined;
@@ -314,6 +314,64 @@ describe("address is authoritative on create/update", () => {
     const row = (await getVenue(venue.id))!;
     expect(row.latitude).toBeCloseTo(49.2827, 4);
     expect(row.longitude).toBeCloseTo(-123.1207, 4);
+  });
+});
+
+describe("GET /venues/popular — most active halls by finalized game count", () => {
+  it("returns an empty list for signed-out callers", async () => {
+    mocks.currentUser = null;
+    const res = await request(app).get("/api/venues/popular");
+    expect(res.status).toBe(200);
+    expect(res.body.venues).toEqual([]);
+  });
+
+  it("ranks active halls by finalized game count, ignores in-progress games, and excludes inactive halls", async () => {
+    const admin = await createUser({ email: ADMIN_EMAIL });
+    const a = await seedVenue(admin.id, { name: "Hall A", active: true });
+    const b = await seedVenue(admin.id, { name: "Hall B", active: true });
+    const c = await seedVenue(admin.id, { name: "Hall C", active: true });
+    const inactive = await seedVenue(admin.id, { name: "Hall D", active: false });
+
+    const ended = new Date();
+    // A: 3 finalized. C: 2 finalized + 1 in-progress (must NOT count). B: 1.
+    for (let i = 0; i < 3; i++) await seedGame(admin.id, { venueId: a.id, endedAt: ended });
+    for (let i = 0; i < 2; i++) await seedGame(admin.id, { venueId: c.id, endedAt: ended });
+    await seedGame(admin.id, { venueId: c.id, endedAt: null });
+    await seedGame(admin.id, { venueId: b.id, endedAt: ended });
+    // Inactive hall has the MOST finalized games but must be excluded.
+    for (let i = 0; i < 5; i++) await seedGame(admin.id, { venueId: inactive.id, endedAt: ended });
+
+    const user = await createUser({ email: "regular@breakbpm.test" });
+    mocks.currentUser = user;
+
+    const res = await request(app).get("/api/venues/popular");
+    expect(res.status).toBe(200);
+    const popular = res.body.venues as Array<{ venue: { id: string }; gameCount: number }>;
+
+    // Most active first; the in-progress game at C is not counted.
+    expect(popular.map((p) => p.venue.id)).toEqual([a.id, c.id, b.id]);
+    expect(popular.map((p) => p.gameCount)).toEqual([3, 2, 1]);
+    // The inactive hall never appears, despite having the highest count.
+    expect(popular.some((p) => p.venue.id === inactive.id)).toBe(false);
+  });
+
+  it("caps the result at the top 5 halls", async () => {
+    const admin = await createUser({ email: ADMIN_EMAIL });
+    const ended = new Date();
+    // Seed 7 active halls, each with a distinct finalized game count (7..1).
+    for (let rank = 7; rank >= 1; rank--) {
+      const v = await seedVenue(admin.id, { name: `Hall ${rank}`, active: true });
+      for (let i = 0; i < rank; i++) await seedGame(admin.id, { venueId: v.id, endedAt: ended });
+    }
+
+    const user = await createUser({ email: "regular2@breakbpm.test" });
+    mocks.currentUser = user;
+
+    const res = await request(app).get("/api/venues/popular");
+    expect(res.status).toBe(200);
+    expect(res.body.venues).toHaveLength(5);
+    // Returned most-active first: 7,6,5,4,3.
+    expect(res.body.venues.map((p: { gameCount: number }) => p.gameCount)).toEqual([7, 6, 5, 4, 3]);
   });
 });
 

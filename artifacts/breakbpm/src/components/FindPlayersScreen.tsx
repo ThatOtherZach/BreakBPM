@@ -972,7 +972,7 @@ export default function FindPlayersScreen({
             <div className="panel panel--wood">
               <div className="panel-header">MOST POPULAR VENUES</div>
               <div className="panel-body">
-                <p className="fpp-hint text-center" style={{ color: "#fff" }}>
+                <p className="fpp-hint text-center mt-[4px] mb-[4px]" style={{ color: "#fff" }}>
                   The most active Verified Halls right now.
                 </p>
                 <div className="fpp-list fpp-venue-list">
