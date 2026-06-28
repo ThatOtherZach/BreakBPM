@@ -325,7 +325,7 @@ export default function LeaderboardScreen({
                     <div className="fpp-card-name">
                       <span className="cue-ball-icon" aria-hidden="true" style={{ fontSize: "18.4px" }} /> {hallVenue.name}
                     </div>
-                    {hallVenue.locality && <div className="fpp-card-loc">📍 {hallVenue.locality}</div>}
+                    {hallVenue.locality && <div className="fpp-card-loc">{hallVenue.locality}</div>}
                     {hallVenue.tableCount != null && (
                       <div className="fpp-card-loc">🎱 {hallVenue.tableCount} Tables</div>
                     )}
