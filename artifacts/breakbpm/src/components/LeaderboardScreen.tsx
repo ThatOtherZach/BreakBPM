@@ -425,6 +425,9 @@ export default function LeaderboardScreen({
                 {hallVenue.tableCount != null && (
                   <div className="fpp-card-loc">🎱 {hallVenue.tableCount} tables</div>
                 )}
+                {data?.totalPlayers != null && (
+                  <div className="fpp-card-loc">🙋‍♂️ {data.totalPlayers} {data.totalPlayers === 1 ? "Player" : "Players"}</div>
+                )}
                 {pay && (
                   <div className="fpp-card-pay">
                     <span className="fpp-pay-badge">{pay.icon} {pay.label}</span>
