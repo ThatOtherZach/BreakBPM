@@ -360,32 +360,38 @@ export default function LeaderboardScreen({
           return (
             <div className="fpp-list fpp-venue-list">
               <div className="fpp-card fpp-card--venue">
-                <div className="fpp-card-head">
-                  <span className="fpp-card-name">
-                    <span className="cue-ball-icon" aria-hidden="true" style={{ fontSize: "18.4px" }} /> {hallVenue.name}
-                  </span>
-                  <span className="fpp-card-rank">
-                    <span
-                      style={{ background: "#fff", padding: 5, borderRadius: 4, lineHeight: 0 }}
-                      title="Scan to open this hall's leaderboard"
-                    >
-                      <QRCodeSVG value={hallUrl} size={72} level="M" />
-                    </span>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    alignItems: "flex-start",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="fpp-card-name">
+                      <span className="cue-ball-icon" aria-hidden="true" style={{ fontSize: "18.4px" }} /> {hallVenue.name}
+                    </div>
+                    {hallVenue.locality && <div className="fpp-card-loc">📍 {hallVenue.locality}</div>}
+                    {hallVenue.tableCount != null && (
+                      <div className="fpp-card-loc">🎱 {hallVenue.tableCount} Tables</div>
+                    )}
+                    {data?.totalPlayers != null && (
+                      <div className="fpp-card-loc">🙋‍♂️ {data.totalPlayers} {data.totalPlayers === 1 ? "Player" : "Players"}</div>
+                    )}
+                    {pay && (
+                      <div className="fpp-card-pay">
+                        <span className="fpp-pay-badge">{pay.icon} {pay.label}</span>
+                      </div>
+                    )}
+                  </div>
+                  <span
+                    style={{ background: "#fff", padding: 5, borderRadius: 4, lineHeight: 0, flexShrink: 0 }}
+                    title="Scan to open this hall's leaderboard"
+                  >
+                    <QRCodeSVG value={hallUrl} size={72} level="M" />
                   </span>
                 </div>
-
-                {hallVenue.locality && <div className="fpp-card-loc">📍 {hallVenue.locality}</div>}
-                {hallVenue.tableCount != null && (
-                  <div className="fpp-card-loc">🎱 {hallVenue.tableCount} Tables</div>
-                )}
-                {data?.totalPlayers != null && (
-                  <div className="fpp-card-loc">🙋‍♂️ {data.totalPlayers} {data.totalPlayers === 1 ? "Player" : "Players"}</div>
-                )}
-                {pay && (
-                  <div className="fpp-card-pay">
-                    <span className="fpp-pay-badge">{pay.icon} {pay.label}</span>
-                  </div>
-                )}
                 <div className="fpp-card-actions">
                   <a
                     className="btn"
