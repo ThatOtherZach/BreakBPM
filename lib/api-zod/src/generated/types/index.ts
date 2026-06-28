@@ -171,6 +171,8 @@ export * from './planId';
 export * from './planInterval';
 export * from './planKind';
 export * from './planPassKind';
+export * from './popularVenue';
+export * from './popularVenueList';
 export * from './profileThemeUpdate';
 export * from './profileThemeUpdateProfileTheme';
 export * from './publicProfileResult';

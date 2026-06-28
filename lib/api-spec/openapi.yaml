@@ -1115,6 +1115,24 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/VenuePage" }
 
+  /venues/popular:
+    get:
+      operationId: listPopularVenues
+      tags: [venues]
+      summary: Most active verified venues by finalized game count
+      description: >
+        Returns up to the top 5 ACTIVE verified pool-hall venues ranked by how
+        many finalized games were tagged to each hall (via "Add to Hall"), most
+        active first, each with its game count. Used by the "Most Popular Venues"
+        section on the Find Players page. Signed-in only; signed-out callers
+        receive an empty list (venue features are gated to signed-in users).
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PopularVenueList" }
+
   /venues/osm:
     get:
       operationId: listOsmVenues
@@ -3168,6 +3186,22 @@ components:
         totalPages: { type: integer }
         # Total number of active venues (across all pages).
         total: { type: integer }
+
+    PopularVenue:
+      type: object
+      required: [venue, gameCount]
+      properties:
+        venue: { $ref: "#/components/schemas/Venue" }
+        # Number of finalized games tagged to this hall.
+        gameCount: { type: integer }
+
+    PopularVenueList:
+      type: object
+      required: [venues]
+      properties:
+        venues:
+          type: array
+          items: { $ref: "#/components/schemas/PopularVenue" }
 
     Ad:
       type: object

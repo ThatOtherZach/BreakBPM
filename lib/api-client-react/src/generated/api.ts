@@ -91,6 +91,7 @@ import type {
   OsmVenueList,
   PassCheckoutInput,
   PlanCatalog,
+  PopularVenueList,
   ProfileThemeUpdate,
   PublicProfileResult,
   RedeemResult,
@@ -3858,6 +3859,85 @@ export function useListVenues<TData = Awaited<ReturnType<typeof listVenues>>, TE
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListVenuesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListPopularVenuesUrl = () => {
+
+
+
+
+  return `/api/venues/popular`
+}
+
+/**
+ * Returns up to the top 5 ACTIVE verified pool-hall venues ranked by how many finalized games were tagged to each hall (via "Add to Hall"), most active first, each with its game count. Used by the "Most Popular Venues" section on the Find Players page. Signed-in only; signed-out callers receive an empty list (venue features are gated to signed-in users).
+
+ * @summary Most active verified venues by finalized game count
+ */
+export const listPopularVenues = async ( options?: RequestInit): Promise<PopularVenueList> => {
+
+  return customFetch<PopularVenueList>(getListPopularVenuesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPopularVenuesQueryKey = () => {
+    return [
+    `/api/venues/popular`
+    ] as const;
+    }
+
+
+export const getListPopularVenuesQueryOptions = <TData = Awaited<ReturnType<typeof listPopularVenues>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPopularVenues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPopularVenuesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPopularVenues>>> = ({ signal }) => listPopularVenues({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPopularVenues>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPopularVenuesQueryResult = NonNullable<Awaited<ReturnType<typeof listPopularVenues>>>
+export type ListPopularVenuesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Most active verified venues by finalized game count
+ */
+
+export function useListPopularVenues<TData = Awaited<ReturnType<typeof listPopularVenues>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPopularVenues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPopularVenuesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

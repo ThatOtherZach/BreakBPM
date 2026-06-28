@@ -17,6 +17,7 @@ import {
   useCreateFindPlayerPost,
   useCancelFindPlayerPost,
   useListVenues,
+  useListPopularVenues,
   getListVenuesQueryKey,
   getListFindPlayerPostsQueryKey,
 } from "@workspace/api-client-react";
@@ -379,6 +380,12 @@ export default function FindPlayersScreen({
   const pageVenues = venuesQuery.data?.venues ?? [];
   const verifiedTotalPages = venuesQuery.data?.totalPages ?? 0;
   const verifiedTotal = venuesQuery.data?.total ?? 0;
+
+  // "Most Popular Venues" — the top active Verified Halls by finalized game
+  // count, shown in their own section at the bottom of the page. Signed-out
+  // callers get an empty list server-side, so the section never renders for them.
+  const popularVenuesQuery = useListPopularVenues();
+  const popularVenues = popularVenuesQuery.data?.venues ?? [];
 
   // The compass must consider EVERY verified hall to point at the globally
   // closest one, so it uses a separate unpaginated (`all`) query rather than the
@@ -956,6 +963,32 @@ export default function FindPlayersScreen({
             </SignedIn>
           </div>
         </div>
+
+        {/* ── Most Popular Venues ──
+            Top active Verified Halls by finalized game count. Rendered only when
+            there's something to show (signed-out callers get an empty list). */}
+        <SignedIn>
+          {popularVenues.length > 0 && (
+            <div className="panel panel--wood">
+              <div className="panel-header">MOST POPULAR VENUES</div>
+              <div className="panel-body">
+                <p className="fpp-hint text-center" style={{ color: "#fff" }}>
+                  The most active Verified Halls right now.
+                </p>
+                <div className="fpp-list fpp-venue-list">
+                  {popularVenues.map(({ venue, gameCount }) => (
+                    <VenueCard
+                      key={venue.id}
+                      venue={venue}
+                      distanceKm={null}
+                      gameCount={gameCount}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </SignedIn>
       </div>
     </div>
   );
@@ -1059,9 +1092,12 @@ export function venueWebsiteUrl(contact?: string | null): string | null {
 export function VenueCard({
   venue,
   distanceKm,
+  gameCount,
 }: {
   venue: Venue;
   distanceKm: number | null;
+  /** When set, shows how many finalized games were played here (popular list). */
+  gameCount?: number;
 }) {
   const [, setLocation] = useLocation();
   const distLabel =
@@ -1085,6 +1121,11 @@ export function VenueCard({
         </span>
       </div>
       {distLabel && <div className="fpp-card-when">{distLabel} away</div>}
+      {gameCount != null && (
+        <div className="fpp-card-loc">
+          🔥 {gameCount} {gameCount === 1 ? "game" : "games"} played
+        </div>
+      )}
       {venue.locality && <div className="fpp-card-loc">📍 {venue.locality}</div>}
       {venue.tableCount != null && (
         <div className="fpp-card-loc">🎱 {venue.tableCount} tables</div>

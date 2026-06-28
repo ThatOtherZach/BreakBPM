@@ -1693,6 +1693,15 @@ export interface VenuePage {
   total: number;
 }
 
+export interface PopularVenue {
+  venue: Venue;
+  gameCount: number;
+}
+
+export interface PopularVenueList {
+  venues: PopularVenue[];
+}
+
 export interface Ad {
   id: string;
   headline: string;

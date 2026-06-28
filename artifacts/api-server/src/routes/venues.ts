@@ -1,9 +1,10 @@
 import { Router, type IRouter } from "express";
-import { count, desc, eq } from "drizzle-orm";
-import { db, venuesTable } from "@workspace/db";
+import { and, count, desc, eq, inArray, isNotNull } from "drizzle-orm";
+import { db, venuesTable, gamesTable } from "@workspace/db";
 import {
   ListVenuesQueryParams,
   ListVenuesResponse,
+  ListPopularVenuesResponse,
   ListOsmVenuesQueryParams,
   ListOsmVenuesResponse,
   ListAdminVenuesResponse,
@@ -126,6 +127,57 @@ router.get("/venues", async (req, res): Promise<void> => {
       total,
     }),
   );
+});
+
+/**
+ * GET /venues/popular — the most active Verified Halls, ranked by how many
+ * finalized games were tagged to each via "Add to Hall", most active first.
+ * Powers the "Most Popular Venues" section on the Find Players page. `endedAt`
+ * is the finalize marker (same signal the leaderboard uses), so in-progress
+ * games don't count. We rank a buffer of candidate halls then keep only ACTIVE
+ * ones so a deactivated hall never appears, capping the result at 5. Signed-in
+ * only; signed-out callers get an empty list (venue features are UI-gated).
+ */
+router.get("/venues/popular", async (req, res): Promise<void> => {
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.json(ListPopularVenuesResponse.parse({ venues: [] }));
+    return;
+  }
+
+  const gameCount = count();
+  const ranked = await db
+    .select({ venueId: gamesTable.venueId, n: gameCount })
+    .from(gamesTable)
+    .where(and(isNotNull(gamesTable.venueId), isNotNull(gamesTable.endedAt)))
+    .groupBy(gamesTable.venueId)
+    .orderBy(desc(gameCount))
+    // Over-fetch: some top halls may be inactive and get dropped below, so we
+    // still want enough survivors to fill 5 cards.
+    .limit(20);
+
+  const ids = ranked
+    .map((r) => r.venueId)
+    .filter((v): v is string => v !== null);
+  if (ids.length === 0) {
+    res.json(ListPopularVenuesResponse.parse({ venues: [] }));
+    return;
+  }
+
+  const venueRows = await db
+    .select()
+    .from(venuesTable)
+    .where(and(inArray(venuesTable.id, ids), eq(venuesTable.active, true)));
+  const byId = new Map(venueRows.map((row) => [row.id, row]));
+
+  const venues = ranked
+    .flatMap((r) => {
+      const row = r.venueId ? byId.get(r.venueId) : undefined;
+      return row ? [{ venue: toVenueResponse(row), gameCount: r.n }] : [];
+    })
+    .slice(0, 5);
+
+  res.json(ListPopularVenuesResponse.parse({ venues }));
 });
 
 /**

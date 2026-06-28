@@ -1447,6 +1447,32 @@ export const ListVenuesResponse = zod.object({
 
 
 /**
+ * Returns up to the top 5 ACTIVE verified pool-hall venues ranked by how many finalized games were tagged to each hall (via "Add to Hall"), most active first, each with its game count. Used by the "Most Popular Venues" section on the Find Players page. Signed-in only; signed-out callers receive an empty list (venue features are gated to signed-in users).
+
+ * @summary Most active verified venues by finalized game count
+ */
+export const ListPopularVenuesResponse = zod.object({
+  "venues": zod.array(zod.object({
+  "venue": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string().nullish(),
+  "latitude": zod.number(),
+  "longitude": zod.number(),
+  "locality": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "tableCount": zod.number().nullish(),
+  "contact": zod.string().nullish(),
+  "paymentType": zod.enum(['free', 'per_game', 'hourly']).nullish(),
+  "active": zod.boolean(),
+  "paidThroughAt": zod.coerce.date().nullish()
+}),
+  "gameCount": zod.number()
+}))
+})
+
+
+/**
  * Server-side proxy + cache for OpenStreetMap (Overpass) billiards venues inside a bounding box, used by the map's OSM layer and the nearest-hall compass. The browser cannot query Overpass politely or reliably itself (it can't set a contact User-Agent, has no shared cache, and Overpass's WAF rejects the multi-clause union query from residential IPs), so the API does it instead: it runs single-clause queries across mirrors, caches results for ~24h keyed by a snapped bbox, and degrades gracefully. Signed-in only (not an open Overpass relay). An over-broad bbox returns status `too_broad`. On total upstream failure it returns a recent cached result flagged `stale` when one exists, otherwise status `error`.
 
  * @summary Live OpenStreetMap billiards venues for a viewport (signed-in)
