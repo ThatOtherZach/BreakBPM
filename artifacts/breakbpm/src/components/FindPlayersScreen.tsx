@@ -1137,23 +1137,21 @@ export function VenueCard({
         >
           🏆 Local Leaderboard
         </button>
-        <a
+        <button
+          type="button"
           className="btn"
-          href={`https://www.google.com/maps?q=${venue.latitude},${venue.longitude}`}
-          target="_blank"
-          rel="noreferrer"
+          onClick={() => window.open(`https://www.google.com/maps?q=${venue.latitude},${venue.longitude}`, "_blank", "noreferrer")}
         >
           🗺️ Open in Maps
-        </a>
+        </button>
         {websiteUrl && (
-          <a
+          <button
+            type="button"
             className="btn"
-            href={websiteUrl}
-            target="_blank"
-            rel="noreferrer"
+            onClick={() => window.open(websiteUrl, "_blank", "noreferrer")}
           >
             🌐 Website
-          </a>
+          </button>
         )}
       </div>
     </div>
