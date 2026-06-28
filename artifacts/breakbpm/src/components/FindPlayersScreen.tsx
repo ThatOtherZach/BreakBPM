@@ -1112,7 +1112,7 @@ export function VenueCard({
     <div className="fpp-card fpp-card--venue">
       <div className="fpp-card-head">
         <span className="fpp-card-name">
-          <span className="cue-ball-icon" aria-hidden="true" />
+          <span className="cue-ball-icon" aria-hidden="true" style={{ fontSize: 18 }} />
           {" "}{venue.name}
         </span>
       </div>
