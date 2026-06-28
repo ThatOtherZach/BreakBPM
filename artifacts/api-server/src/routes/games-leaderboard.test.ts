@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import express, { type Express } from "express";
 import request from "supertest";
 import { eq } from "drizzle-orm";
-import { db, gamesTable } from "@workspace/db";
+import { db, gamesTable, venuesTable } from "@workspace/db";
 
 // The public GET /leaderboard route is anonymous-friendly (30d window). These
 // tests pin the mode-parameter wiring: an omitted `mode` defaults to 8-ball and
@@ -155,5 +155,93 @@ describe("GET /leaderboard/hall — public 30d window for signed-out visitors", 
       .query({ venueId: "0".repeat(32), mode: "8ball", window: "30d", page: 1, pageSize: 50 });
 
     expect(res.status).toBe(404);
+  });
+});
+
+// The per-hall board's `venueId` URL param can be either the readable slug (new
+// links) or the raw 32-char id (legacy links / un-backfilled halls). These pin
+// that either-form resolution, the lazy slug self-heal, and dup-name disambig.
+describe("GET /leaderboard/hall — slug resolution", () => {
+  it("self-heals a slug-less hall and echoes the minted slug", async () => {
+    const owner = await createUser();
+    const venue = await seedVenue(owner.id, { name: "Sneaky Petes" });
+    expect(venue.slug).toBeNull();
+    clearLeaderboardCache();
+
+    const res = await request(app)
+      .get("/api/leaderboard/hall")
+      .set("X-Forwarded-For", freshIp())
+      .query({ venueId: venue.id, mode: "8ball", window: "30d", page: 1, pageSize: 50 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.venue?.id).toBe(venue.id);
+    expect(res.body.venue?.slug).toBe("sneaky-petes");
+  });
+
+  it("resolves the same hall by its slug as by its legacy id", async () => {
+    const owner = await createUser();
+    const venue = await seedVenue(owner.id, { name: "Corner Pocket" });
+    clearLeaderboardCache();
+
+    // First hit by id mints + returns the slug.
+    const byId = await request(app)
+      .get("/api/leaderboard/hall")
+      .set("X-Forwarded-For", freshIp())
+      .query({ venueId: venue.id, mode: "8ball", window: "30d", page: 1, pageSize: 50 });
+    expect(byId.status).toBe(200);
+    const slug = byId.body.venue?.slug as string;
+    expect(slug).toBe("corner-pocket");
+
+    // The slug resolves to the very same venue.
+    const bySlug = await request(app)
+      .get("/api/leaderboard/hall")
+      .set("X-Forwarded-For", freshIp())
+      .query({ venueId: slug, mode: "8ball", window: "30d", page: 1, pageSize: 50 });
+    expect(bySlug.status).toBe(200);
+    expect(bySlug.body.venue?.id).toBe(venue.id);
+    expect(bySlug.body.venue?.slug).toBe(slug);
+  });
+
+  it("resolves a legacy id to its own venue even if another's slug equals it", async () => {
+    const owner = await createUser();
+    // Venue A keeps a legacy (slug-less) row whose id we will collide against.
+    const a = await seedVenue(owner.id, { name: "Collision A" });
+    // Venue B is forced to carry a slug exactly equal to A's id, simulating the
+    // (pathological) id/slug charset overlap. An A-id link must still hit A.
+    const b = await seedVenue(owner.id, { name: "Collision B" });
+    await db.update(venuesTable).set({ slug: a.id }).where(eq(venuesTable.id, b.id));
+    clearLeaderboardCache();
+
+    const res = await request(app)
+      .get("/api/leaderboard/hall")
+      .set("X-Forwarded-For", freshIp())
+      .query({ venueId: a.id, mode: "8ball", window: "30d", page: 1, pageSize: 50 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.venue?.id).toBe(a.id);
+  });
+
+  it("disambiguates two halls that share a name with distinct slugs", async () => {
+    const owner = await createUser();
+    const a = await seedVenue(owner.id, { name: "The Break Room", locality: "Austin" });
+    const b = await seedVenue(owner.id, { name: "The Break Room", locality: "Dallas" });
+    clearLeaderboardCache();
+
+    const resA = await request(app)
+      .get("/api/leaderboard/hall")
+      .set("X-Forwarded-For", freshIp())
+      .query({ venueId: a.id, mode: "8ball", window: "30d", page: 1, pageSize: 50 });
+    const resB = await request(app)
+      .get("/api/leaderboard/hall")
+      .set("X-Forwarded-For", freshIp())
+      .query({ venueId: b.id, mode: "8ball", window: "30d", page: 1, pageSize: 50 });
+
+    expect(resA.status).toBe(200);
+    expect(resB.status).toBe(200);
+    const slugA = resA.body.venue?.slug as string;
+    const slugB = resB.body.venue?.slug as string;
+    expect(slugA).toBeTruthy();
+    expect(slugB).toBeTruthy();
+    expect(slugA).not.toBe(slugB);
   });
 });

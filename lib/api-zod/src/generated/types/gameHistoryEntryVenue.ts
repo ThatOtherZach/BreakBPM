@@ -12,4 +12,6 @@
 export type GameHistoryEntryVenue = {
   id: string;
   name: string;
+  /** @nullable */
+  slug?: string | null;
 } | null;

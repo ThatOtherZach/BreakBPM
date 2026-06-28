@@ -1100,7 +1100,7 @@ export function VenueCard({
         <button
           type="button"
           className="btn"
-          onClick={() => setLocation(`/leaderboard/hall/${venue.id}`)}
+          onClick={() => setLocation(`/leaderboard/hall/${venue.slug ?? venue.id}`)}
         >
           🏆 Local Leaderboard
         </button>

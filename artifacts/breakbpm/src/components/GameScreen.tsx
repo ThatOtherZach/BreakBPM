@@ -1552,7 +1552,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                   </p>
                   <button
                     className="btn btn-primary w-full"
-                    onClick={() => navigate(`/leaderboard/hall/${taggedHall.id}`)}
+                    onClick={() => navigate(`/leaderboard/hall/${taggedHall.slug ?? taggedHall.id}`)}
                   >
                     🏆 Local Leaderboard
                   </button>

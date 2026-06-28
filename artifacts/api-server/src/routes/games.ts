@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { randomUUID } from "node:crypto";
-import { and, count, desc, eq, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { db, gamesTable, gameParticipantsTable, usersTable, gameMentionsTable, passesTable, subscriptionsTable, venuesTable } from "@workspace/db";
 import {
   StartGameBody,
@@ -52,6 +52,7 @@ import {
 import { resolveStats, resolveLeaderboard, clearUserStatsCache, clearLeaderboardCache, windowCutoff, FREE_TIER_WINDOW, type StatScope, type StatWindow, type StatGameMode, type LeaderboardMode, type LeaderboardWindow } from "../lib/stats";
 import { sweepStaleGames, finalizeGameIfStale, INACTIVITY_FORFEIT_MS, MAX_GAME_DURATION_MS } from "../lib/forfeit";
 import { newId } from "../lib/ids";
+import { ensureVenueSlug } from "../lib/venueSlugStore";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
 import { isAdminEmail } from "../lib/config";
 import { haversineMeters } from "../lib/geocode";
@@ -393,9 +394,11 @@ function toHistoryEntry(
  * client's reported distance is never trusted. */
 const HALL_TAG_RADIUS_METERS = 300;
 
-/** Shape a venue row into the compact hall identity the hall endpoints return. */
-function toHallIdentity(v: { id: string; name: string; locality: string | null }) {
-  return { id: v.id, name: v.name, locality: v.locality };
+/** Shape a venue row into the compact hall identity the hall endpoints return.
+ * `slug` is included when present so cards can link by the readable URL; null
+ * (un-backfilled) rows fall back to the id, which the hall endpoint also resolves. */
+function toHallIdentity(v: { id: string; name: string; slug: string | null; locality: string | null }) {
+  return { id: v.id, name: v.name, slug: v.slug, locality: v.locality };
 }
 
 /**
@@ -405,14 +408,14 @@ function toHallIdentity(v: { id: string; name: string; locality: string | null }
  */
 async function fetchVenueLabels(
   venueIds: Array<string | null>,
-): Promise<Map<string, { id: string; name: string }>> {
+): Promise<Map<string, { id: string; name: string; slug: string | null }>> {
   const ids = [...new Set(venueIds.filter((v): v is string => v != null))];
   if (ids.length === 0) return new Map();
   const rows = await db
-    .select({ id: venuesTable.id, name: venuesTable.name })
+    .select({ id: venuesTable.id, name: venuesTable.name, slug: venuesTable.slug })
     .from(venuesTable)
     .where(inArray(venuesTable.id, ids));
-  return new Map(rows.map((r) => [r.id, { id: r.id, name: r.name }]));
+  return new Map(rows.map((r) => [r.id, { id: r.id, name: r.name, slug: r.slug }]));
 }
 
 /** Structured reasons a game can't be tagged to a hall (no throw — both the
@@ -2770,12 +2773,24 @@ router.get("/leaderboard/hall", async (req, res): Promise<void> => {
   // can view a hall's recent standings — a growth on-ramp from a shared/QR link.
   const user = await getOrCreateUser(req);
   // The venue must exist; an inactive (but existing) hall is still viewable.
-  const vrows = await db.select().from(venuesTable).where(eq(venuesTable.id, venueId)).limit(1);
-  const venue = vrows[0];
+  // `venueId` is the URL param, which can be either the readable slug (new
+  // links) or the raw id (legacy links / un-backfilled halls) — resolve either.
+  // The id and slug charsets overlap ([a-z0-9-]), so in the (extremely unlikely)
+  // case one venue's id equals another's slug, an exact id match wins — legacy
+  // id links must always resolve to their own venue.
+  const vrows = await db
+    .select()
+    .from(venuesTable)
+    .where(or(eq(venuesTable.id, venueId), eq(venuesTable.slug, venueId)));
+  const venue = vrows.find((v) => v.id === venueId) ?? vrows[0];
   if (!venue) {
     res.status(404).json({ error: "not_found" });
     return;
   }
+  // Lazy self-heal: a hall viewed without a slug (created before slugs, or
+  // before the backfill reached this environment) gets one minted on the spot,
+  // so the page, copy/QR link, and address bar can all use the readable form.
+  const slug = await ensureVenueSlug(venue);
 
   const entitlement = await computeEntitlement(user);
   const isPass = entitlement.tier === "pass";
@@ -2785,7 +2800,8 @@ router.get("/leaderboard/hall", async (req, res): Promise<void> => {
     return;
   }
 
-  const all = await resolveLeaderboard(mode as LeaderboardMode, window as LeaderboardWindow, venueId);
+  // Scope by the resolved venue id — `venueId` may have been a slug.
+  const all = await resolveLeaderboard(mode as LeaderboardMode, window as LeaderboardWindow, venue.id);
   const totalPlayers = all.length;
   const totalPages = Math.max(1, Math.ceil(totalPlayers / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
@@ -2804,6 +2820,7 @@ router.get("/leaderboard/hall", async (req, res): Promise<void> => {
       venue: {
         id: venue.id,
         name: venue.name,
+        slug,
         latitude: venue.latitude,
         longitude: venue.longitude,
         locality: venue.locality,

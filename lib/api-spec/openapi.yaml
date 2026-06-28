@@ -2391,6 +2391,9 @@ components:
           properties:
             id: { type: string }
             name: { type: string }
+            # Readable URL slug for the @VENUE House-Leaderboard link. Null until
+            # the hall is backfilled/healed; the card links by `slug ?? id`.
+            slug: { type: ["string", "null"] }
 
     MentionResolveResult:
       type: object
@@ -2915,6 +2918,10 @@ components:
       properties:
         id: { type: string }
         name: { type: string }
+        # Readable URL slug for the hall's House Leaderboard link. Null until
+        # backfilled/healed; the client links by `slug ?? id` and the hall
+        # endpoint resolves either form.
+        slug: { type: ["string", "null"] }
         # Short locality label e.g. "Los Angeles, United States". May be null.
         locality: { type: ["string", "null"] }
 
@@ -3096,6 +3103,10 @@ components:
       properties:
         id: { type: string }
         name: { type: string }
+        # Short, unique, human-readable URL slug (e.g. "sneaky-petes"), used in
+        # per-hall leaderboard links in place of the opaque id. Null only for
+        # rows not yet backfilled; the hall endpoint resolves slug OR id.
+        slug: { type: ["string", "null"] }
         # Latitude/longitude in WGS84 — public business location.
         latitude: { type: number }
         longitude: { type: number }

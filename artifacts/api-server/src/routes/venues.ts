@@ -19,6 +19,7 @@ import {
 import { getOrCreateUser } from "../lib/auth";
 import { isAdminEmail } from "../lib/config";
 import { newId } from "../lib/ids";
+import { generateVenueSlug } from "../lib/venueSlugStore";
 import { fetchOsmVenuesForBBox } from "../lib/osmVenues";
 import { geocodeAddress, haversineMeters } from "../lib/geocode";
 
@@ -58,6 +59,7 @@ function toVenueResponse(row: VenueRow) {
   return {
     id: row.id,
     name: row.name,
+    slug: row.slug,
     latitude: row.latitude,
     longitude: row.longitude,
     locality: row.locality,
@@ -198,23 +200,40 @@ router.post("/admin/venues", async (req, res): Promise<void> => {
   const b = parsed.data;
   const coords = await resolveVenueCoords(b);
 
-  const [row] = await db
-    .insert(venuesTable)
-    .values({
-      id: newId(),
-      name: b.name,
-      latitude: coords.lat,
-      longitude: coords.lng,
-      locality: b.locality ?? null,
-      address: b.address ?? null,
-      tableCount: b.tableCount ?? null,
-      contact: b.contact ?? null,
-      paymentType: b.paymentType ?? null,
-      active: b.active ?? true,
-      paidThroughAt: b.paidThroughAt ?? null,
-      createdByUserId: user.id,
-    })
-    .returning();
+  // Mint a readable, unique slug from the name. On the rare chance a concurrent
+  // create grabs the same slug between generate and insert, the unique index
+  // raises 23505 — recompute against the now-larger set and retry.
+  let row: VenueRow | undefined;
+  for (let attempt = 0; attempt < 5 && !row; attempt++) {
+    const slug = await generateVenueSlug(b.name, b.locality ?? null);
+    try {
+      [row] = await db
+        .insert(venuesTable)
+        .values({
+          id: newId(),
+          name: b.name,
+          slug,
+          latitude: coords.lat,
+          longitude: coords.lng,
+          locality: b.locality ?? null,
+          address: b.address ?? null,
+          tableCount: b.tableCount ?? null,
+          contact: b.contact ?? null,
+          paymentType: b.paymentType ?? null,
+          active: b.active ?? true,
+          paidThroughAt: b.paidThroughAt ?? null,
+          createdByUserId: user.id,
+        })
+        .returning();
+    } catch (err) {
+      const code = (err as { cause?: { code?: string } } | null)?.cause?.code;
+      if (code !== "23505") throw err;
+    }
+  }
+  if (!row) {
+    res.status(500).json({ error: "Could not assign a unique venue slug" });
+    return;
+  }
 
   req.log.info({ userId: user.id, venueId: row.id }, "Venue created");
   res.json(CreateVenueResponse.parse({ success: true, venue: toVenueResponse(row) }));

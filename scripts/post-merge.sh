@@ -10,3 +10,7 @@ pnpm --filter @workspace/api-server run backfill:sale-events
 # bulk stats/leaderboard/history read paths (which SKIP summary-less rows) stop
 # hiding pre-summary games. Idempotent (recomputes + overwrites), safe per merge.
 pnpm --filter @workspace/api-server run backfill:game-summaries
+# Mint a readable, unique slug for every Verified Hall created before slugs
+# existed, so per-hall leaderboard URLs use the slug instead of the opaque id.
+# Idempotent (skips rows that already have a slug), safe to run every merge.
+pnpm --filter @workspace/api-server run backfill:venue-slugs

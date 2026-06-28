@@ -10,5 +10,7 @@ export interface TaggedHall {
   id: string;
   name: string;
   /** @nullable */
+  slug?: string | null;
+  /** @nullable */
   locality?: string | null;
 }

@@ -10,6 +10,8 @@ import type { VenuePaymentType } from './venuePaymentType';
 export interface Venue {
   id: string;
   name: string;
+  /** @nullable */
+  slug?: string | null;
   latitude: number;
   longitude: number;
   /** @nullable */

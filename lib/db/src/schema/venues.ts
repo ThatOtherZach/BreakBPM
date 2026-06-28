@@ -6,6 +6,7 @@ import {
   timestamp,
   doublePrecision,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -28,6 +29,14 @@ export const venuesTable = pgTable(
   {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
+    /**
+     * Short, unique, human-readable URL slug derived from the name
+     * (e.g. "sneaky-petes"). Used in per-hall leaderboard URLs in place of the
+     * opaque id. Nullable so rows created before slugs existed remain valid;
+     * those are backfilled and lazily self-healed on first access. Old id-based
+     * links keep working because the hall endpoint resolves either form.
+     */
+    slug: text("slug"),
     latitude: doublePrecision("latitude").notNull(),
     longitude: doublePrecision("longitude").notNull(),
     /** Short human label e.g. "Los Angeles, United States". */
@@ -64,6 +73,9 @@ export const venuesTable = pgTable(
   (t) => [
     // The public map lists active venues; the admin panel lists all of them.
     index("venues_active_idx").on(t.active),
+    // Slugs must be globally unique (Postgres allows multiple NULLs, so
+    // pre-backfill rows don't collide); the hall endpoint looks venues up by it.
+    uniqueIndex("venues_slug_idx").on(t.slug),
   ],
 );
 

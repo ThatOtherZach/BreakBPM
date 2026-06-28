@@ -224,7 +224,7 @@ export default function GameHistoryCard({
           {g.venue && (
             <button
               type="button"
-              onClick={() => setLocation(`/leaderboard/hall/${g.venue!.id}`)}
+              onClick={() => setLocation(`/leaderboard/hall/${g.venue!.slug ?? g.venue!.id}`)}
               title={`Local Leaderboard · ${g.venue.name}`}
               style={{
                 alignSelf: "flex-start",

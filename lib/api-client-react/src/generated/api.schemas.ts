@@ -951,6 +951,8 @@ export const GameHistoryEntryHostTheme = {
 export type GameHistoryEntryVenue = {
   id: string;
   name: string;
+  /** @nullable */
+  slug?: string | null;
 } | null;
 
 export interface GameHistoryEntry {
@@ -1414,6 +1416,8 @@ export interface TaggedHall {
   id: string;
   name: string;
   /** @nullable */
+  slug?: string | null;
+  /** @nullable */
   locality?: string | null;
 }
 
@@ -1528,6 +1532,8 @@ export const VenuePaymentType = {
 export interface Venue {
   id: string;
   name: string;
+  /** @nullable */
+  slug?: string | null;
   latitude: number;
   longitude: number;
   /** @nullable */

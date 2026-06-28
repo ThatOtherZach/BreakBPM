@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { QRCodeSVG } from "qrcode.react";
 import {
@@ -264,6 +264,17 @@ export default function LeaderboardScreen({
   const data = q.data;
   const rows = data?.rows ?? [];
   const hallVenue = hallQ.data?.venue;
+
+  // Cosmetic: when a hall was opened via a legacy id (or an un-slugged hall that
+  // just self-healed), swap the address bar to the readable slug, so the
+  // shown/copied URL is the nice one. A replace (not push) keeps the back button
+  // sane, and routing through wouter keeps the artifact base path intact. Old id
+  // links keep working because the server resolves either form.
+  useEffect(() => {
+    const slug = hallVenue?.slug;
+    if (!isHall || !slug || slug === venueId) return;
+    setLocation(`/leaderboard/hall/${encodeURIComponent(slug)}`, { replace: true });
+  }, [isHall, venueId, hallVenue?.slug, setLocation]);
 
   function chooseWindow(w: GetLeaderboardWindow) {
     if (w !== "30d" && !isPass) return;

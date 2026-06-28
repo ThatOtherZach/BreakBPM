@@ -785,7 +785,8 @@ export const GetPublicProfileResponse = zod.object({
   "hostTheme": zod.enum(['shark', 'pool-player', 'hustler', 'none']).nullish(),
   "venue": zod.object({
   "id": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "slug": zod.string().nullish()
 }).nullable()
 })),
   "stats": zod.union([zod.object({
@@ -952,7 +953,8 @@ export const GetGameHistoryResponse = zod.object({
   "hostTheme": zod.enum(['shark', 'pool-player', 'hustler', 'none']).nullish(),
   "venue": zod.object({
   "id": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "slug": zod.string().nullish()
 }).nullable()
 }))
 })
@@ -1021,7 +1023,8 @@ export const ListMyInvitesResponse = zod.object({
   "hostTheme": zod.enum(['shark', 'pool-player', 'hustler', 'none']).nullish(),
   "venue": zod.object({
   "id": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "slug": zod.string().nullish()
 }).nullable()
 })
 }))
@@ -1189,6 +1192,7 @@ export const TagGameHallResponse = zod.object({
   "venue": zod.object({
   "id": zod.string(),
   "name": zod.string(),
+  "slug": zod.string().nullish(),
   "locality": zod.string().nullish()
 }).optional()
 })
@@ -1283,6 +1287,7 @@ export const GetHallLeaderboardResponse = zod.object({
   "venue": zod.object({
   "id": zod.string(),
   "name": zod.string(),
+  "slug": zod.string().nullish(),
   "latitude": zod.number(),
   "longitude": zod.number(),
   "locality": zod.string().nullish(),
@@ -1424,6 +1429,7 @@ export const ListVenuesResponse = zod.object({
   "venues": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
+  "slug": zod.string().nullish(),
   "latitude": zod.number(),
   "longitude": zod.number(),
   "locality": zod.string().nullish(),
@@ -1580,6 +1586,7 @@ export const ListAdminVenuesResponse = zod.object({
   "venues": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
+  "slug": zod.string().nullish(),
   "latitude": zod.number(),
   "longitude": zod.number(),
   "locality": zod.string().nullish(),
@@ -1636,6 +1643,7 @@ export const CreateVenueResponse = zod.object({
   "venue": zod.object({
   "id": zod.string(),
   "name": zod.string(),
+  "slug": zod.string().nullish(),
   "latitude": zod.number(),
   "longitude": zod.number(),
   "locality": zod.string().nullish(),
@@ -1717,6 +1725,7 @@ export const UpdateVenueResponse = zod.object({
   "venue": zod.object({
   "id": zod.string(),
   "name": zod.string(),
+  "slug": zod.string().nullish(),
   "latitude": zod.number(),
   "longitude": zod.number(),
   "locality": zod.string().nullish(),
@@ -1745,6 +1754,7 @@ export const DeleteVenueResponse = zod.object({
   "venue": zod.object({
   "id": zod.string(),
   "name": zod.string(),
+  "slug": zod.string().nullish(),
   "latitude": zod.number(),
   "longitude": zod.number(),
   "locality": zod.string().nullish(),
