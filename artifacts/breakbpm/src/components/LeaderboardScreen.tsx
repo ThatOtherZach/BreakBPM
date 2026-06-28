@@ -298,60 +298,6 @@ export default function LeaderboardScreen({
         onSignIn={onSignIn}
       />
       <div className="app-body">
-        {(isAuthenticated || isHall) && <div className="panel">
-          <div className="panel-header">
-            <span>
-              {isHall
-                ? `🏆 ${hallVenue?.name ?? "Local"} · Local`
-                : "🏆 Leaderboard"}
-            </span>
-          </div>
-          <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {isHall && (
-              <button
-                className="btn"
-                style={{ alignSelf: "flex-start", padding: "4px 8px", fontSize: 11 }}
-                onClick={() => setLocation("/leaderboard")}
-              >
-                ← Global leaderboard
-              </button>
-            )}
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              {MODES.map((m) => {
-                const active = mode === m;
-                return (
-                  <button
-                    key={m}
-                    className={`btn${active ? " btn-primary" : ""}`}
-                    style={{ flex: 1, padding: "6px 4px" }}
-                    onClick={() => chooseMode(m)}
-                  >
-                    {MODE_LABEL[m]}
-                  </button>
-                );
-              })}
-            </div>
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              {WINDOWS.map((w) => {
-                const active = window === w;
-                const locked = w !== "30d" && !isPass;
-                return (
-                  <button
-                    key={w}
-                    className={`btn${active ? " btn-primary" : ""}`}
-                    style={{ flex: 1, padding: "6px 4px" }}
-                    disabled={locked}
-                    title={locked ? "Get a pass to unlock longer windows" : undefined}
-                    onClick={() => chooseWindow(w)}
-                  >
-                    {WINDOW_LABEL[w]} {locked ? "🔒" : ""}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>}
-
         {isHall && hallVenue && (() => {
           const websiteUrl = venueWebsiteUrl(hallVenue.contact);
           const pay = venuePaymentBadge(hallVenue.paymentType);
@@ -434,6 +380,60 @@ export default function LeaderboardScreen({
             </div>
           );
         })()}
+
+        {(isAuthenticated || isHall) && <div className="panel">
+          <div className="panel-header">
+            <span>
+              {isHall
+                ? `🏆 ${hallVenue?.name ?? "Local"} · Local`
+                : "🏆 Leaderboard"}
+            </span>
+          </div>
+          <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {isHall && (
+              <button
+                className="btn"
+                style={{ alignSelf: "flex-start", padding: "4px 8px", fontSize: 11 }}
+                onClick={() => setLocation("/leaderboard")}
+              >
+                ← Global leaderboard
+              </button>
+            )}
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              {MODES.map((m) => {
+                const active = mode === m;
+                return (
+                  <button
+                    key={m}
+                    className={`btn${active ? " btn-primary" : ""}`}
+                    style={{ flex: 1, padding: "6px 4px" }}
+                    onClick={() => chooseMode(m)}
+                  >
+                    {MODE_LABEL[m]}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              {WINDOWS.map((w) => {
+                const active = window === w;
+                const locked = w !== "30d" && !isPass;
+                return (
+                  <button
+                    key={w}
+                    className={`btn${active ? " btn-primary" : ""}`}
+                    style={{ flex: 1, padding: "6px 4px" }}
+                    disabled={locked}
+                    title={locked ? "Get a pass to unlock longer windows" : undefined}
+                    onClick={() => chooseWindow(w)}
+                  >
+                    {WINDOW_LABEL[w]} {locked ? "🔒" : ""}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>}
 
         {isHall && hallVenue && !isAuthenticated && (
           <div className="panel">
