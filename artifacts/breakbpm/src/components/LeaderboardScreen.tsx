@@ -390,15 +390,6 @@ export default function LeaderboardScreen({
             </span>
           </div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {isHall && (
-              <button
-                className="btn"
-                style={{ alignSelf: "flex-start", padding: "4px 8px", fontSize: 11 }}
-                onClick={() => setLocation("/leaderboard")}
-              >
-                ← Global leaderboard
-              </button>
-            )}
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               {MODES.map((m) => {
                 const active = mode === m;
