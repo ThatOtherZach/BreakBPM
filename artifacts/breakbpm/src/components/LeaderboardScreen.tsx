@@ -321,11 +321,6 @@ export default function LeaderboardScreen({
                 ← Global leaderboard
               </button>
             )}
-            <p style={{ fontSize: 11, color: "#444", margin: 0, lineHeight: 1.4 }}>
-              {isHall
-                ? `Local standings${hallVenue?.locality ? ` · ${hallVenue.locality}` : ""} — recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games at this hall.`
-                : `Top pace & accuracy, recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games only.`}
-            </p>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               {MODES.map((m) => {
                 const active = mode === m;
@@ -485,6 +480,14 @@ export default function LeaderboardScreen({
               <p style={{ fontSize: 12, color: "#c00" }}>⚠ Couldn't load the leaderboard. Try again shortly.</p>
             </div>
           </div>
+        )}
+
+        {(isAuthenticated || isHall) && (
+          <p style={{ fontSize: 11, color: "#aab4c8", margin: 0, lineHeight: 1.4, padding: "0 2px" }}>
+            {isHall
+              ? `Local standings${hallVenue?.locality ? ` · ${hallVenue.locality}` : ""} — recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games at this hall.`
+              : `Top pace & accuracy, recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games only.`}
+          </p>
         )}
 
         {(isAuthenticated || isHall) && data && !q.isLoading && (
