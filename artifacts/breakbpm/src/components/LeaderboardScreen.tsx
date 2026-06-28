@@ -478,20 +478,23 @@ export default function LeaderboardScreen({
         )}
 
         {(isAuthenticated || isHall) && (
-          <p style={{ fontSize: 11, color: "#aab4c8", margin: 0, lineHeight: 1.4, padding: "0 2px" }}>
-            {isHall
-              ? `Local standings${hallVenue?.locality ? ` · ${hallVenue.locality}` : ""} — recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games at this hall.`
-              : `Top pace & accuracy, recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games only.`}
-          </p>
+          <div className="notice">
+            <span>ℹ</span>
+            <span>
+              {isHall
+                ? `Local standings${hallVenue?.locality ? ` · ${hallVenue.locality}` : ""} — recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games at this hall.`
+                : `Top pace & accuracy, recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games only.`}
+            </span>
+          </div>
         )}
 
         {(isAuthenticated || isHall) && data && !q.isLoading && (
           <div className="panel">
             <div className="panel-body panel--wood" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
               {rows.length === 0 ? (
-                <p style={{ fontSize: 13, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.6)", margin: 0 }}>
-                  🎱 No ranked players in this window yet.
-                </p>
+                <p
+                  style={{ fontSize: 13, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.6)", margin: 0 }}
+                  className="text-center">🎱 No ranked players yet.</p>
               ) : (
                 <>
                   {rows.map((row) => (
