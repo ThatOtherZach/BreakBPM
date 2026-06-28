@@ -31,6 +31,10 @@ const MODE_LABEL: Record<GetLeaderboardMode, string> = {
   "8ball": "8-BALL",
   "9ball": "9-BALL",
 };
+const MODE_LABEL_PROSE: Record<GetLeaderboardMode, string> = {
+  "8ball": "8-Ball",
+  "9ball": "9-Ball",
+};
 const MODES: GetLeaderboardMode[] = ["8ball", "9ball"];
 
 function rankBadge(rank: number): string {
@@ -473,8 +477,8 @@ export default function LeaderboardScreen({
             <span>ℹ</span>
             <span>
               {isHall
-                ? `Local Rankings${hallVenue?.locality ? ` · ${hallVenue.locality}` : ""} Recent ${MODE_LABEL[mode]} 1-on-1 games.`
-                : `Top pace & accuracy, recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games only.`}
+                ? `Local Rankings${hallVenue?.locality ? ` · ${hallVenue.locality}` : ""} Recent ${MODE_LABEL_PROSE[mode]} 1-on-1 games.`
+                : `Top pace & accuracy, recent ${MODE_LABEL_PROSE[mode]} 1-on-1 games only.`}
             </span>
           </div>
         )}
