@@ -1111,7 +1111,10 @@ export function VenueCard({
   return (
     <div className="fpp-card fpp-card--venue">
       <div className="fpp-card-head">
-        <span className="fpp-card-name">⭐ {venue.name}</span>
+        <span className="fpp-card-name">
+          <span className="cue-ball-icon" aria-hidden="true" />
+          {" "}{venue.name}
+        </span>
       </div>
       {gameCount != null && (
         <div className="fpp-card-loc">
