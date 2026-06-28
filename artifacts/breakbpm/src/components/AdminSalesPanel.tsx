@@ -5,7 +5,7 @@ import {
   type ListAdminSalesParams,
 } from "@workspace/api-client-react";
 
-const LIMIT = 50;
+const LIMIT = 10;
 
 /** YYYY-MM-DD for a Date in LOCAL time (matches <input type="date">). */
 function ymd(d: Date): string {
@@ -52,7 +52,6 @@ export default function AdminSalesPanel() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const [fromStr, setFromStr] = useState(ymd(monthStart));
   const [toStr, setToStr] = useState(ymd(now));
-  const [page, setPage] = useState(1);
   const [downloading, setDownloading] = useState(false);
   const [downloadErr, setDownloadErr] = useState("");
 
@@ -72,13 +71,12 @@ export default function AdminSalesPanel() {
   const params: ListAdminSalesParams = {
     from: fromIso,
     to: toIso,
-    page,
+    page: 1,
     limit: LIMIT,
   };
   const sales = useListAdminSales(params);
 
   const data = sales.data;
-  const totalPages = data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1;
 
   async function handleDownloadCsv() {
     setDownloadErr("");
@@ -101,10 +99,6 @@ export default function AdminSalesPanel() {
     } finally {
       setDownloading(false);
     }
-  }
-
-  function applyRange() {
-    setPage(1);
   }
 
   return (
@@ -136,7 +130,6 @@ export default function AdminSalesPanel() {
               max={toStr}
               onChange={(e) => {
                 setFromStr(e.target.value);
-                setPage(1);
               }}
             />
           </label>
@@ -149,11 +142,10 @@ export default function AdminSalesPanel() {
               min={fromStr}
               onChange={(e) => {
                 setToStr(e.target.value);
-                setPage(1);
               }}
             />
           </label>
-          <button className="btn" onClick={applyRange} disabled={sales.isFetching}>
+          <button className="btn" onClick={() => sales.refetch()} disabled={sales.isFetching}>
             {sales.isFetching ? "Loading…" : "Refresh"}
           </button>
           <button
@@ -255,27 +247,6 @@ export default function AdminSalesPanel() {
               </table>
             </div>
 
-            {totalPages > 1 && (
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <button
-                  className="btn"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                >
-                  Prev
-                </button>
-                <span style={{ fontSize: 11 }}>
-                  Page {data.page}/{totalPages}
-                </span>
-                <button
-                  className="btn"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                </button>
-              </div>
-            )}
           </>
         )}
       </div>
