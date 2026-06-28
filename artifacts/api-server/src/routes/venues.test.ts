@@ -333,13 +333,17 @@ describe("GET /venues/popular — most active halls by finalized game count", ()
     const inactive = await seedVenue(admin.id, { name: "Hall D", active: false });
 
     const ended = new Date();
-    // A: 3 finalized. C: 2 finalized + 1 in-progress (must NOT count). B: 1.
-    for (let i = 0; i < 3; i++) await seedGame(admin.id, { venueId: a.id, endedAt: ended });
-    for (let i = 0; i < 2; i++) await seedGame(admin.id, { venueId: c.id, endedAt: ended });
+    // Counts chosen to clearly dominate any unrelated active dev-DB hall so the
+    // top-5 cap can't evict one of these. A: 4 finalized. C: 3 finalized + 1
+    // in-progress (must NOT count). B: 2.
+    for (let i = 0; i < 4; i++) await seedGame(admin.id, { venueId: a.id, endedAt: ended });
+    for (let i = 0; i < 3; i++) await seedGame(admin.id, { venueId: c.id, endedAt: ended });
     await seedGame(admin.id, { venueId: c.id, endedAt: null });
-    await seedGame(admin.id, { venueId: b.id, endedAt: ended });
-    // Inactive hall has the MOST finalized games but must be excluded.
-    for (let i = 0; i < 5; i++) await seedGame(admin.id, { venueId: inactive.id, endedAt: ended });
+    for (let i = 0; i < 2; i++) await seedGame(admin.id, { venueId: b.id, endedAt: ended });
+    // The INACTIVE hall has the MOST finalized games but must never appear: the
+    // active filter runs BEFORE ranking, so a deactivated hall is excluded even
+    // when it outranks every active one.
+    for (let i = 0; i < 7; i++) await seedGame(admin.id, { venueId: inactive.id, endedAt: ended });
 
     const user = await createUser({ email: "regular@breakbpm.test" });
     mocks.currentUser = user;
@@ -348,9 +352,17 @@ describe("GET /venues/popular — most active halls by finalized game count", ()
     expect(res.status).toBe(200);
     const popular = res.body.venues as Array<{ venue: { id: string }; gameCount: number }>;
 
-    // Most active first; the in-progress game at C is not counted.
-    expect(popular.map((p) => p.venue.id)).toEqual([a.id, c.id, b.id]);
-    expect(popular.map((p) => p.gameCount)).toEqual([3, 2, 1]);
+    // The endpoint ranks ALL halls globally and the shared dev DB may hold
+    // unrelated venues/games, so assert only on the halls this test seeded.
+    const mineIds = new Set([a.id, b.id, c.id, inactive.id]);
+    const mine = popular.filter((p) => mineIds.has(p.venue.id));
+
+    // Most active first; the in-progress game at C is not counted (C = 3, not 4).
+    expect(mine.map((p) => p.venue.id)).toEqual([a.id, c.id, b.id]);
+    const counts = new Map(mine.map((p) => [p.venue.id, p.gameCount]));
+    expect(counts.get(a.id)).toBe(4);
+    expect(counts.get(c.id)).toBe(3);
+    expect(counts.get(b.id)).toBe(2);
     // The inactive hall never appears, despite having the highest count.
     expect(popular.some((p) => p.venue.id === inactive.id)).toBe(false);
   });
@@ -359,9 +371,13 @@ describe("GET /venues/popular — most active halls by finalized game count", ()
     const admin = await createUser({ email: ADMIN_EMAIL });
     const ended = new Date();
     // Seed 7 active halls, each with a distinct finalized game count (7..1).
+    // The counts dominate any unrelated dev-DB venue (which have far fewer
+    // games), so this test's top 5 own the global ranking.
+    const halls: Array<{ id: string; count: number }> = [];
     for (let rank = 7; rank >= 1; rank--) {
       const v = await seedVenue(admin.id, { name: `Hall ${rank}`, active: true });
       for (let i = 0; i < rank; i++) await seedGame(admin.id, { venueId: v.id, endedAt: ended });
+      halls.push({ id: v.id, count: rank });
     }
 
     const user = await createUser({ email: "regular2@breakbpm.test" });
@@ -369,9 +385,23 @@ describe("GET /venues/popular — most active halls by finalized game count", ()
 
     const res = await request(app).get("/api/venues/popular");
     expect(res.status).toBe(200);
+    // The board is capped at 5 even though 7 halls qualify.
     expect(res.body.venues).toHaveLength(5);
-    // Returned most-active first: 7,6,5,4,3.
-    expect(res.body.venues.map((p: { gameCount: number }) => p.gameCount)).toEqual([7, 6, 5, 4, 3]);
+
+    const returned = new Map(
+      (res.body.venues as Array<{ venue: { id: string }; gameCount: number }>).map((p) => [
+        p.venue.id,
+        p.gameCount,
+      ]),
+    );
+    // The 5 most-active halls appear with their counts, most-active first.
+    expect(res.body.venues.map((p: { venue: { id: string } }) => p.venue.id)).toEqual(
+      halls.slice(0, 5).map((h) => h.id),
+    );
+    for (const h of halls.slice(0, 5)) expect(returned.get(h.id)).toBe(h.count);
+    // The two least-active halls (counts 2 and 1) are dropped by the cap.
+    expect(returned.has(halls[5].id)).toBe(false);
+    expect(returned.has(halls[6].id)).toBe(false);
   });
 });
 
@@ -431,10 +461,15 @@ describe("POST /admin/venues/repair-coordinates", () => {
     const res = await request(app).post("/api/admin/venues/repair-coordinates");
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.total).toBe(4);
-    expect(res.body.updated).toBe(1);
-    expect(res.body.unchanged).toBe(1);
-    expect(res.body.failed).toBe(2);
+    // The repair endpoint processes ALL venues, and the shared dev DB may hold
+    // unrelated halls, so keep the aggregate totals tolerant and rely on the
+    // per-item statuses below for this test's seeded venues. (Unrelated halls
+    // fail to geocode under the stubbed geocoder, so they only add to `failed`.)
+    expect(res.body.total).toBeGreaterThanOrEqual(4);
+    expect(res.body.updated).toBeGreaterThanOrEqual(1);
+    expect(res.body.unchanged).toBeGreaterThanOrEqual(1);
+    expect(res.body.failed).toBeGreaterThanOrEqual(2);
+    expect(res.body.total).toBe(res.body.updated + res.body.unchanged + res.body.failed);
 
     // The drifted pin actually moved to the geocoded point.
     const driftedRow = (await getVenue(drifted.id))!;

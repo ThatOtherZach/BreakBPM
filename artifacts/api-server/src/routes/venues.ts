@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, count, desc, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, count, desc, eq, isNotNull } from "drizzle-orm";
 import { db, venuesTable, gamesTable } from "@workspace/db";
 import {
   ListVenuesQueryParams,
@@ -134,9 +134,10 @@ router.get("/venues", async (req, res): Promise<void> => {
  * finalized games were tagged to each via "Add to Hall", most active first.
  * Powers the "Most Popular Venues" section on the Find Players page. `endedAt`
  * is the finalize marker (same signal the leaderboard uses), so in-progress
- * games don't count. We rank a buffer of candidate halls then keep only ACTIVE
- * ones so a deactivated hall never appears, capping the result at 5. Signed-in
- * only; signed-out callers get an empty list (venue features are UI-gated).
+ * games don't count. The ACTIVE filter is applied INSIDE the aggregate (via the
+ * join) so ranking + the top-5 cap run over active halls only — a deactivated
+ * hall is excluded before ranking, never just trimmed afterward. Signed-in only;
+ * signed-out callers get an empty list (venue features are UI-gated).
  */
 router.get("/venues/popular", async (req, res): Promise<void> => {
   const user = await getOrCreateUser(req);
@@ -145,37 +146,20 @@ router.get("/venues/popular", async (req, res): Promise<void> => {
     return;
   }
 
-  const gameCount = count();
-  const ranked = await db
-    .select({ venueId: gamesTable.venueId, n: gameCount })
-    .from(gamesTable)
-    .where(and(isNotNull(gamesTable.venueId), isNotNull(gamesTable.endedAt)))
-    .groupBy(gamesTable.venueId)
-    .orderBy(desc(gameCount))
-    // Over-fetch: some top halls may be inactive and get dropped below, so we
-    // still want enough survivors to fill 5 cards.
-    .limit(20);
-
-  const ids = ranked
-    .map((r) => r.venueId)
-    .filter((v): v is string => v !== null);
-  if (ids.length === 0) {
-    res.json(ListPopularVenuesResponse.parse({ venues: [] }));
-    return;
-  }
-
-  const venueRows = await db
-    .select()
+  const gameCount = count(gamesTable.id);
+  const rows = await db
+    .select({ venue: venuesTable, n: gameCount })
     .from(venuesTable)
-    .where(and(inArray(venuesTable.id, ids), eq(venuesTable.active, true)));
-  const byId = new Map(venueRows.map((row) => [row.id, row]));
+    .innerJoin(gamesTable, eq(gamesTable.venueId, venuesTable.id))
+    .where(and(eq(venuesTable.active, true), isNotNull(gamesTable.endedAt)))
+    .groupBy(venuesTable.id)
+    .orderBy(desc(gameCount))
+    .limit(5);
 
-  const venues = ranked
-    .flatMap((r) => {
-      const row = r.venueId ? byId.get(r.venueId) : undefined;
-      return row ? [{ venue: toVenueResponse(row), gameCount: r.n }] : [];
-    })
-    .slice(0, 5);
+  const venues = rows.map((r) => ({
+    venue: toVenueResponse(r.venue),
+    gameCount: r.n,
+  }));
 
   res.json(ListPopularVenuesResponse.parse({ venues }));
 });

@@ -53,3 +53,4 @@
 - [House Leaderboard venue scope & hall-tag race](house-leaderboard-venue-scope.md) — per-hall board = global ranking scoped by games.venueId (thread venueId through stats cache key); tag-hall guarded UPDATE must verify .returning() rowcount or a lost race falsely reports success.
 - [Venue slug resolution](venue-slug-resolution.md) — /leaderboard/hall/:venueId resolves slug OR legacy id; exact id match must win (charsets overlap), never `or(...).limit(1)`.
 - [Panel flex-shrink clipping on mobile](panel-flex-shrink-clipping.md) — .app-body flex column compresses .panel (overflow:hidden) when content > viewport, clipping bottom buttons; fix is .panel{flex-shrink:0}. Bottom clip = flex-shrink, not nowrap width.
+- [Filter before rank when capping](filter-before-rank-with-cap.md) — top-N endpoints must put must-qualify filters (active=true) inside the aggregate WHERE/JOIN before ORDER BY/LIMIT; over-fetch-buffer + post-filter silently drops valid rows.
