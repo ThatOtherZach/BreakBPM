@@ -1115,7 +1115,7 @@ export function VenueCard({
       </div>
       {gameCount != null && (
         <div className="fpp-card-loc">
-          🔥 {gameCount} {gameCount === 1 ? "game" : "games"} played
+          🔥 {gameCount} {gameCount === 1 ? "Game" : "Games"} Played
         </div>
       )}
       {venue.locality && <div className="fpp-card-loc">📍 {venue.locality}</div>}
