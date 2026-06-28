@@ -473,7 +473,7 @@ export default function LeaderboardScreen({
             <span>ℹ</span>
             <span>
               {isHall
-                ? `Local standings${hallVenue?.locality ? ` · ${hallVenue.locality}` : ""} — recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games at this hall.`
+                ? `Local Rankings${hallVenue?.locality ? ` · ${hallVenue.locality}` : ""} Recent ${MODE_LABEL[mode]} 1-on-1 games.`
                 : `Top pace & accuracy, recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games only.`}
             </span>
           </div>
