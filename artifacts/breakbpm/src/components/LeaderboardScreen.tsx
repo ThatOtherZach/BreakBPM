@@ -232,7 +232,6 @@ export default function LeaderboardScreen({
   const [page, setPage] = useState(1);
   const [linkCopied, setLinkCopied] = useState(false);
   const [linkCopyFailed, setLinkCopyFailed] = useState(false);
-  const [showQr, setShowQr] = useState(false);
 
   // Two queries, mutually gated by `enabled`. The GLOBAL query always runs (the
   // default 30d window is public, so an anonymous fetch never 403s) but its
@@ -367,60 +366,47 @@ export default function LeaderboardScreen({
                     <span className="cue-ball-icon" aria-hidden="true" /> {hallVenue.name}
                   </span>
                   <span className="fpp-card-rank">
-                    <button
-                      type="button"
-                      className="btn"
-                      style={{ padding: "2px 8px", fontSize: 11, whiteSpace: "nowrap" }}
-                      title="Show a QR code for this hall's leaderboard"
-                      aria-expanded={showQr}
-                      onClick={() => {
-                        setLinkCopied(false);
-                        setLinkCopyFailed(false);
-                        setShowQr((v) => !v);
-                      }}
+                    <span
+                      style={{ background: "#fff", padding: 5, borderRadius: 4, lineHeight: 0 }}
+                      title="Scan to open this hall's leaderboard"
                     >
-                      {showQr ? "✕ Hide QR" : "📱 QR code"}
-                    </button>
+                      <QRCodeSVG value={hallUrl} size={72} level="M" />
+                    </span>
                   </span>
                 </div>
-                {showQr && (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: "12px 0 4px",
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "8px 0 2px",
+                  }}
+                >
+                  <p style={{ fontSize: 11, color: "#444", textAlign: "center", margin: 0 }}>
+                    📱 Scan to open {hallVenue.name}'s leaderboard
+                  </p>
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ padding: "2px 8px", fontSize: 11, whiteSpace: "nowrap" }}
+                    title="Copy this hall's leaderboard link"
+                    onClick={() => {
+                      navigator.clipboard.writeText(hallUrl).then(
+                        () => {
+                          setLinkCopied(true);
+                          setTimeout(() => setLinkCopied(false), 2000);
+                        },
+                        () => {
+                          setLinkCopyFailed(true);
+                          setTimeout(() => setLinkCopyFailed(false), 2000);
+                        },
+                      );
                     }}
                   >
-                    <div style={{ background: "#fff", padding: 8, borderRadius: 4 }}>
-                      <QRCodeSVG value={hallUrl} size={144} level="M" />
-                    </div>
-                    <p style={{ fontSize: 11, color: "#444", textAlign: "center", margin: 0 }}>
-                      Scan to open {hallVenue.name}'s leaderboard
-                    </p>
-                    <button
-                      type="button"
-                      className="btn"
-                      style={{ padding: "2px 8px", fontSize: 11, whiteSpace: "nowrap" }}
-                      title="Copy this hall's leaderboard link"
-                      onClick={() => {
-                        navigator.clipboard.writeText(hallUrl).then(
-                          () => {
-                            setLinkCopied(true);
-                            setTimeout(() => setLinkCopied(false), 2000);
-                          },
-                          () => {
-                            setLinkCopyFailed(true);
-                            setTimeout(() => setLinkCopyFailed(false), 2000);
-                          },
-                        );
-                      }}
-                    >
-                      {linkCopied ? "✓ Copied" : linkCopyFailed ? "⚠ Copy failed" : "🔗 Copy link"}
-                    </button>
-                  </div>
-                )}
+                    {linkCopied ? "✓ Copied" : linkCopyFailed ? "⚠ Copy failed" : "🔗 Copy link"}
+                  </button>
+                </div>
                 {hallVenue.locality && <div className="fpp-card-loc">📍 {hallVenue.locality}</div>}
                 {hallVenue.tableCount != null && (
                   <div className="fpp-card-loc">🎱 {hallVenue.tableCount} tables</div>
