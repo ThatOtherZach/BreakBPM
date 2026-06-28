@@ -305,11 +305,6 @@ export default function LeaderboardScreen({
                 ? `🏆 ${hallVenue?.name ?? "Local"} · Local`
                 : "🏆 Leaderboard"}
             </span>
-            {data && (
-              <span style={{ fontSize: 10, color: "#cdd9f0", fontWeight: "normal" }}>
-                {data.totalPlayers} {data.totalPlayers === 1 ? "player" : "players"}
-              </span>
-            )}
           </div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {isHall && (
