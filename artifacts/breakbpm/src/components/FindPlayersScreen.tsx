@@ -1112,13 +1112,6 @@ export function VenueCard({
     <div className="fpp-card fpp-card--venue">
       <div className="fpp-card-head">
         <span className="fpp-card-name">⭐ {venue.name}</span>
-        <span className="fpp-card-rank">
-          <span
-            className="hud-chip hud-chip-eight"
-            data-number="8"
-            aria-hidden="true"
-          />
-        </span>
       </div>
       {distLabel && <div className="fpp-card-when">{distLabel} away</div>}
       {gameCount != null && (
