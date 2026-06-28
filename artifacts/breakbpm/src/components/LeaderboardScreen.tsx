@@ -363,7 +363,7 @@ export default function LeaderboardScreen({
               <div className="fpp-card fpp-card--venue">
                 <div className="fpp-card-head">
                   <span className="fpp-card-name">
-                    <span className="cue-ball-icon" aria-hidden="true" /> {hallVenue.name}
+                    <span className="cue-ball-icon" aria-hidden="true" style={{ fontSize: "18.4px" }} /> {hallVenue.name}
                   </span>
                   <span className="fpp-card-rank">
                     <span
