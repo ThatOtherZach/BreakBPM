@@ -230,6 +230,8 @@ export default function LeaderboardScreen({
   const [mode, setMode] = useState<GetLeaderboardMode>("8ball");
   const [window, setWindow] = useState<GetLeaderboardWindow>("30d");
   const [page, setPage] = useState(1);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [linkCopyFailed, setLinkCopyFailed] = useState(false);
 
 
   // Two queries, mutually gated by `enabled`. The GLOBAL query always runs (the
@@ -385,12 +387,27 @@ export default function LeaderboardScreen({
                       </div>
                     )}
                   </div>
-                  <span
-                    style={{ background: "#fff", padding: 5, borderRadius: 4, lineHeight: 0, flexShrink: 0 }}
-                    title="Scan to open this hall's leaderboard"
-                  >
-                    <QRCodeSVG value={hallUrl} size={72} level="M" />
-                  </span>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                    <span
+                      style={{ background: "#fff", padding: 5, borderRadius: 4, lineHeight: 0 }}
+                      title="Scan to open this hall's leaderboard"
+                    >
+                      <QRCodeSVG value={hallUrl} size={72} level="M" />
+                    </span>
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{ fontSize: 11, padding: "1px 8px", width: "100%" }}
+                      onClick={() => {
+                        navigator.clipboard.writeText(hallUrl).then(
+                          () => { setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000); },
+                          () => { setLinkCopyFailed(true); setTimeout(() => setLinkCopyFailed(false), 2000); },
+                        );
+                      }}
+                    >
+                      {linkCopied ? "✓ Copied" : linkCopyFailed ? "⚠ Failed" : "📋 Copy"}
+                    </button>
+                  </div>
                 </div>
                 <div className="fpp-card-actions">
                   <a
