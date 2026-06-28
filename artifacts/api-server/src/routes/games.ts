@@ -2766,12 +2766,9 @@ router.get("/leaderboard/hall", async (req, res): Promise<void> => {
   }
   const { venueId, mode, window, page, pageSize } = parsed.data;
 
-  // Sign-in is required to view any House Leaderboard window.
+  // The 30d window is public (mirrors the global board), so signed-out visitors
+  // can view a hall's recent standings — a growth on-ramp from a shared/QR link.
   const user = await getOrCreateUser(req);
-  if (!user) {
-    res.status(401).json({ error: "sign_in_required" });
-    return;
-  }
   // The venue must exist; an inactive (but existing) hall is still viewable.
   const vrows = await db.select().from(venuesTable).where(eq(venuesTable.id, venueId)).limit(1);
   const venue = vrows[0];

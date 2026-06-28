@@ -198,16 +198,18 @@ interface Props {
   /**
    * When set, this is a per-hall ("Local") leaderboard scoped to a single
    * Verified Hall: the same ranking, but only counting games tagged to this
-   * venue. Sign-in is required for every window (no signed-out hall widget).
+   * venue. The 30d window is public (signed-out visitors can view it and get a
+   * sign-up nudge); longer windows are still a pass perk.
    */
   venueId?: string;
 }
 
 /**
- * Full leaderboard page (login required). 50 standings per page with a
- * 30d / 90d / all-time window toggle — the longer windows are a pass perk
- * (also enforced server-side). With `venueId` it renders the Local Leaderboard
- * for one hall, reusing the same ranking/pagination UI.
+ * Full leaderboard page. 50 standings per page with a 30d / 90d / all-time
+ * window toggle — the longer windows are a pass perk (also enforced
+ * server-side). The GLOBAL board requires sign-in to view; a per-hall board
+ * (`venueId` set) is public for the 30d window, reusing the same
+ * ranking/pagination UI.
  */
 export default function LeaderboardScreen({
   onBack,
@@ -242,11 +244,14 @@ export default function LeaderboardScreen({
       },
     },
   );
+  // The 30d window is public, so signed-out visitors can view a hall's recent
+  // standings (and get a sign-up nudge). Longer windows still need a pass, but a
+  // non-pass caller can never switch to them, so the 30d gate is sufficient here.
   const hallQ = useGetHallLeaderboard(
     { venueId: venueId ?? "", mode, window, page, pageSize: PAGE_SIZE },
     {
       query: {
-        enabled: isHall && isAuthenticated,
+        enabled: isHall && (isAuthenticated || window === "30d"),
         queryKey: getGetHallLeaderboardQueryKey({ venueId: venueId ?? "", mode, window, page, pageSize: PAGE_SIZE }),
       },
     },
@@ -278,7 +283,7 @@ export default function LeaderboardScreen({
         onSignIn={onSignIn}
       />
       <div className="app-body">
-        {isAuthenticated && <div className="panel">
+        {(isAuthenticated || isHall) && <div className="panel">
           <div className="panel-header">
             <span>
               {isHall
@@ -388,7 +393,20 @@ export default function LeaderboardScreen({
           );
         })()}
 
-        {!authLoading && !isAuthenticated && (
+        {isHall && hallVenue && !isAuthenticated && (
+          <div className="panel">
+            <div className="panel-body" style={{ textAlign: "center" }}>
+              <p style={{ fontSize: 12, color: "#444", margin: "0 0 8px", lineHeight: 1.4 }}>
+                🎱 Play here? Sign up free to track your scores and climb {hallVenue.name}'s board.
+              </p>
+              <button className="btn btn-primary w-full" onClick={onSignIn}>
+                Sign up free →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!authLoading && !isAuthenticated && !isHall && (
           <div className="panel">
             <div className="panel-body">
               <p style={{ fontSize: 13, color: "#444", marginTop: 0 }}>
@@ -401,7 +419,7 @@ export default function LeaderboardScreen({
           </div>
         )}
 
-        {isAuthenticated && q.isLoading && (
+        {(isAuthenticated || isHall) && q.isLoading && (
           <div className="panel">
             <div className="panel-body">
               <p style={{ fontFamily: "VT323", fontSize: 18 }}>▌ Loading…</p>
@@ -409,7 +427,7 @@ export default function LeaderboardScreen({
           </div>
         )}
 
-        {isAuthenticated && q.isError && (
+        {(isAuthenticated || isHall) && q.isError && (
           <div className="panel">
             <div className="panel-body">
               <p style={{ fontSize: 12, color: "#c00" }}>⚠ Couldn't load the leaderboard. Try again shortly.</p>
@@ -417,7 +435,7 @@ export default function LeaderboardScreen({
           </div>
         )}
 
-        {isAuthenticated && data && !q.isLoading && (
+        {(isAuthenticated || isHall) && data && !q.isLoading && (
           <div className="panel">
             <div className="panel-body panel--wood" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
               {rows.length === 0 ? (

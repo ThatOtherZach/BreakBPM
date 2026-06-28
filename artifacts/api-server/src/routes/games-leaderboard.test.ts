@@ -22,6 +22,7 @@ import {
   seedGame,
   seedParticipant,
   finalizeSeededGame,
+  seedVenue,
   cleanup,
 } from "../test/factories";
 
@@ -111,5 +112,48 @@ describe("GET /leaderboard — mode wiring", () => {
     expect(row).not.toHaveProperty("score");
     expect(row).not.toHaveProperty("trustedGames");
     expect(row).not.toHaveProperty("provisional");
+  });
+});
+
+// The per-hall board is a growth on-ramp: a signed-out visitor (e.g. from a
+// shared/QR link at the hall) can view its recent 30d standings + venue card,
+// but longer windows stay a paid perk. These pin that public boundary.
+describe("GET /leaderboard/hall — public 30d window for signed-out visitors", () => {
+  it("lets an anonymous visitor view a hall's 30d board and echoes the venue", async () => {
+    const owner = await createUser();
+    const venue = await seedVenue(owner.id, { name: "Anon Hall" });
+    clearLeaderboardCache();
+
+    const res = await request(app)
+      .get("/api/leaderboard/hall")
+      .set("X-Forwarded-For", freshIp())
+      .query({ venueId: venue.id, mode: "8ball", window: "30d", page: 1, pageSize: 50 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.venue?.name).toBe("Anon Hall");
+    expect(res.body.window).toBe("30d");
+    expect(Array.isArray(res.body.rows)).toBe(true);
+  });
+
+  it("still gates longer windows behind a pass for anonymous callers", async () => {
+    const owner = await createUser();
+    const venue = await seedVenue(owner.id, { name: "Gated Hall" });
+
+    const res = await request(app)
+      .get("/api/leaderboard/hall")
+      .set("X-Forwarded-For", freshIp())
+      .query({ venueId: venue.id, mode: "8ball", window: "90d", page: 1, pageSize: 50 });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe("pass_required");
+  });
+
+  it("404s an unknown venue", async () => {
+    const res = await request(app)
+      .get("/api/leaderboard/hall")
+      .set("X-Forwarded-For", freshIp())
+      .query({ venueId: "0".repeat(32), mode: "8ball", window: "30d", page: 1, pageSize: 50 });
+
+    expect(res.status).toBe(404);
   });
 });

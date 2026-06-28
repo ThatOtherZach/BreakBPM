@@ -9,10 +9,15 @@ The per-hall ("House") leaderboard is the SAME composite-skill ranking as the
 global `/leaderboard`, just filtered to games tagged to one Verified Hall via
 `games.venueId`. A signed-in HOST tags a FINALIZED 8-ball/9-ball game to the
 nearest active hall ("Add to Hall", which REPLACES the end-game Copy Link for
-that case only). Viewing a House board requires sign-in for every window (no
-signed-out hall widget), unlike the global board whose default 30d is public.
+that case only). The House board's default 30d window is PUBLIC (signed-out
+visitors can view recent standings + the venue card, and get a "sign up to track
+scores" CTA under it — a growth on-ramp from a shared/QR link); longer windows
+(90d/all) stay a pass perk, server-enforced. This mirrors the global board's
+public-30d gate (`GET /leaderboard/hall` computes entitlement on a possibly-null
+user and only 403s a non-pass caller for non-30d windows).
 
-**Why:** lets players compete locally without a second ranking algorithm.
+**Why:** lets players compete locally without a second ranking algorithm, and
+turns a hall's board into a sign-up funnel for walk-in players.
 
 **How to apply:**
 - `venueId` must thread through the stats compute/resolve path AND the
@@ -20,7 +25,10 @@ signed-out hall widget), unlike the global board whose default 30d is public.
   lockstep discipline as the other stats-cache notes).
 - Client renders both boards from `LeaderboardScreen` with a `venueId?` prop:
   two generated hooks gated by `enabled` (global `!isHall`, hall
-  `isHall && isAuthenticated`), each needing an explicit queryKey.
+  `isHall && (isAuthenticated || window === "30d")` so anon gets the public 30d
+  board), each needing an explicit queryKey. The header/standings/loading blocks
+  render for `(isAuthenticated || isHall)`; the generic "sign in to view" panel
+  is `!isHall` only; the sign-up CTA is `isHall && hallVenue && !isAuthenticated`.
 
 # Tagging a game to a hall must verify the guarded UPDATE actually wrote
 
