@@ -230,8 +230,7 @@ export default function LeaderboardScreen({
   const [mode, setMode] = useState<GetLeaderboardMode>("8ball");
   const [window, setWindow] = useState<GetLeaderboardWindow>("30d");
   const [page, setPage] = useState(1);
-  const [linkCopied, setLinkCopied] = useState(false);
-  const [linkCopyFailed, setLinkCopyFailed] = useState(false);
+
 
   // Two queries, mutually gated by `enabled`. The GLOBAL query always runs (the
   // default 30d window is public, so an anonymous fetch never 403s) but its
@@ -374,39 +373,7 @@ export default function LeaderboardScreen({
                     </span>
                   </span>
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "8px 0 2px",
-                  }}
-                >
-                  <p style={{ fontSize: 11, color: "#444", textAlign: "center", margin: 0 }}>
-                    📱 Scan to open {hallVenue.name}'s leaderboard
-                  </p>
-                  <button
-                    type="button"
-                    className="btn"
-                    style={{ padding: "2px 8px", fontSize: 11, whiteSpace: "nowrap" }}
-                    title="Copy this hall's leaderboard link"
-                    onClick={() => {
-                      navigator.clipboard.writeText(hallUrl).then(
-                        () => {
-                          setLinkCopied(true);
-                          setTimeout(() => setLinkCopied(false), 2000);
-                        },
-                        () => {
-                          setLinkCopyFailed(true);
-                          setTimeout(() => setLinkCopyFailed(false), 2000);
-                        },
-                      );
-                    }}
-                  >
-                    {linkCopied ? "✓ Copied" : linkCopyFailed ? "⚠ Copy failed" : "🔗 Copy link"}
-                  </button>
-                </div>
+
                 {hallVenue.locality && <div className="fpp-card-loc">📍 {hallVenue.locality}</div>}
                 {hallVenue.tableCount != null && (
                   <div className="fpp-card-loc">🎱 {hallVenue.tableCount} Tables</div>
