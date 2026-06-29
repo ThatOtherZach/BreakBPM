@@ -6,9 +6,11 @@ import {
   useGetHallLeaderboard,
   getGetLeaderboardQueryKey,
   getGetHallLeaderboardQueryKey,
+  useGetStats,
+  getGetStatsQueryKey,
   useGetMe,
 } from "@workspace/api-client-react";
-import type { LeaderboardRow, GetLeaderboardWindow, GetLeaderboardMode } from "@workspace/api-client-react";
+import type { LeaderboardRow, GetLeaderboardWindow, GetLeaderboardMode, GetStatsWindow } from "@workspace/api-client-react";
 import Navbar from "./Navbar";
 import { useAuth } from "../lib/authClient";
 import { THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
@@ -269,6 +271,21 @@ export default function LeaderboardScreen({
   const rows = data?.rows ?? [];
   const hallVenue = hallQ.data?.venue;
 
+  // Personal pace stats for the hall view, tracked to the same mode + window
+  // as the leaderboard so toggling either control updates both simultaneously.
+  // "90d" has no stats equivalent so it maps to "365d" (nearest available).
+  const statsWindow: GetStatsWindow =
+    window === "all" ? "all" : window === "90d" ? "365d" : "30d";
+  const hallStatsQ = useGetStats(
+    { scope: "personal", window: statsWindow, gameMode: mode },
+    {
+      query: {
+        enabled: isHall && isAuthenticated,
+        queryKey: getGetStatsQueryKey({ scope: "personal", window: statsWindow, gameMode: mode }),
+      },
+    },
+  );
+
   // Cosmetic: when a hall was opened via a legacy id (or an un-slugged hall that
   // just self-healed), swap the address bar to the readable slug, so the
   // shown/copied URL is the nice one. A replace (not push) keeps the back button
@@ -429,6 +446,43 @@ export default function LeaderboardScreen({
             </div>
           </div>
         </div>}
+
+        {isHall && isAuthenticated && (() => {
+          const hs = hallStatsQ.data;
+          const playTime = hs?.playTimeByType ?? [];
+          const totalMs = playTime.reduce((sum, p) => sum + p.avgDurationMs * p.gameCount, 0);
+          const totalGames = playTime.reduce((sum, p) => sum + p.gameCount, 0);
+          const totalHours = totalMs / 3_600_000;
+          const avgPerGameMin = totalGames > 0 ? totalMs / totalGames / 60_000 : 0;
+          return (
+            <div className="panel">
+              <div className="panel-header"><span>⚡ Pace</span></div>
+              <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <div className="digit-display">
+                      <div className="digit-bpm">{hs?.avgBpm == null ? "--" : hs.avgBpm.toFixed(1)}</div>
+                    </div>
+                    <div className="digit-label">AVG BPM</div>
+                  </div>
+                  {hs?.bestBpm != null && (
+                    <div style={{ flex: 1 }}>
+                      <div className="digit-display">
+                        <div className="digit-bpm" style={{ color: "var(--amber)" }}>{hs.bestBpm.toFixed(1)}</div>
+                      </div>
+                      <div className="digit-label">BEST BPM</div>
+                    </div>
+                  )}
+                </div>
+                {playTime.length > 0 && totalGames > 0 && (
+                  <p style={{ fontSize: 12, color: "#000", margin: 0 }} className="text-center font-semibold">
+                    🕐 {totalHours.toFixed(1)} Hours Played - {avgPerGameMin.toFixed(1)} Min Per Game (Average)
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {isHall && hallVenue && !isAuthenticated && (
           <div className="panel">
