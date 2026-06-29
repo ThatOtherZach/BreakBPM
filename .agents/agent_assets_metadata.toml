@@ -18,6 +18,24 @@ uri = "file://attached_assets/generated_images/poster_shark_bg.png"
 type = "image"
 title = "breakbpm shark poster v2"
 
+[[generated]]
+id = "vFxCcqFKnF41-BlLrnm87"
+uri = "file://attached_assets/generated_images/poster_box_a_bg.png"
+type = "image"
+title = "breakbpm box art A"
+
+[[generated]]
+id = "LBHX_BwPAHu2dlyn2SgkP"
+uri = "file://attached_assets/generated_images/poster_box_b_bg.png"
+type = "image"
+title = "breakbpm box art B"
+
+[[generated]]
+id = "tVR7ul55FVqDjbdyv4pZl"
+uri = "file://attached_assets/generated_images/poster_box_c_bg.png"
+type = "image"
+title = "breakbpm box art C"
+
 [[outputs]]
 id = "XvfKlmIkgwkIbZp3uL4uD"
 uri = "file://marketing/instagram/01-hero-square.png"
@@ -119,3 +137,21 @@ id = "U2H94GUAMfROF7wBrPtBb"
 uri = "file://marketing/posters/breakbpm-poster-shark.png"
 type = "image"
 title = "Poster 3 — \"Shark Yourself\" (free / solo play hook)"
+
+[[outputs]]
+id = "cEnqGqgfVqT-gwzVTUYQU"
+uri = "file://marketing/posters/breakbpm-boxart-track.png"
+type = "image"
+title = "Track — HUD + Leaderboard + Recent Games + QR"
+
+[[outputs]]
+id = "1whlOo0B_UiEnQLSXd_ga"
+uri = "file://marketing/posters/breakbpm-boxart-pace.png"
+type = "image"
+title = "Pace — Player Stats + QR"
+
+[[outputs]]
+id = "KKjRVUUQvq2DxQHWkkz1q"
+uri = "file://marketing/posters/breakbpm-boxart-watch.png"
+type = "image"
+title = "Watch — Spectate Page + Leaderboard + QR"
