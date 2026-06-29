@@ -1,5 +1,22 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "Htg7eWc-bix-aBVQ0pvGy"
+uri = "file://attached_assets/generated_images/poster_bpm_bg.png"
+type = "image"
+title = "breakbpm pace poster"
+
+[[generated]]
+id = "qwwOlYYcwhEW7BnybzXY4"
+uri = "file://attached_assets/generated_images/poster_leaderboard_bg.png"
+type = "image"
+title = "breakbpm leaderboard poster"
+
+[[generated]]
+id = "vok7S4EGW3NaZX9Aft7P5"
+uri = "file://attached_assets/generated_images/poster_shark_bg.png"
+type = "image"
+title = "breakbpm shark poster v2"
 
 [[outputs]]
 id = "XvfKlmIkgwkIbZp3uL4uD"
@@ -84,3 +101,21 @@ id = "Wb7nK2pQ9xR4mYtLcV1aD"
 uri = "file://marketing/social/X-AND-LINKEDIN-POSTS.md"
 type = "text"
 title = "X + LinkedIn posts (business logic + mythos)"
+
+[[outputs]]
+id = "jselCbsH36NQgxjFo6z0E"
+uri = "file://marketing/posters/breakbpm-poster-pace.png"
+type = "image"
+title = "Poster 1 — \"Know Your Pace\" (BPM / stats hook)"
+
+[[outputs]]
+id = "K2jWe10qd5ebzMC4QGyQc"
+uri = "file://marketing/posters/breakbpm-poster-leaderboard.png"
+type = "image"
+title = "Poster 2 — \"Top This Hall\" (house leaderboard hook)"
+
+[[outputs]]
+id = "U2H94GUAMfROF7wBrPtBb"
+uri = "file://marketing/posters/breakbpm-poster-shark.png"
+type = "image"
+title = "Poster 3 — \"Shark Yourself\" (free / solo play hook)"
