@@ -411,6 +411,39 @@ export default function LeaderboardScreen({
             </span>
           </div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {isHall && isAuthenticated && (() => {
+              const hs = hallStatsQ.data;
+              const playTime = hs?.playTimeByType ?? [];
+              const totalMs = playTime.reduce((sum, p) => sum + p.avgDurationMs * p.gameCount, 0);
+              const totalGames = playTime.reduce((sum, p) => sum + p.gameCount, 0);
+              const totalHours = totalMs / 3_600_000;
+              const avgPerGameMin = totalGames > 0 ? totalMs / totalGames / 60_000 : 0;
+              return (
+                <>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <div className="digit-display">
+                        <div className="digit-bpm">{hs?.avgBpm == null ? "--" : hs.avgBpm.toFixed(1)}</div>
+                      </div>
+                      <div className="digit-label">AVG BPM</div>
+                    </div>
+                    {hs?.bestBpm != null && (
+                      <div style={{ flex: 1 }}>
+                        <div className="digit-display">
+                          <div className="digit-bpm" style={{ color: "var(--amber)" }}>{hs.bestBpm.toFixed(1)}</div>
+                        </div>
+                        <div className="digit-label">BEST BPM</div>
+                      </div>
+                    )}
+                  </div>
+                  {playTime.length > 0 && totalGames > 0 && (
+                    <p style={{ fontSize: 12, color: "#000", margin: 0 }} className="text-center font-semibold">
+                      🕐 {totalHours.toFixed(1)} Hours Played - {avgPerGameMin.toFixed(1)} Min Per Game (Average)
+                    </p>
+                  )}
+                </>
+              );
+            })()}
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               {MODES.map((m) => {
                 const active = mode === m;
@@ -446,43 +479,6 @@ export default function LeaderboardScreen({
             </div>
           </div>
         </div>}
-
-        {isHall && isAuthenticated && (() => {
-          const hs = hallStatsQ.data;
-          const playTime = hs?.playTimeByType ?? [];
-          const totalMs = playTime.reduce((sum, p) => sum + p.avgDurationMs * p.gameCount, 0);
-          const totalGames = playTime.reduce((sum, p) => sum + p.gameCount, 0);
-          const totalHours = totalMs / 3_600_000;
-          const avgPerGameMin = totalGames > 0 ? totalMs / totalGames / 60_000 : 0;
-          return (
-            <div className="panel">
-              <div className="panel-header"><span>⚡ Pace</span></div>
-              <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    <div className="digit-display">
-                      <div className="digit-bpm">{hs?.avgBpm == null ? "--" : hs.avgBpm.toFixed(1)}</div>
-                    </div>
-                    <div className="digit-label">AVG BPM</div>
-                  </div>
-                  {hs?.bestBpm != null && (
-                    <div style={{ flex: 1 }}>
-                      <div className="digit-display">
-                        <div className="digit-bpm" style={{ color: "var(--amber)" }}>{hs.bestBpm.toFixed(1)}</div>
-                      </div>
-                      <div className="digit-label">BEST BPM</div>
-                    </div>
-                  )}
-                </div>
-                {playTime.length > 0 && totalGames > 0 && (
-                  <p style={{ fontSize: 12, color: "#000", margin: 0 }} className="text-center font-semibold">
-                    🕐 {totalHours.toFixed(1)} Hours Played - {avgPerGameMin.toFixed(1)} Min Per Game (Average)
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })()}
 
         {isHall && hallVenue && !isAuthenticated && (
           <div className="panel">
