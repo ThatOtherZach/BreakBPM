@@ -23,6 +23,7 @@ import { newId } from "../lib/ids";
 import { generateVenueSlug } from "../lib/venueSlugStore";
 import { fetchOsmVenuesForBBox } from "../lib/osmVenues";
 import { geocodeAddress, haversineMeters } from "../lib/geocode";
+import { clearLeaderboardCache } from "../lib/stats";
 
 const router: IRouter = Router();
 
@@ -271,6 +272,9 @@ router.post("/admin/venues", async (req, res): Promise<void> => {
     return;
   }
 
+  // A new hall can create a brand-new City (its locality) and changes that
+  // city's roll-up pool, so bust the leaderboard cache (hall + city scopes).
+  clearLeaderboardCache();
   req.log.info({ userId: user.id, venueId: row.id }, "Venue created");
   res.json(CreateVenueResponse.parse({ success: true, venue: toVenueResponse(row) }));
 });
@@ -352,6 +356,9 @@ router.post(
       });
     }
 
+    // Moved pins don't change scope membership, but repair is rare and a coords
+    // change can affect future tag eligibility — bust to stay safe (no-op cost).
+    if (updated > 0) clearLeaderboardCache();
     req.log.info(
       { userId: user.id, total: rows.length, updated, unchanged, failed },
       "Venue coordinates repaired",
@@ -421,6 +428,9 @@ router.patch("/admin/venues/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  // Editing a hall can change its locality (moving its games to a different
+  // City) or flip `active` (joining/leaving every scope), so bust the cache.
+  clearLeaderboardCache();
   req.log.info({ userId: user.id, venueId: row.id }, "Venue updated");
   res.json(UpdateVenueResponse.parse({ success: true, venue: toVenueResponse(row) }));
 });
@@ -457,6 +467,9 @@ router.delete("/admin/venues/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  // Deleting a hall removes it from every scope (and may dissolve its City if it
+  // was the only hall there), so bust the leaderboard cache.
+  clearLeaderboardCache();
   req.log.info({ userId: user.id, venueId: row.id }, "Venue deleted");
   res.json(DeleteVenueResponse.parse({ success: true, venue: toVenueResponse(row) }));
 });

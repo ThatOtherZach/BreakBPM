@@ -4,8 +4,10 @@ import { QRCodeSVG } from "qrcode.react";
 import {
   useGetLeaderboard,
   useGetHallLeaderboard,
+  useGetCityLeaderboard,
   getGetLeaderboardQueryKey,
   getGetHallLeaderboardQueryKey,
+  getGetCityLeaderboardQueryKey,
   useGetMe,
 } from "@workspace/api-client-react";
 import type { LeaderboardRow, GetLeaderboardWindow, GetLeaderboardMode } from "@workspace/api-client-react";
@@ -208,6 +210,13 @@ interface Props {
    * sign-up nudge); longer windows are still a pass perk.
    */
   venueId?: string;
+  /**
+   * When set, this is a per-city ("City") leaderboard scoped to one locality
+   * ("City, Country") that has at least one Verified Hall. It rolls up games
+   * tagged to any hall in that locality plus games tagged to the city directly
+   * (the fallback when no hall was within range). Sign-in is required.
+   */
+  cityLocality?: string;
 }
 
 /**
@@ -225,12 +234,14 @@ export default function LeaderboardScreen({
   onStats,
   onSignIn,
   venueId,
+  cityLocality,
 }: Props) {
   const [, setLocation] = useLocation();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const me = useGetMe();
   const isPass = me.data?.entitlement?.tier === "pass";
   const isHall = venueId != null;
+  const isCity = cityLocality != null;
 
   const [mode, setMode] = useState<GetLeaderboardMode>("8ball");
   const [window, setWindow] = useState<GetLeaderboardWindow>("30d");
@@ -265,7 +276,17 @@ export default function LeaderboardScreen({
       },
     },
   );
-  const q = isHall ? hallQ : globalQ;
+  // The CITY query mirrors the hall query: sign-in required for every window.
+  const cityQ = useGetCityLeaderboard(
+    { locality: cityLocality ?? "", mode, window, page, pageSize: PAGE_SIZE },
+    {
+      query: {
+        enabled: isCity && isAuthenticated,
+        queryKey: getGetCityLeaderboardQueryKey({ locality: cityLocality ?? "", mode, window, page, pageSize: PAGE_SIZE }),
+      },
+    },
+  );
+  const q = isCity ? cityQ : isHall ? hallQ : globalQ;
   const data = q.data;
   const rows = data?.rows ?? [];
   const hallVenue = hallQ.data?.venue;
@@ -274,6 +295,7 @@ export default function LeaderboardScreen({
   // tell "no games tagged here yet" (0) apart from "games tagged but none
   // qualify for the ranked board yet" (>0 with no ranked rows).
   const hallTaggedGames = hallQ.data?.taggedGames ?? 0;
+  const cityName = cityQ.data?.city?.locality ?? cityLocality;
 
   // Per-hall pages are public, crawlable SEO surfaces (they're listed in the
   // venue sitemap), so give each one an indexable, venue-specific title +
@@ -420,12 +442,30 @@ export default function LeaderboardScreen({
         {(isAuthenticated || isHall) && <div className="panel">
           <div className="panel-header">
             <span>
-              {isHall
+              {isCity
+                ? `🏙️ ${cityName ?? "City"} · City`
+                : isHall
                 ? `🏆 ${hallVenue?.name ?? "Local"} · Local`
                 : "🏆 Leaderboard"}
             </span>
           </div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {(isHall || isCity) && (
+              <button
+                className="btn"
+                style={{ alignSelf: "flex-start", padding: "4px 8px", fontSize: 11 }}
+                onClick={() => setLocation("/leaderboard")}
+              >
+                ← Global leaderboard
+              </button>
+            )}
+            <p style={{ fontSize: 11, color: "#444", margin: 0, lineHeight: 1.4 }}>
+              {isCity
+                ? `City standings — recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games across every Verified Hall in ${cityName ?? "this city"}.`
+                : isHall
+                ? `Local standings${hallVenue?.locality ? ` · ${hallVenue.locality}` : ""} — recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games at this hall.`
+                : `Top pace & accuracy, recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games only.`}
+            </p>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               {MODES.map((m) => {
                 const active = mode === m;

@@ -39,8 +39,12 @@ import {
   FindHallCandidatesResponse,
   TagGameHallBody,
   TagGameHallResponse,
+  TagGameCityBody,
+  TagGameCityResponse,
   GetHallLeaderboardQueryParams,
   GetHallLeaderboardResponse,
+  GetCityLeaderboardQueryParams,
+  GetCityLeaderboardResponse,
 } from "@workspace/api-zod";
 import { getOrCreateUser, getVerifiedSubject } from "../lib/auth";
 import {
@@ -394,6 +398,12 @@ function toHistoryEntry(
  * client's reported distance is never trusted. */
 const HALL_TAG_RADIUS_METERS = 300;
 
+/** Wider metro cap (metres) for the "Tag City" fallback: when no Verified Hall
+ * is within {@link HALL_TAG_RADIUS_METERS}, a game can still be tagged to the
+ * CITY of the nearest active Verified Hall whose locality is known, as long as
+ * that hall is within this radius. Server-authoritative, same as the hall cap. */
+const CITY_TAG_RADIUS_METERS = 50_000;
+
 /** Shape a venue row into the compact hall identity the hall endpoints return.
  * `slug` is included when present so cards can link by the readable URL; null
  * (un-backfilled) rows fall back to the id, which the hall endpoint also resolves. */
@@ -429,17 +439,23 @@ type HallTagReason =
   | "already_tagged";
 
 /**
- * Shared eligibility gate for the "Add to Hall" flow (pre-check + commit). The
- * caller must be the signed-in HOST of a FINALIZED 8-ball/9-ball game that is
- * not already tagged. Returns the loaded game row when taggable, otherwise a
- * structured reason. `targetVenueId` (commit only): a game already tagged to
- * THIS same venue is reported taggable so the caller can treat a same-hall
- * re-tag as an idempotent success; a tag to any OTHER hall is `already_tagged`.
+ * Shared eligibility gate for BOTH the "Add to Hall" and "Tag City" flows
+ * (pre-check + commit). The caller must be the signed-in HOST of a FINALIZED
+ * 8-ball/9-ball game that is not already tagged to a hall OR a city (the two are
+ * mutually exclusive). Returns the loaded game row when taggable, otherwise a
+ * structured reason.
+ *
+ * `target` (commit only) makes a same-target re-tag an idempotent success:
+ *  - `{ venueId }` (hall commit): a game already tagged to THIS hall is taggable;
+ *    a tag to any OTHER hall — or to ANY city — is `already_tagged`.
+ *  - `{ cityLocality }` (city commit): a game already tagged to THIS city is
+ *    taggable; a tag to any OTHER city — or to ANY hall — is `already_tagged`.
+ *  - omitted (pre-check): any existing hall OR city tag is `already_tagged`.
  */
 async function resolveHallTagEligibility(
   user: { id: string } | null,
   gameId: string,
-  targetVenueId?: string,
+  target?: { venueId: string } | { cityLocality: string },
 ): Promise<{ reason: HallTagReason } | { game: GameRow }> {
   if (!user) return { reason: "not_signed_in" };
   const rows = await db.select().from(gamesTable).where(eq(gamesTable.id, gameId)).limit(1);
@@ -448,7 +464,12 @@ async function resolveHallTagEligibility(
   if (game.userId !== user.id) return { reason: "not_host" };
   if (game.endedAt == null) return { reason: "not_finalized" };
   if (game.gameType !== "8ball" && game.gameType !== "9ball") return { reason: "wrong_type" };
+  const targetVenueId = target && "venueId" in target ? target.venueId : undefined;
+  const targetCity = target && "cityLocality" in target ? target.cityLocality : undefined;
+  // Mutually exclusive: a game tagged to any hall other than the (hall) target,
+  // or to any city other than the (city) target, can't be (re)tagged here.
   if (game.venueId != null && game.venueId !== targetVenueId) return { reason: "already_tagged" };
+  if (game.cityLocality != null && game.cityLocality !== targetCity) return { reason: "already_tagged" };
   return { game };
 }
 
@@ -2677,12 +2698,28 @@ router.post("/games/hall-candidates", async (req, res): Promise<void> => {
   // Surface the single closest hall (even outside the cap) so an empty-candidate
   // result can tell the host how far off they are instead of a blind "no halls".
   const nearest = ranked[0] ?? null;
+  // City fallback — only when NO hall is within the hall cap. The nearest active
+  // hall that has a recorded locality AND sits within the wider metro radius
+  // lends its city, so a host away from any single hall can still tag their
+  // city's leaderboard. `ranked` is distance-sorted, so the first match is the
+  // closest qualifying hall. Using that hall's verbatim locality guarantees a
+  // matching City Leaderboard (no reverse-geocoding round-trip).
+  let cityFallback: { locality: string; distanceMeters: number } | null = null;
+  if (candidates.length === 0) {
+    const cityHall = ranked.find(
+      (c) => c.locality != null && c.distanceMeters <= CITY_TAG_RADIUS_METERS,
+    );
+    if (cityHall?.locality != null) {
+      cityFallback = { locality: cityHall.locality, distanceMeters: cityHall.distanceMeters };
+    }
+  }
   res.json(
     FindHallCandidatesResponse.parse({
       eligible: true,
       candidates,
       nearestName: nearest?.name ?? null,
       nearestDistanceMeters: nearest?.distanceMeters ?? null,
+      cityFallback,
     }),
   );
 });
@@ -2708,7 +2745,7 @@ router.post("/games/tag-hall", async (req, res): Promise<void> => {
   }
   const { gameId, venueId, latitude, longitude } = parsed.data;
   const user = await getOrCreateUser(req);
-  const elig = await resolveHallTagEligibility(user, gameId, venueId);
+  const elig = await resolveHallTagEligibility(user, gameId, { venueId });
   if ("reason" in elig) {
     res.json(TagGameHallResponse.parse({ success: false, reason: elig.reason }));
     return;
@@ -2759,6 +2796,87 @@ router.post("/games/tag-hall", async (req, res): Promise<void> => {
   }
   clearLeaderboardCache();
   res.json(TagGameHallResponse.parse({ success: true, venue: toHallIdentity(venue) }));
+});
+
+/**
+ * "Tag City" commit — the fallback used when no Verified Hall was within range.
+ * The signed-in HOST posts the chosen city locality + their geolocation; every
+ * eligibility condition is re-validated, the locality is confirmed to belong to
+ * at least one ACTIVE Verified Hall, and the distance to the NEAREST such hall
+ * is re-computed server-side (client distance is never trusted), rejecting if it
+ * is beyond the wider metro cap. On success the game's cityLocality is set
+ * (venueId stays null) and the leaderboard cache is busted. A same-city re-tag
+ * is an idempotent success; a different city or any hall is `already_tagged`.
+ */
+router.post("/games/tag-city", async (req, res): Promise<void> => {
+  const ip = req.ip ?? "unknown";
+  if (!rateLimit(ip, "tag-hall")) {
+    res.status(429).json({ error: "rate_limited" });
+    return;
+  }
+  const parsed = TagGameCityBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "invalid_body" });
+    return;
+  }
+  const { gameId, locality, latitude, longitude } = parsed.data;
+  const user = await getOrCreateUser(req);
+  const elig = await resolveHallTagEligibility(user, gameId, { cityLocality: locality });
+  if ("reason" in elig) {
+    res.json(TagGameCityResponse.parse({ success: false, reason: elig.reason }));
+    return;
+  }
+  const game = elig.game;
+  // Same-city re-tag: already linked to this city → idempotent success, no write.
+  if (game.cityLocality === locality) {
+    res.json(TagGameCityResponse.parse({ success: true, city: { locality } }));
+    return;
+  }
+  // The locality must belong to at least one ACTIVE Verified Hall, and the
+  // caller must be within the metro cap of the NEAREST such hall — both checked
+  // server-side. We load every active hall in that locality and take the min
+  // distance (a city can have several halls; being near any one qualifies).
+  const cityVenues = await db
+    .select({ latitude: venuesTable.latitude, longitude: venuesTable.longitude })
+    .from(venuesTable)
+    .where(and(eq(venuesTable.active, true), eq(venuesTable.locality, locality)));
+  if (cityVenues.length === 0) {
+    res.json(TagGameCityResponse.parse({ success: false, reason: "city_not_found" }));
+    return;
+  }
+  const nearestMeters = Math.min(
+    ...cityVenues.map((v) => haversineMeters(latitude, longitude, v.latitude, v.longitude)),
+  );
+  if (nearestMeters > CITY_TAG_RADIUS_METERS) {
+    res.json(TagGameCityResponse.parse({ success: false, reason: "out_of_range" }));
+    return;
+  }
+  // Set the city tag. Guard on BOTH venueId IS NULL and cityLocality IS NULL so
+  // a concurrent hall- or city-tag can't be overwritten (eligibility already
+  // rejected an existing different tag; this closes the race window).
+  // `.returning()` detects the lost-race case (zero affected rows).
+  const linked = await db
+    .update(gamesTable)
+    .set({ cityLocality: locality })
+    .where(and(eq(gamesTable.id, game.id), isNull(gamesTable.venueId), isNull(gamesTable.cityLocality)))
+    .returning({ id: gamesTable.id });
+  if (linked.length === 0) {
+    // Lost the race: re-read to report the authoritative outcome — idempotent
+    // success if the winner picked THIS same city, else already_tagged.
+    const cur = await db
+      .select({ cityLocality: gamesTable.cityLocality })
+      .from(gamesTable)
+      .where(eq(gamesTable.id, game.id))
+      .limit(1);
+    if (cur[0]?.cityLocality === locality) {
+      res.json(TagGameCityResponse.parse({ success: true, city: { locality } }));
+      return;
+    }
+    res.json(TagGameCityResponse.parse({ success: false, reason: "already_tagged" }));
+    return;
+  }
+  clearLeaderboardCache();
+  res.json(TagGameCityResponse.parse({ success: true, city: { locality } }));
 });
 
 /**
@@ -2813,7 +2931,10 @@ router.get("/leaderboard/hall", async (req, res): Promise<void> => {
   }
 
   // Scope by the resolved venue id — `venueId` may have been a slug.
-  const all = await resolveLeaderboard(mode as LeaderboardMode, window as LeaderboardWindow, venue.id);
+  const all = await resolveLeaderboard(mode as LeaderboardMode, window as LeaderboardWindow, {
+    kind: "hall",
+    venueId: venue.id,
+  });
   const totalPlayers = all.length;
   const totalPages = Math.max(1, Math.ceil(totalPlayers / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
@@ -2853,6 +2974,78 @@ router.get("/leaderboard/hall", async (req, res): Promise<void> => {
         paymentType: venue.paymentType,
         active: venue.active,
       },
+    }),
+  );
+});
+
+/**
+ * Per-city leaderboard: the same composite-skill ranking as `/leaderboard`,
+ * scoped to one City (locality). The pool rolls up BOTH games tagged directly to
+ * the city via the "Tag City" fallback (`games.cityLocality`) AND games tagged
+ * to any active Verified Hall in that city (`venueIds`). Like the House board,
+ * EVERY window requires sign-in; 90d/all stay pass-gated. A 404 means no active
+ * Verified Hall has that locality — i.e. it is not a real City Leaderboard.
+ */
+router.get("/leaderboard/city", async (req, res): Promise<void> => {
+  const ip = req.ip ?? "unknown";
+  if (!rateLimit(ip, "state")) {
+    res.status(429).json({ error: "rate_limited" });
+    return;
+  }
+  const parsed = GetCityLeaderboardQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "invalid_query" });
+    return;
+  }
+  const { locality, mode, window, page, pageSize } = parsed.data;
+
+  // Sign-in is required to view any City Leaderboard window.
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "sign_in_required" });
+    return;
+  }
+  // A City only exists if at least one active Verified Hall has that locality.
+  // We also collect those venue ids to roll their hall-tagged games into the
+  // city pool (a hall's games count toward its city without any backfill).
+  const cityVenues = await db
+    .select({ id: venuesTable.id })
+    .from(venuesTable)
+    .where(and(eq(venuesTable.active, true), eq(venuesTable.locality, locality)));
+  if (cityVenues.length === 0) {
+    res.status(404).json({ error: "not_found" });
+    return;
+  }
+
+  const entitlement = await computeEntitlement(user);
+  const isPass = entitlement.tier === "pass";
+  // Longer windows are a paid perk, mirroring the global/hall boards.
+  if (window !== "30d" && !isPass) {
+    res.status(403).json({ error: "pass_required" });
+    return;
+  }
+
+  const all = await resolveLeaderboard(mode as LeaderboardMode, window as LeaderboardWindow, {
+    kind: "city",
+    locality,
+    venueIds: cityVenues.map((v) => v.id),
+  });
+  const totalPlayers = all.length;
+  const totalPages = Math.max(1, Math.ceil(totalPlayers / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const offset = (safePage - 1) * pageSize;
+  const rows = all.slice(offset, offset + pageSize);
+
+  res.json(
+    GetCityLeaderboardResponse.parse({
+      mode,
+      window,
+      page: safePage,
+      pageSize,
+      totalPlayers,
+      totalPages,
+      rows,
+      city: { locality },
     }),
   );
 });

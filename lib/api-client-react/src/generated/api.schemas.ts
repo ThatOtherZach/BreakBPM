@@ -1455,6 +1455,14 @@ export const HallCandidatesResultReason = {
   already_tagged: 'already_tagged',
 } as const;
 
+/**
+ * @nullable
+ */
+export type HallCandidatesResultCityFallback = {
+  locality: string;
+  distanceMeters: number;
+} | null;
+
 export interface HallCandidatesResult {
   eligible: boolean;
   reason?: HallCandidatesResultReason;
@@ -1463,6 +1471,8 @@ export interface HallCandidatesResult {
   nearestName?: string | null;
   /** @nullable */
   nearestDistanceMeters?: number | null;
+  /** @nullable */
+  cityFallback?: HallCandidatesResultCityFallback;
 }
 
 export interface TagHallInput {
@@ -1498,6 +1508,45 @@ export interface TagHallResult {
   success: boolean;
   reason?: TagHallResultReason;
   venue?: TaggedHall;
+}
+
+export interface TagCityInput {
+  gameId: string;
+  locality: string;
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  latitude: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  longitude: number;
+}
+
+export type TagCityResultReason = typeof TagCityResultReason[keyof typeof TagCityResultReason];
+
+
+export const TagCityResultReason = {
+  not_signed_in: 'not_signed_in',
+  not_found: 'not_found',
+  not_host: 'not_host',
+  not_finalized: 'not_finalized',
+  wrong_type: 'wrong_type',
+  already_tagged: 'already_tagged',
+  city_not_found: 'city_not_found',
+  out_of_range: 'out_of_range',
+} as const;
+
+export interface TaggedCity {
+  locality: string;
+}
+
+export interface TagCityResult {
+  success: boolean;
+  reason?: TagCityResultReason;
+  city?: TaggedCity;
 }
 
 export type HallLeaderboardResultMode = typeof HallLeaderboardResultMode[keyof typeof HallLeaderboardResultMode];
@@ -1561,6 +1610,34 @@ export interface HallLeaderboardResult {
   taggedGames: number;
   rows: LeaderboardRow[];
   venue: Venue;
+}
+
+export type CityLeaderboardResultMode = typeof CityLeaderboardResultMode[keyof typeof CityLeaderboardResultMode];
+
+
+export const CityLeaderboardResultMode = {
+  '8ball': '8ball',
+  '9ball': '9ball',
+} as const;
+
+export type CityLeaderboardResultWindow = typeof CityLeaderboardResultWindow[keyof typeof CityLeaderboardResultWindow];
+
+
+export const CityLeaderboardResultWindow = {
+  '30d': '30d',
+  '90d': '90d',
+  all: 'all',
+} as const;
+
+export interface CityLeaderboardResult {
+  mode: CityLeaderboardResultMode;
+  window: CityLeaderboardResultWindow;
+  page: number;
+  pageSize: number;
+  totalPlayers: number;
+  totalPages: number;
+  rows: LeaderboardRow[];
+  city: TaggedCity;
 }
 
 export interface FindPlayerPost {
@@ -2113,6 +2190,48 @@ export type GetHallLeaderboardWindow = typeof GetHallLeaderboardWindow[keyof typ
 
 
 export const GetHallLeaderboardWindow = {
+  '30d': '30d',
+  '90d': '90d',
+  all: 'all',
+} as const;
+
+export type GetCityLeaderboardParams = {
+/**
+ * The city key (e.g. "Los Angeles, United States") whose City Leaderboard to return.
+ */
+locality: string;
+/**
+ * Which board to rank — 1-on-1 8-ball or 9-ball. Defaults to 8ball.
+ */
+mode?: GetCityLeaderboardMode;
+/**
+ * Ranking window. All windows require sign-in; 90d and all require a pass.
+
+ */
+window?: GetCityLeaderboardWindow;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+pageSize?: number;
+};
+
+export type GetCityLeaderboardMode = typeof GetCityLeaderboardMode[keyof typeof GetCityLeaderboardMode];
+
+
+export const GetCityLeaderboardMode = {
+  '8ball': '8ball',
+  '9ball': '9ball',
+} as const;
+
+export type GetCityLeaderboardWindow = typeof GetCityLeaderboardWindow[keyof typeof GetCityLeaderboardWindow];
+
+
+export const GetCityLeaderboardWindow = {
   '30d': '30d',
   '90d': '90d',
   all: 'all',

@@ -157,6 +157,17 @@ export const gamesTable = pgTable(
      * SET NULL so deleting/retiring a hall drops the tag rather than the game.
      */
     venueId: text("venue_id").references(() => venuesTable.id, { onDelete: "set null" }),
+    /**
+     * The City (locality, e.g. "Los Angeles, United States") this finalized
+     * game was tagged to via the host-only "Tag City" FALLBACK — used only when
+     * no Verified Hall was within range, so the game still lands on a City
+     * Leaderboard. Mutually exclusive with `venueId` (a game is tagged to a hall
+     * XOR a city). The locality string is copied from an existing verified
+     * hall's `locality`, so it always matches a real verified-hall city. NULL =
+     * not city-tagged (the default; no backfill needed — hall-tagged games roll
+     * up into their hall's city board via the venue-id set, not this column).
+     */
+    cityLocality: text("city_locality"),
   },
   (t) => [
     index("games_user_ended_idx").on(t.userId, t.endedAt),
@@ -169,6 +180,10 @@ export const gamesTable = pgTable(
     // tagged to. Partial-ish via the index; the leaderboard query adds it as a
     // conjunct to the existing eligibility filters.
     index("games_venue_idx").on(t.venueId),
+    // Per-city leaderboard scan: filter finalized games directly tagged to a
+    // city (the fallback path). Hall-tagged games in that city are picked up by
+    // the venue index above, not this one.
+    index("games_city_locality_idx").on(t.cityLocality),
   ],
 );
 

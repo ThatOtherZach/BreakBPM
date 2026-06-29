@@ -418,6 +418,21 @@ function HallLeaderboardRoute({ params }: { params: { venueId: string } }) {
   );
 }
 
+function CityLeaderboardRoute({ params }: { params: { locality: string } }) {
+  const [, setLocation] = useLocation();
+  return (
+    <LeaderboardScreen
+      cityLocality={decodeURIComponent(params.locality)}
+      onBack={() => setLocation("/leaderboard")}
+      onManual={() => setLocation("/about")}
+      onAccount={() => setLocation("/account")}
+      onFindPlayers={() => setLocation("/find-players")}
+      onStats={() => setLocation("/stats")}
+      onSignIn={() => setLocation("/sign-in")}
+    />
+  );
+}
+
 function AboutRoute() {
   const [, setLocation] = useLocation();
   return <AboutScreen onBack={() => setLocation("/")} onPasses={() => setLocation("/passes")} />;
@@ -579,6 +594,7 @@ function Routes() {
       <Route path="/account" component={AccountRoute} />
       <Route path="/stats" component={StatsRoute} />
       <Route path="/leaderboard/hall/:venueId" component={HallLeaderboardRoute} />
+      <Route path="/leaderboard/city/:locality" component={CityLeaderboardRoute} />
       <Route path="/leaderboard" component={LeaderboardRoute} />
       <Route path="/find-players" component={FindPlayersRoute} />
       <Route path="/about" component={AboutRoute} />

@@ -28,8 +28,9 @@ import {
   useListAds,
   useFindHallCandidates,
   useTagGameHall,
+  useTagGameCity,
 } from '@workspace/api-client-react';
-import type { HallCandidate, TaggedHall } from '@workspace/api-client-react';
+import type { HallCandidate, TaggedHall, TaggedCity, HallCandidatesResultCityFallback } from '@workspace/api-client-react';
 import { FORFEIT_INACTIVITY_MS, MAX_GAME_DURATION_MS } from '../lib/forfeit';
 
 interface Props {
@@ -117,10 +118,12 @@ function hallTagFailureMessage(reason: string | undefined): string {
       return 'Sign in to add a game to a hall.';
     case 'venue_not_found':
       return 'That hall is no longer available.';
+    case 'city_not_found':
+      return 'That city no longer has a Verified Hall.';
     case 'out_of_range':
-      return "You're not close enough to that hall anymore.";
+      return "You're not close enough anymore.";
     default:
-      return 'Could not add this game to a hall. Try again.';
+      return 'Could not add this game. Try again.';
   }
 }
 
@@ -139,12 +142,21 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
   // condition and re-computing distance authoritatively.
   const findHallCandidates = useFindHallCandidates();
   const tagHall = useTagGameHall();
+  const tagCity = useTagGameCity();
   const [hallOpen, setHallOpen] = useState(false);
-  const [hallPhase, setHallPhase] = useState<'idle' | 'locating' | 'choose' | 'tagging' | 'done' | 'error'>('idle');
+  // The flow has two destinations: a Verified Hall (House board) when one is in
+  // range, or — as a fallback when none is — the host's CITY (City board), the
+  // locality of the nearest in-range hall. 'city-offer'/'city-done' are the
+  // city counterparts of 'choose'/'done'; 'tagging' is shared by both commits.
+  const [hallPhase, setHallPhase] = useState<
+    'idle' | 'locating' | 'choose' | 'city-offer' | 'tagging' | 'done' | 'city-done' | 'error'
+  >('idle');
   const [hallCandidates, setHallCandidates] = useState<HallCandidate[]>([]);
   const [hallCoords, setHallCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [hallError, setHallError] = useState('');
   const [taggedHall, setTaggedHall] = useState<TaggedHall | null>(null);
+  const [cityFallback, setCityFallback] = useState<HallCandidatesResultCityFallback | null>(null);
+  const [taggedCity, setTaggedCity] = useState<TaggedCity | null>(null);
 
   // HUD text ads: shown only to non-paying viewers (anyone whose tier is not
   // `pass`). Anonymous / still-loading callers are treated as non-paid so they
@@ -887,6 +899,8 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     setHallOpen(true);
     setHallError('');
     setTaggedHall(null);
+    setTaggedCity(null);
+    setCityFallback(null);
     setHallCandidates([]);
     if (!('geolocation' in navigator)) {
       setHallPhase('error');
@@ -909,11 +923,18 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             return;
           }
           if (res.candidates.length === 0) {
+            // No hall within 300 m — fall back to the host's CITY (the nearest
+            // active hall's locality, within 50 km) when the server offers one.
+            if (res.cityFallback) {
+              setCityFallback(res.cityFallback);
+              setHallPhase('city-offer');
+              return;
+            }
             setHallPhase('error');
             setHallError(
               res.nearestName && res.nearestDistanceMeters != null
-                ? `You're ~${hallDistanceLabel(res.nearestDistanceMeters)} from the nearest Verified Hall (${res.nearestName}). You must be within ${HALL_TAG_RADIUS_LABEL} of it to tag this game.`
-                : 'No Verified Hall within range. You can only add a game to a hall you are at.',
+                ? `You're ~${hallDistanceLabel(res.nearestDistanceMeters)} from the nearest Verified Hall (${res.nearestName}) — too far to tag its hall or city.`
+                : 'No Verified Hall is near you yet. Games can be tagged once a hall near you is verified.',
             );
             return;
           }
@@ -952,6 +973,34 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
     } catch {
       setHallPhase('error');
       setHallError('Could not add this game to the hall. Try again.');
+    }
+  }
+
+  // Commit the city fallback. The server re-validates eligibility, confirms the
+  // locality still has an active Verified Hall, and re-checks the 50 km metro
+  // radius authoritatively before tagging `cityLocality`.
+  async function confirmAddToCity() {
+    if (!serverGameId || !hallCoords || !cityFallback) return;
+    setHallPhase('tagging');
+    try {
+      const res = await tagCity.mutateAsync({
+        data: {
+          gameId: serverGameId,
+          locality: cityFallback.locality,
+          latitude: hallCoords.lat,
+          longitude: hallCoords.lng,
+        },
+      });
+      if (!res.success || !res.city) {
+        setHallPhase('error');
+        setHallError(hallTagFailureMessage(res.reason));
+        return;
+      }
+      setTaggedCity(res.city);
+      setHallPhase('city-done');
+    } catch {
+      setHallPhase('error');
+      setHallError('Could not add this game to the city. Try again.');
     }
   }
 
@@ -1453,7 +1502,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 {sharingImage ? 'Rendering…' : '📸 Share • 分享'}
               </button>
               {canTagHall ? (
-                hallPhase === 'done' ? (
+                hallPhase === 'done' || hallPhase === 'city-done' ? (
                   <button className="btn btn-big" disabled>
                     ✅ Added
                   </button>
@@ -1541,8 +1590,29 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                 </>
               )}
 
+              {hallPhase === 'city-offer' && cityFallback && (
+                <>
+                  <p style={{ fontSize: 13, margin: 0, lineHeight: 1.4 }}>
+                    No Verified Hall within {HALL_TAG_RADIUS_LABEL}, but you're in{' '}
+                    <strong>{cityFallback.locality}</strong>. Add this game to its City Leaderboard?
+                  </p>
+                  <div className="grid-2">
+                    <button className="btn" onClick={closeAddToHall} disabled={tagCity.isPending}>
+                      Cancel
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      onClick={confirmAddToCity}
+                      disabled={tagCity.isPending}
+                    >
+                      Add to City
+                    </button>
+                  </div>
+                </>
+              )}
+
               {hallPhase === 'tagging' && (
-                <p style={{ fontFamily: 'VT323', fontSize: 18, margin: 0 }}>🎱 Adding to hall…</p>
+                <p style={{ fontFamily: 'VT323', fontSize: 18, margin: 0 }}>🎱 Adding…</p>
               )}
 
               {hallPhase === 'done' && taggedHall && (
@@ -1555,6 +1625,23 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                     onClick={() => navigate(`/leaderboard/hall/${taggedHall.slug ?? taggedHall.id}`)}
                   >
                     🏆 Local Leaderboard
+                  </button>
+                  <button className="btn w-full" onClick={closeAddToHall}>
+                    Close
+                  </button>
+                </>
+              )}
+
+              {hallPhase === 'city-done' && taggedCity && (
+                <>
+                  <p style={{ fontSize: 13, margin: 0, lineHeight: 1.4 }}>
+                    ✅ Added to <strong>{taggedCity.locality}</strong>!
+                  </p>
+                  <button
+                    className="btn btn-primary w-full"
+                    onClick={() => navigate(`/leaderboard/city/${encodeURIComponent(taggedCity.locality)}`)}
+                  >
+                    🏙️ City Leaderboard
                   </button>
                   <button className="btn w-full" onClick={closeAddToHall}>
                     Close

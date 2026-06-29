@@ -1,6 +1,6 @@
 ---
-name: House Leaderboard (per-venue) scope & hall-tag race
-description: How the per-hall leaderboard reuses the global ranking scoped by venueId, and the concurrency rule for tagging a game to a hall.
+name: House + City Leaderboard scope & hall/city-tag race
+description: How per-hall and per-city leaderboards reuse the global ranking scoped by a LeaderboardScope union, the city geolocation fallback, and the guarded-UPDATE race rule for tagging a game.
 ---
 
 # House Leaderboard = global ranking scoped by `games.venueId`
@@ -30,7 +30,36 @@ turns a hall's board into a sign-up funnel for walk-in players.
   render for `(isAuthenticated || isHall)`; the generic "sign in to view" panel
   is `!isHall` only; the sign-up CTA is `isHall && hallVenue && !isAuthenticated`.
 
-# Tagging a game to a hall must verify the guarded UPDATE actually wrote
+# City Leaderboard = same ranking, scoped by a `LeaderboardScope` union
+
+The stats scope is a union `{kind:'hall',venueId} | {kind:'city',locality,venueIds}`
+(undefined = global). A CITY board rolls up BOTH games tagged directly to the
+city (`games.cityLocality`) AND games tagged to any active hall in that city
+(`venueIds`): filter is `or(eq(cityLocality,loc), inArray(venueId,venueIds))`.
+Cache fragment is `global | hall:<id> | city:<loc>` — thread it through the
+leaderboard cache key like the hall scope.
+
+The CITY is a geolocation FALLBACK to hall-tagging, not a parallel feature: when
+no verified hall is within the hall cap (`HALL_TAG_RADIUS_METERS`=300m), the host
+may instead tag their city, and that city is **the nearest active verified hall's
+hand-entered `locality`** within the metro cap (`CITY_TAG_RADIUS_METERS`=50_000m).
+
+**Why:** deliberately NO reverse-geocoding — borrowing a real hall's verbatim
+locality guarantees the tagged string always matches an existing City board, and
+keeps "cities" restricted to those that actually have a verified hall.
+
+**How to apply:**
+- A game is hall XOR city tagged: `resolveHallTagEligibility` rejects a second
+  tag of the other kind as `already_tagged`; both guarded UPDATEs require BOTH
+  `venueId IS NULL` AND `cityLocality IS NULL`.
+- `GET /leaderboard/city` 404s when no ACTIVE verified hall has that locality
+  (it is then not a real City). venue create/patch/delete/repair must
+  `clearLeaderboardCache()` because active/locality changes shift city scope.
+- Client: `LeaderboardScreen` renders all three boards via `venueId?`/
+  `cityLocality?` props; city route `/leaderboard/city/:locality` uses
+  `encodeURIComponent`/`decodeURIComponent` (locality has a comma + space).
+
+# Tagging a game to a hall (or city) must verify the guarded UPDATE actually wrote
 
 `POST /games/tag-hall` does a guarded `UPDATE games SET venue_id=? WHERE id=?
 AND venue_id IS NULL` so a concurrent tag can't overwrite an existing link. The

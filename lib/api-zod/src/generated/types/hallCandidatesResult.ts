@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { HallCandidate } from './hallCandidate';
+import type { HallCandidatesResultCityFallback } from './hallCandidatesResultCityFallback';
 import type { HallCandidatesResultReason } from './hallCandidatesResultReason';
 
 export interface HallCandidatesResult {
@@ -16,4 +17,6 @@ export interface HallCandidatesResult {
   nearestName?: string | null;
   /** @nullable */
   nearestDistanceMeters?: number | null;
+  /** @nullable */
+  cityFallback?: HallCandidatesResultCityFallback;
 }

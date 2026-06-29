@@ -1162,7 +1162,11 @@ export const FindHallCandidatesResponse = zod.object({
   "distanceMeters": zod.number()
 })),
   "nearestName": zod.string().nullish(),
-  "nearestDistanceMeters": zod.number().nullish()
+  "nearestDistanceMeters": zod.number().nullish(),
+  "cityFallback": zod.object({
+  "locality": zod.string(),
+  "distanceMeters": zod.number()
+}).nullish()
 })
 
 
@@ -1194,6 +1198,35 @@ export const TagGameHallResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string().nullish(),
   "locality": zod.string().nullish()
+}).optional()
+})
+
+
+/**
+ * Commits the "Tag City" fallback used when no Verified Hall was within range. The signed-in HOST posts the chosen city locality plus their current geolocation; the server re-validates every condition (host, finalized, 8-ball/9-ball, not already tagged to a hall OR a city), confirms the locality belongs to at least one active Verified Hall, and re-computes the distance from the caller to the nearest hall in that city server-side, rejecting if it is outside the wider metro radius. Client-supplied distance is never trusted. On success the game's cityLocality is set (venueId stays null) and the affected leaderboard cache is busted. Retagging is out of scope: a game already tagged to a hall or a different city is rejected, while re-tagging to the same city is an idempotent success.
+
+ * @summary Tag a finished game to a City (host only, hall-fallback)
+ */
+export const tagGameCityBodyLatitudeMin = -90;
+export const tagGameCityBodyLatitudeMax = 90;
+
+export const tagGameCityBodyLongitudeMin = -180;
+export const tagGameCityBodyLongitudeMax = 180;
+
+
+
+export const TagGameCityBody = zod.object({
+  "gameId": zod.string(),
+  "locality": zod.string(),
+  "latitude": zod.number().min(tagGameCityBodyLatitudeMin).max(tagGameCityBodyLatitudeMax),
+  "longitude": zod.number().min(tagGameCityBodyLongitudeMin).max(tagGameCityBodyLongitudeMax)
+})
+
+export const TagGameCityResponse = zod.object({
+  "success": zod.boolean(),
+  "reason": zod.enum(['not_signed_in', 'not_found', 'not_host', 'not_finalized', 'wrong_type', 'already_tagged', 'city_not_found', 'out_of_range']).optional(),
+  "city": zod.object({
+  "locality": zod.string()
 }).optional()
 })
 
@@ -1298,6 +1331,54 @@ export const GetHallLeaderboardResponse = zod.object({
   "paymentType": zod.enum(['free', 'per_game', 'hourly']).nullish(),
   "active": zod.boolean(),
   "paidThroughAt": zod.coerce.date().nullish()
+})
+})
+
+
+/**
+ * The same composite-skill ranking as `/leaderboard`, but scoped to one City (locality). The pool rolls up BOTH games tagged directly to the city via the "Tag City" fallback AND games tagged to any Verified Hall in that city. Like the House board, every window requires a signed-in caller; the 90-day and all-time windows additionally require a pass, enforced server-side. A `404` means no active Verified Hall has that locality (so it is not a real City Leaderboard).
+
+ * @summary Per-city leaderboard for a verified-hall City
+ */
+export const getCityLeaderboardQueryModeDefault = `8ball`;
+export const getCityLeaderboardQueryWindowDefault = `30d`;
+export const getCityLeaderboardQueryPageDefault = 1;
+
+export const getCityLeaderboardQueryPageSizeDefault = 10;
+export const getCityLeaderboardQueryPageSizeMax = 50;
+
+
+
+export const GetCityLeaderboardQueryParams = zod.object({
+  "locality": zod.coerce.string().describe('The city key (e.g. \"Los Angeles, United States\") whose City Leaderboard to return.'),
+  "mode": zod.enum(['8ball', '9ball']).default(getCityLeaderboardQueryModeDefault).describe('Which board to rank — 1-on-1 8-ball or 9-ball. Defaults to 8ball.'),
+  "window": zod.enum(['30d', '90d', 'all']).default(getCityLeaderboardQueryWindowDefault).describe('Ranking window. All windows require sign-in; 90d and all require a pass.\n'),
+  "page": zod.coerce.number().min(1).default(getCityLeaderboardQueryPageDefault),
+  "pageSize": zod.coerce.number().min(1).max(getCityLeaderboardQueryPageSizeMax).default(getCityLeaderboardQueryPageSizeDefault)
+})
+
+export const getCityLeaderboardResponseRowsItemWinsTodayDefault = 0;
+
+export const GetCityLeaderboardResponse = zod.object({
+  "mode": zod.enum(['8ball', '9ball']),
+  "window": zod.enum(['30d', '90d', 'all']),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPlayers": zod.number(),
+  "totalPages": zod.number(),
+  "rows": zod.array(zod.object({
+  "rank": zod.number(),
+  "screenName": zod.string(),
+  "bpm": zod.number(),
+  "accuracy": zod.number().nullable(),
+  "gamesPlayed": zod.number(),
+  "sharkLevel": zod.number(),
+  "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
+  "winsToday": zod.number().default(getCityLeaderboardResponseRowsItemWinsTodayDefault),
+  "rainbowName": zod.boolean()
+})),
+  "city": zod.object({
+  "locality": zod.string()
 })
 })
 

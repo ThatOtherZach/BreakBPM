@@ -42,6 +42,7 @@ import type {
   CancelFindPlayerPostResult,
   CancelSubscriptionResult,
   CheckoutResult,
+  CityLeaderboardResult,
   CreateFindPlayerPostResult,
   CryptoQuoteInput,
   CryptoQuoteResult,
@@ -59,6 +60,7 @@ import type {
   GameInviteList,
   GameSaveInput,
   GameStateSnapshot,
+  GetCityLeaderboardParams,
   GetGameHistoryParams,
   GetGameStateByCodeParams,
   GetHallLeaderboardParams,
@@ -110,6 +112,8 @@ import type {
   StatsResult,
   SubscriptionCheckoutInput,
   SubscriptionVerifyResult,
+  TagCityInput,
+  TagCityResult,
   TagHallInput,
   TagHallResult,
   VenueInput,
@@ -3381,6 +3385,79 @@ export const useTagGameHall = <TError = ErrorType<void>,
       return useMutation(getTagGameHallMutationOptions(options));
     }
 
+export const getTagGameCityUrl = () => {
+
+
+
+
+  return `/api/games/tag-city`
+}
+
+/**
+ * Commits the "Tag City" fallback used when no Verified Hall was within range. The signed-in HOST posts the chosen city locality plus their current geolocation; the server re-validates every condition (host, finalized, 8-ball/9-ball, not already tagged to a hall OR a city), confirms the locality belongs to at least one active Verified Hall, and re-computes the distance from the caller to the nearest hall in that city server-side, rejecting if it is outside the wider metro radius. Client-supplied distance is never trusted. On success the game's cityLocality is set (venueId stays null) and the affected leaderboard cache is busted. Retagging is out of scope: a game already tagged to a hall or a different city is rejected, while re-tagging to the same city is an idempotent success.
+
+ * @summary Tag a finished game to a City (host only, hall-fallback)
+ */
+export const tagGameCity = async (tagCityInput: TagCityInput, options?: RequestInit): Promise<TagCityResult> => {
+
+  return customFetch<TagCityResult>(getTagGameCityUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tagCityInput,)
+  }
+);}
+
+
+
+
+export const getTagGameCityMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tagGameCity>>, TError,{data: BodyType<TagCityInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof tagGameCity>>, TError,{data: BodyType<TagCityInput>}, TContext> => {
+
+const mutationKey = ['tagGameCity'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof tagGameCity>>, {data: BodyType<TagCityInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  tagGameCity(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TagGameCityMutationResult = NonNullable<Awaited<ReturnType<typeof tagGameCity>>>
+    export type TagGameCityMutationBody = BodyType<TagCityInput>
+    export type TagGameCityMutationError = ErrorType<void>
+
+    /**
+ * @summary Tag a finished game to a City (host only, hall-fallback)
+ */
+export const useTagGameCity = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tagGameCity>>, TError,{data: BodyType<TagCityInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof tagGameCity>>,
+        TError,
+        {data: BodyType<TagCityInput>},
+        TContext
+      > => {
+      return useMutation(getTagGameCityMutationOptions(options));
+    }
+
 export const getGetLeaderboardUrl = (params?: GetLeaderboardParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -3541,6 +3618,92 @@ export function useGetHallLeaderboard<TData = Awaited<ReturnType<typeof getHallL
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetHallLeaderboardQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetCityLeaderboardUrl = (params: GetCityLeaderboardParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/leaderboard/city?${stringifiedParams}` : `/api/leaderboard/city`
+}
+
+/**
+ * The same composite-skill ranking as `/leaderboard`, but scoped to one City (locality). The pool rolls up BOTH games tagged directly to the city via the "Tag City" fallback AND games tagged to any Verified Hall in that city. Like the House board, every window requires a signed-in caller; the 90-day and all-time windows additionally require a pass, enforced server-side. A `404` means no active Verified Hall has that locality (so it is not a real City Leaderboard).
+
+ * @summary Per-city leaderboard for a verified-hall City
+ */
+export const getCityLeaderboard = async (params: GetCityLeaderboardParams, options?: RequestInit): Promise<CityLeaderboardResult> => {
+
+  return customFetch<CityLeaderboardResult>(getGetCityLeaderboardUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCityLeaderboardQueryKey = (params?: GetCityLeaderboardParams,) => {
+    return [
+    `/api/leaderboard/city`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCityLeaderboardQueryOptions = <TData = Awaited<ReturnType<typeof getCityLeaderboard>>, TError = ErrorType<void>>(params: GetCityLeaderboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCityLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCityLeaderboardQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCityLeaderboard>>> = ({ signal }) => getCityLeaderboard(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCityLeaderboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCityLeaderboardQueryResult = NonNullable<Awaited<ReturnType<typeof getCityLeaderboard>>>
+export type GetCityLeaderboardQueryError = ErrorType<void>
+
+
+/**
+ * @summary Per-city leaderboard for a verified-hall City
+ */
+
+export function useGetCityLeaderboard<TData = Awaited<ReturnType<typeof getCityLeaderboard>>, TError = ErrorType<void>>(
+ params: GetCityLeaderboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCityLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCityLeaderboardQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
