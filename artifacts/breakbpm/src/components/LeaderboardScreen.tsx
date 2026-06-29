@@ -11,6 +11,7 @@ import {
 import type { LeaderboardRow, GetLeaderboardWindow, GetLeaderboardMode } from "@workspace/api-client-react";
 import Navbar from "./Navbar";
 import { useAuth } from "../lib/authClient";
+import { usePageMeta, type PageMetaConfig } from "../lib/pageMeta";
 import { THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
 import { WinsTodayChip } from "./WinsTodayChip";
 import { PlayerName } from "./PlayerName";
@@ -274,6 +275,26 @@ export default function LeaderboardScreen({
   // qualify for the ranked board yet" (>0 with no ranked rows).
   const hallTaggedGames = hallQ.data?.taggedGames ?? 0;
 
+  // Per-hall pages are public, crawlable SEO surfaces (they're listed in the
+  // venue sitemap), so give each one an indexable, venue-specific title +
+  // description and a canonical pointing at its readable slug URL. Applied
+  // client-side: the app ships as a static build, so dynamic per-venue routes
+  // can't be prerendered at build time — search engines that render JS pick this
+  // up, and the canonical keeps the legacy-id and slug URLs from splitting into
+  // duplicate pages. `null` on the global board leaves its meta untouched.
+  const hallSlug = hallVenue?.slug ?? venueId ?? "";
+  const hallMeta: PageMetaConfig | null =
+    isHall && hallVenue
+      ? {
+          title: `${hallVenue.name} Pool Leaderboard${hallVenue.locality ? ` · ${hallVenue.locality}` : ""} | BreakBPM`,
+          description: `Live local pool leaderboard for ${hallVenue.name}${hallVenue.locality ? ` in ${hallVenue.locality}` : ""}. See the top 8-ball & 9-ball players ranked by accuracy and Balls Per Minute, tracked free with BreakBPM.`,
+          canonical: `https://breakbpm.com/leaderboard/hall/${encodeURIComponent(hallSlug)}`,
+          ogTitle: `${hallVenue.name} — Local Pool Leaderboard | BreakBPM`,
+          ogDescription: `The live 8-ball & 9-ball leaderboard for ${hallVenue.name}${hallVenue.locality ? ` in ${hallVenue.locality}` : ""}, ranked by accuracy and Balls Per Minute.`,
+        }
+      : null;
+  usePageMeta(hallMeta);
+
   // Cosmetic: when a hall was opened via a legacy id (or an un-slugged hall that
   // just self-healed), swap the address bar to the readable slug, so the
   // shown/copied URL is the nice one. A replace (not push) keeps the back button
@@ -375,11 +396,17 @@ export default function LeaderboardScreen({
                     🗺️ Open in Maps
                   </a>
                   {websiteUrl && (
+                    // A real dofollow backlink to the venue's own site — part of
+                    // the value a hall gets from being listed, so deliberately
+                    // NO rel="nofollow". We drop "noreferrer" (which would strip
+                    // the Referer header) so the venue can attribute the traffic
+                    // to BreakBPM, but keep "noopener" so the opened tab can't
+                    // reach back through window.opener.
                     <a
                       className="btn"
                       href={websiteUrl}
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener"
                     >
                       🌐 Website
                     </a>

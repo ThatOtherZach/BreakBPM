@@ -8,6 +8,7 @@ import subscriptionsRouter from "./subscriptions";
 import gamesRouter from "./games";
 import findPlayersRouter from "./findPlayers";
 import venuesRouter from "./venues";
+import sitemapRouter from "./sitemap";
 import adsRouter from "./ads";
 import adminRouter from "./admin";
 
@@ -22,6 +23,7 @@ router.use(subscriptionsRouter);
 router.use(gamesRouter);
 router.use(findPlayersRouter);
 router.use(venuesRouter);
+router.use(sitemapRouter);
 router.use(adsRouter);
 router.use(adminRouter);
 

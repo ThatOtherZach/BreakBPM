@@ -1,33 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://breakbpm.com/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://breakbpm.com/pool-stats-app</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://breakbpm.com/for-venues</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://breakbpm.com/passes</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://breakbpm.com/about</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://breakbpm.com/legal</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.5</priority>
-  </url>
-</urlset>
+<!--
+  Sitemap INDEX. Static marketing/legal pages live in the build-time
+  sitemap-pages.xml; per-hall leaderboard pages are minted by admins AFTER this
+  static build ships, so they're served live by the API at
+  /api/sitemap/venues.xml (same domain via the shared proxy). robots.txt points
+  crawlers here.
+-->
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://breakbpm.com/sitemap-pages.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://breakbpm.com/api/sitemap/venues.xml</loc>
+  </sitemap>
+</sitemapindex>

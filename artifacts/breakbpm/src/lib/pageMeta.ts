@@ -13,9 +13,18 @@ function setMetaAttr(selector: string, attr: string, value: string): void {
   if (el) el.setAttribute(attr, value);
 }
 
-export function usePageMeta(meta: PageMetaConfig): void {
-  const { title, description, canonical, ogTitle, ogDescription } = meta;
+// Accepts `null` so a screen with a dynamic, sometimes-absent subject (e.g. a
+// per-hall leaderboard before its venue loads, or the global board which keeps
+// the default meta) can call this hook unconditionally and no-op until it has
+// real values. Static callers passing a full config are unaffected.
+export function usePageMeta(meta: PageMetaConfig | null): void {
+  const title = meta?.title;
+  const description = meta?.description;
+  const canonical = meta?.canonical;
+  const ogTitle = meta?.ogTitle;
+  const ogDescription = meta?.ogDescription;
   useEffect(() => {
+    if (title == null || description == null || canonical == null) return;
     document.title = title;
     setMetaAttr('meta[name="description"]', 'content', description);
     setMetaAttr('link[rel="canonical"]', 'href', canonical);
