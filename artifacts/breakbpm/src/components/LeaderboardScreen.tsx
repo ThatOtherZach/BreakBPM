@@ -268,6 +268,11 @@ export default function LeaderboardScreen({
   const data = q.data;
   const rows = data?.rows ?? [];
   const hallVenue = hallQ.data?.venue;
+  // Games ever tagged to this hall (any mode/state). The ranked board only
+  // counts qualifying 1-on-1 games, so this separate signal lets the empty board
+  // tell "no games tagged here yet" (0) apart from "games tagged but none
+  // qualify for the ranked board yet" (>0 with no ranked rows).
+  const hallTaggedGames = hallQ.data?.taggedGames ?? 0;
 
   // Cosmetic: when a hall was opened via a legacy id (or an un-slugged hall that
   // just self-healed), swap the address bar to the readable slug, so the
@@ -487,17 +492,41 @@ export default function LeaderboardScreen({
           <div className="panel">
             <div className="panel-body panel--wood" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
               {rows.length === 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                  <p style={{ fontSize: 13, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.6)", margin: 0, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                    <span className="eight-ball-icon" aria-hidden="true" style={{ fontSize: 18.4 }} /> <span>No ranked players yet.</span>
-                  </p>
-                  <p style={{ fontSize: 12, color: "#cde8cd", textShadow: "0 1px 2px rgba(0,0,0,0.5)", margin: 0, textAlign: "center" }}>
-                    Looking for a game?
-                  </p>
-                  <button className="btn" onClick={onFindPlayers}>
-                    🤝 Find a meetup →
-                  </button>
-                </div>
+                isHall ? (
+                  // Venue-branded empty board: at the exact moment an owner is
+                  // looking at their fresh hall, sell the first game instead of a
+                  // flat "no players" line. `hallTaggedGames` (games ever tagged
+                  // here) is independent of the ranked rows, so it splits "games
+                  // tagged but none qualify yet" from "no games tagged here yet"
+                  // and tells the visitor how to get on the board.
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                    <p style={{ fontFamily: "VT323", fontSize: 22, lineHeight: 1.1, color: "#ffe98a", textShadow: "1px 1px 0 #042414", margin: 0, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
+                      <span className="eight-ball-icon" aria-hidden="true" style={{ fontSize: 20 }} />{" "}
+                      <span>Be the first to set the house record at {hallVenue?.name ?? "this hall"}!</span>
+                    </p>
+                    <p style={{ fontSize: 12, color: "#cde8cd", textShadow: "0 1px 2px rgba(0,0,0,0.5)", margin: 0, textAlign: "center", lineHeight: 1.45 }}>
+                      {hallTaggedGames > 0
+                        ? `Games have been tagged here, but none qualify for the ${MODE_LABEL_PROSE[mode]} board yet. `
+                        : "No games have been tagged here yet. "}
+                      Play and tag a 1-on-1 8-ball or 9-ball game at the hall to claim the top spot.
+                    </p>
+                    <button className="btn" onClick={onFindPlayers}>
+                      🤝 Find a meetup →
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                    <p style={{ fontSize: 13, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.6)", margin: 0, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                      <span className="eight-ball-icon" aria-hidden="true" style={{ fontSize: 18.4 }} /> <span>No ranked players yet.</span>
+                    </p>
+                    <p style={{ fontSize: 12, color: "#cde8cd", textShadow: "0 1px 2px rgba(0,0,0,0.5)", margin: 0, textAlign: "center" }}>
+                      Looking for a game?
+                    </p>
+                    <button className="btn" onClick={onFindPlayers}>
+                      🤝 Find a meetup →
+                    </button>
+                  </div>
+                )
               ) : (
                 <>
                   {rows.map((row) => (

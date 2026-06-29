@@ -1558,6 +1558,7 @@ export interface HallLeaderboardResult {
   pageSize: number;
   totalPlayers: number;
   totalPages: number;
+  taggedGames: number;
   rows: LeaderboardRow[];
   venue: Venue;
 }

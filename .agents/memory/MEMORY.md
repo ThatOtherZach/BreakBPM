@@ -54,3 +54,4 @@
 - [Venue slug resolution](venue-slug-resolution.md) — /leaderboard/hall/:venueId resolves slug OR legacy id; exact id match must win (charsets overlap), never `or(...).limit(1)`.
 - [Panel flex-shrink clipping on mobile](panel-flex-shrink-clipping.md) — .app-body flex column compresses .panel (overflow:hidden) when content > viewport, clipping bottom buttons; fix is .panel{flex-shrink:0}. Bottom clip = flex-shrink, not nowrap width.
 - [Filter before rank when capping](filter-before-rank-with-cap.md) — top-N endpoints must put must-qualify filters (active=true) inside the aggregate WHERE/JOIN before ORDER BY/LIMIT; over-fetch-buffer + post-filter silently drops valid rows.
+- [Hall leaderboard counts](hall-leaderboard-counts.md) — hall `totalPlayers` = RANKED rows (couples to rows, 0 when empty); use the separate `taggedGames` to tell "no games tagged" from "tagged but none qualify."

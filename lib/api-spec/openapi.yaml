@@ -3016,14 +3016,21 @@ components:
     # A LeaderboardResult scoped to one Verified Hall, plus that hall's identity.
     HallLeaderboardResult:
       type: object
-      required: [mode, window, page, pageSize, totalPlayers, totalPages, rows, venue]
+      required: [mode, window, page, pageSize, totalPlayers, totalPages, taggedGames, rows, venue]
       properties:
         mode: { type: string, enum: [8ball, 9ball] }
         window: { type: string, enum: [30d, 90d, all] }
         page: { type: integer }
         pageSize: { type: integer }
+        # Count of RANKED players for this mode/window (i.e. rows across all
+        # pages). Distinct from taggedGames below: a hall can have tagged games
+        # while totalPlayers is 0 because none qualify for the ranked board yet.
         totalPlayers: { type: integer }
         totalPages: { type: integer }
+        # Count of games ever tagged to this hall (any mode/state). Lets an empty
+        # board tell "no games tagged here yet" (0) apart from "games tagged but
+        # none qualify for the ranked board yet" (>0 with no ranked rows).
+        taggedGames: { type: integer }
         rows:
           type: array
           items: { $ref: "#/components/schemas/LeaderboardRow" }

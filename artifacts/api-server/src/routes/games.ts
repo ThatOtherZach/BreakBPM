@@ -2820,6 +2820,16 @@ router.get("/leaderboard/hall", async (req, res): Promise<void> => {
   const offset = (safePage - 1) * pageSize;
   const rows = all.slice(offset, offset + pageSize);
 
+  // How many games have ever been tagged to this hall (any mode/state). The
+  // ranked board (`rows`/`totalPlayers`) only counts qualifying 1-on-1 games, so
+  // an empty board needs this separate signal to tell "no games tagged here yet"
+  // apart from "games tagged but none qualify for the ranked board yet".
+  const tagged = await db
+    .select({ value: count() })
+    .from(gamesTable)
+    .where(eq(gamesTable.venueId, venue.id));
+  const taggedGames = tagged[0]?.value ?? 0;
+
   res.json(
     GetHallLeaderboardResponse.parse({
       mode,
@@ -2828,6 +2838,7 @@ router.get("/leaderboard/hall", async (req, res): Promise<void> => {
       pageSize,
       totalPlayers,
       totalPages,
+      taggedGames,
       rows,
       venue: {
         id: venue.id,

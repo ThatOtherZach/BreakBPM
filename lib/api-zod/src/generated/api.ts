@@ -1273,6 +1273,7 @@ export const GetHallLeaderboardResponse = zod.object({
   "pageSize": zod.number(),
   "totalPlayers": zod.number(),
   "totalPages": zod.number(),
+  "taggedGames": zod.number(),
   "rows": zod.array(zod.object({
   "rank": zod.number(),
   "screenName": zod.string(),
