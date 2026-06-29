@@ -18,6 +18,7 @@ import RedeemScreen from "./components/RedeemScreen";
 import InviteScreen from "./components/InviteScreen";
 import ClaimScreen from "./components/ClaimScreen";
 import PoolStatsAppScreen from "./components/PoolStatsAppScreen";
+import ForVenuesScreen from "./components/ForVenuesScreen";
 import { SignInPage, SignUpPage } from "./components/SignInPage";
 import { readPendingRedeem } from "./lib/pendingRedeem";
 import { readPendingClaim } from "./lib/pendingClaim";
@@ -499,6 +500,21 @@ function PoolStatsAppRoute() {
   );
 }
 
+function ForVenuesRoute() {
+  const [, setLocation] = useLocation();
+  return (
+    <ForVenuesScreen
+      onHome={() => setLocation("/")}
+      onManual={() => setLocation("/about")}
+      onAccount={() => setLocation("/account")}
+      onStats={() => setLocation("/stats")}
+      onFindPlayers={() => setLocation("/find-players")}
+      onSignIn={() => setLocation("/sign-in")}
+      onPasses={() => setLocation("/passes")}
+    />
+  );
+}
+
 function JoinRoute({ params }: { params: { code: string } }) {
   const [, setLocation] = useLocation();
   return (
@@ -569,6 +585,7 @@ function Routes() {
       <Route path="/legal" component={LegalRoute} />
       <Route path="/passes" component={PassesRoute} />
       <Route path="/pool-stats-app" component={PoolStatsAppRoute} />
+      <Route path="/for-venues" component={ForVenuesRoute} />
       <Route path="/redeem/:code" component={RedeemRoute} />
       <Route path="/invite/:code" component={InviteRoute} />
       <Route path="/claim" component={ClaimRoute} />

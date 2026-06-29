@@ -138,3 +138,78 @@ export const POOL_STATS_FAQ: FaqItem[] = [
     a: "Claim one free pass per account from this page. Every claim is a guaranteed win: at minimum a Day pass, with a chance at a Lucky Break roll for a Monthly or even Lifetime pass, while monthly stock lasts.",
   },
 ];
+
+/* ───────────────────────── For Venues (venue-owner pitch) ─────────────────────────
+ * Shared copy for the `/for-venues` page. Imported by BOTH the React screen
+ * (`ForVenuesScreen.tsx`) and the build-time prerenderer (`vite.config.ts`),
+ * so the human-visible page, the crawler-visible static HTML, and the FAQPage
+ * JSON-LD stay in lockstep. Keep it plain data (no React) for build-time import.
+ */
+
+export const FOR_VENUES_H1 = "Put Your Hall on the Board";
+
+export const FOR_VENUES_TAGLINE =
+  "A free listing for pool halls — all we ask is a poster by your table.";
+
+export const FOR_VENUES_INTRO =
+  "BreakBPM is the free score app players use right at the table — live Balls Per Minute, accuracy, and a leaderboard. List your pool hall and your regulars get their own board: the scoreboard they'll actually keep, in their pockets, at your tables.";
+
+export const FOR_VENUES_SHOWCASE: ShowcaseItem[] = [
+  {
+    title: "Your Own House Leaderboard",
+    body: "Every verified hall gets its own Local Leaderboard. Regulars battle for the top spot on your tables, and a walk-in just scans the code to get on the board. It's league-night standings that run themselves.",
+    img: "/hall-card-example.png",
+    imgAlt: "A verified hall card with its own Local Leaderboard button",
+    liveHall: true,
+  },
+  {
+    title: "Found by Local Players",
+    body: "Your hall shows up as a starred pin on the map, points the in-app compass toward you for nearby players, and climbs the Most Popular Venues list as games rack up. Players hunting for a table find you.",
+  },
+  {
+    title: "A Link Back to Your Place",
+    body: "Your hall page links straight to your website and opens you in Google Maps — a little extra online visibility that sends players right to your door.",
+  },
+  {
+    title: "The Scoreboard They'll Actually Use",
+    body: "That dusty bead string over the table? This is the version your players keep on their phones. No hardware, no setup, no cost to you.",
+  },
+];
+
+export const FOR_VENUES_ASK_TITLE = "The Whole Deal";
+
+export const FOR_VENUES_ASK_BODY =
+  "We list your hall for free. You put up a BreakBPM poster by your pool table. That's it — and we send you the poster artwork.";
+
+export const FOR_VENUES_HOWTO_TITLE = "Get Your Hall Listed";
+
+export const FOR_VENUES_HOWTO_BODY =
+  "Email us your hall's name, address, number of tables, and a website if you have one. Our team sets up verified halls by hand and sends over your poster — usually within a day or two.";
+
+export const FOR_VENUES_CTA_LABEL = "Request Your Hall";
+
+export const FOR_VENUES_MAILTO =
+  "mailto:contact@saymservices.com?subject=Verified%20Pool%20Hall%20Request";
+
+export const FOR_VENUES_FAQ: FaqItem[] = [
+  {
+    q: "What does it cost to list my pool hall?",
+    a: "Nothing. A verified hall listing on BreakBPM is free. In exchange, we ask you to display a BreakBPM poster near your pool table — we send you the artwork.",
+  },
+  {
+    q: "What do my players get?",
+    a: "Their own Local Leaderboard for your tables, free score tracking with live Balls Per Minute and accuracy, and an easy way to find your hall inside the app.",
+  },
+  {
+    q: "How do games get added to my hall's leaderboard?",
+    a: "A player finishes a 1-on-1 game on-site and tags it to your hall — a quick on-location check-in. Those games rank players on your hall's Local Leaderboard.",
+  },
+  {
+    q: "How do I get my hall listed?",
+    a: "Email us your hall's name, address, table count, and website (if you have one). Our team adds verified halls by hand, usually within a day or two.",
+  },
+  {
+    q: "Can I update or remove my listing later?",
+    a: "Yes. Just email us and we'll update your hall's details or remove the listing.",
+  },
+];

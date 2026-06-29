@@ -14,6 +14,17 @@ import {
   POOL_STATS_SHOWCASE,
   POOL_STATS_SYSREQ,
   POOL_STATS_FAQ,
+  FOR_VENUES_H1,
+  FOR_VENUES_TAGLINE,
+  FOR_VENUES_INTRO,
+  FOR_VENUES_SHOWCASE,
+  FOR_VENUES_ASK_TITLE,
+  FOR_VENUES_ASK_BODY,
+  FOR_VENUES_HOWTO_TITLE,
+  FOR_VENUES_HOWTO_BODY,
+  FOR_VENUES_CTA_LABEL,
+  FOR_VENUES_MAILTO,
+  FOR_VENUES_FAQ,
 } from "./src/lib/landingContent";
 const require = createRequire(import.meta.url);
 const { version } = require("./package.json") as { version: string };
@@ -95,6 +106,17 @@ const PUBLIC_ROUTES: RouteMetaEntry[] = [
     ogDescription:
       "Free pool stats app & billiards score tracker. Track accuracy and live Balls Per Minute across 8-ball, 9-ball, practice, and solo Shark mode.",
     jsonLd: poolStatsAppJsonLd(),
+  },
+  {
+    path: "for-venues",
+    title: "List Your Pool Hall on BreakBPM — Free Verified Hall Listing",
+    description:
+      "List your pool hall on BreakBPM for free: your own live Local Leaderboard, map discovery, and a link back to your website — in exchange for a poster by your table.",
+    canonical: "https://breakbpm.com/for-venues",
+    ogTitle: "BreakBPM for Venues — Put Your Hall on the Board",
+    ogDescription:
+      "Free listing for pool halls: your own Local Leaderboard, map discovery, and a website backlink. All we ask is a BreakBPM poster by your table.",
+    jsonLd: forVenuesJsonLd(),
   },
 ];
 
@@ -303,6 +325,49 @@ function poolStatsAppJsonLd(): string {
   return `<script type="application/ld+json">${json}</script>`;
 }
 
+/** Service + FAQPage structured data for the venue-owner pitch page. The Service
+ *  node describes the free verified-hall listing (a $0 Offer); the FAQ entries
+ *  come from the shared landingContent module so the markup matches the on-page
+ *  (and prerendered) FAQ text. */
+function forVenuesJsonLd(): string {
+  const service = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: "BreakBPM Verified Hall Listing",
+    serviceType: "Pool hall listing",
+    description:
+      "A free listing for pool halls on BreakBPM. Each verified hall gets its own live Local Leaderboard, map discovery, and a link back to the venue's website, in exchange for displaying a BreakBPM poster by the table.",
+    areaServed: "Worldwide",
+    url: "https://breakbpm.com/for-venues",
+    provider: {
+      "@type": "Organization",
+      name: "Saym Services Inc.",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Vancouver",
+        addressCountry: "CA",
+      },
+    },
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+      description: "Free verified hall listing.",
+    },
+  };
+  const faqPage = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FOR_VENUES_FAQ.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  };
+  const json = JSON.stringify([service, faqPage]).replace(/</g, "\\u003c");
+  return `<script type="application/ld+json">${json}</script>`;
+}
+
 function buildPoolStatsAppBody(): string {
   const PEEK_IMG = `width:100%;height:auto;display:block;border:2px solid #000080;box-shadow:2px 2px 0 rgba(0,0,0,0.4);margin-bottom:6px`;
 
@@ -353,6 +418,42 @@ ${faq}
 </div>`.trim();
 }
 
+function buildForVenuesBody(): string {
+  const PEEK_IMG = `width:100%;height:auto;display:block;border:2px solid #000080;box-shadow:2px 2px 0 rgba(0,0,0,0.4);margin-bottom:6px`;
+
+  const showcase = FOR_VENUES_SHOWCASE.map(
+    (f) =>
+      `  <div style="margin:1em 0">${f.img ? `\n    <img src="${escapeHtml(f.img)}" alt="${escapeHtml(f.imgAlt ?? "")}" style="${PEEK_IMG}" />` : ""}\n    <h2>${escapeHtml(f.title)}</h2>\n    <p>${escapeHtml(f.body)}</p>\n  </div>`,
+  ).join("\n");
+  const faq = FOR_VENUES_FAQ.map(
+    (f) => `  <h3>${escapeHtml(f.q)}</h3>\n  <p>${escapeHtml(f.a)}</p>`,
+  ).join("\n");
+
+  return `
+${PRERENDER_STYLE}
+<div id="prerender-static">
+  <nav><a href="/">← Home</a><a href="/pool-stats-app">About</a><a href="/passes">Passes &amp; Pricing</a><a href="/legal">Legal</a></nav>
+  <h1>${escapeHtml(FOR_VENUES_H1)}</h1>
+  <p style="font-size:.85rem;color:#555;font-style:italic">${escapeHtml(FOR_VENUES_TAGLINE)}</p>
+  <p>${escapeHtml(FOR_VENUES_INTRO)}</p>
+  <p><strong><a href="${FOR_VENUES_MAILTO}">${escapeHtml(FOR_VENUES_CTA_LABEL)}</a></strong> — a free listing, added by our team.</p>
+
+${showcase}
+
+  <h2>${escapeHtml(FOR_VENUES_ASK_TITLE)}</h2>
+  <p>${escapeHtml(FOR_VENUES_ASK_BODY)}</p>
+
+  <h2>${escapeHtml(FOR_VENUES_HOWTO_TITLE)}</h2>
+  <p>${escapeHtml(FOR_VENUES_HOWTO_BODY)}</p>
+  <p><strong><a href="${FOR_VENUES_MAILTO}">${escapeHtml(FOR_VENUES_CTA_LABEL)} →</a></strong></p>
+
+  <h2>Frequently Asked Questions</h2>
+${faq}
+
+  <p style="margin-top:2em;font-size:.8rem;color:#888">Built by Saym Services Inc. · Vancouver, BC · <a href="/">Open BreakBPM</a></p>
+</div>`.trim();
+}
+
 function routeMetaPlugin(): Plugin {
   return {
     name: "route-meta-prerender",
@@ -371,6 +472,7 @@ function routeMetaPlugin(): Plugin {
         legal: buildLegalBody(marked),
         passes: buildPassesBody(),
         "pool-stats-app": buildPoolStatsAppBody(),
+        "for-venues": buildForVenuesBody(),
       };
 
       for (const route of PUBLIC_ROUTES) {

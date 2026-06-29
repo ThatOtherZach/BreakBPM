@@ -33,6 +33,7 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
         <a href="/pool-stats-app">About BreakBPM</a>
         <a href="/passes">Passes &amp; Pricing</a>
         <a href="/about">BreakBPM Manual</a>
+        <a href="/for-venues">List Your Pool Hall</a>
         <a href="/legal">Legal</a>
       </div>
       <div className="navbar">
@@ -77,6 +78,11 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
           {!at('/pool-stats-app') && (
             <button className="navbar-menu-item" onClick={() => { setOpen(false); setLocation('/pool-stats-app'); }}>
               <span style={{ textDecoration: 'underline' }}>A</span>bout
+            </button>
+          )}
+          {!at('/for-venues') && (
+            <button className="navbar-menu-item" onClick={() => { setOpen(false); setLocation('/for-venues'); }}>
+              For <span style={{ textDecoration: 'underline' }}>V</span>enues
             </button>
           )}
           <SignedIn>

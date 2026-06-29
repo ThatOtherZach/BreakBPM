@@ -12,6 +12,7 @@ Built and operated by Saym Services Inc. in Vancouver, Canada.
 - About (overview + free pass): https://breakbpm.com/pool-stats-app
 - Passes & Pricing: https://breakbpm.com/passes
 - Manual (how it works): https://breakbpm.com/about
+- For Venues (list your pool hall, free): https://breakbpm.com/for-venues
 - Legal: https://breakbpm.com/legal
 
 ## Source code

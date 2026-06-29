@@ -65,4 +65,11 @@ export const PAGE_META = {
     ogTitle: 'BreakBPM — The Pool Stats App with Balls Per Minute',
     ogDescription: 'Free pool stats app & billiards score tracker. Track accuracy and live Balls Per Minute across 8-ball, 9-ball, practice, and solo Shark mode.',
   },
+  forVenues: {
+    title: 'List Your Pool Hall on BreakBPM — Free Verified Hall Listing',
+    description: 'List your pool hall on BreakBPM for free: your own live Local Leaderboard, map discovery, and a link back to your website — in exchange for a poster by your table.',
+    canonical: 'https://breakbpm.com/for-venues',
+    ogTitle: 'BreakBPM for Venues — Put Your Hall on the Board',
+    ogDescription: 'Free listing for pool halls: your own Local Leaderboard, map discovery, and a website backlink. All we ask is a BreakBPM poster by your table.',
+  },
 } satisfies Record<string, PageMetaConfig>;
