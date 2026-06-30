@@ -459,15 +459,6 @@ export default function LeaderboardScreen({
             </span>
           </div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {(isHall || isCity) && (
-              <button
-                className="btn"
-                style={{ alignSelf: "flex-start", padding: "4px 8px", fontSize: 11 }}
-                onClick={() => setLocation("/leaderboard")}
-              >
-                ← Global leaderboard
-              </button>
-            )}
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               {MODES.map((m) => {
                 const active = mode === m;
@@ -581,9 +572,14 @@ export default function LeaderboardScreen({
                         : "No games have been tagged here yet. "}
                       Play and tag a 1-on-1 8-ball or 9-ball game at the hall to claim the top spot.
                     </p>
-                    <button className="btn" onClick={onFindPlayers}>
-                      🤝 Find a meetup →
-                    </button>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button className="btn" onClick={() => setLocation("/leaderboard")}>
+                        🌍 Global leaderboard
+                      </button>
+                      <button className="btn" onClick={onFindPlayers}>
+                        🤝 Find a meetup →
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
@@ -593,9 +589,16 @@ export default function LeaderboardScreen({
                     <p style={{ fontSize: 12, color: "#cde8cd", textShadow: "0 1px 2px rgba(0,0,0,0.5)", margin: 0, textAlign: "center" }}>
                       Looking for a game?
                     </p>
-                    <button className="btn" onClick={onFindPlayers}>
-                      🤝 Find a meetup →
-                    </button>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {isCity && (
+                        <button className="btn" onClick={() => setLocation("/leaderboard")}>
+                          🌍 Global leaderboard
+                        </button>
+                      )}
+                      <button className="btn" onClick={onFindPlayers}>
+                        🤝 Find a meetup →
+                      </button>
+                    </div>
                   </div>
                 )
               ) : (
