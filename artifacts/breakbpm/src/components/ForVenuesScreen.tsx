@@ -116,7 +116,7 @@ export default function ForVenuesScreen({
             {FOR_VENUES_SHOWCASE.map((item) => (
               <section key={item.title} className="lp-feature">
                 <h2 className="lp-h2">{item.title}</h2>
-                <p className="mb-[10px]">{item.body}</p>
+                <p className="mb-[20px]">{item.body}</p>
                 {item.liveHall ? (
                   <LatestHallWidget
                     fallbackImg={item.img}
