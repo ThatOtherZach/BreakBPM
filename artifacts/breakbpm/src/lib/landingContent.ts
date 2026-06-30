@@ -181,7 +181,7 @@ export const FOR_VENUES_ASK_TITLE = "The Whole Deal";
 export const FOR_VENUES_ASK_BODY =
   "We list your hall for free. You post once on social media — tag #BreakBPM and link to your hall's leaderboard page. Any platform works. That's it.";
 
-export const FOR_VENUES_HOWTO_TITLE = "Get Your Hall Listed";
+export const FOR_VENUES_HOWTO_TITLE = "How to Get Listed";
 
 export const FOR_VENUES_HOWTO_BODY =
   "Get verified for free! We only ask that you post on social media with the tag #BreakBPM and a link to your BreakBPM leaderboard.\n\nEmail us your venue's name, address, number of tables, and a website if you have one. Verification takes 1-3 business days.";
