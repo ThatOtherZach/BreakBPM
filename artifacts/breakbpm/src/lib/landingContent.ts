@@ -167,10 +167,6 @@ export const FOR_VENUES_SHOWCASE: ShowcaseItem[] = [
     body: "Your hall shows up as a starred pin on the map, points the in-app compass toward you for nearby players, and climbs the Most Popular Venues list as games rack up. Players hunting for a table find you.",
   },
   {
-    title: "A Link Back to Your Place",
-    body: "Your hall page links straight to your website and opens you in Google Maps — a little extra online visibility that sends players right to your door.",
-  },
-  {
     title: "The Scoreboard They'll Actually Use",
     body: "That dusty bead string over the table? This is the version your players keep on their phones. No hardware, no setup, no cost to you.",
   },
