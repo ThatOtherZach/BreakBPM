@@ -565,7 +565,7 @@ export default function LeaderboardScreen({
                   (<div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
                     <p style={{ fontFamily: "VT323", fontSize: 22, lineHeight: 1.1, color: "#ffe98a", textShadow: "1px 1px 0 #042414", margin: 0, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
                       <span className="eight-ball-icon" aria-hidden="true" style={{ fontSize: 20 }} />{" "}
-                      <span>Be the first to set the house record at {hallVenue?.name ?? "this hall"}!</span>
+                      <span>Be the first at {hallVenue?.name ?? "this hall"}!</span>
                     </p>
                     <p style={{ fontSize: 12, color: "#cde8cd", textShadow: "0 1px 2px rgba(0,0,0,0.5)", margin: 0, textAlign: "center", lineHeight: 1.45 }}>
                       {hallTaggedGames > 0
