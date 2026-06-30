@@ -1,7 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
+import { QRCodeSVG } from "qrcode.react";
 import Navbar from "./Navbar";
 import LegalDisclosure from "./LegalDisclosure";
-import { VenueCard } from "./FindPlayersScreen";
+import { venueWebsiteUrl } from "./FindPlayersScreen";
+import { venuePaymentBadge } from "../lib/venuePaymentType";
 import { useListVenues, getListVenuesQueryKey } from "@workspace/api-client-react";
 import { usePageMeta, PAGE_META } from "../lib/pageMeta";
 import {
@@ -27,22 +30,101 @@ function LatestHallWidget({
   fallbackImg?: string;
   fallbackAlt?: string;
 }) {
+  const [, setLocation] = useLocation();
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [linkCopyFailed, setLinkCopyFailed] = useState(false);
   const { data } = useListVenues(
     { page: 1, limit: 1 },
     { query: { queryKey: getListVenuesQueryKey({ page: 1, limit: 1 }) } },
   );
   const venue = data?.venues?.[0];
-  if (venue) return <VenueCard venue={venue} distanceKm={null} />;
-  if (fallbackImg)
-    return (
-      <img
-        src={fallbackImg}
-        alt={fallbackAlt}
-        className="lp-sneak-img"
-        loading="lazy"
-      />
-    );
-  return null;
+
+  if (!venue) {
+    if (fallbackImg)
+      return (
+        <img
+          src={fallbackImg}
+          alt={fallbackAlt}
+          className="lp-sneak-img"
+          loading="lazy"
+        />
+      );
+    return null;
+  }
+
+  const hallUrl = `${globalThis.location?.origin ?? ""}/leaderboard/hall/${venue.slug ?? venue.id}`;
+  const websiteUrl = venueWebsiteUrl(venue.contact);
+  const pay = venuePaymentBadge(venue.paymentType);
+
+  return (
+    <div className="fpp-list fpp-venue-list">
+      <div className="fpp-card fpp-card--venue">
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "space-between" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="fpp-card-name">
+              <span className="cue-ball-icon" aria-hidden="true" style={{ fontSize: "18.4px" }} /> {venue.name}
+            </div>
+            {venue.locality && (
+              <div className="fpp-card-loc">
+                🏙️{" "}
+                <span
+                  style={{ cursor: "pointer", textDecoration: "underline dotted", textUnderlineOffset: 2 }}
+                  title={`View ${venue.locality} city leaderboard`}
+                  onClick={() => setLocation(`/leaderboard/city/${encodeURIComponent(venue.locality!)}`)}
+                >
+                  {venue.locality}
+                </span>
+              </div>
+            )}
+            {venue.tableCount != null && (
+              <div className="fpp-card-loc">🎱 {venue.tableCount} Tables</div>
+            )}
+            {pay && (
+              <div className="fpp-card-pay">
+                <span className="fpp-pay-badge">{pay.icon} {pay.label}</span>
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0 }}>
+            <span
+              style={{ background: "#fff", padding: 5, borderRadius: 4, lineHeight: 0 }}
+              title="Scan to open this hall's leaderboard"
+            >
+              <QRCodeSVG value={hallUrl} size={72} level="M" />
+            </span>
+            <button
+              type="button"
+              className="btn"
+              style={{ fontSize: 11, padding: "1px 8px", width: "100%" }}
+              onClick={() => {
+                navigator.clipboard.writeText(hallUrl).then(
+                  () => { setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000); },
+                  () => { setLinkCopyFailed(true); setTimeout(() => setLinkCopyFailed(false), 2000); },
+                );
+              }}
+            >
+              {linkCopied ? "✓ Copied" : linkCopyFailed ? "⚠ Failed" : "📋 Copy"}
+            </button>
+          </div>
+        </div>
+        <div className="fpp-card-actions">
+          <a
+            className="btn"
+            href={`https://www.google.com/maps?q=${venue.latitude},${venue.longitude}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            🗺️ Open in Maps
+          </a>
+          {websiteUrl && (
+            <a className="btn" href={websiteUrl} target="_blank" rel="noopener">
+              🌐 Website
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 interface Props {
