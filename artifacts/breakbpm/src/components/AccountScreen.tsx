@@ -1476,7 +1476,7 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
                 const busy = inviteBusyId === inv.id;
                 return (
                   <div key={inv.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <span style={{ fontSize: 11, color: "#cdeccd" }}>
+                    <span style={{ fontSize: 11, color: "#fff" }}>
                       {inv.status === "pending" ? "🔗 Invited by " : "✅ Linked by "}
                       <strong>{inv.invitedBy}</strong>
                       {inv.status === "accepted" ? " · counts toward your stats" : ""}
