@@ -228,15 +228,15 @@ export default function GameHistoryCard({
             }}
           >
             {modeLabel}
-            <span style={{ fontSize: 14, color: "#8aa593", textShadow: "none" }}>
-              {g.group === "solids"
-                ? "(Solids)"
-                : g.group === "stripes"
-                  ? "(Stripes)"
-                  : g.sharkMode
-                    ? "(Shark)"
-                    : `(${modeLabel})`}
-            </span>
+            {(g.group || g.sharkMode) && (
+              <span style={{ fontSize: 14, color: "#8aa593", textShadow: "none" }}>
+                {g.group === "solids"
+                  ? "(Solids)"
+                  : g.group === "stripes"
+                    ? "(Stripes)"
+                    : "(Shark)"}
+              </span>
+            )}
           </span>
           {(() => {
             // A finished game is tagged to a Verified Hall (venue) OR — when no
