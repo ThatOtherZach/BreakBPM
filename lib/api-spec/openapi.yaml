@@ -2505,6 +2505,11 @@ components:
         # instead). Drives the #CITY link on the history card that opens the
         # City Leaderboard (/n/:locality).
         cityLocality: { type: ["string", "null"] }
+        # The ball-group the subject was assigned during this game — "solids"
+        # (balls 1-7) or "stripes" (balls 9-15). Null when no group was ever
+        # assigned (9-ball, Practice, or an 8-ball game that ended before groups
+        # were decided). Only set for 8-ball games (including Shark mode).
+        group: { type: ["string", "null"], enum: ["solids", "stripes", null] }
 
     MentionResolveResult:
       type: object

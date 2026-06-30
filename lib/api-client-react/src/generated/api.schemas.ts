@@ -955,6 +955,17 @@ export type GameHistoryEntryVenue = {
   slug?: string | null;
 } | null;
 
+/**
+ * @nullable
+ */
+export type GameHistoryEntryGroup = typeof GameHistoryEntryGroup[keyof typeof GameHistoryEntryGroup] | null;
+
+
+export const GameHistoryEntryGroup = {
+  solids: 'solids',
+  stripes: 'stripes',
+} as const;
+
 export interface GameHistoryEntry {
   id: string;
   gameType: string;
@@ -983,6 +994,8 @@ export interface GameHistoryEntry {
   venue: GameHistoryEntryVenue;
   /** @nullable */
   cityLocality?: string | null;
+  /** @nullable */
+  group?: GameHistoryEntryGroup;
 }
 
 export interface MentionResolveResult {

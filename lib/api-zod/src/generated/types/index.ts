@@ -87,6 +87,7 @@ export * from './gameActivityResult';
 export * from './gameHistoryEntry';
 export * from './gameHistoryEntryChaosMode';
 export * from './gameHistoryEntryEndReason';
+export * from './gameHistoryEntryGroup';
 export * from './gameHistoryEntryHostTheme';
 export * from './gameHistoryEntryPocketSequenceItem';
 export * from './gameHistoryEntryVenue';

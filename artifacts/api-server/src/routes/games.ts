@@ -354,6 +354,23 @@ function toHistoryEntry(
           player: typeof e["playerName"] === "string" ? (e["playerName"] as string) : "",
         }));
   const { outcome, opponent } = resolveSubjectResult(g, gs, subject, summary);
+  // Subject's ball-group assignment ("solids" | "stripes") from the game state's
+  // `groups` map, keyed by the player's persisted slot name. Only meaningful for
+  // 8-ball games; null for 9-ball, Practice, and games that ended before groups
+  // were decided. Resolved by slot (rename-proof), with name as fallback.
+  const persistedPlayers: Array<{ name?: string }> = summary
+    ? summary.players
+    : Array.isArray(gs?.["players"])
+      ? (gs!["players"] as Array<{ name?: string }>)
+      : [];
+  const subjectSlotName =
+    subject.slot != null && subject.slot >= 0 && subject.slot < persistedPlayers.length
+      ? (persistedPlayers[subject.slot]?.name ?? subject.name)
+      : subject.name;
+  const rawGroups = gs?.["groups"] as Record<string, string> | null | undefined;
+  const rawGroup = subjectSlotName ? rawGroups?.[subjectSlotName] : undefined;
+  const group: "solids" | "stripes" | null =
+    rawGroup === "solids" ? "solids" : rawGroup === "stripes" ? "stripes" : null;
   return {
     id: g.id,
     gameType: g.gameType,
@@ -393,6 +410,7 @@ function toHistoryEntry(
     // hall was in range), or null. Mutually exclusive with `venue`; drives the
     // #CITY link on the history card to the City Leaderboard.
     cityLocality: g.cityLocality ?? null,
+    group,
     ...(endReason ? { endReason } : {}),
   };
 }

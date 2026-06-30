@@ -7,6 +7,7 @@
  */
 import type { GameHistoryEntryChaosMode } from './gameHistoryEntryChaosMode';
 import type { GameHistoryEntryEndReason } from './gameHistoryEntryEndReason';
+import type { GameHistoryEntryGroup } from './gameHistoryEntryGroup';
 import type { GameHistoryEntryHostTheme } from './gameHistoryEntryHostTheme';
 import type { GameHistoryEntryPocketSequenceItem } from './gameHistoryEntryPocketSequenceItem';
 import type { GameHistoryEntryVenue } from './gameHistoryEntryVenue';
@@ -39,4 +40,6 @@ export interface GameHistoryEntry {
   venue: GameHistoryEntryVenue;
   /** @nullable */
   cityLocality?: string | null;
+  /** @nullable */
+  group?: GameHistoryEntryGroup;
 }
