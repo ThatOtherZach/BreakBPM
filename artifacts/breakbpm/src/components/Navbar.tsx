@@ -106,7 +106,7 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
           )}
           {onManual && !at('/about') && (
             <button className="navbar-menu-item" onClick={() => { setOpen(false); onManual(); }}>
-              <span style={{ textDecoration: 'underline' }}>M</span>anual
+              <span style={{ textDecoration: 'underline' }}>H</span>elp
             </button>
           )}
           <SignedOut>
