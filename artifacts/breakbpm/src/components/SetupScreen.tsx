@@ -513,7 +513,15 @@ export default function SetupScreen({ onStart, onResume, onManual, onLegal, onAc
         // length) as a safety net in case the field wasn't blurred. @mention/locked
         // names are canonical screen names already filtered server-side, so only
         // the free-typed slot is cleaned.
-        const typedName = sanitizePlayerName(names[i] ?? '', bannedWords);
+        // When a slot was typed as @handle but didn't resolve to a linked user,
+        // strip the leading "@" (and any following whitespace) so the name reads
+        // as a normal free-typed name rather than leaking the @ sigil everywhere.
+        // This must NOT go into sanitizePlayerName — that function is also called
+        // during live typing where the @ prefix drives mention resolution.
+        const rawTyped = names[i] ?? '';
+        const unmentionedName =
+          !linkedName && rawTyped.startsWith('@') ? rawTyped.slice(1).trimStart() : rawTyped;
+        const typedName = sanitizePlayerName(unmentionedName, bannedWords);
         const p: Player = { id: i, name: linkedName ?? (typedName || DEFAULT_NAMES[i]) };
         // Manual team assignment is only relevant for multiplayer 8-ball.
         if (gameType === '8ball' && !isShark && teamMode === 'manual' && manualTeams[i]) {
