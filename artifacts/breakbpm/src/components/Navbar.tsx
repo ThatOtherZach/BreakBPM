@@ -80,11 +80,13 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
               <span style={{ textDecoration: 'underline' }}>A</span>bout
             </button>
           )}
-          {!at('/for-venues') && (
-            <button className="navbar-menu-item" onClick={() => { setOpen(false); setLocation('/for-venues'); }}>
-              For <span style={{ textDecoration: 'underline' }}>V</span>enues
-            </button>
-          )}
+          <SignedOut>
+            {!at('/for-venues') && (
+              <button className="navbar-menu-item" onClick={() => { setOpen(false); setLocation('/for-venues'); }}>
+                For <span style={{ textDecoration: 'underline' }}>V</span>enues
+              </button>
+            )}
+          </SignedOut>
           <SignedIn>
             {onAccount && !at('/account') && (
               <button className="navbar-menu-item" onClick={() => { setOpen(false); onAccount(); }}>
