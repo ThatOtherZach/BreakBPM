@@ -1470,13 +1470,13 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         {state.phase === 'ended' && !hallOpen && (
           endUndoOpen ? (
             <button className="btn btn-big w-full" onClick={handleUndo} style={{ marginTop: 0 }}>
-              <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo ({endUndoLeft}) • 戻
+              <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo ({endUndoLeft})
             </button>
           ) : isAuthenticated ? (
             <div className="grid-2" style={{ marginTop: 0 }}>
-              <button className="btn btn-primary btn-big" onClick={onNewGame} disabled={rematchPending}><span className="cue-ball-icon" aria-hidden="true" style={{ marginRight: 5 }} />New Game • 新局</button>
+              <button className="btn btn-primary btn-big" onClick={onNewGame} disabled={rematchPending}><span className="cue-ball-icon" aria-hidden="true" style={{ marginRight: 5 }} />New Game</button>
               <button className="btn btn-big" onClick={handleRematch} disabled={rematchPending}>
-                {rematchPending ? 'Starting…' : '🔄 Rematch • 再战'}
+                {rematchPending ? 'Starting…' : '🔄 Rematch'}
               </button>
             </div>
           ) : (
@@ -1499,7 +1499,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           return (
             <div className="grid-2" style={{ marginTop: 8 }}>
               <button className="btn btn-big" onClick={handleShareImage} disabled={sharingImage}>
-                {sharingImage ? 'Rendering…' : '📸 Share • 分享'}
+                {sharingImage ? 'Rendering…' : '📸 Share'}
               </button>
               {canTagHall ? (
                 hallPhase === 'done' || hallPhase === 'city-done' ? (
@@ -1512,7 +1512,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                     onClick={startAddToHall}
                     disabled={hallPhase === 'locating' || hallPhase === 'tagging'}
                   >
-                    {hallPhase === 'locating' ? 'Locating…' : '🏆 Tag Leaderboard • 排行'}
+                    {hallPhase === 'locating' ? 'Locating…' : '🏆 Tag Leaderboard'}
                   </button>
                 )
               ) : (
@@ -1531,7 +1531,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             <div className="panel-header">
               <span>
                 <span className="stats-sec-emoji" aria-hidden="true">🏆</span>
-                Tag a Verified Hall's Leaderboard • 标记本
+                Tag a Verified Hall's Leaderboard
               </span>
             </div>
             <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1654,7 +1654,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                   <p style={{ fontSize: 12, color: '#c00', margin: 0, lineHeight: 1.4 }}>⚠ {hallError}</p>
                   <div className="grid-2">
                     <button className="btn" onClick={closeAddToHall}>
-                      ❌ Close • 消
+                      ❌ Close
                     </button>
                     <button className="btn btn-primary" onClick={startAddToHall}>
                       Try Again :(
@@ -1702,13 +1702,13 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         {/* ── Actions ── */}
         {state.phase === 'playing' && (
           <div className="action-grid">
-            <button className="btn btn-big" onClick={() => turnAction('miss')} disabled={pendingSharkPick}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>❌</span>Miss • 失</button>
-            <button className="btn btn-big btn-danger" onClick={() => turnAction('foul', 'Ball to opponent')} disabled={pendingSharkPick}><span className="cue-ball-icon" aria-hidden="true" style={{ marginRight: 5 }} />Foul • 犯</button>
+            <button className="btn btn-big" onClick={() => turnAction('miss')} disabled={pendingSharkPick}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>❌</span>Miss</button>
+            <button className="btn btn-big btn-danger" onClick={() => turnAction('foul', 'Ball to opponent')} disabled={pendingSharkPick}><span className="cue-ball-icon" aria-hidden="true" style={{ marginRight: 5 }} />Foul</button>
             {state.gameType === 'practice'
-              ? <button className={`btn btn-big${paused ? ' btn-primary' : ''}`} onClick={handlePause}>{paused ? '▶️ Resume • 继' : '⏸️ Pause • 暂'}</button>
-              : <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')} disabled={pendingSharkPick}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🛡️</span>Safety • 安</button>
+              ? <button className={`btn btn-big${paused ? ' btn-primary' : ''}`} onClick={handlePause}>{paused ? '▶️ Resume' : '⏸️ Pause'}</button>
+              : <button className="btn btn-big" onClick={() => turnAction('safety', 'Safety — turn passes')} disabled={pendingSharkPick}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🛡️</span>Safety</button>
             }
-            <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo • 撤</button>
+            <button className="btn btn-big" onClick={handleUndo} disabled={!undoStack.length}><span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>↩️</span>Undo</button>
           </div>
         )}
 
@@ -1719,7 +1719,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             style={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'nowrap', minHeight: 32, fontSize: 12 }}
             onClick={() => setLogOpen(o => !o)}
           >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span aria-hidden="true" style={{ fontSize: 14 }}>📜</span>History • 記 ({state.shotLog.length})</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span aria-hidden="true" style={{ fontSize: 14 }}>📜</span>History ({state.shotLog.length})</span>
             <span>{logOpen ? '▲' : '▼'}</span>
           </button>
           {logOpen && (
@@ -1751,11 +1751,11 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
           <div style={{ display: 'flex', gap: 8 }}>
             {state.gameType === 'practice' && (
               <button className="btn btn-big" style={{ flex: 1 }} onClick={handleReset}>
-                <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🔄</span>Reset • 重置
+                <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🔄</span>Reset
               </button>
             )}
             <button className="btn btn-big btn-danger" style={{ flex: 1 }} onClick={() => setConfirmNew(true)}>
-              <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🏁</span>End • 終
+              <span aria-hidden="true" style={{ marginRight: 5, fontSize: 14 }}>🏁</span>End
             </button>
           </div>
         )}
@@ -1780,7 +1780,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
               <QRCodeSVG value={joinUrl} size={96} level="M" />
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 18, color: '#00ff41', letterSpacing: 1 }}>📡 Watch Live • 观战</div>
+              <div style={{ fontSize: 18, color: '#00ff41', letterSpacing: 1 }}>📡 Watch Live</div>
               <div style={{ fontSize: 14, opacity: 0.85, marginTop: 2 }}>
                 Spectators can follow this game in real time.
               </div>
@@ -1835,7 +1835,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
             </div>
             <div className="grid-2">
               <button className="btn btn-primary btn-big" onClick={onNewGame}>✅ Yes</button>
-              <button className="btn btn-big" onClick={() => setConfirmNew(false)}>❌ Cancel • 消</button>
+              <button className="btn btn-big" onClick={() => setConfirmNew(false)}>❌ Cancel</button>
             </div>
           </div>
         </div>
