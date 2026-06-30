@@ -190,7 +190,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
         <PricingPanel
           hidePassList
           footer={
-            !signedIn && (
+            !signedIn && !crypto?.enabled && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <p style={{ fontSize: 11, color: "#555", margin: 0 }}>
                   Sign in to redeem a code or purchase a pass.
@@ -206,7 +206,27 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
           }
         />
 
-        {/* ── Authenticated purchase panels (signed-in only) ── */}
+        {/* Self-custody on-chain checkout — visible to all visitors so prices are
+            always shown. Signed-out users see a "Sign In to Buy" button instead
+            of the asset/pay controls. */}
+        {crypto?.enabled && (
+          <CryptoCheckout
+            catalog={crypto}
+            hasAccess={hasAccess}
+            luckyBreak={luckyBreak}
+            onSignIn={!signedIn ? () => { window.location.href = signInPath(); } : undefined}
+            onLuckyBreakWin={(result) => {
+              setRevealResult(null);
+              setRevealState("rolling");
+              void delay(MIN_ROLL_MS).then(() => {
+                setRevealResult(result);
+                setRevealState("result");
+              });
+            }}
+          />
+        )}
+
+        {/* ── Authenticated-only panels ── */}
         {signedIn && (
           <>
             {/* Card purchase — turned off behind an env flag while we run on codes
@@ -262,26 +282,6 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
                   </p>
                 </div>
               </div>
-            )}
-
-            {/* Self-custody on-chain checkout — behind a server flag, shown only when
-                a receiving wallet is configured. */}
-            {crypto?.enabled && (
-              <CryptoCheckout
-                catalog={crypto}
-                hasAccess={hasAccess}
-                luckyBreak={luckyBreak}
-                onLuckyBreakWin={(result) => {
-                  // Mirror the redeem-code roll: tumble the rack for a beat, then
-                  // land on the server-decided tier (the draw already happened).
-                  setRevealResult(null);
-                  setRevealState("rolling");
-                  void delay(MIN_ROLL_MS).then(() => {
-                    setRevealResult(result);
-                    setRevealState("result");
-                  });
-                }}
-              />
             )}
 
             {/* Buy-your-own HUD ad — any signed-in user (endpoint requires auth). */}

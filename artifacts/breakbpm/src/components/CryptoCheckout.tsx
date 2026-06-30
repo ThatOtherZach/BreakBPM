@@ -86,6 +86,7 @@ export default function CryptoCheckout({
   hasAccess,
   luckyBreak,
   onLuckyBreakWin,
+  onSignIn,
 }: {
   catalog: CryptoCatalog;
   hasAccess: boolean;
@@ -94,6 +95,9 @@ export default function CryptoCheckout({
   /** Fired when a Lucky Break crypto payment is granted, so the parent can play
    * the "rolling the rack" reveal landing on the won tier. */
   onLuckyBreakWin?: (result: LuckyBreakResult) => void;
+  /** When provided the user is signed out — hide buy controls and show this
+   * sign-in CTA instead. */
+  onSignIn?: () => void;
 }) {
   const qc = useQueryClient();
   const createQuote = useCreateCryptoQuote();
@@ -465,27 +469,36 @@ export default function CryptoCheckout({
           </div>
         </div>
 
-        {/* Asset toggle — split control */}
-        <div className="crypto-field">
-          <span className="crypto-field-label">Pay with</span>
-          <div className="crypto-assets">
-            {catalog.assets.map((a) => (
-              <button
-                key={a}
-                type="button"
-                className={asset === a ? "btn btn-primary" : "btn"}
-                style={{ textTransform: "uppercase" }}
-                disabled={locked}
-                aria-pressed={asset === a}
-                onClick={() => setAsset(a)}
-              >
-                {a}
-              </button>
-            ))}
+        {/* Asset toggle — split control (hidden when signed out) */}
+        {!onSignIn && (
+          <div className="crypto-field">
+            <span className="crypto-field-label">Pay with</span>
+            <div className="crypto-assets">
+              {catalog.assets.map((a) => (
+                <button
+                  key={a}
+                  type="button"
+                  className={asset === a ? "btn btn-primary" : "btn"}
+                  style={{ textTransform: "uppercase" }}
+                  disabled={locked}
+                  aria-pressed={asset === a}
+                  onClick={() => setAsset(a)}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {showingOrder && manualOrder ? (
+        {onSignIn ? (
+          <button
+            className="btn btn-primary btn-big"
+            onClick={onSignIn}
+          >
+            Sign In to Buy
+          </button>
+        ) : showingOrder && manualOrder ? (
           /* ---- Manual order: pay-to-address details + QR ---- */
           (<div className="crypto-pay">
             <p style={{ fontSize: 12, color: "#333", margin: 0 }}>
@@ -663,8 +676,8 @@ export default function CryptoCheckout({
           </>)
         ) : null}
 
-        {/* Resume an interrupted payment */}
-        {pending && !showingOrder && phase !== "confirming" && phase !== "done" && (
+        {/* Resume an interrupted payment (signed-in only) */}
+        {!onSignIn && pending && !showingOrder && phase !== "confirming" && phase !== "done" && (
           <button
             className="btn"
             style={{ fontSize: 12 }}
