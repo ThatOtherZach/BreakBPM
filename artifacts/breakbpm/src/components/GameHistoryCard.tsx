@@ -222,26 +222,21 @@ export default function GameHistoryCard({
               letterSpacing: 0.5,
               color: "#f4f4dc",
               textShadow: "1px 1px 0 #042414",
+              display: "inline-flex",
+              alignItems: "baseline",
+              gap: 5,
             }}
           >
             {modeLabel}
-          </span>
-          <span
-            style={{
-              fontFamily: "VT323",
-              fontSize: 14,
-              lineHeight: 1,
-              letterSpacing: 0.5,
-              color: "#8aa593",
-            }}
-          >
-            {g.group === "solids"
-              ? "(Solids)"
-              : g.group === "stripes"
-                ? "(Stripes)"
-                : g.sharkMode
-                  ? "(Shark)"
-                  : `(${modeLabel})`}
+            <span style={{ fontSize: 14, color: "#8aa593", textShadow: "none" }}>
+              {g.group === "solids"
+                ? "(Solids)"
+                : g.group === "stripes"
+                  ? "(Stripes)"
+                  : g.sharkMode
+                    ? "(Shark)"
+                    : `(${modeLabel})`}
+            </span>
           </span>
           {(() => {
             // A finished game is tagged to a Verified Hall (venue) OR — when no
