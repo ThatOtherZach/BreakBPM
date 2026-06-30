@@ -2499,6 +2499,12 @@ components:
             # Readable URL slug for the @VENUE House-Leaderboard link. Null until
             # the hall is backfilled/healed; the card links by `slug ?? id`.
             slug: { type: ["string", "null"] }
+        # The city locality this game was tagged to via "Add to City" — the
+        # fallback path taken when no Verified Hall was in range. Null when the
+        # game is untagged, or when it was tagged to a hall (then `venue` is set
+        # instead). Drives the #CITY link on the history card that opens the
+        # City Leaderboard (/n/:locality).
+        cityLocality: { type: ["string", "null"] }
 
     MentionResolveResult:
       type: object

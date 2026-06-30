@@ -221,31 +221,49 @@ export default function GameHistoryCard({
           >
             {modeLabel}
           </span>
-          {g.venue && (
-            <button
-              type="button"
-              onClick={() => setLocation(`/leaderboard/hall/${g.venue!.slug ?? g.venue!.id}`)}
-              title={`Local Leaderboard · ${g.venue.name}`}
-              style={{
-                alignSelf: "flex-start",
-                maxWidth: "100%",
-                background: "none",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-                color: "#ffe9a8",
-                fontSize: 11,
-                lineHeight: 1.2,
-                textAlign: "left",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                textDecoration: "underline",
-              }}
-            >
-              #{g.venue.name}
-            </button>
-          )}
+          {(() => {
+            // A finished game is tagged to a Verified Hall (venue) OR — when no
+            // hall was in range — to a city locality. Render whichever applies
+            // as a #LINK to its leaderboard (hall board vs. city board).
+            const tag = g.venue
+              ? {
+                  label: g.venue.name,
+                  href: `/leaderboard/hall/${g.venue.slug ?? g.venue.id}`,
+                  title: `Local Leaderboard · ${g.venue.name}`,
+                }
+              : g.cityLocality
+                ? {
+                    label: g.cityLocality,
+                    href: `/n/${encodeURIComponent(g.cityLocality)}`,
+                    title: `City Leaderboard · ${g.cityLocality}`,
+                  }
+                : null;
+            return tag ? (
+              <button
+                type="button"
+                onClick={() => setLocation(tag.href)}
+                title={tag.title}
+                style={{
+                  alignSelf: "flex-start",
+                  maxWidth: "100%",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  color: "#ffe9a8",
+                  fontSize: 11,
+                  lineHeight: 1.2,
+                  textAlign: "left",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  textDecoration: "underline",
+                }}
+              >
+                #{tag.label}
+              </button>
+            ) : null;
+          })()}
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#cdeccd", fontSize: 11 }}>
             <ResultBadge outcome={g.outcome} chaosMode={g.chaosMode} />
             {g.sharkMode ? (

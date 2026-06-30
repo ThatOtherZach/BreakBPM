@@ -981,6 +981,8 @@ export interface GameHistoryEntry {
   hostTheme?: GameHistoryEntryHostTheme;
   /** @nullable */
   venue: GameHistoryEntryVenue;
+  /** @nullable */
+  cityLocality?: string | null;
 }
 
 export interface MentionResolveResult {

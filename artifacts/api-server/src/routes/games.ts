@@ -389,6 +389,10 @@ function toHistoryEntry(
     // only), or null. Lets history/profile cards link to the hall's House
     // Leaderboard. Batch-resolved by the caller from games.venueId.
     venue,
+    // The city locality this game was tagged to (the fallback taken when no
+    // hall was in range), or null. Mutually exclusive with `venue`; drives the
+    // #CITY link on the history card to the City Leaderboard.
+    cityLocality: g.cityLocality ?? null,
     ...(endReason ? { endReason } : {}),
   };
 }
