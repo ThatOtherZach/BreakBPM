@@ -229,7 +229,7 @@ export default function ForVenuesScreen({
 
             <nav className="lp-links" aria-label="Get your hall listed">
               <a className="btn btn-primary btn-big w-full" href={FOR_VENUES_MAILTO}>
-                ✉ {FOR_VENUES_CTA_LABEL}
+                ✉ Request Your Venue
               </a>
             </nav>
 
