@@ -1460,8 +1460,8 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
           </div>
         </div>
 
-        {/* @Mention invites panel — only when the caller has any invites */}
-        {invites.data && invites.data.invites.length > 0 && (
+        {/* @Mention invites panel — only pending invites; hidden once all are actioned */}
+        {invites.data && invites.data.invites.filter((inv) => inv.status === "pending").length > 0 && (
           <div className="panel panel--wood">
             <div className="panel-header">
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
@@ -1472,32 +1472,28 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
               {inviteMsg && (
                 <p style={{ fontSize: 11, color: "#ffd2d2", textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}>{inviteMsg}</p>
               )}
-              {invites.data.invites.map((inv) => {
+              {invites.data.invites.filter((inv) => inv.status === "pending").map((inv) => {
                 const busy = inviteBusyId === inv.id;
                 return (
                   <div key={inv.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <span style={{ fontSize: 11, color: "#fff" }}>
-                      {inv.status === "pending" ? "🔗 Invited by " : "✅ Linked by "}
-                      <strong>{inv.invitedBy}</strong>
-                      {inv.status === "accepted" ? " · counts toward your stats" : ""}
+                      🔗 Invited by <strong>{inv.invitedBy}</strong>
                     </span>
                     <GameHistoryCard game={inv.game} />
                     <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                      {inv.status === "pending" && (
-                        <button
-                          className="btn"
-                          disabled={busy}
-                          onClick={() => handleAcceptInvite(inv.id)}
-                        >
-                          {busy ? "…" : "✅ Accept"}
-                        </button>
-                      )}
+                      <button
+                        className="btn"
+                        disabled={busy}
+                        onClick={() => handleAcceptInvite(inv.id)}
+                      >
+                        {busy ? "…" : "✅ Accept"}
+                      </button>
                       <button
                         className="btn"
                         disabled={busy}
                         onClick={() => handleRemoveInvite(inv.id)}
                       >
-                        {busy ? "…" : inv.status === "pending" ? "❌ Delete" : "🗑️ Remove"}
+                        {busy ? "…" : "❌ Delete"}
                       </button>
                     </div>
                   </div>
