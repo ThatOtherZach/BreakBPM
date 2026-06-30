@@ -215,12 +215,6 @@ export default function ForVenuesScreen({
               </section>
             ))}
 
-            {/* ── The deal ── */}
-            <section>
-              <h2 className="lp-h2">{FOR_VENUES_ASK_TITLE}</h2>
-              <p>{FOR_VENUES_ASK_BODY}</p>
-            </section>
-
             {/* ── How to get listed ── */}
             <section>
               <h2 className="lp-h2">{FOR_VENUES_HOWTO_TITLE}</h2>
