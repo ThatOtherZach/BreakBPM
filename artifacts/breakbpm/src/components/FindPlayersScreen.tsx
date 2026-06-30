@@ -790,8 +790,8 @@ export default function FindPlayersScreen({
                     <div className="fpp-venue-list-head">
                       <span className="text-[24px]">⭐ Verified Halls</span>
                       <a
-                        className="btn fpp-get-listed"
-                        href="mailto:contact@saymservices.com?subject=Verified%20Pool%20Hall%20Request"
+                        className="btn"
+                        href="/for-venues"
                       >
                         Get Listed
                       </a>
