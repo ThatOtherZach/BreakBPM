@@ -234,7 +234,7 @@ export default function GameHistoryCard({
               : g.cityLocality
                 ? {
                     label: g.cityLocality,
-                    href: `/n/${encodeURIComponent(g.cityLocality)}`,
+                    href: `/leaderboard/city/${encodeURIComponent(g.cityLocality)}`,
                     title: `City Leaderboard · ${g.cityLocality}`,
                   }
                 : null;
