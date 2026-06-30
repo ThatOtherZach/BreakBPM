@@ -575,9 +575,7 @@ export default function LeaderboardScreen({
                       <button className="btn" onClick={() => setLocation("/leaderboard")}>
                         🌍 Global leaderboard
                       </button>
-                      <button className="btn" onClick={onFindPlayers}>
-                        🤝 Find a meetup →
-                      </button>
+                      <button className="btn" onClick={onFindPlayers}>🤝 Find a meetup</button>
                     </div>
                   </div>)
                 ) : (
