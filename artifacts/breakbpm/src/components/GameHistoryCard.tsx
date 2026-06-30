@@ -275,7 +275,7 @@ export default function GameHistoryCard({
                   {"vs. "}
                   {hideOpponent ? (
                     "🕴️"
-                  ) : (
+                  ) : g.opponentRegistered ? (
                     <button
                       type="button"
                       onClick={() => setLocation(`/watch/${encodeURIComponent(g.opponent!)}`)}
@@ -293,6 +293,8 @@ export default function GameHistoryCard({
                     >
                       @{g.opponent}
                     </button>
+                  ) : (
+                    g.opponent
                   )}
                 </span>
               </span>

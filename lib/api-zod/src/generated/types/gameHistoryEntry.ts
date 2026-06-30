@@ -19,6 +19,7 @@ export interface GameHistoryEntry {
   winner?: string | null;
   /** @nullable */
   opponent?: string | null;
+  opponentRegistered: boolean;
   /** @nullable */
   bpm?: number | null;
   /** @nullable */

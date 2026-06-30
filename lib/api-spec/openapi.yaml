@@ -2424,7 +2424,7 @@ components:
 
     GameHistoryEntry:
       type: object
-      required: [id, gameType, outcome, durationMs, sunkBallsCount, endedAt, sharkMode, venue]
+      required: [id, gameType, outcome, durationMs, sunkBallsCount, endedAt, sharkMode, venue, opponentRegistered]
       properties:
         id: { type: string }
         gameType: { type: string }
@@ -2434,6 +2434,12 @@ components:
         # opponent. Null for solo/practice and Shark games (the card shows a
         # dedicated Shark label instead).
         opponent: { type: ["string", "null"] }
+        # True only when `opponent` resolves to a single registered account — the
+        # opponent's slot has a non-null game_participants.userId (host, joiner,
+        # or accepted @mention). The history card renders the clickable @profile
+        # link only when this is true; typed guests and combined team strings
+        # ("X & Y") are false and render as plain text.
+        opponentRegistered: { type: boolean }
         bpm: { type: ["number", "null"] }
         # The viewing caller's OWN final shooting accuracy as a whole-number
         # percentage (0–100). Resolved from their game_participants row when

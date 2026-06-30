@@ -129,7 +129,7 @@ function resolveSubjectResult(
   gs: Record<string, unknown> | null,
   subject: { slot: number | null; name: string | null },
   summary: GameSummary | null,
-): { outcome: string; opponent: string | null } {
+): { outcome: string; opponent: string | null; opponentSlot: number | null } {
   const storedOutcome = g.outcome ?? "completed";
   const winner = g.winner;
   const sharkMode = !!(gs && gs["sharkAggression"]);
@@ -147,10 +147,17 @@ function resolveSubjectResult(
       }));
   const teamOf = (name: string): string | undefined =>
     players.find((p) => p.name === name)?.team;
+  // `players` is slot-ordered (players[i] === slot i), so an index into it IS the
+  // participant slotIndex — used by the caller to look up the opponent's account.
+  const slotOfName = (n: string | null): number | null => {
+    if (!n) return null;
+    const i = players.findIndex((p) => p.name === n);
+    return i >= 0 ? i : null;
+  };
 
   // No head-to-head winner (practice / expired / abandoned-with-no-winner):
   // preserve the stored outcome, no opponent.
-  if (!winner) return { outcome: storedOutcome, opponent: null };
+  if (!winner) return { outcome: storedOutcome, opponent: null, opponentSlot: null };
 
   // Locate the subject by slot (rename-proof), else by current name.
   const subjectIdx =
@@ -163,7 +170,8 @@ function resolveSubjectResult(
   // Can't tell the subject's side (legacy row with no players) → keep stored
   // outcome, show the winner as the opponent so the card still reads naturally.
   if (subjectIdx < 0) {
-    return { outcome: storedOutcome, opponent: sharkMode ? null : winner };
+    const opp = sharkMode ? null : winner;
+    return { outcome: storedOutcome, opponent: opp, opponentSlot: slotOfName(opp) };
   }
 
   const subjectPlayer = players[subjectIdx];
@@ -176,24 +184,40 @@ function resolveSubjectResult(
   const outcome = storedOutcome === "forfeit" ? "forfeit" : subjectWon ? "won" : "lost";
 
   let opponent: string | null = null;
+  // The opponent's participant slot, set only when there's exactly ONE opponent
+  // to point at (a single name, not a combined "X & Y" team string). Null
+  // otherwise — the caller links only opponents that resolve to one account.
+  let opponentSlot: number | null = null;
   if (!sharkMode) {
     if (subjectTeam) {
       // Team game (2P or 4P 8-ball both assign solids/stripes): "vs." the whole
       // opposing team — every player whose team isn't the subject's. For 2P this
       // is the single other player; for 4P it reads "X & Y". This is the same
       // regardless of win/loss — the opponent is always the other side.
-      const opponentNames = players
-        .filter((p) => p.name && p.team && p.team !== subjectTeam)
-        .map((p) => p.name);
-      opponent = opponentNames.length > 0 ? opponentNames.join(" & ") : null;
+      const opp = players
+        .map((p, i) => ({ name: p.name, team: p.team, i }))
+        .filter((p) => p.name && p.team && p.team !== subjectTeam);
+      if (opp.length === 1) {
+        opponent = opp[0].name;
+        opponentSlot = opp[0].i;
+      } else {
+        opponent = opp.length > 0 ? opp.map((p) => p.name).join(" & ") : null;
+      }
     } else if (subjectWon) {
       // Non-team game (Chaos/None, or teams never assigned): show any other slot.
-      opponent = players.find((p, i) => i !== subjectIdx && !!p.name)?.name ?? null;
+      // Only link when there's exactly ONE other named player — with several
+      // (4P free-for-all) the single displayed name is arbitrary, so plain text.
+      const others = players
+        .map((p, i) => ({ name: p.name, i }))
+        .filter((p) => p.i !== subjectIdx && !!p.name);
+      opponent = others.length > 0 ? others[0].name : null;
+      opponentSlot = others.length === 1 ? others[0].i : null;
     } else {
       opponent = winner;
+      opponentSlot = slotOfName(winner);
     }
   }
-  return { outcome, opponent };
+  return { outcome, opponent, opponentSlot };
 }
 
 /** Minimal shot-log entry shape parsed out of the gameState JSONB for pace. */
@@ -330,6 +354,7 @@ function toHistoryEntry(
   pace: { bpm: number | null; sunkBallsCount: number },
   summary: GameSummary | null = null,
   venue: { id: string; name: string } | null = null,
+  registeredSlots: Set<number> | null = null,
 ) {
   const gs = g.gameState as Record<string, unknown> | null;
   // Host theme snapshotted onto gameState at /games/start (see return field).
@@ -353,7 +378,14 @@ function toHistoryEntry(
           ball: e["ball"] as number,
           player: typeof e["playerName"] === "string" ? (e["playerName"] as string) : "",
         }));
-  const { outcome, opponent } = resolveSubjectResult(g, gs, subject, summary);
+  const { outcome, opponent, opponentSlot } = resolveSubjectResult(g, gs, subject, summary);
+  // The opponent is a clickable @profile link only when it resolves to a single
+  // registered account — i.e. that slot has a non-null game_participants.userId
+  // (host, joiner, or accepted @mention). Typed guests (null userId) and combined
+  // team strings render as plain text. The account check was already done at game
+  // start; here we just read its persisted result.
+  const opponentRegistered =
+    opponent != null && opponentSlot != null && (registeredSlots?.has(opponentSlot) ?? false);
   // Subject's ball-group assignment — read directly from gs.players[slot].team,
   // which is where the game engine stores it ('solids' | 'stripes' | undefined).
   // Null for 9-ball, Practice, Shark, and 8-ball that ended before groups locked.
@@ -371,6 +403,7 @@ function toHistoryEntry(
     gameType: g.gameType,
     winner: g.winner,
     opponent,
+    opponentRegistered,
     bpm: pace.bpm,
     accuracy,
     durationMs: g.durationMs,
@@ -443,6 +476,43 @@ async function fetchVenueLabels(
     .from(venuesTable)
     .where(inArray(venuesTable.id, ids));
   return new Map(rows.map((r) => [r.id, { id: r.id, name: r.name, slug: r.slug }]));
+}
+
+/**
+ * Batch-fetch, per game, the set of participant slot indexes backed by a real
+ * account (non-null `game_participants.userId` — host, joiner, or accepted
+ * @mention). Lets history cards decide whether the "vs." opponent is a clickable
+ * @profile link (registered) or plain text (typed guest), reusing the identity
+ * check already done at game start instead of a fresh lookup. Keyed by game id;
+ * a game with no registered participants is simply absent from the map.
+ */
+async function fetchRegisteredSlots(
+  gameIds: Array<string>,
+): Promise<Map<string, Set<number>>> {
+  const ids = [...new Set(gameIds)];
+  const map = new Map<string, Set<number>>();
+  if (ids.length === 0) return map;
+  const rows = await db
+    .select({
+      gameId: gameParticipantsTable.gameId,
+      slotIndex: gameParticipantsTable.slotIndex,
+    })
+    .from(gameParticipantsTable)
+    .where(
+      and(
+        inArray(gameParticipantsTable.gameId, ids),
+        isNotNull(gameParticipantsTable.userId),
+      ),
+    );
+  for (const r of rows) {
+    let set = map.get(r.gameId);
+    if (!set) {
+      set = new Set<number>();
+      map.set(r.gameId, set);
+    }
+    set.add(r.slotIndex);
+  }
+  return map;
 }
 
 /** Structured reasons a game can't be tagged to a hall (no throw — both the
@@ -2151,6 +2221,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
         : [];
     const partByGame = new Map(parts.map((p) => [p.gameId, p]));
     const venueLabels = await fetchVenueLabels(visible.map((g) => g.venueId));
+    const registeredSlotsByGame = await fetchRegisteredSlots(visibleIds);
     games = visible.map((g) => {
       const part = partByGame.get(g.id);
       const pace = resolveParticipantPace(
@@ -2170,6 +2241,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
         pace,
         readGameSummary(g.summary),
         g.venueId ? (venueLabels.get(g.venueId) ?? null) : null,
+        registeredSlotsByGame.get(g.id) ?? null,
       );
     });
   }
@@ -2466,6 +2538,7 @@ router.get("/games/history", async (req, res): Promise<void> => {
       : [];
   const myPartByGame = new Map(myParts.map((p) => [p.gameId, p]));
   const venueLabels = await fetchVenueLabels(visible.map((g) => g.venueId));
+  const registeredSlotsByGame = await fetchRegisteredSlots(visibleIds);
 
   const games = visible.map((g) => {
     const part = myPartByGame.get(g.id);
@@ -2486,6 +2559,7 @@ router.get("/games/history", async (req, res): Promise<void> => {
       pace,
       readGameSummary(g.summary),
       g.venueId ? (venueLabels.get(g.venueId) ?? null) : null,
+      registeredSlotsByGame.get(g.id) ?? null,
     );
   });
 
@@ -3491,6 +3565,7 @@ router.get("/mentions", async (req, res): Promise<void> => {
           )
       : [];
   const partByGame = new Map(myParts.map((p) => [p.gameId, p]));
+  const registeredSlotsByGame = await fetchRegisteredSlots(gameIds);
 
   const invites = rows.map((r) => {
     const part = partByGame.get(r.game.id);
@@ -3518,6 +3593,8 @@ router.get("/mentions", async (req, res): Promise<void> => {
         { slot, name: user.screenName },
         pace,
         readGameSummary(r.game.summary),
+        null,
+        registeredSlotsByGame.get(r.game.id) ?? null,
       ),
     };
   });
