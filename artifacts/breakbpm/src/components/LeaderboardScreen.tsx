@@ -373,7 +373,16 @@ export default function LeaderboardScreen({
                     <div className="fpp-card-name">
                       <span className="cue-ball-icon" aria-hidden="true" style={{ fontSize: "18.4px" }} /> {hallVenue.name}
                     </div>
-                    {hallVenue.locality && <div className="fpp-card-loc">{hallVenue.locality}</div>}
+                    {hallVenue.locality && (
+                      <div
+                        className="fpp-card-loc"
+                        style={{ cursor: "pointer", textDecoration: "underline dotted", textUnderlineOffset: 2 }}
+                        title={`View ${hallVenue.locality} city leaderboard`}
+                        onClick={() => setLocation(`/leaderboard/city/${encodeURIComponent(hallVenue.locality!)}`)}
+                      >
+                        {hallVenue.locality}
+                      </div>
+                    )}
                     {hallVenue.tableCount != null && (
                       <div className="fpp-card-loc">🎱 {hallVenue.tableCount} Tables</div>
                     )}
