@@ -202,6 +202,10 @@ export default function SetupScreen({ onStart, onResume, onManual, onLegal, onAc
   const [mentions, setMentions] = useState<Record<number, MentionState>>({});
   // Per-slot request token so a slow resolve can't overwrite a newer one.
   const mentionReqId = useRef<Record<number, number>>({});
+  // True while handleStart is eagerly re-resolving unsettled @-slots (or the
+  // startGame mutation is in flight). Keeps the Start button disabled so the
+  // user can't race ahead of the resolution network calls.
+  const [startPending, setStartPending] = useState(false);
 
   // Hidden easter egg: press-and-hold the splash 8-ball for 3s to swap the
   // art for a QR code (server-configured promo target), shown inline for 8s
@@ -451,47 +455,82 @@ export default function SetupScreen({ onStart, onResume, onManual, onLegal, onAc
       setStartError('Players must be on opposite groups (Solids vs Stripes).');
       return;
     }
-    // Collect resolved @mentions for non-host slots and pin those slots' player
-    // names to the canonical screen name so the shot log attributes correctly
-    // (shotLog playerName must equal the invite's displayName).
-    const mentionPayload: { slotIndex: number; screenName: string }[] = [];
-    const players: Player[] = Array.from({ length: count }, (_, i) => {
-      // Signed-out users can't name players or @mention — every slot is
-      // pinned to its "Player N" default, ignoring any stale state in
-      // `names[]` (e.g. typed while signed in, then signed out without remount).
-      if (isSignedOut) {
-        const p: Player = { id: i, name: SIGNED_OUT_NAMES[i] };
+    setStartPending(true);
+    // Snapshot current mention states. For any non-host slot whose name starts
+    // with "@" and that hasn't settled yet (still 'checking' or 'idle'), eagerly
+    // await a fresh resolution now — in parallel across all such slots — so a
+    // fast click never silently drops an @mention invite.
+    const resolvedMentions = { ...mentions };
+    try {
+      const resolveTasks: Promise<void>[] = [];
+      for (let i = 1; i < count; i++) {
+        const raw = names[i] ?? '';
+        if (!raw.startsWith('@')) continue;
+        const handle = raw.slice(1).trim();
+        if (!handle) continue;
+        const m = resolvedMentions[i];
+        const settled =
+          m?.kind === 'found' ||
+          m?.kind === 'notfound' ||
+          m?.kind === 'atcap' ||
+          m?.kind === 'pass_required';
+        if (settled) continue;
+        // Slot is unsettled (checking / idle) — resolve eagerly now.
+        resolveTasks.push(
+          resolveMention({ name: handle })
+            .then(r => {
+              if (!r.eligible) resolvedMentions[i] = { kind: 'pass_required' };
+              else if (!r.found) resolvedMentions[i] = { kind: 'notfound' };
+              else if (r.atCap) resolvedMentions[i] = { kind: 'atcap' };
+              else resolvedMentions[i] = { kind: 'found', screenName: r.screenName ?? handle };
+            })
+            .catch(() => {
+              resolvedMentions[i] = { kind: 'idle' };
+            }),
+        );
+      }
+      await Promise.all(resolveTasks);
+
+      // Collect resolved @mentions for non-host slots and pin those slots' player
+      // names to the canonical screen name so the shot log attributes correctly
+      // (shotLog playerName must equal the invite's displayName).
+      const mentionPayload: { slotIndex: number; screenName: string }[] = [];
+      const players: Player[] = Array.from({ length: count }, (_, i) => {
+        // Signed-out users can't name players or @mention — every slot is
+        // pinned to its "Player N" default, ignoring any stale state in
+        // `names[]` (e.g. typed while signed in, then signed out without remount).
+        if (isSignedOut) {
+          const p: Player = { id: i, name: SIGNED_OUT_NAMES[i] };
+          if (gameType === '8ball' && !isShark && teamMode === 'manual' && manualTeams[i]) {
+            p.team = manualTeams[i] as 'solids' | 'stripes';
+          }
+          return p;
+        }
+        const mention = i >= 1 ? resolvedMentions[i] : undefined;
+        const linkedName = mention?.kind === 'found' ? mention.screenName : null;
+        if (linkedName) mentionPayload.push({ slotIndex: i, screenName: linkedName });
+        // Sanitize the typed name (strip control/URL/markup + blocked words, cap
+        // length) as a safety net in case the field wasn't blurred. @mention/locked
+        // names are canonical screen names already filtered server-side, so only
+        // the free-typed slot is cleaned.
+        const typedName = sanitizePlayerName(names[i] ?? '', bannedWords);
+        const p: Player = { id: i, name: linkedName ?? (typedName || DEFAULT_NAMES[i]) };
+        // Manual team assignment is only relevant for multiplayer 8-ball.
         if (gameType === '8ball' && !isShark && teamMode === 'manual' && manualTeams[i]) {
           p.team = manualTeams[i] as 'solids' | 'stripes';
         }
         return p;
-      }
-      const mention = i >= 1 ? mentions[i] : undefined;
-      const linkedName = mention?.kind === 'found' ? mention.screenName : null;
-      if (linkedName) mentionPayload.push({ slotIndex: i, screenName: linkedName });
-      // Sanitize the typed name (strip control/URL/markup + blocked words, cap
-      // length) as a safety net in case the field wasn't blurred. @mention/locked
-      // names are canonical screen names already filtered server-side, so only
-      // the free-typed slot is cleaned.
-      const typedName = sanitizePlayerName(names[i] ?? '', bannedWords);
-      const p: Player = { id: i, name: linkedName ?? (typedName || DEFAULT_NAMES[i]) };
-      // Manual team assignment is only relevant for multiplayer 8-ball.
-      if (gameType === '8ball' && !isShark && teamMode === 'manual' && manualTeams[i]) {
-        p.team = manualTeams[i] as 'solids' | 'stripes';
-      }
-      return p;
-    });
-    // Resolve the Chaos/None play mode (multiplayer 8-ball only). Chaos uses
-    // the selected win rule; None has no winner; auto/manual leave it undefined.
-    const chaosMode: ChaosMode | undefined =
-      gameType === '8ball' && !isShark
-        ? teamMode === 'chaos'
-          ? chaosRule
-          : teamMode === 'none'
-            ? 'none'
-            : undefined
-        : undefined;
-    try {
+      });
+      // Resolve the Chaos/None play mode (multiplayer 8-ball only). Chaos uses
+      // the selected win rule; None has no winner; auto/manual leave it undefined.
+      const chaosMode: ChaosMode | undefined =
+        gameType === '8ball' && !isShark
+          ? teamMode === 'chaos'
+            ? chaosRule
+            : teamMode === 'none'
+              ? 'none'
+              : undefined
+          : undefined;
       // Server enum only knows '8ball'/'9ball'/'practice'; shark is a
       // client-side variant of 8-ball, so the API call stays as '8ball'.
       const res = await startGame.mutateAsync({
@@ -527,6 +566,8 @@ export default function SetupScreen({ onStart, onResume, onManual, onLegal, onAc
     } catch (e: unknown) {
       const err = e as { data?: { error?: string } };
       setStartError(err?.data?.error ?? (e instanceof Error ? e.message : 'Could not start game'));
+    } finally {
+      setStartPending(false);
     }
   }
 
@@ -1080,7 +1121,7 @@ export default function SetupScreen({ onStart, onResume, onManual, onLegal, onAc
         <button
           className="btn btn-primary btn-big btn-full"
           onClick={handleStart}
-          disabled={startGame.isPending}
+          disabled={startPending || startGame.isPending}
           style={{ padding: '8px 15px' }}
         >
           <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
