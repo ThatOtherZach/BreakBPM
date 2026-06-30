@@ -152,7 +152,7 @@ export const FOR_VENUES_TAGLINE =
   "A free listing for pool halls — all we ask is a poster by your table.";
 
 export const FOR_VENUES_INTRO =
-  "BreakBPM is the free score app players use right at the table — live Balls Per Minute, accuracy, and a leaderboard. List your pool hall and your regulars get their own board: the scoreboard they'll actually keep, in their pockets, at your tables.";
+  "BreakBPM is a free Billiards scoring app players can use right at the table. Track your BPM (Balls Per Minute), accuracy against the global and local leaderboards at Verified Pool Halls. A zero upkeep, complete scoring and ranking system built for your pool tables.";
 
 export const FOR_VENUES_SHOWCASE: ShowcaseItem[] = [
   {
