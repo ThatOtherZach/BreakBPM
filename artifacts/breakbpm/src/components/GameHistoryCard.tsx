@@ -243,7 +243,7 @@ export default function GameHistoryCard({
                 textDecoration: "underline",
               }}
             >
-              @{g.venue.name}
+              #{g.venue.name}
             </button>
           )}
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#cdeccd", fontSize: 11 }}>
