@@ -149,7 +149,7 @@ export const POOL_STATS_FAQ: FaqItem[] = [
 export const FOR_VENUES_H1 = "Put Your Hall on the Board";
 
 export const FOR_VENUES_TAGLINE =
-  "A free listing for pool halls — all we ask is a poster by your table.";
+  "A free listing for pool halls — all we ask is one social media post.";
 
 export const FOR_VENUES_INTRO =
   "BreakBPM is a free Billiards scoring app players can use right at the table. Track your BPM (Balls Per Minute), accuracy against the global and local leaderboards at Verified Pool Halls. A zero upkeep, complete scoring and ranking system built for your pool tables.";
@@ -179,12 +179,12 @@ export const FOR_VENUES_SHOWCASE: ShowcaseItem[] = [
 export const FOR_VENUES_ASK_TITLE = "The Whole Deal";
 
 export const FOR_VENUES_ASK_BODY =
-  "We list your hall for free. You put up a BreakBPM poster by your pool table. That's it — and we send you the poster artwork.";
+  "We list your hall for free. You post once on social media — tag #BreakBPM and link to your hall's leaderboard page. Any platform works. That's it.";
 
 export const FOR_VENUES_HOWTO_TITLE = "Get Your Hall Listed";
 
 export const FOR_VENUES_HOWTO_BODY =
-  "Email us your hall's name, address, number of tables, and a website if you have one. Our team sets up verified halls by hand and sends over your poster — usually within a day or two.";
+  "Email us your hall's name, address, number of tables, and a website if you have one. Our team sets up verified halls by hand — usually within a day or two.";
 
 export const FOR_VENUES_CTA_LABEL = "Request Your Hall";
 
@@ -194,7 +194,7 @@ export const FOR_VENUES_MAILTO =
 export const FOR_VENUES_FAQ: FaqItem[] = [
   {
     q: "What does it cost to list my pool hall?",
-    a: "Nothing. A verified hall listing on BreakBPM is free. In exchange, we ask you to display a BreakBPM poster near your pool table — we send you the artwork.",
+    a: "Nothing. A verified hall listing on BreakBPM is free. In exchange, we ask for one social media post — tag #BreakBPM and link to your hall's leaderboard page on any platform.",
   },
   {
     q: "What do my players get?",
