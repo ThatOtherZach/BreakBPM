@@ -188,6 +188,8 @@ export * from './publicProfileResultProfileBackground';
 export * from './publicProfileResultReason';
 export * from './redeemResult';
 export * from './removeInviteResult';
+export * from './removeMeFromGameResult';
+export * from './removeMeFromGameResultOutcome';
 export * from './repairVenueCoordinatesItem';
 export * from './repairVenueCoordinatesItemStatus';
 export * from './repairVenueCoordinatesResult';

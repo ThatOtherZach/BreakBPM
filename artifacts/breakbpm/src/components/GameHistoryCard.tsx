@@ -173,11 +173,15 @@ function ResultBadge({ outcome, chaosMode }: { outcome: string; chaosMode?: stri
 export default function GameHistoryCard({
   game: g,
   hideOpponent = false,
+  actionSlot,
 }: {
   game: GameHistoryEntry;
   /** Redact the opponent's name (e.g. on the public watch page for signed-out
    *  visitors). Shark games are unaffected — they show no real player name. */
   hideOpponent?: boolean;
+  /** Optional control pinned to the card's bottom-right corner (e.g. the
+   *  account history "remove" affordance on the most recent game). */
+  actionSlot?: React.ReactNode;
 }) {
   const [, setLocation] = useLocation();
   const modeLabel = GAME_TYPE_LABEL[g.gameType] ?? g.gameType;
@@ -202,6 +206,7 @@ export default function GameHistoryCard({
     <div
       className="fpp-card history-card"
       style={{
+        position: "relative",
         display: "flex",
         flexDirection: "column",
         gap: 6,
@@ -211,6 +216,11 @@ export default function GameHistoryCard({
         "--felt-fade": felt.feltFade,
       } as React.CSSProperties}
     >
+      {actionSlot != null && (
+        <div style={{ position: "absolute", right: 6, bottom: 6, zIndex: 2 }}>
+          {actionSlot}
+        </div>
+      )}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         {/* Left: mode + result + winner */}
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>

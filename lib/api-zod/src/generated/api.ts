@@ -979,6 +979,21 @@ export const DeleteMyGameDataResponse = zod.object({
 
 
 /**
+ * Removes the signed-in caller from ONE game they took part in (as host or joiner), using the same per-game rule as the account-wide data wipe (DELETE /games/data): if no other real (signed-in) player remains, the whole game is deleted; otherwise the caller alone is anonymized to "Mr. X" throughout the stored game and their participation link is severed, leaving the game intact for the remaining players. Idempotent — a caller who no longer holds a slot returns "skipped". Returns 404 when the game does not exist or the caller never took part in it. Requires authentication.
+
+ * @summary Remove the caller from a single game
+ */
+export const RemoveMeFromGameParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RemoveMeFromGameResponse = zod.object({
+  "removed": zod.boolean(),
+  "outcome": zod.enum(['deleted', 'anonymized', 'skipped'])
+})
+
+
+/**
  * Resolves a typed @handle to a real user for the inline Setup-screen check. Requires a paid signed-in host; reports whether the handle maps to a real (non-self) user and whether that recipient is already at their pending-invite cap. Never exposes any private data.
 
  * @summary Validate an @handle for the Setup-screen mention affordance

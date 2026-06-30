@@ -30,6 +30,7 @@ import {
   GetLeaderboardQueryParams,
   GetLeaderboardResponse,
   DeleteMyGameDataResponse,
+  RemoveMeFromGameResponse,
   ResolveMentionQueryParams,
   ResolveMentionResponse,
   ListMyInvitesResponse,
@@ -3473,6 +3474,69 @@ router.delete("/games/data", async (req, res): Promise<void> => {
       deleted: true,
       deletedGames: result.deletedGames,
       anonymizedGames: result.anonymizedGames,
+    }),
+  );
+});
+
+/**
+ * Remove the caller from a single game (the account history "remove" affordance
+ * on the most recent card). Reuses the exact per-game primitive the account-wide
+ * wipe uses (removeUserFromGameTx): the whole game is deleted when no other real
+ * player remains, otherwise the caller alone is anonymized to "Mr. X". Scoped to
+ * games the caller actually took part in (host or participant slot) so it can
+ * never delete a stranger's game; a 404 is returned otherwise. Requires auth.
+ */
+router.delete("/games/:id/me", async (req, res): Promise<void> => {
+  const user = await getOrCreateUser(req);
+  if (!user) {
+    res.status(401).json({ error: "sign_in_required" });
+    return;
+  }
+  const gameId = req.params.id;
+
+  const result = await db.transaction(async (tx) => {
+    // Only proceed if the caller has a real stake in this game (hosts it or
+    // holds a participant slot). Without this guard, removeUserFromGameTx would
+    // happily delete a guest-only game the caller never played.
+    const [hosted] = await tx
+      .select({ id: gamesTable.id })
+      .from(gamesTable)
+      .where(and(eq(gamesTable.id, gameId), eq(gamesTable.userId, user.id)));
+    const participants = await tx
+      .select({ userId: gameParticipantsTable.userId })
+      .from(gameParticipantsTable)
+      .where(eq(gameParticipantsTable.gameId, gameId));
+    const callerInGame = participants.some((p) => p.userId === user.id);
+    if (!hosted && !callerInGame) return null;
+    // Snapshot every signed-in participant BEFORE removal so we can bust their
+    // stats cache afterwards — a full-delete drops the rows, so we can't read
+    // them back once the transaction commits.
+    const affectedUserIds = participants
+      .map((p) => p.userId)
+      .filter((id): id is string => id != null);
+    const outcome = await removeUserFromGameTx(tx, gameId, user.id);
+    return { outcome, affectedUserIds };
+  });
+
+  if (result === null) {
+    res.status(404).json({ error: "not_found" });
+    return;
+  }
+  const { outcome, affectedUserIds } = result;
+
+  // Bust every participant's cached personal stats + the leaderboard so the
+  // removal surfaces immediately (mirrors bustGameStatsCache, but the rows may
+  // already be gone if the game was fully deleted, so we use the snapshot).
+  for (const id of new Set([user.id, ...affectedUserIds])) {
+    clearUserStatsCache(id);
+  }
+  clearLeaderboardCache();
+
+  req.log.info({ userId: user.id, gameId, outcome }, "Removed user from one game");
+  res.json(
+    RemoveMeFromGameResponse.parse({
+      removed: outcome !== "skipped",
+      outcome,
     }),
   );
 });

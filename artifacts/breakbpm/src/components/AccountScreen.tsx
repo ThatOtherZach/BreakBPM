@@ -19,6 +19,7 @@ import {
   useUpdateScreenName,
   useUpdateProfileTheme,
   useGetGameHistory,
+  useRemoveMeFromGame,
   useCancelSubscription,
   useListMyGiftCodes,
   useGenerateGiftCode,
@@ -129,6 +130,11 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
 
   const me = useGetMe();
   const history = useGetGameHistory({ page: historyPage });
+  const removeGame = useRemoveMeFromGame();
+  // Two-step inline confirm for the most-recent game's remove affordance:
+  // the ❌ arms it (shows "Remove?"); a 2nd click commits. Auto-disarms.
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const removeArmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const updateName = useUpdateScreenName();
   const updateTheme = useUpdateProfileTheme();
   const cancelSub = useCancelSubscription();
@@ -207,6 +213,36 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
       setInviteBusyId(null);
     }
   }
+
+  // Arm the most-recent game's remove confirm, auto-disarming after a few
+  // seconds so a stray tap doesn't leave a hot delete sitting there.
+  function armRemoveGame() {
+    setConfirmRemove(true);
+    if (removeArmTimer.current) clearTimeout(removeArmTimer.current);
+    removeArmTimer.current = setTimeout(() => setConfirmRemove(false), 4000);
+  }
+
+  // Commit removing the caller from one game (reuses the shared per-game flow:
+  // full-delete when no other real player remains, else anonymize to "Mr. X").
+  async function handleRemoveGame(id: string) {
+    if (removeArmTimer.current) clearTimeout(removeArmTimer.current);
+    try {
+      await removeGame.mutateAsync({ id });
+      setConfirmRemove(false);
+      // Refresh the history list (any page) and the profile hero stats.
+      await qc.invalidateQueries({ queryKey: getGetGameHistoryQueryKey() });
+      await qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+    } catch {
+      setConfirmRemove(false);
+    }
+  }
+
+  useEffect(
+    () => () => {
+      if (removeArmTimer.current) clearTimeout(removeArmTimer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     const id = setInterval(() => setClockTick((n) => n + 1), 5 * 60 * 1000);
@@ -1522,9 +1558,61 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
                 style={{ fontSize: 12, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}
                 className="font-semibold">No games saved yet. Play one!</p>
             )}
-            {history.data?.games.map((g) => (
-              <GameHistoryCard key={g.id} game={g} />
-            ))}
+            {history.data?.games.map((g, i) => {
+              // The single MOST RECENT game (first card on page 1) gets a
+              // remove affordance pinned to its bottom-right corner.
+              const isMostRecent = history.data!.page === 1 && i === 0;
+              return (
+                <GameHistoryCard
+                  key={g.id}
+                  game={g}
+                  actionSlot={
+                    isMostRecent ? (
+                      confirmRemove ? (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveGame(g.id)}
+                          disabled={removeGame.isPending}
+                          style={{
+                            font: "inherit",
+                            fontFamily: "VT323",
+                            fontSize: 14,
+                            lineHeight: 1,
+                            color: "#fff",
+                            background: "rgba(160, 24, 24, 0.92)",
+                            border: "1px solid rgba(0,0,0,0.5)",
+                            borderRadius: 4,
+                            padding: "3px 7px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {removeGame.isPending ? "…" : "Remove?"}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={armRemoveGame}
+                          aria-label="Remove this game"
+                          title="Remove this game"
+                          style={{
+                            font: "inherit",
+                            fontSize: 13,
+                            lineHeight: 1,
+                            background: "rgba(0,0,0,0.45)",
+                            border: "1px solid rgba(0,0,0,0.4)",
+                            borderRadius: 4,
+                            padding: "3px 5px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          ❌
+                        </button>
+                      )
+                    ) : undefined
+                  }
+                />
+              );
+            })}
 
             {/* Pass holder pagination controls — shown for any pass holder,
                 with Prev/Next disabled at boundaries */}

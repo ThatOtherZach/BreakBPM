@@ -98,6 +98,7 @@ import type {
   PublicProfileResult,
   RedeemResult,
   RemoveInviteResult,
+  RemoveMeFromGameResult,
   RepairVenueCoordinatesResult,
   ResolveMentionParams,
   ResolveShareCodeInput,
@@ -2842,6 +2843,78 @@ export const useDeleteMyGameData = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteMyGameDataMutationOptions(options));
+    }
+
+export const getRemoveMeFromGameUrl = (id: string,) => {
+
+
+
+
+  return `/api/games/${id}/me`
+}
+
+/**
+ * Removes the signed-in caller from ONE game they took part in (as host or joiner), using the same per-game rule as the account-wide data wipe (DELETE /games/data): if no other real (signed-in) player remains, the whole game is deleted; otherwise the caller alone is anonymized to "Mr. X" throughout the stored game and their participation link is severed, leaving the game intact for the remaining players. Idempotent — a caller who no longer holds a slot returns "skipped". Returns 404 when the game does not exist or the caller never took part in it. Requires authentication.
+
+ * @summary Remove the caller from a single game
+ */
+export const removeMeFromGame = async (id: string, options?: RequestInit): Promise<RemoveMeFromGameResult> => {
+
+  return customFetch<RemoveMeFromGameResult>(getRemoveMeFromGameUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveMeFromGameMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeMeFromGame>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeMeFromGame>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['removeMeFromGame'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeMeFromGame>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  removeMeFromGame(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveMeFromGameMutationResult = NonNullable<Awaited<ReturnType<typeof removeMeFromGame>>>
+
+    export type RemoveMeFromGameMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove the caller from a single game
+ */
+export const useRemoveMeFromGame = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeMeFromGame>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeMeFromGame>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getRemoveMeFromGameMutationOptions(options));
     }
 
 export const getResolveMentionUrl = (params: ResolveMentionParams,) => {

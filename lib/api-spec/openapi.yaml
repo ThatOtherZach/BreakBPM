@@ -699,6 +699,37 @@ paths:
         "401":
           description: Sign in required
 
+  /games/{id}/me:
+    delete:
+      operationId: removeMeFromGame
+      tags: [games]
+      summary: Remove the caller from a single game
+      description: >
+        Removes the signed-in caller from ONE game they took part in (as host or
+        joiner), using the same per-game rule as the account-wide data wipe
+        (DELETE /games/data): if no other real (signed-in) player remains, the
+        whole game is deleted; otherwise the caller alone is anonymized to
+        "Mr. X" throughout the stored game and their participation link is
+        severed, leaving the game intact for the remaining players. Idempotent —
+        a caller who no longer holds a slot returns "skipped". Returns 404 when
+        the game does not exist or the caller never took part in it. Requires
+        authentication.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RemoveMeFromGameResult" }
+        "401":
+          description: Sign in required
+        "404":
+          description: Game not found or caller not a participant
+
   /mentions/resolve:
     get:
       operationId: resolveMention
@@ -2779,6 +2810,17 @@ components:
         # Number of games where the caller was anonymized to "Mr. X" because
         # other real players still had a stake in them.
         anonymizedGames: { type: integer }
+
+    RemoveMeFromGameResult:
+      type: object
+      required: [removed, outcome]
+      properties:
+        # true when the caller was actually removed (deleted or anonymized);
+        # false when they no longer held a slot (outcome "skipped").
+        removed: { type: boolean }
+        outcome:
+          type: string
+          enum: [deleted, anonymized, skipped]
 
     PublicProfileResult:
       type: object

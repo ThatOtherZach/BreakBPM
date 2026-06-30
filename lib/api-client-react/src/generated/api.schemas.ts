@@ -1234,6 +1234,20 @@ export interface DeleteGameDataResult {
   anonymizedGames: number;
 }
 
+export type RemoveMeFromGameResultOutcome = typeof RemoveMeFromGameResultOutcome[keyof typeof RemoveMeFromGameResultOutcome];
+
+
+export const RemoveMeFromGameResultOutcome = {
+  deleted: 'deleted',
+  anonymized: 'anonymized',
+  skipped: 'skipped',
+} as const;
+
+export interface RemoveMeFromGameResult {
+  removed: boolean;
+  outcome: RemoveMeFromGameResultOutcome;
+}
+
 export type PublicProfileResultReason = typeof PublicProfileResultReason[keyof typeof PublicProfileResultReason];
 
 

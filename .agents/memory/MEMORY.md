@@ -57,3 +57,4 @@
 - [Static-build SEO: dynamic sitemap + index](static-build-seo-sitemap.md) — DB-created pages (hall pages) can't be in a build-time sitemap; serve them from /api/sitemap/*.xml referenced by a static <sitemapindex>; per-page meta is JS-render only (no SSR).
 - [Hall leaderboard counts](hall-leaderboard-counts.md) — hall `totalPlayers` = RANKED rows (couples to rows, 0 when empty); use the separate `taggedGames` to tell "no games tagged" from "tagged but none qualify."
 - [Back button uses real browser history](back-button-history.md) — "← Back" must use `goBack(fallback)` from `useGoBack()` (navHistory.ts stamps history `__idx`), NOT hardcoded `setLocation`; fallback only for deep-links.
+- [Per-game removal cache bust](per-game-removal-cache-bust.md) — single-game removeUserFromGameTx must snapshot participant userIds INSIDE the tx (full-delete drops the rows) then clearUserStatsCache each; bustGameStatsCache(gameId) reads them too late.
