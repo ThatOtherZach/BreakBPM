@@ -340,7 +340,7 @@ export default function FindPlayersScreen({
   const [userCoords, setUserCoords] = useState<[number, number] | null>(null);
   const [geoBusy, setGeoBusy] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
-  const [compassOpen, setCompassOpen] = useState(false);
+  const [compassOpen, setCompassOpen] = useState(true);
   // Pagination for the Verified Halls list shown under the compass.
   const [verifiedPage, setVerifiedPage] = useState(1);
   const [osmStatus, setOsmStatus] = useState<OsmStatus>("idle");
