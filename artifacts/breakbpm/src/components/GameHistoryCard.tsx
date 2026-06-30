@@ -196,7 +196,7 @@ export default function GameHistoryCard({
     g.winner === SHARK_PLAYER_NAME
       ? "Shark'd"
       : g.outcome === "won"
-        ? "Beat the Shark"
+        ? "Beat The Shark"
         : null;
   return (
     <div
