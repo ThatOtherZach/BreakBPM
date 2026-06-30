@@ -184,7 +184,7 @@ export const FOR_VENUES_ASK_BODY =
 export const FOR_VENUES_HOWTO_TITLE = "Get Your Hall Listed";
 
 export const FOR_VENUES_HOWTO_BODY =
-  "Email us your hall's name, address, number of tables, and a website if you have one. Our team sets up verified halls by hand — usually within a day or two.";
+  "Get verified for free! We only ask that you post on social media with the tag #BreakBPM and a link to your BreakBPM leaderboard.\n\nEmail us your venue's name, address, number of tables, and a website if you have one. Verification takes 1-3 business days.";
 
 export const FOR_VENUES_CTA_LABEL = "Request to be Added";
 

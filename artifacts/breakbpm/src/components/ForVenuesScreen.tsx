@@ -224,7 +224,9 @@ export default function ForVenuesScreen({
             {/* ── How to get listed ── */}
             <section>
               <h2 className="lp-h2">{FOR_VENUES_HOWTO_TITLE}</h2>
-              <p>{FOR_VENUES_HOWTO_BODY}</p>
+              {FOR_VENUES_HOWTO_BODY.split("\n\n").map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
             </section>
 
             <nav className="lp-links" aria-label="Get your hall listed">
