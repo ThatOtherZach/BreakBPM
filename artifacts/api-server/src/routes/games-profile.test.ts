@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import express, { type Express } from "express";
 import request from "supertest";
 import { eq } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, gamesTable } from "@workspace/db";
 
 // The profile route is public (no auth), but games.ts still imports the auth
 // lib at module load. Stub it so the suite never touches Clerk.
@@ -250,5 +250,209 @@ describe("GET /games/profile — auto-earned theme from joined games", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.profileBackground).toBeNull();
+  });
+});
+
+describe("GET /games/profile — guest-name redaction on the public profile", () => {
+  const DAY = 24 * 60 * 60 * 1000;
+
+  /** Seed a finished 2P 8-ball game hosted by `host` (slot 0) against a slot-1
+   * opponent, writing a slot-ordered players snapshot + a pocketing shot log
+   * into gameState so the profile read resolves the opponent and shot log. */
+  async function seedVersusGame(
+    host: { id: string },
+    opts: {
+      hostPlayerName: string;
+      opponentName: string;
+      // Server-set participant displayName (the canonical account label). When
+      // omitted it mirrors `opponentName`; set it DIFFERENT from `opponentName`
+      // to simulate a host who tampered the client gameState label for a slot
+      // that is nonetheless a real registered account.
+      opponentCanonicalName?: string;
+      opponentUserId?: string | null;
+      winner: string;
+      shotLog: Array<{ ball: number; playerName: string }>;
+    },
+  ): Promise<void> {
+    const g = await seedGame(host.id, {
+      gameType: "8ball",
+      maxPlayers: 2,
+      hostName: opts.hostPlayerName,
+      winner: opts.winner,
+      endedAt: new Date(Date.now() - DAY),
+    });
+    await db
+      .update(gamesTable)
+      .set({
+        gameState: {
+          gameType: "8ball",
+          startedAt: new Date(Date.now() - DAY).toISOString(),
+          shareCode: g.shareCode,
+          players: [{ name: opts.hostPlayerName }, { name: opts.opponentName }],
+          shotLog: opts.shotLog,
+        },
+      })
+      .where(eq(gamesTable.id, g.id));
+    await seedParticipant(g.id, 1, {
+      userId: opts.opponentUserId ?? null,
+      displayName: opts.opponentCanonicalName ?? opts.opponentName,
+    });
+  }
+
+  it("hides a typed guest opponent's name (opponent, winner, shot log) while keeping the shot log", async () => {
+    const host = await createUser();
+    await seedVersusGame(host, {
+      hostPlayerName: "Champ",
+      opponentName: "GuestBob",
+      opponentUserId: null, // typed guest — no account
+      winner: "GuestBob",
+      shotLog: [
+        { ball: 1, playerName: "Champ" },
+        { ball: 2, playerName: "Champ" },
+        { ball: 3, playerName: "GuestBob" },
+      ],
+    });
+
+    const res = await fetchProfile(host.screenName);
+
+    expect(res.status).toBe(200);
+    expect(res.body.found).toBe(true);
+    const game = res.body.games[0];
+    // The guest opponent's name must not leak through opponent...
+    expect(game.opponent).toBeNull();
+    expect(game.opponentRegistered).toBe(false);
+    // ...nor through winner...
+    expect(game.winner).toBeNull();
+    // ...nor through the shot-log shooter names.
+    const players = game.pocketSequence.map((p: { player: string }) => p.player);
+    expect(players).not.toContain("Champ");
+    expect(players).not.toContain("GuestBob");
+    // The shot log itself is preserved (3 balls), and run-grouping survives:
+    // each distinct shooter maps to its own stable token.
+    expect(game.pocketSequence.map((p: { ball: number }) => p.ball)).toEqual([1, 2, 3]);
+    expect(new Set(players).size).toBe(2);
+  });
+
+  it("keeps a registered opponent's username visible on the public profile", async () => {
+    const host = await createUser();
+    const opp = await createUser();
+    await seedVersusGame(host, {
+      hostPlayerName: "Champ",
+      opponentName: "RegOpp",
+      opponentUserId: opp.id, // registered account
+      winner: "Champ",
+      shotLog: [
+        { ball: 1, playerName: "Champ" },
+        { ball: 2, playerName: "RegOpp" },
+      ],
+    });
+
+    const res = await fetchProfile(host.screenName);
+
+    expect(res.status).toBe(200);
+    const game = res.body.games[0];
+    expect(game.opponent).toBe("RegOpp");
+    expect(game.opponentRegistered).toBe(true);
+  });
+
+  it("shows a registered opponent's canonical account name, never a spoofed gameState label", async () => {
+    const host = await createUser();
+    const opp = await createUser();
+    const SPOOF = "ZZSpoofedSecretName";
+    await seedVersusGame(host, {
+      hostPlayerName: "Champ",
+      // Attacker-controlled client gameState label for a slot that IS a real
+      // registered account (e.g. a host who hand-crafted the saved snapshot)...
+      opponentName: SPOOF,
+      // ...but the server-set participant displayName is the canonical handle.
+      opponentCanonicalName: opp.screenName,
+      opponentUserId: opp.id,
+      winner: "Champ",
+      shotLog: [
+        { ball: 1, playerName: "Champ" },
+        { ball: 2, playerName: SPOOF },
+      ],
+    });
+
+    const res = await fetchProfile(host.screenName);
+
+    expect(res.status).toBe(200);
+    const game = res.body.games[0];
+    // The displayed opponent is the canonical server-set label, not the client
+    // gameState name — even though the slot is genuinely registered.
+    expect(game.opponent).toBe(opp.screenName);
+    expect(game.opponentRegistered).toBe(true);
+    // The spoofed free text never appears ANYWHERE in the serialized response
+    // (not as opponent, winner, nor a shot-log shooter name).
+    expect(JSON.stringify(res.body)).not.toContain(SPOOF);
+  });
+
+  it("omits the share code and leaks no guest string anywhere in the serialized body", async () => {
+    const host = await createUser();
+    await seedVersusGame(host, {
+      hostPlayerName: "HostHubertXY",
+      opponentName: "GuestZaraXY",
+      opponentUserId: null, // typed guest
+      winner: "GuestZaraXY",
+      shotLog: [
+        { ball: 1, playerName: "HostHubertXY" },
+        { ball: 2, playerName: "GuestZaraXY" },
+      ],
+    });
+
+    const res = await fetchProfile(host.screenName);
+
+    expect(res.status).toBe(200);
+    const game = res.body.games[0];
+    // /games/state is public-by-code and returns an ended game's full gameState
+    // (typed guest names included), so the public profile must not publish the
+    // code that unlocks it.
+    expect(game.shareCode).toBeUndefined();
+    // Defense in depth: neither the subject's own typed gameState label nor the
+    // guest opponent's name survives anywhere in the response body.
+    const body = JSON.stringify(res.body);
+    expect(body).not.toContain("HostHubertXY");
+    expect(body).not.toContain("GuestZaraXY");
+  });
+
+  it("preserves the Shark sentinel in winner and the shot log on a public profile", async () => {
+    const host = await createUser();
+    const g = await seedGame(host.id, {
+      gameType: "8ball",
+      maxPlayers: 1,
+      hostName: "Champ",
+      winner: "Shark",
+      endedAt: new Date(Date.now() - DAY),
+    });
+    await db
+      .update(gamesTable)
+      .set({
+        gameState: {
+          gameType: "8ball",
+          startedAt: new Date(Date.now() - DAY).toISOString(),
+          shareCode: g.shareCode,
+          sharkAggression: "normal",
+          players: [{ name: "Champ" }],
+          shotLog: [
+            { ball: 1, playerName: "Champ" },
+            { ball: 2, playerName: "Shark" },
+          ],
+        },
+      })
+      .where(eq(gamesTable.id, g.id));
+
+    const res = await fetchProfile(host.screenName);
+
+    expect(res.status).toBe(200);
+    const game = res.body.games[0];
+    // Shark games have no human opponent...
+    expect(game.opponent).toBeNull();
+    // ...the Shark sentinel survives so the card still renders the verdict...
+    expect(game.winner).toBe("Shark");
+    const players = game.pocketSequence.map((p: { player: string }) => p.player);
+    // ...and stays intact in the shot log (drives the Shark-steal dimming),
+    // while the human shooter's typed name is tokenized away.
+    expect(players).toContain("Shark");
+    expect(players).not.toContain("Champ");
   });
 });

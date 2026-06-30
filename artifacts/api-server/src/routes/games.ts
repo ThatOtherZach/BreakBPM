@@ -355,7 +355,8 @@ function toHistoryEntry(
   pace: { bpm: number | null; sunkBallsCount: number },
   summary: GameSummary | null = null,
   venue: { id: string; name: string } | null = null,
-  registeredSlots: Set<number> | null = null,
+  registeredSlots: Map<number, string> | null = null,
+  redactGuestNames = false,
 ) {
   const gs = g.gameState as Record<string, unknown> | null;
   // Host theme snapshotted onto gameState at /games/start (see return field).
@@ -387,6 +388,53 @@ function toHistoryEntry(
   // start; here we just read its persisted result.
   const opponentRegistered =
     opponent != null && opponentSlot != null && (registeredSlots?.has(opponentSlot) ?? false);
+  // The canonical, SERVER-set account label for the opponent's slot (the
+  // participant's screen name, or a pending @mention's resolved handle) — NOT
+  // the client-supplied gameState/summary name. The public profile shows THIS
+  // for a registered opponent so a tampered gameState can't surface free text
+  // through a slot that merely happens to be registered.
+  const registeredOpponentName =
+    opponentSlot != null ? (registeredSlots?.get(opponentSlot) ?? null) : null;
+  // Public-profile privacy redaction. The public /watch/{name} profile must not
+  // leak free-text guest names a player typed locally in Setup. When
+  // `redactGuestNames` is set (the /games/profile path only — the owner's own
+  // Account history passes it false), strip every plain-text name from the
+  // response, keeping only registered usernames and the Shark sentinel:
+  //   • opponent  → the registered slot's canonical server-set account label, or
+  //                 null for typed guests and combined team strings; never the
+  //                 client gameState name.
+  //   • winner    → null unless it's the literal "Shark" (the only winner value
+  //                 the card reads, for the Shark verdict; non-Shark winners are
+  //                 never displayed on the card, so dropping them is invisible).
+  //   • pocketSeq → each non-empty, non-Shark shooter name is swapped for a
+  //                 stable per-name token so the shot-log run grouping and the
+  //                 Shark-steal dimming keep working without exposing real names.
+  //   • shareCode → omitted. /games/state is public-by-code and hands back an
+  //                 ended game's full gameState (typed guest names included), so
+  //                 publishing the code would make the profile a directory for
+  //                 recovering the very names redacted above.
+  const SHARK_NAME = "Shark";
+  const displayOpponent = redactGuestNames
+    ? opponentRegistered
+      ? registeredOpponentName
+      : null
+    : opponent;
+  const displayWinner =
+    redactGuestNames && g.winner != null && g.winner !== SHARK_NAME ? null : g.winner;
+  let outPocketSequence = pocketSequence;
+  if (redactGuestNames) {
+    const tokenByName = new Map<string, string>();
+    let tokenCount = 0;
+    outPocketSequence = pocketSequence.map((p) => {
+      if (p.player === "" || p.player === SHARK_NAME) return p;
+      let token = tokenByName.get(p.player);
+      if (token === undefined) {
+        token = `Player ${++tokenCount}`;
+        tokenByName.set(p.player, token);
+      }
+      return { ball: p.ball, player: token };
+    });
+  }
   // Subject's ball-group assignment — read directly from gs.players[slot].team,
   // which is where the game engine stores it ('solids' | 'stripes' | undefined).
   // Null for 9-ball, Practice, Shark, and 8-ball that ended before groups locked.
@@ -402,15 +450,17 @@ function toHistoryEntry(
   return {
     id: g.id,
     gameType: g.gameType,
-    winner: g.winner,
-    opponent,
+    winner: displayWinner,
+    opponent: displayOpponent,
     opponentRegistered,
     bpm: pace.bpm,
     accuracy,
     durationMs: g.durationMs,
     sunkBallsCount: pace.sunkBallsCount,
     outcome,
-    shareCode: g.shareCode,
+    // Omitted entirely on the public profile (see redaction note above);
+    // GameHistoryEntry.shareCode is optional, so absence is contract-valid.
+    ...(redactGuestNames ? {} : { shareCode: g.shareCode }),
     endedAt: g.endedAt!,
     startedAt: g.startedAt,
     sharkMode: !!(gs && gs["sharkAggression"]),
@@ -425,7 +475,7 @@ function toHistoryEntry(
       gs?.["chaosMode"] === "none"
         ? (gs!["chaosMode"] as "eight-last" | "anything-goes" | "none")
         : null,
-    pocketSequence,
+    pocketSequence: outPocketSequence,
     // The HOST's theme, snapshotted onto this game's gameState at /games/start,
     // so the felt reflects the table the host had WHILE PLAYING this game —
     // frozen in history and identical for every viewer. Null → default green
@@ -491,27 +541,32 @@ async function fetchVenueLabels(
  *     registered user. This covers a host who validly @mentioned a registered
  *     player who has NOT accepted yet — the name is still a real account and
  *     should link to their watch page.
- * Keyed by game id; a game with no registered slots is absent from the map.
+ * Keyed by game id → (slot index → that slot's canonical, SERVER-set account
+ * label: the participant's screen name, or a still-pending @mention's resolved
+ * handle). A game with no registered slots is absent from the map. The per-slot
+ * name lets the public profile display this trusted label instead of the
+ * client-supplied gameState/summary name (which a host could tamper).
  */
 async function fetchRegisteredSlots(
   gameIds: Array<string>,
-): Promise<Map<string, Set<number>>> {
+): Promise<Map<string, Map<number, string>>> {
   const ids = [...new Set(gameIds)];
-  const map = new Map<string, Set<number>>();
+  const map = new Map<string, Map<number, string>>();
   if (ids.length === 0) return map;
-  const add = (gameId: string, slotIndex: number) => {
-    let set = map.get(gameId);
-    if (!set) {
-      set = new Set<number>();
-      map.set(gameId, set);
+  const add = (gameId: string, slotIndex: number, name: string) => {
+    let slots = map.get(gameId);
+    if (!slots) {
+      slots = new Map<number, string>();
+      map.set(gameId, slots);
     }
-    set.add(slotIndex);
+    slots.set(slotIndex, name);
   };
   const [participantRows, mentionRows] = await Promise.all([
     db
       .select({
         gameId: gameParticipantsTable.gameId,
         slotIndex: gameParticipantsTable.slotIndex,
+        displayName: gameParticipantsTable.displayName,
       })
       .from(gameParticipantsTable)
       .where(
@@ -524,6 +579,7 @@ async function fetchRegisteredSlots(
       .select({
         gameId: gameMentionsTable.gameId,
         slotIndex: gameMentionsTable.slotIndex,
+        displayName: gameMentionsTable.displayName,
       })
       .from(gameMentionsTable)
       .where(
@@ -533,8 +589,11 @@ async function fetchRegisteredSlots(
         ),
       ),
   ]);
-  for (const r of participantRows) add(r.gameId, r.slotIndex);
-  for (const r of mentionRows) add(r.gameId, r.slotIndex);
+  // Mentions first, then participants overwrite: a realized participant (a
+  // registered joiner or an accepted @mention) is the authoritative account
+  // label and wins over a still-pending mention for the same slot.
+  for (const r of mentionRows) add(r.gameId, r.slotIndex, r.displayName);
+  for (const r of participantRows) add(r.gameId, r.slotIndex, r.displayName);
   return map;
 }
 
@@ -2265,6 +2324,10 @@ router.get("/games/profile", async (req, res): Promise<void> => {
         readGameSummary(g.summary),
         g.venueId ? (venueLabels.get(g.venueId) ?? null) : null,
         registeredSlotsByGame.get(g.id) ?? null,
+        // Public profile: redact free-text guest names from the response so
+        // typed-in opponent/winner/shooter names never leave the server. The
+        // owner's own Account history (the other call site) keeps full names.
+        true,
       );
     });
   }
