@@ -1497,7 +1497,7 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
                         disabled={busy}
                         onClick={() => handleRemoveInvite(inv.id)}
                       >
-                        {busy ? "…" : inv.status === "pending" ? "🗑️ Delete" : "🗑️ Remove"}
+                        {busy ? "…" : inv.status === "pending" ? "❌ Delete" : "🗑️ Remove"}
                       </button>
                     </div>
                   </div>
