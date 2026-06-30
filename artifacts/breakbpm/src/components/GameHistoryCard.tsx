@@ -228,15 +228,35 @@ export default function GameHistoryCard({
             }}
           >
             {modeLabel}
-            {(g.group || g.sharkMode) && (
-              <span style={{ fontSize: 14, color: "#8aa593", textShadow: "none" }}>
-                {g.group === "solids"
-                  ? "(Solids)"
+            {(() => {
+              // Sub-label precedence: Chaos game → rainbow cue ball icon;
+              // else the subject's locked group → "Solids 1-7"/"Stripes 9-15";
+              // else Shark → "Shark Mode". None/9-ball/Practice/un-grouped → nothing.
+              const isChaos =
+                g.chaosMode === "eight-last" || g.chaosMode === "anything-goes";
+              if (isChaos) {
+                return (
+                  <span
+                    className="rainbow-cue"
+                    aria-label="Chaos game"
+                    style={{ fontSize: 14, alignSelf: "center" }}
+                  />
+                );
+              }
+              const text =
+                g.group === "solids"
+                  ? "Solids 1-7"
                   : g.group === "stripes"
-                    ? "(Stripes)"
-                    : "(Shark)"}
-              </span>
-            )}
+                    ? "Stripes 9-15"
+                    : g.sharkMode
+                      ? "Shark Mode"
+                      : null;
+              return text ? (
+                <span style={{ fontSize: 14, color: "#8aa593", textShadow: "none" }}>
+                  {text}
+                </span>
+              ) : null;
+            })()}
           </span>
           {(() => {
             // A finished game is tagged to a Verified Hall (venue) OR — when no
