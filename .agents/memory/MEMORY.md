@@ -56,3 +56,4 @@
 - [Filter before rank when capping](filter-before-rank-with-cap.md) — top-N endpoints must put must-qualify filters (active=true) inside the aggregate WHERE/JOIN before ORDER BY/LIMIT; over-fetch-buffer + post-filter silently drops valid rows.
 - [Static-build SEO: dynamic sitemap + index](static-build-seo-sitemap.md) — DB-created pages (hall pages) can't be in a build-time sitemap; serve them from /api/sitemap/*.xml referenced by a static <sitemapindex>; per-page meta is JS-render only (no SSR).
 - [Hall leaderboard counts](hall-leaderboard-counts.md) — hall `totalPlayers` = RANKED rows (couples to rows, 0 when empty); use the separate `taggedGames` to tell "no games tagged" from "tagged but none qualify."
+- [Back button uses real browser history](back-button-history.md) — "← Back" must use `goBack(fallback)` from `useGoBack()` (navHistory.ts stamps history `__idx`), NOT hardcoded `setLocation`; fallback only for deep-links.

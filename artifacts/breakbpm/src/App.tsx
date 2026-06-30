@@ -32,6 +32,7 @@ import {
   normalizeSharkIdentity,
 } from "./lib/gameLogic";
 import { queryClient } from "./lib/queryClient";
+import { useGoBack } from "./lib/navHistory";
 import { AuthProvider, useAuth } from "./lib/authClient";
 import { useAbandonGame, useStartGame } from "@workspace/api-client-react";
 
@@ -361,9 +362,10 @@ function MainApp() {
 
 function AccountRoute() {
   const [, setLocation] = useLocation();
+  const goBack = useGoBack();
   return (
     <AccountScreen
-      onBack={() => setLocation("/")}
+      onBack={() => goBack("/")}
       onPasses={() => setLocation("/passes")}
       onManual={() => setLocation("/about")}
       onFindPlayers={() => setLocation("/find-players")}
@@ -376,9 +378,10 @@ function AccountRoute() {
 
 function StatsRoute() {
   const [, setLocation] = useLocation();
+  const goBack = useGoBack();
   return (
     <StatsScreen
-      onBack={() => setLocation("/")}
+      onBack={() => goBack("/")}
       onManual={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onFindPlayers={() => setLocation("/find-players")}
@@ -391,9 +394,10 @@ function StatsRoute() {
 
 function LeaderboardRoute() {
   const [, setLocation] = useLocation();
+  const goBack = useGoBack();
   return (
     <LeaderboardScreen
-      onBack={() => setLocation("/")}
+      onBack={() => goBack("/")}
       onManual={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onFindPlayers={() => setLocation("/find-players")}
@@ -405,10 +409,11 @@ function LeaderboardRoute() {
 
 function HallLeaderboardRoute({ params }: { params: { venueId: string } }) {
   const [, setLocation] = useLocation();
+  const goBack = useGoBack();
   return (
     <LeaderboardScreen
       venueId={params.venueId}
-      onBack={() => setLocation("/leaderboard")}
+      onBack={() => goBack("/leaderboard")}
       onManual={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onFindPlayers={() => setLocation("/find-players")}
@@ -420,10 +425,11 @@ function HallLeaderboardRoute({ params }: { params: { venueId: string } }) {
 
 function CityLeaderboardRoute({ params }: { params: { locality: string } }) {
   const [, setLocation] = useLocation();
+  const goBack = useGoBack();
   return (
     <LeaderboardScreen
       cityLocality={decodeURIComponent(params.locality)}
-      onBack={() => setLocation("/leaderboard")}
+      onBack={() => goBack("/leaderboard")}
       onManual={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onFindPlayers={() => setLocation("/find-players")}
@@ -435,19 +441,21 @@ function CityLeaderboardRoute({ params }: { params: { locality: string } }) {
 
 function AboutRoute() {
   const [, setLocation] = useLocation();
-  return <AboutScreen onBack={() => setLocation("/")} onPasses={() => setLocation("/passes")} />;
+  const goBack = useGoBack();
+  return <AboutScreen onBack={() => goBack("/")} onPasses={() => setLocation("/passes")} />;
 }
 
 function LegalRoute() {
-  const [, setLocation] = useLocation();
-  return <LegalScreen onBack={() => setLocation("/")} />;
+  const goBack = useGoBack();
+  return <LegalScreen onBack={() => goBack("/")} />;
 }
 
 function FindPlayersRoute() {
   const [, setLocation] = useLocation();
+  const goBack = useGoBack();
   return (
     <FindPlayersScreen
-      onBack={() => setLocation("/")}
+      onBack={() => goBack("/")}
       onManual={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onLeaderboard={() => setLocation("/leaderboard")}
@@ -458,8 +466,8 @@ function FindPlayersRoute() {
 }
 
 function PassesRoute() {
-  const [, setLocation] = useLocation();
-  return <PassesScreen onBack={() => setLocation("/account")} />;
+  const goBack = useGoBack();
+  return <PassesScreen onBack={() => goBack("/account")} />;
 }
 
 function RedeemRoute({ params }: { params: { code: string } }) {
@@ -532,10 +540,11 @@ function ForVenuesRoute() {
 
 function JoinRoute({ params }: { params: { code: string } }) {
   const [, setLocation] = useLocation();
+  const goBack = useGoBack();
   return (
     <JoinedGameScreen
       code={params.code.toUpperCase()}
-      onBack={() => setLocation("/")}
+      onBack={() => goBack("/")}
       onManual={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onSignIn={() => setLocation("/sign-in")}
@@ -545,6 +554,7 @@ function JoinRoute({ params }: { params: { code: string } }) {
 
 function WatchRoute({ params }: { params: { name: string } }) {
   const [, setLocation] = useLocation();
+  const goBack = useGoBack();
   const search = useSearch();
   // Guard against malformed percent-encoding (e.g. a stray `%`), which would
   // otherwise throw a URIError and crash the route. Fall back to the raw value.
@@ -561,7 +571,7 @@ function WatchRoute({ params }: { params: { name: string } }) {
   return (
     <WatchByNameScreen
       name={name}
-      onBack={() => setLocation("/")}
+      onBack={() => goBack("/")}
       onManual={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onSignIn={() => setLocation("/sign-in")}
@@ -577,13 +587,13 @@ function WatchRoute({ params }: { params: { name: string } }) {
 // (`component={() => ...}`). An inline factory changes identity on every parent
 // re-render, remounting Clerk's <SignIn>/<SignUp> and re-sending verification codes.
 function SignInRouteWrapper() {
-  const [, setLocation] = useLocation();
-  return <SignInPage onBack={() => setLocation("/")} />;
+  const goBack = useGoBack();
+  return <SignInPage onBack={() => goBack("/")} />;
 }
 
 function SignUpRouteWrapper() {
-  const [, setLocation] = useLocation();
-  return <SignUpPage onBack={() => setLocation("/")} />;
+  const goBack = useGoBack();
+  return <SignUpPage onBack={() => goBack("/")} />;
 }
 
 function Routes() {
