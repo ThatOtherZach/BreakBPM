@@ -375,7 +375,7 @@ export default function LeaderboardScreen({
                     </div>
                     {hallVenue.locality && (
                       <div className="fpp-card-loc">
-                        🏙️{" "}
+                        📍{" "}
                         <span
                           style={{ cursor: "pointer", textDecoration: "underline dotted", textUnderlineOffset: 2 }}
                           title={`View ${hallVenue.locality} city leaderboard`}
