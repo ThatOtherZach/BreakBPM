@@ -1124,11 +1124,11 @@ export function VenueCard({
       {venue.locality && (
         <div
           className="fpp-card-loc"
-          style={{ cursor: "pointer", textDecoration: "underline dotted", textUnderlineOffset: 2 }}
+          style={{ cursor: "pointer" }}
           title={`View ${venue.locality} city leaderboard`}
           onClick={() => setLocation(`/leaderboard/city/${encodeURIComponent(venue.locality!)}`)}
         >
-          📍 {venue.locality}
+          📍 <span style={{ textDecoration: "underline dotted", textUnderlineOffset: 2 }}>{venue.locality}</span>
         </div>
       )}
       {venue.tableCount != null && (
