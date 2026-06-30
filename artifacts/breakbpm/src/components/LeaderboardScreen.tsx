@@ -433,14 +433,13 @@ export default function LeaderboardScreen({
                     // the Referer header) so the venue can attribute the traffic
                     // to BreakBPM, but keep "noopener" so the opened tab can't
                     // reach back through window.opener.
-                    <a
+                    (<a
                       className="btn"
                       href={websiteUrl}
                       target="_blank"
                       rel="noopener"
-                    >
-                      🌐 Website
-                    </a>
+                    >🌐 Website
+                                          </a>)
                   )}
                 </div>
               </div>
@@ -561,7 +560,7 @@ export default function LeaderboardScreen({
                   // here) is independent of the ranked rows, so it splits "games
                   // tagged but none qualify yet" from "no games tagged here yet"
                   // and tells the visitor how to get on the board.
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                  (<div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
                     <p style={{ fontFamily: "VT323", fontSize: 22, lineHeight: 1.1, color: "#ffe98a", textShadow: "1px 1px 0 #042414", margin: 0, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
                       <span className="eight-ball-icon" aria-hidden="true" style={{ fontSize: 20 }} />{" "}
                       <span>Be the first to set the house record at {hallVenue?.name ?? "this hall"}!</span>
@@ -580,7 +579,7 @@ export default function LeaderboardScreen({
                         🤝 Find a meetup →
                       </button>
                     </div>
-                  </div>
+                  </div>)
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
                     <p style={{ fontSize: 13, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.6)", margin: 0, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
@@ -595,9 +594,7 @@ export default function LeaderboardScreen({
                           🌍 Global leaderboard
                         </button>
                       )}
-                      <button className="btn" onClick={onFindPlayers}>
-                        🤝 Find a meetup →
-                      </button>
+                      <button className="btn" onClick={onFindPlayers}>🤝 Find a meetup</button>
                     </div>
                   </div>
                 )
