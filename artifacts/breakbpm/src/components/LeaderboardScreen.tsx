@@ -468,13 +468,6 @@ export default function LeaderboardScreen({
                 ← Global leaderboard
               </button>
             )}
-            <p style={{ fontSize: 11, color: "#444", margin: 0, lineHeight: 1.4 }}>
-              {isCity
-                ? `City standings — recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games across every Verified Hall in ${cityName ?? "this city"}.`
-                : isHall
-                ? `Local standings${hallVenue?.locality ? ` · ${hallVenue.locality}` : ""} — recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games at this hall.`
-                : `Top pace & accuracy, recent ${MODE_LABEL[mode].toLowerCase()} 1-on-1 games only.`}
-            </p>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               {MODES.map((m) => {
                 const active = mode === m;
