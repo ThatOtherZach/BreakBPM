@@ -1475,31 +1475,34 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
               {invites.data.invites.map((inv) => {
                 const busy = inviteBusyId === inv.id;
                 return (
-                  <div key={inv.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <span style={{ fontSize: 11, color: "#cdeccd" }}>
-                      {inv.status === "pending" ? "Invited by " : "Linked by "}
-                      <strong>{inv.invitedBy}</strong>
-                      {inv.status === "accepted" ? " · counts toward your stats" : ""}
-                    </span>
-                    <GameHistoryCard game={inv.game} />
-                    <div style={{ display: "flex", gap: 6 }}>
-                      {inv.status === "pending" && (
+                  <div key={inv.id} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {/* Header row: invite label + action buttons on the same line */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+                      <span style={{ fontSize: 11, color: "#cdeccd", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {inv.status === "pending" ? "Invited by " : "Linked by "}
+                        <strong>{inv.invitedBy}</strong>
+                        {inv.status === "accepted" ? " · counts toward your stats" : ""}
+                      </span>
+                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                        {inv.status === "pending" && (
+                          <button
+                            className="btn"
+                            disabled={busy}
+                            onClick={() => handleAcceptInvite(inv.id)}
+                          >
+                            {busy ? "…" : "✅ Accept"}
+                          </button>
+                        )}
                         <button
                           className="btn"
                           disabled={busy}
-                          onClick={() => handleAcceptInvite(inv.id)}
+                          onClick={() => handleRemoveInvite(inv.id)}
                         >
-                          {busy ? "…" : "Accept"}
+                          {busy ? "…" : inv.status === "pending" ? "🗑️ Delete" : "🗑️ Remove"}
                         </button>
-                      )}
-                      <button
-                        className="btn"
-                        disabled={busy}
-                        onClick={() => handleRemoveInvite(inv.id)}
-                      >
-                        {busy ? "…" : inv.status === "pending" ? "Delete" : "Remove"}
-                      </button>
+                      </div>
                     </div>
+                    <GameHistoryCard game={inv.game} />
                   </div>
                 );
               })}
