@@ -1121,7 +1121,16 @@ export function VenueCard({
           🔥 {gameCount} {gameCount === 1 ? "Game" : "Games"} Played
         </div>
       )}
-      {venue.locality && <div className="fpp-card-loc">📍 {venue.locality}</div>}
+      {venue.locality && (
+        <div
+          className="fpp-card-loc"
+          style={{ cursor: "pointer", textDecoration: "underline dotted", textUnderlineOffset: 2 }}
+          title={`View ${venue.locality} city leaderboard`}
+          onClick={() => setLocation(`/leaderboard/city/${encodeURIComponent(venue.locality!)}`)}
+        >
+          📍 {venue.locality}
+        </div>
+      )}
       {venue.tableCount != null && (
         <div className="fpp-card-loc">🎱 {venue.tableCount} Tables</div>
       )}
