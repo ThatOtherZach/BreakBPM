@@ -1684,11 +1684,12 @@ html, #root {
   padding: 2px 0;
   scrollbar-width: none;
 }
-/* A run pocketed by someone other than this card's subject (the human opponent
-   or the Shark) — darkened so the subject's own balls read as the bright ones. */
-.shotlog-run--opp {
-  filter: brightness(0.5) saturate(0.85);
-  opacity: 0.9;
+/* In Shark-mode games, the invisible Shark's pocketed balls are darkened so the
+   human player's own balls read as the bright ones. Only the ball chips are
+   dimmed — the Shark fin icon stays bright — and no other game type dims. */
+.shotlog-chip--shark {
+  filter: brightness(0.55) saturate(0.85);
+  opacity: 0.92;
 }
 .shotlog-scroll::-webkit-scrollbar {
   display: none;

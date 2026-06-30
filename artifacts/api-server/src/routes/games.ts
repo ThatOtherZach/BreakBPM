@@ -354,24 +354,6 @@ function toHistoryEntry(
           player: typeof e["playerName"] === "string" ? (e["playerName"] as string) : "",
         }));
   const { outcome, opponent } = resolveSubjectResult(g, gs, subject, summary);
-  // The subject's PERSISTED in-game name (from their slot) — this is what
-  // pocketSequence.player holds, NOT the caller's current screen name, which can
-  // drift if they rename their account after the game. Resolved by slot the same
-  // way the result/pace logic does; falls back to the passed-in name, then null,
-  // for legacy rows without a resolvable slot.
-  const persistedPlayers: Array<{ name?: string }> = summary
-    ? summary.players
-    : Array.isArray(gs?.["players"])
-      ? (gs!["players"] as Array<{ name?: string }>)
-      : [];
-  const persistedSubjectName =
-    subject.slot != null && subject.slot >= 0 && subject.slot < persistedPlayers.length
-      ? persistedPlayers[subject.slot]?.name
-      : undefined;
-  const subjectName =
-    typeof persistedSubjectName === "string" && persistedSubjectName.length > 0
-      ? persistedSubjectName
-      : (subject.name ?? null);
   return {
     id: g.id,
     gameType: g.gameType,
@@ -411,10 +393,6 @@ function toHistoryEntry(
     // hall was in range), or null. Mutually exclusive with `venue`; drives the
     // #CITY link on the history card to the City Leaderboard.
     cityLocality: g.cityLocality ?? null,
-    // The player this card is "for", resolved to their PERSISTED slot name above
-    // so it matches the `player` names in pocketSequence — lets the client
-    // shot-log dim everyone else's pocketed balls (opponent + Shark).
-    subjectName,
     ...(endReason ? { endReason } : {}),
   };
 }

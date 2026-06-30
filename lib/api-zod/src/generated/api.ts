@@ -788,8 +788,7 @@ export const GetPublicProfileResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string().nullish()
 }).nullable(),
-  "cityLocality": zod.string().nullish(),
-  "subjectName": zod.string().nullish()
+  "cityLocality": zod.string().nullish()
 })),
   "stats": zod.union([zod.object({
   "tier": zod.enum(['public', 'account', 'pass']),
@@ -958,8 +957,7 @@ export const GetGameHistoryResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string().nullish()
 }).nullable(),
-  "cityLocality": zod.string().nullish(),
-  "subjectName": zod.string().nullish()
+  "cityLocality": zod.string().nullish()
 }))
 })
 
@@ -1030,8 +1028,7 @@ export const ListMyInvitesResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string().nullish()
 }).nullable(),
-  "cityLocality": zod.string().nullish(),
-  "subjectName": zod.string().nullish()
+  "cityLocality": zod.string().nullish()
 })
 }))
 })

@@ -40,27 +40,19 @@ function toRuns(seq: PocketEvent[]): PocketRun[] {
  * the shark fin — no player names are shown. Scrolls horizontally when wider
  * than the row.
  */
-function ShotLogRow({
-  seq,
-  subjectName,
-}: {
-  seq: PocketEvent[];
-  subjectName: string | null;
-}) {
+function ShotLogRow({ seq }: { seq: PocketEvent[] }) {
   const runs = toRuns(seq);
   return (
     <div className="shotlog-row">
       <div className="shotlog-scroll">
         {runs.map((run, ri) => {
+          // In Shark-mode games the invisible Shark's pocketed balls are dimmed
+          // (its fin icon is left bright) so the human player's own balls stand
+          // out. No other game type dims anything.
           const isShark = run.player === SHARK_PLAYER_NAME;
-          // Highlight the card subject's own pocketed balls; dim everyone
-          // else's (the human opponent and the Shark) so the eye separates
-          // "my balls" from "theirs". When the subject is unknown, dim nothing.
-          const isSubject = subjectName == null || run.player === subjectName;
           return (
             <span
               key={ri}
-              className={isSubject ? undefined : "shotlog-run--opp"}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -80,7 +72,9 @@ function ShotLogRow({
                 return (
                   <span
                     key={bi}
-                    className={`hud-chip hud-chip-sm ${chipClass}`}
+                    className={`hud-chip hud-chip-sm ${chipClass}${
+                      isShark ? " shotlog-chip--shark" : ""
+                    }`}
                     data-number={ball}
                     style={{ "--chip-color": BALL_COLORS[ball] } as React.CSSProperties}
                     aria-label={`Ball ${ball} by ${isShark ? "Shark" : run.player || "player"}`}
@@ -361,7 +355,7 @@ export default function GameHistoryCard({
 
       {/* Bottom: visual shot log — balls in pocket order */}
       {g.pocketSequence && g.pocketSequence.length > 0 && (
-        <ShotLogRow seq={g.pocketSequence} subjectName={g.subjectName ?? null} />
+        <ShotLogRow seq={g.pocketSequence} />
       )}
     </div>
   );

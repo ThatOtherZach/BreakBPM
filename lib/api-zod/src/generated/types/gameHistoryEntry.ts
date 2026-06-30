@@ -39,6 +39,4 @@ export interface GameHistoryEntry {
   venue: GameHistoryEntryVenue;
   /** @nullable */
   cityLocality?: string | null;
-  /** @nullable */
-  subjectName?: string | null;
 }

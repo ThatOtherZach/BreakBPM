@@ -17,10 +17,3 @@ The stored `games.outcome` / `games.winner` are NOT viewer-aware: `outcome='won'
 **Why:** Joiners were seeing the host's pace/ball count in their own history.
 
 **How to apply:** Filter by slot player name, NOT `game_participants.displayName` (a joiner's screenName often differs from the host-typed slot name; `stats.ts` filters by displayName, which is a separate latent issue). Fall back to row-level host values ONLY when the subject is the host and no own shots are attributable (legacy / name mismatch); a joiner with no attributable shots correctly shows none/0.
-
-## Shot-log dimming (`subjectName`) — same slot-resolve rule
-The history card's shot log can dim the OTHER players' pocketed balls (human opponent + Shark) so the subject's own balls stand out. The `GameHistoryEntry.subjectName` field that drives this must be resolved from the subject's SLOT persisted name (`summary.players[slot].name`, else `gameState.players[slot].name`), NOT the caller's current screen name — otherwise a post-game account rename makes the player's own historical balls stop matching `pocketSequence.player` and they get dimmed as the opponent's. Fall back to the passed-in name, then null (null ⇒ client dims nothing). Client matches `run.player === subjectName`.
-
-**Why:** First cut populated `subjectName` from `user.screenName`/`host.screenName`; architect caught that it breaks after a rename. `pocketSequence.player` is a persisted name, so the subject side of the comparison must be persisted too.
-
-**Residual limitation:** `pocketSequence` stores player NAME, not slot, so two same-named guests can't be told apart (both treated as subject → not dimmed). Accepted; an exact fix needs slot identity baked into pocket events.
