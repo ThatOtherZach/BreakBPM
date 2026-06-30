@@ -156,7 +156,7 @@ export const FOR_VENUES_INTRO =
 
 export const FOR_VENUES_SHOWCASE: ShowcaseItem[] = [
   {
-    title: "Your Own House Leaderboard",
+    title: "Your Own Local Leaderboard",
     body: "Every verified hall gets its own Local Leaderboard. Regulars battle for the top spot on your tables, and a walk-in just scans the code to get on the board. It's league-night standings that run themselves.",
     img: "/hall-card-example.png",
     imgAlt: "A verified hall card with its own Local Leaderboard button",

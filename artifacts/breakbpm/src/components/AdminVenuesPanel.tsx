@@ -560,7 +560,7 @@ export default function AdminVenuesPanel() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      House Leaderboard ↗
+                      Local Leaderboard ↗
                     </a>
                   </div>
                   <div className="avp-row-actions">

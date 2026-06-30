@@ -111,11 +111,12 @@ When you finish an 8-ball or 9-ball game, use the **🏆 Tag Leaderboard** butto
 
 ![Granville Club verified hall card showing Local Leaderboard button](/hall-card-example.png)
 
-You can also open any hall's leaderboard straight from **[Find Players](https://breakbpm.com/find-players)** and then click **🏆 Local Leaderboard** on the verified hall's cards to view. Note that Free accounts see the last 30 days; pass holders unlock the 90-day and all-time windows.
+You can also open any hall's leaderboard straight from **[Find Players](https://breakbpm.com/find-players)**: click **🏆 Local Leaderboard** on a verified hall's card to see that hall's board, or click the hall's **city** on the card (it's a link) to open the **City Leaderboard** — every game tagged at any hall in that city, rolled into one ranking. Note that Free accounts see the last 30 days; pass holders unlock the 90-day and all-time windows.
 
 **A few things to know:**
 - Rankings come from 1-on-1 8-Ball and 9-Ball games (seperate leadersboards for each).
 - Only the host can tag a game, only once, and only to the hall they're standing in.
+- No verified hall close enough? You can tag the game to your **city** instead, so it still lands on that City Leaderboard.
 - Sign in to view a Local Leaderboard.
 
 ## Passes
