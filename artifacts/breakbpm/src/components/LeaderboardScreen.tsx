@@ -380,7 +380,7 @@ export default function LeaderboardScreen({
                         title={`View ${hallVenue.locality} city leaderboard`}
                         onClick={() => setLocation(`/leaderboard/city/${encodeURIComponent(hallVenue.locality!)}`)}
                       >
-                        {hallVenue.locality}
+                        🏙️ {hallVenue.locality}
                       </div>
                     )}
                     {hallVenue.tableCount != null && (
