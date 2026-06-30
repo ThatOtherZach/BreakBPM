@@ -258,6 +258,46 @@ export default function GameHistoryCard({
               ) : null;
             })()}
           </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#cdeccd", fontSize: 11 }}>
+            <ResultBadge outcome={g.outcome} chaosMode={g.chaosMode} />
+            {g.sharkMode ? (
+              sharkVerdict ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
+                  <SharkIcon size={12} />
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {sharkVerdict}
+                  </span>
+                </span>
+              ) : null
+            ) : g.opponent ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {"vs. "}
+                  {hideOpponent ? (
+                    "🕴️"
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setLocation(`/watch/${encodeURIComponent(g.opponent!)}`)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        cursor: "pointer",
+                        color: "inherit",
+                        fontSize: "inherit",
+                        fontFamily: "inherit",
+                        lineHeight: "inherit",
+                        textDecoration: "underline",
+                      }}
+                    >
+                      @{g.opponent}
+                    </button>
+                  )}
+                </span>
+              </span>
+            ) : null}
+          </span>
           {(() => {
             // A finished game is tagged to a Verified Hall (venue) OR — when no
             // hall was in range — to a city locality. Render whichever applies
@@ -301,46 +341,6 @@ export default function GameHistoryCard({
               </button>
             ) : null;
           })()}
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#cdeccd", fontSize: 11 }}>
-            <ResultBadge outcome={g.outcome} chaosMode={g.chaosMode} />
-            {g.sharkMode ? (
-              sharkVerdict ? (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
-                  <SharkIcon size={12} />
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {sharkVerdict}
-                  </span>
-                </span>
-              ) : null
-            ) : g.opponent ? (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {"vs. "}
-                  {hideOpponent ? (
-                    "🕴️"
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setLocation(`/watch/${encodeURIComponent(g.opponent!)}`)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        cursor: "pointer",
-                        color: "inherit",
-                        fontSize: "inherit",
-                        fontFamily: "inherit",
-                        lineHeight: "inherit",
-                        textDecoration: "underline",
-                      }}
-                    >
-                      @{g.opponent}
-                    </button>
-                  )}
-                </span>
-              </span>
-            ) : null}
-          </span>
           {g.endReason && (
             <span style={{ fontSize: 10, color: "#a9c9b3", fontStyle: "italic" }}>
               {g.endReason === "max_duration_60min"
