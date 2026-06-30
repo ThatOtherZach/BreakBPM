@@ -186,7 +186,7 @@ export const FOR_VENUES_HOWTO_TITLE = "Get Your Hall Listed";
 export const FOR_VENUES_HOWTO_BODY =
   "Email us your hall's name, address, number of tables, and a website if you have one. Our team sets up verified halls by hand — usually within a day or two.";
 
-export const FOR_VENUES_CTA_LABEL = "Request Your Hall";
+export const FOR_VENUES_CTA_LABEL = "Request to be Added";
 
 export const FOR_VENUES_MAILTO =
   "mailto:contact@saymservices.com?subject=Verified%20Pool%20Hall%20Request";
