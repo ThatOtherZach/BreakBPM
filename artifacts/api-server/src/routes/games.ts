@@ -479,12 +479,18 @@ async function fetchVenueLabels(
 }
 
 /**
- * Batch-fetch, per game, the set of participant slot indexes backed by a real
- * account (non-null `game_participants.userId` — host, joiner, or accepted
- * @mention). Lets history cards decide whether the "vs." opponent is a clickable
- * @profile link (registered) or plain text (typed guest), reusing the identity
- * check already done at game start instead of a fresh lookup. Keyed by game id;
- * a game with no registered participants is simply absent from the map.
+ * Batch-fetch, per game, the set of slot indexes that map to a real account, so
+ * history cards can decide whether the "vs." opponent is a clickable @profile
+ * link (registered) or plain text (typed guest). A slot counts as registered
+ * when EITHER source identifies it as a real user — reusing identity checks
+ * already done instead of a fresh lookup:
+ *   - `game_participants.userId` is non-null (host, joiner, or an accepted
+ *     @mention whose real participant slot now exists), OR
+ *   - a `game_mentions` row (pending or accepted) tags that slot to a real
+ *     registered user. This covers a host who validly @mentioned a registered
+ *     player who has NOT accepted yet — the name is still a real account and
+ *     should link to their watch page.
+ * Keyed by game id; a game with no registered slots is absent from the map.
  */
 async function fetchRegisteredSlots(
   gameIds: Array<string>,
@@ -492,26 +498,42 @@ async function fetchRegisteredSlots(
   const ids = [...new Set(gameIds)];
   const map = new Map<string, Set<number>>();
   if (ids.length === 0) return map;
-  const rows = await db
-    .select({
-      gameId: gameParticipantsTable.gameId,
-      slotIndex: gameParticipantsTable.slotIndex,
-    })
-    .from(gameParticipantsTable)
-    .where(
-      and(
-        inArray(gameParticipantsTable.gameId, ids),
-        isNotNull(gameParticipantsTable.userId),
-      ),
-    );
-  for (const r of rows) {
-    let set = map.get(r.gameId);
+  const add = (gameId: string, slotIndex: number) => {
+    let set = map.get(gameId);
     if (!set) {
       set = new Set<number>();
-      map.set(r.gameId, set);
+      map.set(gameId, set);
     }
-    set.add(r.slotIndex);
-  }
+    set.add(slotIndex);
+  };
+  const [participantRows, mentionRows] = await Promise.all([
+    db
+      .select({
+        gameId: gameParticipantsTable.gameId,
+        slotIndex: gameParticipantsTable.slotIndex,
+      })
+      .from(gameParticipantsTable)
+      .where(
+        and(
+          inArray(gameParticipantsTable.gameId, ids),
+          isNotNull(gameParticipantsTable.userId),
+        ),
+      ),
+    db
+      .select({
+        gameId: gameMentionsTable.gameId,
+        slotIndex: gameMentionsTable.slotIndex,
+      })
+      .from(gameMentionsTable)
+      .where(
+        and(
+          inArray(gameMentionsTable.gameId, ids),
+          inArray(gameMentionsTable.status, ["pending", "accepted"]),
+        ),
+      ),
+  ]);
+  for (const r of participantRows) add(r.gameId, r.slotIndex);
+  for (const r of mentionRows) add(r.gameId, r.slotIndex);
   return map;
 }
 
