@@ -374,13 +374,15 @@ export default function LeaderboardScreen({
                       <span className="cue-ball-icon" aria-hidden="true" style={{ fontSize: "18.4px" }} /> {hallVenue.name}
                     </div>
                     {hallVenue.locality && (
-                      <div
-                        className="fpp-card-loc"
-                        style={{ cursor: "pointer", textDecoration: "underline dotted", textUnderlineOffset: 2 }}
-                        title={`View ${hallVenue.locality} city leaderboard`}
-                        onClick={() => setLocation(`/leaderboard/city/${encodeURIComponent(hallVenue.locality!)}`)}
-                      >
-                        🏙️ {hallVenue.locality}
+                      <div className="fpp-card-loc">
+                        🏙️{" "}
+                        <span
+                          style={{ cursor: "pointer", textDecoration: "underline dotted", textUnderlineOffset: 2 }}
+                          title={`View ${hallVenue.locality} city leaderboard`}
+                          onClick={() => setLocation(`/leaderboard/city/${encodeURIComponent(hallVenue.locality!)}`)}
+                        >
+                          {hallVenue.locality}
+                        </span>
                       </div>
                     )}
                     {hallVenue.tableCount != null && (
