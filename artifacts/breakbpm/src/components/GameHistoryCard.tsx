@@ -40,21 +40,32 @@ function toRuns(seq: PocketEvent[]): PocketRun[] {
  * the shark fin — no player names are shown. Scrolls horizontally when wider
  * than the row.
  */
-function ShotLogRow({ seq }: { seq: PocketEvent[] }) {
+function ShotLogRow({
+  seq,
+  subjectName,
+}: {
+  seq: PocketEvent[];
+  subjectName: string | null;
+}) {
   const runs = toRuns(seq);
   return (
     <div className="shotlog-row">
       <div className="shotlog-scroll">
         {runs.map((run, ri) => {
           const isShark = run.player === SHARK_PLAYER_NAME;
+          // Highlight the card subject's own pocketed balls; dim everyone
+          // else's (the human opponent and the Shark) so the eye separates
+          // "my balls" from "theirs". When the subject is unknown, dim nothing.
+          const isSubject = subjectName == null || run.player === subjectName;
           return (
             <span
               key={ri}
+              className={isSubject ? undefined : "shotlog-run--opp"}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 3,
-                marginLeft: ri > 0 ? 9 : 0,
+                gap: 2,
+                marginLeft: ri > 0 ? 5 : 0,
                 flexShrink: 0,
               }}
             >
@@ -350,7 +361,7 @@ export default function GameHistoryCard({
 
       {/* Bottom: visual shot log — balls in pocket order */}
       {g.pocketSequence && g.pocketSequence.length > 0 && (
-        <ShotLogRow seq={g.pocketSequence} />
+        <ShotLogRow seq={g.pocketSequence} subjectName={g.subjectName ?? null} />
       )}
     </div>
   );

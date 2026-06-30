@@ -1678,11 +1678,17 @@ html, #root {
 .shotlog-scroll {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   overflow-x: auto;
   white-space: nowrap;
   padding: 2px 0;
   scrollbar-width: none;
+}
+/* A run pocketed by someone other than this card's subject (the human opponent
+   or the Shark) — darkened so the subject's own balls read as the bright ones. */
+.shotlog-run--opp {
+  filter: brightness(0.5) saturate(0.85);
+  opacity: 0.9;
 }
 .shotlog-scroll::-webkit-scrollbar {
   display: none;

@@ -2505,6 +2505,13 @@ components:
         # instead). Drives the #CITY link on the history card that opens the
         # City Leaderboard (/n/:locality).
         cityLocality: { type: ["string", "null"] }
+        # The display name of the player whose history this card represents (the
+        # account owner, or the watched profile's player). Matches the `player`
+        # values in `pocketSequence`, letting the shot-log row tell the subject's
+        # own pocketed balls from everyone else's (the human opponent and the
+        # Shark) so opponents' chips can be dimmed. Null when the subject is
+        # unknown (then nothing is dimmed).
+        subjectName: { type: ["string", "null"] }
 
     MentionResolveResult:
       type: object
