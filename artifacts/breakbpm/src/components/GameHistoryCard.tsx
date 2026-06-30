@@ -278,7 +278,28 @@ export default function GameHistoryCard({
             ) : g.opponent ? (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  vs. {hideOpponent ? "🕴️" : g.opponent}
+                  {"vs. "}
+                  {hideOpponent ? (
+                    "🕴️"
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setLocation(`/watch/${encodeURIComponent(g.opponent!)}`)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        cursor: "pointer",
+                        color: "inherit",
+                        fontSize: "inherit",
+                        fontFamily: "inherit",
+                        lineHeight: "inherit",
+                        textDecoration: "underline",
+                      }}
+                    >
+                      @{g.opponent}
+                    </button>
+                  )}
                 </span>
               </span>
             ) : null}
