@@ -425,9 +425,7 @@ export default function LeaderboardScreen({
                     href={`https://www.google.com/maps?q=${hallVenue.latitude},${hallVenue.longitude}`}
                     target="_blank"
                     rel="noreferrer"
-                  >
-                    🗺️ Open in Maps
-                  </a>
+                  >🗺️ Map</a>
                   {websiteUrl && (
                     // A real dofollow backlink to the venue's own site — part of
                     // the value a hall gets from being listed, so deliberately
