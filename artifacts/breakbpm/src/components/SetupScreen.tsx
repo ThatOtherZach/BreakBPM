@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
-import type { GameType, GameState, Player, SharkAggression, RuleSet, ChaosMode, PracticeRack } from '../lib/gameLogic';
+import type { GameType, GameState, Player, SharkAggression, RuleSet, ChaosMode, PracticeRack, GameMention } from '../lib/gameLogic';
 import { normalizeShareCode } from '../lib/gameLogic';
 import ballImg from '/eightball_nobg.png';
 import Navbar from './Navbar';
@@ -116,7 +116,7 @@ const CHAOS_RULE_OPTIONS: {
 ];
 
 interface Props {
-  onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, serverShareCode: string | null, sharkAggression?: SharkAggression, ruleSet?: RuleSet, chaosMode?: ChaosMode, breakerIndex?: number, practiceRack?: PracticeRack) => void;
+  onStart: (gt: GameType, players: Player[], serverGameId: string | null, maxGameDurationMs: number | null, serverShareCode: string | null, sharkAggression?: SharkAggression, ruleSet?: RuleSet, chaosMode?: ChaosMode, breakerIndex?: number, practiceRack?: PracticeRack, mentions?: GameMention[]) => void;
   /** Resume an existing game from the server-side in-progress snapshot. */
   onResume: (state: GameState, serverGameId: string | null, maxGameDurationMs: number | null, pausedDuration: number) => void;
   onManual: () => void;
@@ -332,6 +332,10 @@ export default function SetupScreen({ onStart, onResume, onManual, onLegal, onAc
       // Preserve the Practice rack across resume — otherwise a restored 9-ball
       // practice silently degrades into the full 15-ball rack.
       practiceRack: gs.practiceRack,
+      breakerIndex: gs.breakerIndex,
+      // Preserve @mention links across resume so a Rematch of the restored
+      // game still re-attaches the associated players.
+      mentions: gs.mentions,
       undoCount: gs.undoCount ?? 0,
     };
     // Seed localStorage so the next refresh resumes from local too.
@@ -570,6 +574,8 @@ export default function SetupScreen({ onStart, onResume, onManual, onLegal, onAc
         count >= 2 ? breakerIndex : 0,
         // Rack size only matters for Practice; other modes ignore it.
         isPractice ? practiceRack : undefined,
+        // Persist the resolved @mention links so a Rematch can re-attach them.
+        mentionPayload.length > 0 ? mentionPayload : undefined,
       );
     } catch (e: unknown) {
       const err = e as { data?: { error?: string } };

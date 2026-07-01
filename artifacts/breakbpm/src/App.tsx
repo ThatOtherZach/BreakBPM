@@ -23,7 +23,7 @@ import { SignInPage, SignUpPage } from "./components/SignInPage";
 import { readPendingRedeem } from "./lib/pendingRedeem";
 import { readPendingClaim } from "./lib/pendingClaim";
 import { readPendingInvite } from "./lib/pendingInvite";
-import type { GameType, GameState, Player, SharkAggression, RuleSet, ChaosMode, PracticeRack, RematchConfig } from "./lib/gameLogic";
+import type { GameType, GameState, Player, SharkAggression, RuleSet, ChaosMode, PracticeRack, RematchConfig, GameMention } from "./lib/gameLogic";
 import {
   generateShareCode,
   decodeGameState,
@@ -58,6 +58,7 @@ function createInitialGameState(
   chaosMode?: ChaosMode,
   breakerIndex?: number,
   practiceRack?: PracticeRack,
+  mentions?: GameMention[],
 ): GameState {
   // Shark mode is solo 8-ball with an opponent steal mechanic. Only seed
   // the shark fields when the combo actually matches — keeps state shape
@@ -94,6 +95,8 @@ function createInitialGameState(
     // Remember who broke so a Rematch can fall back to the original breaker
     // when the finished game had no winner to inherit the break.
     breakerIndex: safeBreaker,
+    // Persist @mention links so a Rematch can re-attach the same players.
+    mentions: mentions && mentions.length > 0 ? mentions : undefined,
     undoCount: 0,
   };
 }
@@ -224,6 +227,8 @@ function MainApp() {
         ruleSet: restored.ruleSet,
         chaosMode: restored.chaosMode,
         practiceRack: restored.practiceRack,
+        breakerIndex: restored.breakerIndex,
+        mentions: restored.mentions,
         undoCount: restored.undoCount ?? 0,
       });
       setView("game");
@@ -241,11 +246,12 @@ function MainApp() {
     chaosMode?: ChaosMode,
     breakerIndex?: number,
     practiceRack?: PracticeRack,
+    mentions?: GameMention[],
   ) {
     // Explicit fresh start — wipe any stale in-progress checkpoint so we
     // don't immediately resurrect the previous game on the next mount.
     clearInProgressGame();
-    setGameState(createInitialGameState(gameType, players, serverShareCode, sharkAggression, ruleSet, chaosMode, breakerIndex, practiceRack));
+    setGameState(createInitialGameState(gameType, players, serverShareCode, sharkAggression, ruleSet, chaosMode, breakerIndex, practiceRack, mentions));
     setServerGameId(gameId);
     setMaxGameDurationMs(maxMs);
     setInitialPausedDuration(0);
@@ -295,8 +301,15 @@ function MainApp() {
    */
   async function handleRematch(cfg: RematchConfig) {
     clearInProgressGame();
+    // Re-attach @mention links so the associated players get invited to the
+    // rematch too (server re-validates: paid host only, still-under-cap, etc).
+    const mentions = cfg.mentions && cfg.mentions.length > 0 ? cfg.mentions : undefined;
     const res = await startGame.mutateAsync({
-      data: { gameType: cfg.gameType, maxPlayers: cfg.maxPlayers },
+      data: {
+        gameType: cfg.gameType,
+        maxPlayers: cfg.maxPlayers,
+        ...(mentions ? { mentions } : {}),
+      },
     });
     setGameState(
       createInitialGameState(
@@ -308,6 +321,7 @@ function MainApp() {
         cfg.chaosMode,
         cfg.breakerIndex,
         cfg.practiceRack,
+        mentions,
       ),
     );
     setServerGameId(res.gameId ?? null);

@@ -8,6 +8,17 @@ export interface Player {
   team?: Team;
 }
 
+/**
+ * An @mention link attached at game start: a non-host slot pinned to a
+ * registered player's canonical screen name. Kept on the GameState so a
+ * Rematch can re-attach the same players (otherwise the association is lost
+ * and the mentioned player never gets re-invited to the new game).
+ */
+export interface GameMention {
+  slotIndex: number;
+  screenName: string;
+}
+
 export interface ShotLogEntry {
   type: ShotType;
   playerName: string;
@@ -135,6 +146,12 @@ export interface GameState {
    */
   breakerIndex?: number;
   /**
+   * @mention links attached at game start (non-host slots pinned to a
+   * registered player's screen name). Persisted so a Rematch can re-attach the
+   * same players. Absent for games with no mentions (the common case).
+   */
+  mentions?: GameMention[];
+  /**
    * Total number of undos performed in this game ("No one Saw That"). Bumped
    * each time the scorekeeper reverts a logged action. Persisted in the
    * gameState JSONB so the Stats page can total it across games. Defaults to
@@ -158,6 +175,8 @@ export interface RematchConfig {
   ruleSet?: RuleSet;
   chaosMode?: ChaosMode;
   practiceRack?: PracticeRack;
+  /** @mention links to re-attach to the rematch (carried from the prior game). */
+  mentions?: GameMention[];
 }
 
 /** True when this is the solo-vs-Shark flavor of 8-ball. */
@@ -683,6 +702,7 @@ export function encodeGameState(state: GameState): string {
       rs: state.ruleSet,
       cm: state.chaosMode,
       pr: state.practiceRack,
+      mn: state.mentions,
       uc: state.undoCount,
     };
     return btoa(JSON.stringify(compact));
@@ -715,6 +735,16 @@ export function decodeGameState(encoded: string): Partial<GameState> | null {
       ruleSet: d.rs,
       chaosMode: d.cm,
       practiceRack: d.pr,
+      // Keep only well-formed mention entries — a tampered/truncated ?state=
+      // blob must not push a malformed mentions array into a rematch request.
+      mentions: Array.isArray(d.mn)
+        ? (d.mn as unknown[]).filter(
+            (m): m is GameMention =>
+              !!m &&
+              typeof (m as GameMention).slotIndex === 'number' &&
+              typeof (m as GameMention).screenName === 'string',
+          )
+        : undefined,
       undoCount: typeof d.uc === 'number' ? d.uc : 0,
     };
   } catch {

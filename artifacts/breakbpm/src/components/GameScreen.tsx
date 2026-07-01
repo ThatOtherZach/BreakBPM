@@ -1041,6 +1041,8 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
         ruleSet: state.ruleSet,
         chaosMode: state.chaosMode,
         practiceRack: state.practiceRack,
+        // Carry @mention links forward so associated players are re-invited.
+        mentions: state.mentions,
       });
       // On success the app swaps to the new game and remounts this component
       // (keyed on shareCode), so there's no need to clear the pending flag.
