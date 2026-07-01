@@ -136,7 +136,7 @@ Pass Unlocks:
 
 Passes can be purchased on-chain with crypto from your account page or redeemed with a code. Crypto passes are applied automatically on purchase once payment is confirmed.
 
-Prefer to pay by card? A **14 Day Pass [can be purchased on our off-platform store](https://www.saymservices.com/store/p/breakbpm-14-day-pass)** for $5.99. After purchase a redemption code will be emailed to you within 24 hours. You can try to get a free day pass from a Lifetime pass holder or **[try your luck here](https://breakbpm.com/pool-stats-app)**.
+Prefer to pay by card? A **30 Day Pass [can be purchased on our off-platform store](https://www.saymservices.com/store/p/breakbpm-day-pass)** for $4.99. After purchase a redemption code will be emailed to you within 24 hours. You can try to get a free day pass from a Lifetime pass holder or **[try your luck here](https://breakbpm.com/pool-stats-app)**.
 
 All pass types are non-refundable. If you need assistance, use the Github first.
 

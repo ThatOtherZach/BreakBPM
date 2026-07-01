@@ -79,9 +79,9 @@ export default function PricingPanel({
             style={{ flexDirection: "column", alignItems: "flex-start", gap: 6 }}
           >
             <span style={{ fontWeight: "bold", fontSize: 12 }}>
-              💳 Prefer to pay by card? — 14 Day Pass · $5.99
+              💳 Prefer to pay by card? — 30 Day Pass · $4.99
             </span>
-            <span style={{ fontSize: 11 }}>Paying with card? We only sell the 14 Day Pass on the Saym Store. After paying you'll receive a redemption code in 24 hours for 14 days of access. Note that payment with crypto instantly grants access.</span>
+            <span style={{ fontSize: 11 }}>Paying with card? We only sell the 30 Day Pass on the Saym Store. After paying you'll receive a redemption code in 24 hours for 30 days of access. Note that payment with crypto instantly grants access.</span>
             <a
               className="btn btn-primary w-full"
               href={storeUrl}
@@ -89,7 +89,7 @@ export default function PricingPanel({
               rel="noopener noreferrer"
               style={{ textAlign: "center", textDecoration: "none" }}
             >
-              Buy 14 Day Pass by Card →
+              Buy 30 Day Pass by Card →
             </a>
           </div>
         )}
