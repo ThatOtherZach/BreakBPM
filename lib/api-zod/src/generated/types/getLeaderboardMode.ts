@@ -12,4 +12,5 @@ export type GetLeaderboardMode = typeof GetLeaderboardMode[keyof typeof GetLeade
 export const GetLeaderboardMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;

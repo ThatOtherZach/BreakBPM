@@ -3547,7 +3547,7 @@ export const getGetLeaderboardUrl = (params?: GetLeaderboardParams,) => {
 }
 
 /**
- * Ranking of registered players by a composite skill measure (recent pace scaled by accuracy, with games against registered opponents weighted above games against anonymous guests). 8-ball and 9-ball are ranked as separate boards selected by `mode` — they are never merged. The 30-day window is public (so the signed-out home-page widget works); the 90-day and all-time windows require a pass and are enforced server-side. Each (mode, window) ranking is computed once and cached for one hour, then paginated from the cache. BPM and accuracy are reported per row for display; the composite score itself is intentionally not exposed.
+ * Ranking of registered players by a composite skill measure (recent pace scaled by accuracy, with games against registered opponents weighted above games against anonymous guests). 8-ball, 9-ball, and solo Shark mode are ranked as separate boards selected by `mode` — they are never merged. The Shark board ranks only games the player WON against the Shark AI (Normal and Hard combined, full trust weight since solo play has no opponent) and requires 5 winning Shark games inside the active window before a player is ranked. The 30-day window is public (so the signed-out home-page widget works); the 90-day and all-time windows require a pass and are enforced server-side. Each (mode, window) ranking is computed once and cached for one hour, then paginated from the cache. BPM and accuracy are reported per row for display; the composite score itself is intentionally not exposed.
 
  * @summary Balls-Per-Minute leaderboard
  */

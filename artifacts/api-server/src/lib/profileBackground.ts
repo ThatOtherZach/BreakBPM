@@ -23,6 +23,17 @@ import { randomInt } from "crypto";
 export const BACKGROUND_VARIANTS = ["shark", "pool-player", "hustler"] as const;
 export type BackgroundVariant = (typeof BACKGROUND_VARIANTS)[number];
 
+/**
+ * Shark-mode WIN milestone deliberately shared by TWO features as ONE
+ * constant: the auto-earned "shark" profile theme unlocks at this many recent
+ * Shark wins (`computeAutoEarnedVariantFromGames` in userProfileBackground.ts),
+ * and the SHARK leaderboard requires this many winning Shark games INSIDE its
+ * active window before a player is ranked at all (`computeLeaderboard` in
+ * stats.ts). Keep any "win N Shark games" copy in lockstep with this value
+ * (the client mirrors it in LeaderboardScreen.tsx).
+ */
+export const SHARK_WIN_THRESHOLD = 5;
+
 /** Stored profile-theme preference values. `auto` (or NULL in the DB) means
  * "use the artwork stamped on my pass's redeem card when it carried one, else
  * plain"; `none` means a plain background. `rainbow` is a name-only flair (a

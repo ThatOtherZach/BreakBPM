@@ -1256,7 +1256,7 @@ export const TagGameCityResponse = zod.object({
 
 
 /**
- * Ranking of registered players by a composite skill measure (recent pace scaled by accuracy, with games against registered opponents weighted above games against anonymous guests). 8-ball and 9-ball are ranked as separate boards selected by `mode` — they are never merged. The 30-day window is public (so the signed-out home-page widget works); the 90-day and all-time windows require a pass and are enforced server-side. Each (mode, window) ranking is computed once and cached for one hour, then paginated from the cache. BPM and accuracy are reported per row for display; the composite score itself is intentionally not exposed.
+ * Ranking of registered players by a composite skill measure (recent pace scaled by accuracy, with games against registered opponents weighted above games against anonymous guests). 8-ball, 9-ball, and solo Shark mode are ranked as separate boards selected by `mode` — they are never merged. The Shark board ranks only games the player WON against the Shark AI (Normal and Hard combined, full trust weight since solo play has no opponent) and requires 5 winning Shark games inside the active window before a player is ranked. The 30-day window is public (so the signed-out home-page widget works); the 90-day and all-time windows require a pass and are enforced server-side. Each (mode, window) ranking is computed once and cached for one hour, then paginated from the cache. BPM and accuracy are reported per row for display; the composite score itself is intentionally not exposed.
 
  * @summary Balls-Per-Minute leaderboard
  */
@@ -1270,7 +1270,7 @@ export const getLeaderboardQueryPageSizeMax = 50;
 
 
 export const GetLeaderboardQueryParams = zod.object({
-  "mode": zod.enum(['8ball', '9ball']).default(getLeaderboardQueryModeDefault).describe('Which board to rank: standard 1-on-1 8-ball or 9-ball. Defaults to 8ball.\n'),
+  "mode": zod.enum(['8ball', '9ball', 'shark']).default(getLeaderboardQueryModeDefault).describe('Which board to rank: standard 1-on-1 8-ball, 1-on-1 9-ball, or solo Shark mode (wins against the Shark AI). Defaults to 8ball.\n'),
   "window": zod.enum(['30d', '90d', 'all']).default(getLeaderboardQueryWindowDefault).describe('Ranking window. 30d is public; 90d and all require a pass.\n'),
   "page": zod.coerce.number().min(1).default(getLeaderboardQueryPageDefault),
   "pageSize": zod.coerce.number().min(1).max(getLeaderboardQueryPageSizeMax).default(getLeaderboardQueryPageSizeDefault)
@@ -1279,7 +1279,7 @@ export const GetLeaderboardQueryParams = zod.object({
 export const getLeaderboardResponseRowsItemWinsTodayDefault = 0;
 
 export const GetLeaderboardResponse = zod.object({
-  "mode": zod.enum(['8ball', '9ball']),
+  "mode": zod.enum(['8ball', '9ball', 'shark']),
   "window": zod.enum(['30d', '90d', 'all']),
   "page": zod.number(),
   "pageSize": zod.number(),
@@ -1977,7 +1977,7 @@ export const listAdminLeaderboardQueryModeDefault = `8ball`;
 export const listAdminLeaderboardQueryWindowDefault = `all`;
 
 export const ListAdminLeaderboardQueryParams = zod.object({
-  "mode": zod.enum(['8ball', '9ball']).default(listAdminLeaderboardQueryModeDefault).describe('Which board to inspect. Defaults to 8ball.'),
+  "mode": zod.enum(['8ball', '9ball', 'shark']).default(listAdminLeaderboardQueryModeDefault).describe('Which board to inspect. Defaults to 8ball.'),
   "window": zod.enum(['30d', '90d', 'all']).default(listAdminLeaderboardQueryWindowDefault).describe('Ranking window. Defaults to all-time for the admin view.')
 })
 

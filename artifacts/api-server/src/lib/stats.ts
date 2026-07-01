@@ -1,7 +1,7 @@
 import { and, count, desc, eq, gte, inArray, isNotNull, isNull, lt, ne, or } from "drizzle-orm";
 import { db, gamesTable, gameParticipantsTable, usersTable, passesTable, subscriptionsTable } from "@workspace/db";
 import { resolveUserProfileBackgrounds } from "./userProfileBackground";
-import type { BackgroundVariant } from "./profileBackground";
+import { SHARK_WIN_THRESHOLD, type BackgroundVariant } from "./profileBackground";
 import { isAdminEmail } from "./config";
 import { logger } from "./logger";
 import { readGameSummary, readParticipantSummary } from "./gameSummary";
@@ -704,11 +704,13 @@ export function clearAllStatsCache(): void {
 export type LeaderboardWindow = "30d" | "90d" | "all";
 
 /**
- * Which game pool a leaderboard ranks. 8-ball and 9-ball each rank their own
- * separate pool with the same balancing rules — they are NEVER merged into one
- * combined list.
+ * Which game pool a leaderboard ranks. 8-ball, 9-ball, and solo Shark mode
+ * each rank their own separate pool — they are NEVER merged into one combined
+ * list. The `shark` board is GLOBAL-ONLY (solo games can't be venue-tagged, so
+ * hall/city scopes never rank it) and counts only games the player WON against
+ * the Shark AI (Normal + Hard combined, full trust weight).
  */
-export type LeaderboardMode = "8ball" | "9ball";
+export type LeaderboardMode = "8ball" | "9ball" | "shark";
 
 export interface LeaderboardRow {
   rank: number;
@@ -843,16 +845,26 @@ async function computeLeaderboard(
   scope?: LeaderboardScope,
 ): Promise<RankedEntry[]> {
   const cutoff = leaderboardCutoff(window);
-  // Both modes require a standard 1-on-1 game (no teams, no shark/chaos). The
-  // 8-ball-only `ruleSet` grandfather gate keeps post-cutoff "None"/manual-team
-  // 2-player 8-ball off the board; 9-ball has no teams so it doesn't apply.
-  const conds = [
-    isNotNull(gamesTable.endedAt),
-    eq(gamesTable.gameType, mode),
-    eq(gamesTable.maxPlayers, 2),
-    isNull(gamesTable.sharkAggression),
-    isNull(gamesTable.chaosMode),
-  ];
+  const isShark = mode === "shark";
+  // The 1-on-1 modes require a standard 1-on-1 game (no teams, no shark/chaos).
+  // The 8-ball-only `ruleSet` grandfather gate keeps post-cutoff "None"/manual-
+  // team 2-player 8-ball off the board; 9-ball has no teams so it doesn't apply.
+  // The SHARK board instead ranks solo Shark-mode games — flagged by the
+  // promoted `sharkAggression` discriminator (Normal + Hard combined) — so the
+  // 2-player / gameType / ruleSet gates don't apply to it.
+  const conds = isShark
+    ? [
+        isNotNull(gamesTable.endedAt),
+        isNotNull(gamesTable.sharkAggression),
+        isNull(gamesTable.chaosMode),
+      ]
+    : [
+        isNotNull(gamesTable.endedAt),
+        eq(gamesTable.gameType, mode),
+        eq(gamesTable.maxPlayers, 2),
+        isNull(gamesTable.sharkAggression),
+        isNull(gamesTable.chaosMode),
+      ];
   // Scope the ranked game pool. Undefined = the global board (unchanged). A
   // hall scope restricts to that hall's tagged games; a city scope rolls up
   // direct city tags (cityLocality) AND every hall in that city (venueIds).
@@ -881,7 +893,7 @@ async function computeLeaderboard(
   // Only the eligible game IDs are needed — all pace/accuracy comes from each
   // participant's stored summary, never the shot log.
   const rows = await db
-    .select({ id: gamesTable.id })
+    .select({ id: gamesTable.id, winner: gamesTable.winner })
     .from(gamesTable)
     .where(and(...conds))
     .orderBy(desc(gamesTable.endedAt));
@@ -895,6 +907,7 @@ async function computeLeaderboard(
     .select({
       gameId: gameParticipantsTable.gameId,
       userId: gameParticipantsTable.userId,
+      displayName: gameParticipantsTable.displayName,
       screenName: usersTable.screenName,
       summary: gameParticipantsTable.summary,
     })
@@ -936,6 +949,10 @@ async function computeLeaderboard(
     const trusted = ps.length >= 2;
     for (const p of ps) {
       if (!p.userId) continue;
+      // SHARK board: only games the player actually BEAT the Shark in count —
+      // both toward the score and the entry gate. Lockstep with the all-time
+      // sharkLevel predicate below (winner = slot name, winner ≠ the Shark).
+      if (isShark && (r.winner !== p.displayName || r.winner === SHARK_PLAYER_NAME)) continue;
       // Pace + accuracy from the per-slot summary (stats window) — never the shot
       // log. Absent / stale version → skip + log ("absent not corrupt").
       const psum = readParticipantSummary(p.summary);
@@ -958,7 +975,9 @@ async function computeLeaderboard(
       // (factor 1) rather than dropping the game — in practice a non-null BPM
       // implies attempts > 0, so this is just a defensive fallback.
       const accFactor = accuracy != null ? Math.max(0, Math.min(100, accuracy)) / 100 : 1;
-      const trustFactor = trusted ? 1 : LEADERBOARD_GUEST_WEIGHT;
+      // Solo Shark play has no opponent, so the guest-seat trust discount must
+      // not apply — every Shark game gets full weight.
+      const trustFactor = isShark ? 1 : trusted ? 1 : LEADERBOARD_GUEST_WEIGHT;
       const contribution = bpm * accFactor * trustFactor;
       const entry = byUser.get(p.userId) ?? { screenName: p.screenName, games: [] };
       entry.games.push({ bpm, accuracy, trusted, contribution });
@@ -980,8 +999,14 @@ async function computeLeaderboard(
     trustedGames: number;
     provisional: boolean;
   }> = [];
+  // SHARK entry gate: a player is ranked only after SHARK_WIN_THRESHOLD
+  // winning Shark games INSIDE the active window (entry.games only ever holds
+  // wins for the shark mode). Deliberately windowed — an all-time gate would
+  // let long-dead accounts squat the board — and deliberately the SAME
+  // constant as the auto-earned shark-theme unlock.
+  const minGames = isShark ? SHARK_WIN_THRESHOLD : LEADERBOARD_MIN_GAMES;
   for (const [userId, entry] of byUser.entries()) {
-    if (entry.games.length < LEADERBOARD_MIN_GAMES) continue;
+    if (entry.games.length < minGames) continue;
     const best = [...entry.games]
       .sort((a, b) => b.contribution - a.contribution)
       .slice(0, LEADERBOARD_BEST_N);
@@ -1033,25 +1058,34 @@ async function computeLeaderboard(
 
   // 24h win count per ranked user, for the SAME mode this board ranks (grouped
   // query, one round-trip). An 8-ball board counts 8-ball wins, a 9-ball board
-  // counts 9-ball wins.
+  // counts 9-ball wins, and the Shark board counts beat-the-Shark wins.
   const winsTodayByUser = new Map<string, number>();
   if (rankedUserIds.length > 0) {
     const cutoff = windowCutoff("24h") as Date;
+    const winConds = [
+      inArray(gameParticipantsTable.userId, rankedUserIds),
+      isNotNull(gamesTable.endedAt),
+      gte(gamesTable.endedAt, cutoff),
+      eq(gamesTable.winner, gameParticipantsTable.displayName),
+    ];
+    if (isShark) {
+      winConds.push(
+        isNotNull(gamesTable.sharkAggression),
+        isNull(gamesTable.chaosMode),
+        ne(gamesTable.winner, SHARK_PLAYER_NAME),
+      );
+    } else {
+      winConds.push(
+        eq(gamesTable.gameType, mode),
+        isNull(gamesTable.sharkAggression),
+        isNull(gamesTable.chaosMode),
+      );
+    }
     const winCounts = await db
       .select({ userId: gameParticipantsTable.userId, c: count() })
       .from(gameParticipantsTable)
       .innerJoin(gamesTable, eq(gameParticipantsTable.gameId, gamesTable.id))
-      .where(
-        and(
-          inArray(gameParticipantsTable.userId, rankedUserIds),
-          isNotNull(gamesTable.endedAt),
-          gte(gamesTable.endedAt, cutoff),
-          eq(gamesTable.gameType, mode),
-          isNull(gamesTable.sharkAggression),
-          isNull(gamesTable.chaosMode),
-          eq(gamesTable.winner, gameParticipantsTable.displayName),
-        ),
-      )
+      .where(and(...winConds))
       .groupBy(gameParticipantsTable.userId);
     for (const wc of winCounts) {
       if (wc.userId) winsTodayByUser.set(wc.userId, Number(wc.c));

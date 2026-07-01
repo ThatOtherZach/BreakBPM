@@ -10,7 +10,7 @@ import type { GetLeaderboardWindow } from './getLeaderboardWindow';
 
 export type GetLeaderboardParams = {
 /**
- * Which board to rank: standard 1-on-1 8-ball or 9-ball. Defaults to 8ball.
+ * Which board to rank: standard 1-on-1 8-ball, 1-on-1 9-ball, or solo Shark mode (wins against the Shark AI). Defaults to 8ball.
 
  */
 mode?: GetLeaderboardMode;

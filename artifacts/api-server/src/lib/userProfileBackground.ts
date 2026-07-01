@@ -58,6 +58,7 @@ import { isAdminEmail } from "./config";
 import {
   coerceBackgroundVariant,
   resolveProfileBackground,
+  SHARK_WIN_THRESHOLD,
   type BackgroundVariant,
 } from "./profileBackground";
 
@@ -152,7 +153,7 @@ export function computeAutoEarnedVariantFromGames(
     }
   }
 
-  // --- Shark: 5 wins in Shark mode (across up to 50 games) ---
+  // --- Shark: SHARK_WIN_THRESHOLD wins in Shark mode (across up to 50 games) ---
   // A "win" means the player beat the 🦈 Shark AI: winner === subjectDisplayName.
   let sharkWins = 0;
   let mostRecentSharkWin: Date | null = null;
@@ -168,7 +169,7 @@ export function computeAutoEarnedVariantFromGames(
     }
   }
   if (
-    sharkWins >= 5 &&
+    sharkWins >= SHARK_WIN_THRESHOLD &&
     mostRecentSharkWin !== null &&
     mostRecentSharkWin.getTime() >= now - EARN_WINDOW_MS
   ) {

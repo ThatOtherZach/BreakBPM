@@ -1421,6 +1421,7 @@ export type LeaderboardResultMode = typeof LeaderboardResultMode[keyof typeof Le
 export const LeaderboardResultMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;
 
 export type LeaderboardResultWindow = typeof LeaderboardResultWindow[keyof typeof LeaderboardResultWindow];
@@ -2146,7 +2147,7 @@ export const GetStatsGameMode = {
 
 export type GetLeaderboardParams = {
 /**
- * Which board to rank: standard 1-on-1 8-ball or 9-ball. Defaults to 8ball.
+ * Which board to rank: standard 1-on-1 8-ball, 1-on-1 9-ball, or solo Shark mode (wins against the Shark AI). Defaults to 8ball.
 
  */
 mode?: GetLeaderboardMode;
@@ -2172,6 +2173,7 @@ export type GetLeaderboardMode = typeof GetLeaderboardMode[keyof typeof GetLeade
 export const GetLeaderboardMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;
 
 export type GetLeaderboardWindow = typeof GetLeaderboardWindow[keyof typeof GetLeaderboardWindow];
@@ -2369,6 +2371,7 @@ export type ListAdminLeaderboardMode = typeof ListAdminLeaderboardMode[keyof typ
 export const ListAdminLeaderboardMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;
 
 export type ListAdminLeaderboardWindow = typeof ListAdminLeaderboardWindow[keyof typeof ListAdminLeaderboardWindow];

@@ -977,8 +977,12 @@ paths:
       description: >
         Ranking of registered players by a composite skill measure (recent pace
         scaled by accuracy, with games against registered opponents weighted
-        above games against anonymous guests). 8-ball and 9-ball are ranked as
-        separate boards selected by `mode` — they are never merged. The 30-day
+        above games against anonymous guests). 8-ball, 9-ball, and solo Shark
+        mode are ranked as separate boards selected by `mode` — they are never
+        merged. The Shark board ranks only games the player WON against the
+        Shark AI (Normal and Hard combined, full trust weight since solo play
+        has no opponent) and requires 5 winning Shark games inside the active
+        window before a player is ranked. The 30-day
         window is public (so the signed-out home-page widget works); the 90-day
         and all-time windows require a pass and are enforced server-side. Each
         (mode, window) ranking is computed once and cached for one hour, then
@@ -988,10 +992,10 @@ paths:
         - name: mode
           in: query
           required: false
-          schema: { type: string, enum: [8ball, 9ball], default: 8ball }
+          schema: { type: string, enum: [8ball, 9ball, shark], default: 8ball }
           description: >
-            Which board to rank: standard 1-on-1 8-ball or 9-ball. Defaults to
-            8ball.
+            Which board to rank: standard 1-on-1 8-ball, 1-on-1 9-ball, or solo
+            Shark mode (wins against the Shark AI). Defaults to 8ball.
         - name: window
           in: query
           required: false
@@ -1537,7 +1541,7 @@ paths:
         - name: mode
           in: query
           required: false
-          schema: { type: string, enum: [8ball, 9ball], default: 8ball }
+          schema: { type: string, enum: [8ball, 9ball, shark], default: 8ball }
           description: Which board to inspect. Defaults to 8ball.
         - name: window
           in: query
@@ -3062,7 +3066,7 @@ components:
       required: [mode, window, page, pageSize, totalPlayers, totalPages, rows]
       properties:
         # Which board these rows rank (echoes the request; defaults to 8ball).
-        mode: { type: string, enum: [8ball, 9ball] }
+        mode: { type: string, enum: [8ball, 9ball, shark] }
         window: { type: string, enum: [30d, 90d, all] }
         page: { type: integer }
         pageSize: { type: integer }

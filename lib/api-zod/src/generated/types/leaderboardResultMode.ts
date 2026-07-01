@@ -12,4 +12,5 @@ export type LeaderboardResultMode = typeof LeaderboardResultMode[keyof typeof Le
 export const LeaderboardResultMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;

@@ -33,12 +33,23 @@ const WINDOWS: GetLeaderboardWindow[] = ["30d", "90d", "all"];
 const MODE_LABEL: Record<GetLeaderboardMode, string> = {
   "8ball": "8-BALL",
   "9ball": "9-BALL",
+  shark: "🦈 SHARK",
 };
 const MODE_LABEL_PROSE: Record<GetLeaderboardMode, string> = {
   "8ball": "8-Ball",
   "9ball": "9-Ball",
+  shark: "Shark",
 };
-const MODES: GetLeaderboardMode[] = ["8ball", "9ball"];
+/** All boards, in the cycle order of the global mode toggle. */
+const MODES: GetLeaderboardMode[] = ["8ball", "9ball", "shark"];
+/** Hall/City boards never rank Shark — solo games can't be venue-tagged. */
+const LOCAL_MODES: GetLeaderboardMode[] = ["8ball", "9ball"];
+/**
+ * Winning Shark games needed INSIDE the active window before a player appears
+ * on the Shark board. LOCKSTEP: mirrors the server's SHARK_WIN_THRESHOLD
+ * (profileBackground.ts) — the same milestone as the shark-theme unlock.
+ */
+const SHARK_BOARD_MIN_WINS = 5;
 
 function rankBadge(rank: number): string {
   if (rank === 1) return "🥇";
@@ -249,6 +260,18 @@ export default function LeaderboardScreen({
   const [linkCopied, setLinkCopied] = useState(false);
   const [linkCopyFailed, setLinkCopyFailed] = useState(false);
 
+  // Shark is a GLOBAL-only board — solo Shark games can't be venue-tagged, so
+  // the hall/city pages only cycle 8-Ball ↔ 9-Ball. If this screen lands on a
+  // hall/city route while the mode state still says shark (navigated over from
+  // the global board), snap back to 8-ball.
+  const modeChoices = isHall || isCity ? LOCAL_MODES : MODES;
+  useEffect(() => {
+    if ((isHall || isCity) && mode === "shark") setMode("8ball");
+  }, [isHall, isCity, mode]);
+  // Narrowed mode for the hall/city hooks, whose mode param excludes "shark"
+  // (the effect above resets it; this keeps the transient render type-safe).
+  const localMode = mode === "shark" ? "8ball" : mode;
+
 
   // Two queries, mutually gated by `enabled`. The GLOBAL query always runs (the
   // default 30d window is public, so an anonymous fetch never 403s) but its
@@ -268,21 +291,21 @@ export default function LeaderboardScreen({
   // standings (and get a sign-up nudge). Longer windows still need a pass, but a
   // non-pass caller can never switch to them, so the 30d gate is sufficient here.
   const hallQ = useGetHallLeaderboard(
-    { venueId: venueId ?? "", mode, window, page, pageSize: PAGE_SIZE },
+    { venueId: venueId ?? "", mode: localMode, window, page, pageSize: PAGE_SIZE },
     {
       query: {
         enabled: isHall && (isAuthenticated || window === "30d"),
-        queryKey: getGetHallLeaderboardQueryKey({ venueId: venueId ?? "", mode, window, page, pageSize: PAGE_SIZE }),
+        queryKey: getGetHallLeaderboardQueryKey({ venueId: venueId ?? "", mode: localMode, window, page, pageSize: PAGE_SIZE }),
       },
     },
   );
   // The CITY query mirrors the hall query: sign-in required for every window.
   const cityQ = useGetCityLeaderboard(
-    { locality: cityLocality ?? "", mode, window, page, pageSize: PAGE_SIZE },
+    { locality: cityLocality ?? "", mode: localMode, window, page, pageSize: PAGE_SIZE },
     {
       query: {
         enabled: isCity && isAuthenticated,
-        queryKey: getGetCityLeaderboardQueryKey({ locality: cityLocality ?? "", mode, window, page, pageSize: PAGE_SIZE }),
+        queryKey: getGetCityLeaderboardQueryKey({ locality: cityLocality ?? "", mode: localMode, window, page, pageSize: PAGE_SIZE }),
       },
     },
   );
@@ -458,20 +481,20 @@ export default function LeaderboardScreen({
             </span>
           </div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {/* Mode: a single cycle-button (same style as the Stats-page
+                selectors) — 8-BALL → 9-BALL → 🦈 SHARK → … on the global
+                board; hall/city boards cycle 8-BALL ↔ 9-BALL only. */}
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              {MODES.map((m) => {
-                const active = mode === m;
-                return (
-                  <button
-                    key={m}
-                    className={`btn${active ? " btn-primary" : ""}`}
-                    style={{ flex: 1, padding: "6px 4px" }}
-                    onClick={() => chooseMode(m)}
-                  >
-                    {MODE_LABEL[m]}
-                  </button>
-                );
-              })}
+              <button
+                className="btn btn-primary"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  const idx = modeChoices.indexOf(mode);
+                  chooseMode(modeChoices[(idx + 1) % modeChoices.length]);
+                }}
+              >
+                {MODE_LABEL[mode]} ▸
+              </button>
             </div>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               {WINDOWS.map((w) => {
@@ -544,6 +567,8 @@ export default function LeaderboardScreen({
                 ? `City standings — recent ${MODE_LABEL_PROSE[mode]} 1-on-1 games across every Verified Hall in ${cityName ?? "this city"}.`
                 : isHall
                 ? `Local standings${hallVenue?.name ? ` · ${hallVenue.name}` : ""} — recent ${MODE_LABEL_PROSE[mode]} 1-on-1 games at this hall.`
+                : mode === "shark"
+                ? `Top pace & accuracy, recent solo Shark-mode WINS only — beat the 🦈 Shark ${SHARK_BOARD_MIN_WINS} times in the window to get ranked.`
                 : `Top pace & accuracy, recent ${MODE_LABEL_PROSE[mode]} 1-on-1 games only.`}
             </span>
           </div>

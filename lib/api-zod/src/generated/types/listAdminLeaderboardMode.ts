@@ -12,4 +12,5 @@ export type ListAdminLeaderboardMode = typeof ListAdminLeaderboardMode[keyof typ
 export const ListAdminLeaderboardMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;
