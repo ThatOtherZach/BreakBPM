@@ -12,4 +12,5 @@ export type AdminLeaderboardResponseMode = typeof AdminLeaderboardResponseMode[k
 export const AdminLeaderboardResponseMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;

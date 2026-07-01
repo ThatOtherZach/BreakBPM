@@ -1315,7 +1315,7 @@ export const getHallLeaderboardQueryPageSizeMax = 50;
 
 export const GetHallLeaderboardQueryParams = zod.object({
   "venueId": zod.coerce.string().describe('The Verified Hall id whose House Leaderboard to return.'),
-  "mode": zod.enum(['8ball', '9ball']).default(getHallLeaderboardQueryModeDefault).describe('Which board to rank — 1-on-1 8-ball or 9-ball. Defaults to 8ball.'),
+  "mode": zod.enum(['8ball', '9ball', 'shark']).default(getHallLeaderboardQueryModeDefault).describe('Which board to rank — 1-on-1 8-ball, 1-on-1 9-ball, or solo Shark mode. Defaults to 8ball.'),
   "window": zod.enum(['30d', '90d', 'all']).default(getHallLeaderboardQueryWindowDefault).describe('Ranking window. All windows require sign-in; 90d and all require a pass.\n'),
   "page": zod.coerce.number().min(1).default(getHallLeaderboardQueryPageDefault),
   "pageSize": zod.coerce.number().min(1).max(getHallLeaderboardQueryPageSizeMax).default(getHallLeaderboardQueryPageSizeDefault)
@@ -1324,7 +1324,7 @@ export const GetHallLeaderboardQueryParams = zod.object({
 export const getHallLeaderboardResponseRowsItemWinsTodayDefault = 0;
 
 export const GetHallLeaderboardResponse = zod.object({
-  "mode": zod.enum(['8ball', '9ball']),
+  "mode": zod.enum(['8ball', '9ball', 'shark']),
   "window": zod.enum(['30d', '90d', 'all']),
   "page": zod.number(),
   "pageSize": zod.number(),
@@ -1375,7 +1375,7 @@ export const getCityLeaderboardQueryPageSizeMax = 50;
 
 export const GetCityLeaderboardQueryParams = zod.object({
   "locality": zod.coerce.string().describe('The city key (e.g. \"Los Angeles, United States\") whose City Leaderboard to return.'),
-  "mode": zod.enum(['8ball', '9ball']).default(getCityLeaderboardQueryModeDefault).describe('Which board to rank — 1-on-1 8-ball or 9-ball. Defaults to 8ball.'),
+  "mode": zod.enum(['8ball', '9ball', 'shark']).default(getCityLeaderboardQueryModeDefault).describe('Which board to rank — 1-on-1 8-ball, 1-on-1 9-ball, or solo Shark mode. Defaults to 8ball.'),
   "window": zod.enum(['30d', '90d', 'all']).default(getCityLeaderboardQueryWindowDefault).describe('Ranking window. All windows require sign-in; 90d and all require a pass.\n'),
   "page": zod.coerce.number().min(1).default(getCityLeaderboardQueryPageDefault),
   "pageSize": zod.coerce.number().min(1).max(getCityLeaderboardQueryPageSizeMax).default(getCityLeaderboardQueryPageSizeDefault)
@@ -1384,7 +1384,7 @@ export const GetCityLeaderboardQueryParams = zod.object({
 export const getCityLeaderboardResponseRowsItemWinsTodayDefault = 0;
 
 export const GetCityLeaderboardResponse = zod.object({
-  "mode": zod.enum(['8ball', '9ball']),
+  "mode": zod.enum(['8ball', '9ball', 'shark']),
   "window": zod.enum(['30d', '90d', 'all']),
   "page": zod.number(),
   "pageSize": zod.number(),
@@ -1982,7 +1982,7 @@ export const ListAdminLeaderboardQueryParams = zod.object({
 })
 
 export const ListAdminLeaderboardResponse = zod.object({
-  "mode": zod.enum(['8ball', '9ball']),
+  "mode": zod.enum(['8ball', '9ball', 'shark']),
   "window": zod.enum(['30d', '90d', 'all']),
   "rows": zod.array(zod.object({
   "rank": zod.number(),

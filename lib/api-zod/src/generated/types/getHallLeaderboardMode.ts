@@ -12,4 +12,5 @@ export type GetHallLeaderboardMode = typeof GetHallLeaderboardMode[keyof typeof 
 export const GetHallLeaderboardMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;

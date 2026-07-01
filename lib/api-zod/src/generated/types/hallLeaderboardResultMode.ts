@@ -12,4 +12,5 @@ export type HallLeaderboardResultMode = typeof HallLeaderboardResultMode[keyof t
 export const HallLeaderboardResultMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;

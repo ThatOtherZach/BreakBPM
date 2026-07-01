@@ -12,4 +12,5 @@ export type CityLeaderboardResultMode = typeof CityLeaderboardResultMode[keyof t
 export const CityLeaderboardResultMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;

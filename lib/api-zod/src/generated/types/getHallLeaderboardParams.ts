@@ -14,7 +14,7 @@ export type GetHallLeaderboardParams = {
  */
 venueId: string;
 /**
- * Which board to rank — 1-on-1 8-ball or 9-ball. Defaults to 8ball.
+ * Which board to rank — 1-on-1 8-ball, 1-on-1 9-ball, or solo Shark mode. Defaults to 8ball.
  */
 mode?: GetHallLeaderboardMode;
 /**

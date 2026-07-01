@@ -258,6 +258,7 @@ export type AdminLeaderboardResponseMode = typeof AdminLeaderboardResponseMode[k
 export const AdminLeaderboardResponseMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;
 
 export type AdminLeaderboardResponseWindow = typeof AdminLeaderboardResponseWindow[keyof typeof AdminLeaderboardResponseWindow];
@@ -1586,6 +1587,7 @@ export type HallLeaderboardResultMode = typeof HallLeaderboardResultMode[keyof t
 export const HallLeaderboardResultMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;
 
 export type HallLeaderboardResultWindow = typeof HallLeaderboardResultWindow[keyof typeof HallLeaderboardResultWindow];
@@ -1649,6 +1651,7 @@ export type CityLeaderboardResultMode = typeof CityLeaderboardResultMode[keyof t
 export const CityLeaderboardResultMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;
 
 export type CityLeaderboardResultWindow = typeof CityLeaderboardResultWindow[keyof typeof CityLeaderboardResultWindow];
@@ -2191,7 +2194,7 @@ export type GetHallLeaderboardParams = {
  */
 venueId: string;
 /**
- * Which board to rank — 1-on-1 8-ball or 9-ball. Defaults to 8ball.
+ * Which board to rank — 1-on-1 8-ball, 1-on-1 9-ball, or solo Shark mode. Defaults to 8ball.
  */
 mode?: GetHallLeaderboardMode;
 /**
@@ -2216,6 +2219,7 @@ export type GetHallLeaderboardMode = typeof GetHallLeaderboardMode[keyof typeof 
 export const GetHallLeaderboardMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;
 
 export type GetHallLeaderboardWindow = typeof GetHallLeaderboardWindow[keyof typeof GetHallLeaderboardWindow];
@@ -2233,7 +2237,7 @@ export type GetCityLeaderboardParams = {
  */
 locality: string;
 /**
- * Which board to rank — 1-on-1 8-ball or 9-ball. Defaults to 8ball.
+ * Which board to rank — 1-on-1 8-ball, 1-on-1 9-ball, or solo Shark mode. Defaults to 8ball.
  */
 mode?: GetCityLeaderboardMode;
 /**
@@ -2258,6 +2262,7 @@ export type GetCityLeaderboardMode = typeof GetCityLeaderboardMode[keyof typeof 
 export const GetCityLeaderboardMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;
 
 export type GetCityLeaderboardWindow = typeof GetCityLeaderboardWindow[keyof typeof GetCityLeaderboardWindow];

@@ -12,4 +12,5 @@ export type GetCityLeaderboardMode = typeof GetCityLeaderboardMode[keyof typeof 
 export const GetCityLeaderboardMode = {
   '8ball': '8ball',
   '9ball': '9ball',
+  shark: 'shark',
 } as const;

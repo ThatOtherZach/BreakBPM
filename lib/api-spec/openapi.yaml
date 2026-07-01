@@ -1044,8 +1044,8 @@ paths:
         - name: mode
           in: query
           required: false
-          schema: { type: string, enum: [8ball, 9ball], default: 8ball }
-          description: Which board to rank — 1-on-1 8-ball or 9-ball. Defaults to 8ball.
+          schema: { type: string, enum: [8ball, 9ball, shark], default: 8ball }
+          description: Which board to rank — 1-on-1 8-ball, 1-on-1 9-ball, or solo Shark mode. Defaults to 8ball.
         - name: window
           in: query
           required: false
@@ -1097,8 +1097,8 @@ paths:
         - name: mode
           in: query
           required: false
-          schema: { type: string, enum: [8ball, 9ball], default: 8ball }
-          description: Which board to rank — 1-on-1 8-ball or 9-ball. Defaults to 8ball.
+          schema: { type: string, enum: [8ball, 9ball, shark], default: 8ball }
+          description: Which board to rank — 1-on-1 8-ball, 1-on-1 9-ball, or solo Shark mode. Defaults to 8ball.
         - name: window
           in: query
           required: false
@@ -1910,7 +1910,7 @@ components:
       type: object
       required: [mode, window, rows]
       properties:
-        mode: { type: string, enum: [8ball, 9ball] }
+        mode: { type: string, enum: [8ball, 9ball, shark] }
         window: { type: string, enum: [30d, 90d, all] }
         rows:
           type: array
@@ -3213,7 +3213,7 @@ components:
       type: object
       required: [mode, window, page, pageSize, totalPlayers, totalPages, taggedGames, rows, venue]
       properties:
-        mode: { type: string, enum: [8ball, 9ball] }
+        mode: { type: string, enum: [8ball, 9ball, shark] }
         window: { type: string, enum: [30d, 90d, all] }
         page: { type: integer }
         pageSize: { type: integer }
@@ -3250,7 +3250,7 @@ components:
       type: object
       required: [mode, window, page, pageSize, totalPlayers, totalPages, rows, city]
       properties:
-        mode: { type: string, enum: [8ball, 9ball] }
+        mode: { type: string, enum: [8ball, 9ball, shark] }
         window: { type: string, enum: [30d, 90d, all] }
         page: { type: integer }
         pageSize: { type: integer }

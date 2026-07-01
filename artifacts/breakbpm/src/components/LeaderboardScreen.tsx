@@ -43,7 +43,6 @@ const MODE_LABEL_PROSE: Record<GetLeaderboardMode, string> = {
 /** All boards, in the cycle order of the global mode toggle. */
 const MODES: GetLeaderboardMode[] = ["8ball", "9ball", "shark"];
 /** Hall/City boards never rank Shark — solo games can't be venue-tagged. */
-const LOCAL_MODES: GetLeaderboardMode[] = ["8ball", "9ball"];
 /**
  * Winning Shark games needed INSIDE the active window before a player appears
  * on the Shark board. LOCKSTEP: mirrors the server's SHARK_WIN_THRESHOLD
@@ -260,18 +259,10 @@ export default function LeaderboardScreen({
   const [linkCopied, setLinkCopied] = useState(false);
   const [linkCopyFailed, setLinkCopyFailed] = useState(false);
 
-  // Shark is a GLOBAL-only board — solo Shark games can't be venue-tagged, so
-  // the hall/city pages only cycle 8-Ball ↔ 9-Ball. If this screen lands on a
-  // hall/city route while the mode state still says shark (navigated over from
-  // the global board), snap back to 8-ball.
-  const modeChoices = isHall || isCity ? LOCAL_MODES : MODES;
-  useEffect(() => {
-    if ((isHall || isCity) && mode === "shark") setMode("8ball");
-  }, [isHall, isCity, mode]);
-  // Narrowed mode for the hall/city hooks, whose mode param excludes "shark"
-  // (the effect above resets it; this keeps the transient render type-safe).
-  const localMode = mode === "shark" ? "8ball" : mode;
-
+  // All three modes cycle on every board — Shark games are venue-taggable like
+  // any other finished game (they're solo 8-ball), so hall/city pages get a
+  // Shark board too.
+  const modeChoices = MODES;
 
   // Two queries, mutually gated by `enabled`. The GLOBAL query always runs (the
   // default 30d window is public, so an anonymous fetch never 403s) but its
@@ -291,21 +282,21 @@ export default function LeaderboardScreen({
   // standings (and get a sign-up nudge). Longer windows still need a pass, but a
   // non-pass caller can never switch to them, so the 30d gate is sufficient here.
   const hallQ = useGetHallLeaderboard(
-    { venueId: venueId ?? "", mode: localMode, window, page, pageSize: PAGE_SIZE },
+    { venueId: venueId ?? "", mode, window, page, pageSize: PAGE_SIZE },
     {
       query: {
         enabled: isHall && (isAuthenticated || window === "30d"),
-        queryKey: getGetHallLeaderboardQueryKey({ venueId: venueId ?? "", mode: localMode, window, page, pageSize: PAGE_SIZE }),
+        queryKey: getGetHallLeaderboardQueryKey({ venueId: venueId ?? "", mode, window, page, pageSize: PAGE_SIZE }),
       },
     },
   );
   // The CITY query mirrors the hall query: sign-in required for every window.
   const cityQ = useGetCityLeaderboard(
-    { locality: cityLocality ?? "", mode: localMode, window, page, pageSize: PAGE_SIZE },
+    { locality: cityLocality ?? "", mode, window, page, pageSize: PAGE_SIZE },
     {
       query: {
         enabled: isCity && isAuthenticated,
-        queryKey: getGetCityLeaderboardQueryKey({ locality: cityLocality ?? "", mode: localMode, window, page, pageSize: PAGE_SIZE }),
+        queryKey: getGetCityLeaderboardQueryKey({ locality: cityLocality ?? "", mode, window, page, pageSize: PAGE_SIZE }),
       },
     },
   );
@@ -563,8 +554,12 @@ export default function LeaderboardScreen({
           <div className="notice">
             <span>ℹ</span>
             <span>
-              {isCity
+              {isCity && mode === "shark"
+                ? `City standings — recent solo Shark-mode WINS tagged across every Verified Hall in ${cityName ?? "this city"}. Beat the 🦈 Shark ${SHARK_BOARD_MIN_WINS} times in the window to get ranked.`
+                : isCity
                 ? `City standings — recent ${MODE_LABEL_PROSE[mode]} 1-on-1 games across every Verified Hall in ${cityName ?? "this city"}.`
+                : isHall && mode === "shark"
+                ? `Local standings${hallVenue?.name ? ` · ${hallVenue.name}` : ""} — recent solo Shark-mode WINS tagged at this hall. Beat the 🦈 Shark ${SHARK_BOARD_MIN_WINS} times in the window to get ranked.`
                 : isHall
                 ? `Local standings${hallVenue?.name ? ` · ${hallVenue.name}` : ""} — recent ${MODE_LABEL_PROSE[mode]} 1-on-1 games at this hall.`
                 : mode === "shark"
@@ -594,7 +589,9 @@ export default function LeaderboardScreen({
                       {hallTaggedGames > 0
                         ? `Games have been tagged here, but none qualify for the ${MODE_LABEL_PROSE[mode]} board yet. `
                         : "No games have been tagged here yet. "}
-                      Play and tag a 1-on-1 8-ball or 9-ball game at the hall to claim the top spot.
+                      {mode === "shark"
+                        ? "Beat the 🦈 Shark solo at the hall and tag your wins to claim the top spot."
+                        : "Play and tag a 1-on-1 8-ball or 9-ball game at the hall to claim the top spot."}
                     </p>
                     <div style={{ display: "flex", gap: 6 }}>
                       <button className="btn" onClick={() => setLocation("/leaderboard")}>
