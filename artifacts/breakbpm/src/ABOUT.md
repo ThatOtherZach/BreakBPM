@@ -93,6 +93,8 @@ Can't find players? Pass holders get access to Meetup posts to host billiard eve
 
 ![BPM Bell Curve](/bpm-bell-curve.gif)
 
+The BPM Bell Curve is basically a speedometer for your pool game — the center is the average player's pace, and your cue ball sits to the left if you're slower or to the right if you're faster.
+
 The Stats page shows your shooting over time, including relative accuracy, pace, and ball patterns.
 
 Sign in to save and view your own, as well as a free 24-hour global view. Use a pass to unlock your full game history to compare against everyone; data export included.

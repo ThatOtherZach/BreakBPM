@@ -81,9 +81,9 @@ export const POOL_STATS_SHOWCASE: ShowcaseItem[] = [
   },
   {
     title: "Stats That Sharpen the More You Play",
-    body: "The Stats page shows accuracy, pace, and ball/pattern breakdowns over time. You can play for free, but you need to sign in to save your stats. Pass holders unlock the full history, on-demand refresh, and more!",
+    body: "The BPM Bell Curve is basically a speedometer for your pool game — center is average, your cue ball lands left if you're slower or right if you're faster. Sign in to save your stats; pass holders unlock the full history, on-demand refresh, and more!",
     img: "/bpm-bell-curve.gif",
-    imgAlt: "BPM bell curve — where your pace ranks against all players",
+    imgAlt: "BPM bell curve — a speedometer for your pool game pace",
   },
   {
     title: "The Global BPM Leaderboard",
