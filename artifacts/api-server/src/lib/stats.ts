@@ -778,10 +778,18 @@ const LEADERBOARD_GUEST_WEIGHT = 0.85;
 const LEADERBOARD_MIN_BALLS_9BALL = 3;
 /**
  * Upper bound on a plausible per-game BPM. A sustained pace above this implies
- * sub-second sinks (mis-logged timestamps), so the game is dropped as an
+ * rushed / mis-logged games (sub-second sinks), so the game is dropped as an
  * outlier rather than letting it distort a player's average.
+ *
+ * Sized from production data: real 1-on-1 play clusters at 0–6 BPM with a clean
+ * empty gap from ~10–20 BPM, then a separate cluster of 20–60 BPM rushed / test
+ * games (e.g. 14 balls in 11s ≈ 42 BPM). The cap sits inside that gap so a
+ * genuinely fast run still counts while the mis-log cluster is cut. Because a
+ * player's rank averages their best-2 games, an uncapped fluke game is exactly
+ * what the aggregate selects — hence the tight ceiling. Applies to both the
+ * 8-ball and 9-ball pools.
  */
-const LEADERBOARD_MAX_PLAUSIBLE_BPM = 60;
+const LEADERBOARD_MAX_PLAUSIBLE_BPM = 12;
 
 /**
  * Grandfather cutoff for ruleSet-less games. The leaderboard only counts

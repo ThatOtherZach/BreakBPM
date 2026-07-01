@@ -223,6 +223,33 @@ describe("leaderboard ranking — 9-ball pocketed-ball floor", () => {
   });
 });
 
+describe("leaderboard ranking — implausible-pace cap", () => {
+  it("drops ultra-fast (rushed / mis-logged) games as outliers", async () => {
+    // A player whose only games are rushed flukes (14 sinks in 1 min = 14 BPM,
+    // above the ~12 plausible ceiling) must have BOTH games dropped, leaving
+    // them under the 2-game reward floor and off the board. Under the old loose
+    // cap of 60 these would have qualified and vaulted them to the top.
+    const rusher = await createUser();
+    await seedRankedGame(rusher, "8ball", { name: rusher.screenName, sinks: 14, trusted: true });
+    await seedRankedGame(rusher, "8ball", { name: rusher.screenName, sinks: 14, trusted: true });
+
+    clearLeaderboardCache();
+    const board = await resolveLeaderboard("8ball", "all");
+    expect(board.some((r) => r.screenName === rusher.screenName)).toBe(false);
+  });
+
+  it("keeps a genuinely fast but plausible game", async () => {
+    // 8 sinks in 1 min = 8 BPM — fast but under the ceiling, so it still counts.
+    const fast = await createUser();
+    await seedRankedGame(fast, "8ball", { name: fast.screenName, sinks: 8, trusted: true });
+    await seedRankedGame(fast, "8ball", { name: fast.screenName, sinks: 8, trusted: true });
+
+    clearLeaderboardCache();
+    const board = await resolveLeaderboard("8ball", "all");
+    expect(board.some((r) => r.screenName === fast.screenName)).toBe(true);
+  });
+});
+
 describe("admin leaderboard — hidden signals", () => {
   it("exposes score, trustedGames and the provisional thin-sample flag", async () => {
     const provisionalPlayer = await createUser();
