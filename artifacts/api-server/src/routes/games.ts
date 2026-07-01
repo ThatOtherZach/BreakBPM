@@ -3774,7 +3774,7 @@ router.post("/mentions/:id/accept", async (req, res): Promise<void> => {
   // it via a code-join" (slot_unavailable). Distinct reasons let the client
   // refresh deterministically instead of treating every failure the same.
   type AcceptOutcome =
-    | { ok: true; gameId: string }
+    | { ok: true; gameId: string; finalized: boolean }
     | { ok: false; gameId: string | null; reason: string };
   let outcome: AcceptOutcome;
   try {
@@ -3791,12 +3791,16 @@ router.post("/mentions/:id/accept", async (req, res): Promise<void> => {
         .for("update")
         .limit(1);
       if (!inv) return { ok: false, gameId: null, reason: "not_found" };
-      if (inv.status === "accepted") return { ok: true, gameId: inv.gameId };
+      if (inv.status === "accepted")
+        return { ok: true, gameId: inv.gameId, finalized: false };
       if (inv.status === "declined")
         return { ok: false, gameId: inv.gameId, reason: "declined" };
 
       const [game] = await tx
-        .select({ startedAt: gamesTable.startedAt })
+        .select({
+          startedAt: gamesTable.startedAt,
+          endedAt: gamesTable.endedAt,
+        })
         .from(gamesTable)
         .where(eq(gamesTable.id, inv.gameId))
         .limit(1);
@@ -3833,7 +3837,7 @@ router.post("/mentions/:id/accept", async (req, res): Promise<void> => {
         .update(gameMentionsTable)
         .set({ status: "accepted", respondedAt: new Date() })
         .where(eq(gameMentionsTable.id, id));
-      return { ok: true, gameId: inv.gameId };
+      return { ok: true, gameId: inv.gameId, finalized: game.endedAt != null };
     });
   } catch (e) {
     req.log.warn({ err: e, mentionId: id }, "Failed to accept mention invite");
@@ -3846,6 +3850,23 @@ router.post("/mentions/:id/accept", async (req, res): Promise<void> => {
     return;
   }
   if (outcome.ok) {
+    // If the game already finalized, its per-slot summaries were distilled at
+    // finalize — BEFORE this slot existed — so the accepted player's side was
+    // never recorded (read paths treat the absent slot summary as "absent, not
+    // corrupt" and skip it, vanishing their stats/history/leaderboard for the
+    // game). Re-distill now that the slot exists: the writer recomputes every
+    // slot from the committed shot log and is idempotent, so this backfills the
+    // missing side without touching the others.
+    if (outcome.finalized) {
+      try {
+        await writeFinalizedSummary(outcome.gameId);
+      } catch (err) {
+        req.log.warn(
+          { userId: user.id, gameId: outcome.gameId, err },
+          "Failed to write game summary after mention accept",
+        );
+      }
+    }
     // The caller is now a participant — recompute their (and co-players') stats.
     await bustGameStatsCache(outcome.gameId);
   }
