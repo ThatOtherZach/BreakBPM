@@ -939,6 +939,12 @@ async function computeLeaderboard(
       games: Array<{ bpm: number; accuracy: number | null; trusted: boolean; contribution: number }>;
     }
   >();
+  // SHARK entry gate counts WINS, not scorable games: a win whose summary has
+  // no usable pace (e.g. a one-pocket instant win stamps BPM 0) still counts
+  // toward the "beat the Shark N times" gate — the pace/plausibility filters
+  // below only decide which games feed the SCORE. Without this split, a single
+  // pace-less win silently makes a 5-win player look like 4/5 and never rank.
+  const sharkWinsByUser = new Map<string, number>();
 
   for (const r of rows) {
     const ps = partsByGame.get(r.id);
@@ -953,6 +959,8 @@ async function computeLeaderboard(
       // both toward the score and the entry gate. Lockstep with the all-time
       // sharkLevel predicate below (winner = slot name, winner ≠ the Shark).
       if (isShark && (r.winner !== p.displayName || r.winner === SHARK_PLAYER_NAME)) continue;
+      // Count the win toward the entry gate BEFORE any pace/summary filtering.
+      if (isShark) sharkWinsByUser.set(p.userId, (sharkWinsByUser.get(p.userId) ?? 0) + 1);
       // Pace + accuracy from the per-slot summary (stats window) — never the shot
       // log. Absent / stale version → skip + log ("absent not corrupt").
       const psum = readParticipantSummary(p.summary);
@@ -1006,7 +1014,10 @@ async function computeLeaderboard(
   // constant as the auto-earned shark-theme unlock.
   const minGames = isShark ? SHARK_WIN_THRESHOLD : LEADERBOARD_MIN_GAMES;
   for (const [userId, entry] of byUser.entries()) {
-    if (entry.games.length < minGames) continue;
+    // Shark gates on total in-window WINS (pace-less wins included); at least
+    // one scorable game is still required to compute a score at all.
+    const gateCount = isShark ? (sharkWinsByUser.get(userId) ?? 0) : entry.games.length;
+    if (gateCount < minGames || entry.games.length === 0) continue;
     const best = [...entry.games]
       .sort((a, b) => b.contribution - a.contribution)
       .slice(0, LEADERBOARD_BEST_N);
@@ -1022,7 +1033,7 @@ async function computeLeaderboard(
       score,
       bpm: avgBpm,
       accuracy,
-      gamesPlayed: entry.games.length,
+      gamesPlayed: gateCount,
       trustedGames,
       provisional,
     });

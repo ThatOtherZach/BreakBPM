@@ -296,3 +296,53 @@ describe("admin leaderboard — hidden signals", () => {
     expect(me!.trustedGames).toBe(1);
   });
 });
+
+describe("shark board — win gate vs scorable games", () => {
+  /**
+   * Seed a finished solo Shark-mode WIN for `host`. `sinks: 1` produces a
+   * one-pocket instant win whose stamped BPM is 0 (sub-ms elapsed) — a real
+   * production shape that must still count toward the 5-win entry gate even
+   * though the pace filter drops it from the scored set.
+   */
+  async function seedSharkWin(host: User, sinks: number): Promise<void> {
+    const base = Date.now() - 2 * HOUR;
+    const spanMs = 60_000;
+    const log = shots(host.screenName, sinks, 0, spanMs, base);
+    const g = await seedGame(host.id, {
+      gameType: "8ball",
+      maxPlayers: 1,
+      hostName: host.screenName,
+      shotLog: log,
+      startedAt: new Date(base),
+      endedAt: new Date(base + spanMs + 60_000),
+      winner: host.screenName,
+    });
+    await db
+      .update(gamesTable)
+      .set({
+        gameState: { ...(g.gameState as Record<string, unknown>), sharkAggression: "normal" },
+      })
+      .where(eq(gamesTable.id, g.id));
+    await finalizeSeededGame(g.id);
+  }
+
+  it("ranks 5 wins even when one win has an unusable (0) BPM", async () => {
+    const player = await createUser();
+    // 4 scorable wins + 1 pace-less single-sink win = 5 wins total.
+    for (let i = 0; i < 4; i++) await seedSharkWin(player, 4);
+    await seedSharkWin(player, 1);
+
+    const fourWins = await createUser();
+    for (let i = 0; i < 4; i++) await seedSharkWin(fourWins, 4);
+
+    clearLeaderboardCache();
+    const board = await resolveLeaderboard("shark", "all");
+
+    const me = board.find((r) => r.screenName === player.screenName);
+    expect(me).toBeDefined();
+    // gamesPlayed reports the WIN count (the gate), not just scorable games.
+    expect(me!.gamesPlayed).toBe(5);
+
+    expect(board.some((r) => r.screenName === fourWins.screenName)).toBe(false);
+  });
+});
