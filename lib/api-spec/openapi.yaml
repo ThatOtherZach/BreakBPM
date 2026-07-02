@@ -2194,7 +2194,7 @@ components:
         # The caller's stable personal invite code (the client builds the
         # /invite/{code} link from it).
         code: { type: string }
-        # Adjectival label for the env-configured trial length (e.g. "6-hour").
+        # Adjectival label for the env-configured trial length (e.g. "24-hour").
         # Server-sourced so the account-page invite copy never drifts.
         trialLabel: { type: string }
 

@@ -801,7 +801,7 @@ describe("GET /passes/invite — trial-length label", () => {
     delete process.env.BREAKBPM_INVITE_TRIAL_HOURS;
   });
 
-  it("returns the caller's code plus the default 6-hour trial label", async () => {
+  it("returns the caller's code plus the default 24-hour trial label", async () => {
     const user = await createUser();
     mocks.currentUser = user;
 
@@ -810,7 +810,7 @@ describe("GET /passes/invite — trial-length label", () => {
     expect(res.status).toBe(200);
     expect(typeof res.body.code).toBe("string");
     expect(res.body.code.length).toBeGreaterThan(0);
-    expect(res.body.trialLabel).toBe("6-hour");
+    expect(res.body.trialLabel).toBe("24-hour");
   });
 
   it("reflects an env override in the trial label (1 -> '1-hour')", async () => {

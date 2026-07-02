@@ -258,12 +258,13 @@ export function dayPassPricing(): DayPassPricingParams {
 }
 
 /** Default length (hours) of the invite-link free trial pass. */
-export const INVITE_TRIAL_HOURS_DEFAULT = 6;
+export const INVITE_TRIAL_HOURS_DEFAULT = 24;
 
 /**
  * Length (in hours) of the free trial pass granted when a NEW user redeems
- * someone's invite link. Read from `BREAKBPM_INVITE_TRIAL_HOURS`; defaults to 6
- * hours. Blank/invalid values log a warning and fall back to the default.
+ * someone's invite link. Read from `BREAKBPM_INVITE_TRIAL_HOURS`; defaults to
+ * 24 hours (a full day — matching the Day-Pass gift Year/Lifetime holders can
+ * mint). Blank/invalid values log a warning and fall back to the default.
  * Restart the API server after changing.
  */
 export function inviteTrialHours(): number {
@@ -271,7 +272,7 @@ export function inviteTrialHours(): number {
 }
 
 /**
- * Human-readable, adjectival label for the invite trial length (e.g. "6-hour").
+ * Human-readable, adjectival label for the invite trial length (e.g. "24-hour").
  * Single source of truth for trial-length copy: the server ships it to the
  * client (InviteCodeResult.trialLabel) so the account-page copy never drifts
  * from the configured duration.
