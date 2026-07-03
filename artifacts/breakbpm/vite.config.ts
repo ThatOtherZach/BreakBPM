@@ -124,38 +124,44 @@ const PUBLIC_ROUTES: RouteMetaEntry[] = [
 ];
 
 function injectRouteMeta(html: string, route: RouteMetaEntry): string {
+  const title = escapeHtml(route.title);
+  const description = escapeHtml(route.description);
+  const canonical = escapeHtml(route.canonical);
+  const ogTitle = escapeHtml(route.ogTitle);
+  const ogDescription = escapeHtml(route.ogDescription);
+
   let out = html
     .replace(
       /<title>[^<]*<\/title>/,
-      `<title>${route.title}</title>`,
+      `<title>${title}</title>`,
     )
     .replace(
       /<meta name="description" content="[^"]*"/,
-      `<meta name="description" content="${route.description}"`,
+      `<meta name="description" content="${description}"`,
     )
     .replace(
       /<link rel="canonical" href="[^"]*"/,
-      `<link rel="canonical" href="${route.canonical}"`,
+      `<link rel="canonical" href="${canonical}"`,
     )
     .replace(
       /<meta property="og:title" content="[^"]*"/,
-      `<meta property="og:title" content="${route.ogTitle}"`,
+      `<meta property="og:title" content="${ogTitle}"`,
     )
     .replace(
       /<meta property="og:description" content="[^"]*"/,
-      `<meta property="og:description" content="${route.ogDescription}"`,
+      `<meta property="og:description" content="${ogDescription}"`,
     )
     .replace(
       /<meta property="og:url" content="[^"]*"/,
-      `<meta property="og:url" content="${route.canonical}"`,
+      `<meta property="og:url" content="${canonical}"`,
     )
     .replace(
       /<meta name="twitter:title" content="[^"]*"/,
-      `<meta name="twitter:title" content="${route.ogTitle}"`,
+      `<meta name="twitter:title" content="${ogTitle}"`,
     )
     .replace(
       /<meta name="twitter:description" content="[^"]*"/,
-      `<meta name="twitter:description" content="${route.ogDescription}"`,
+      `<meta name="twitter:description" content="${ogDescription}"`,
     );
 
   if (route.jsonLd) {
@@ -277,7 +283,9 @@ function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 /** Real static body for the homepage ("/"). The root `index.html`'s
