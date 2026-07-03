@@ -1251,7 +1251,7 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
                   disabled={createAdminCode.isPending}
                 >
                   <option value="day">Day Pass</option>
-                  <option value="twoweek">14 Day Pass</option>
+                  <option value="twoweek">30 Day Pass</option>
                   <option value="month">Month Pass</option>
                   <option value="year">Year Pass</option>
                   <option value="lifetime">Lifetime Pass</option>

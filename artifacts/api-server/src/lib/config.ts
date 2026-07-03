@@ -157,7 +157,7 @@ export function freePassMonthlyCap(): number {
 
 /**
  * Off-platform card store URL (Squarespace) where buyers can purchase the
- * 14 Day Pass by card. The owner manually mints + emails a redeem code after a
+ * 30 Day Pass by card. The owner manually mints + emails a redeem code after a
  * sale. Read fresh from `BREAKBPM_STORE_URL` on every request so the link can
  * be swapped at runtime; returns "" when unset, which the client treats as "no
  * store configured" and hides the card-store callout. Restart not required for

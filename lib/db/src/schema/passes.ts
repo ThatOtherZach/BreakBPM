@@ -24,13 +24,17 @@ export const passKindEnum = ["day", "twoweek", "month", "year", "lifetime"] as c
 export type PassKind = (typeof passKindEnum)[number];
 
 const SECONDS_DAY = 24 * 60 * 60;
-const SECONDS_TWO_WEEK = 14 * SECONDS_DAY;
+// "twoweek" is a legacy internal kind name — the live off-platform card offer
+// it backs is actually 30 days (see PASS_PRICES_CENTS / PASS_PRODUCT_LABELS).
+// Kept as "twoweek" rather than renamed to avoid a DB enum/migration churn
+// for already-issued passes; only the duration + price + display copy changed.
+const SECONDS_CARD_PASS = 30 * SECONDS_DAY;
 const SECONDS_MONTH = 30 * SECONDS_DAY;
 const SECONDS_YEAR = 365 * SECONDS_DAY;
 
 export const PASS_DURATIONS_SECONDS: Record<PassKind, number | null> = {
   day: SECONDS_DAY,
-  twoweek: SECONDS_TWO_WEEK,
+  twoweek: SECONDS_CARD_PASS,
   month: SECONDS_MONTH,
   year: SECONDS_YEAR,
   lifetime: null,

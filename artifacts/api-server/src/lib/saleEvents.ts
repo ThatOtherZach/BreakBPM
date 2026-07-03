@@ -14,7 +14,7 @@ import { LUCKY_BREAK_CODE_KIND } from "./luckyBreak";
 /** Human-readable product labels for the ledger, by pass kind. */
 export const PASS_PRODUCT_LABELS: Record<PassKind, string> = {
   day: "Day Pass",
-  twoweek: "14 Day Pass",
+  twoweek: "30 Day Pass",
   month: "Month Pass",
   year: "Year Pass",
   lifetime: "Lifetime Pass",

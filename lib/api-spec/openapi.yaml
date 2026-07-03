@@ -1684,7 +1684,7 @@ components:
           type: string
           description: >
             Off-platform card store (Squarespace) URL where buyers can purchase
-            the 14 Day Pass by card; the owner then emails a redeem code.
+            the 30 Day Pass by card; the owner then emails a redeem code.
             Configurable via the BREAKBPM_STORE_URL env var; empty string when
             unset, in which case the client hides the card-store callout.
         bannedWords:

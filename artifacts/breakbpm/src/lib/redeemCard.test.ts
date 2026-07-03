@@ -80,7 +80,7 @@ describe("cardFilename", () => {
 describe("passKindLabel", () => {
   it.each([
     ["day", "DAY PASS"],
-    ["twoweek", "14 DAY PASS"],
+    ["twoweek", "30 DAY PASS"],
     ["month", "MONTH PASS"],
     ["year", "YEAR PASS"],
     ["lifetime", "LIFETIME PASS"],

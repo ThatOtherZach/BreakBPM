@@ -27,7 +27,7 @@ interface PricingPanelProps {
   showBuyButtons?: boolean;
   /** Handler for the per-pass Buy buttons (e.g. navigate to /passes). */
   onBuy?: () => void;
-  /** Hide the 14 Day Pass card-store callout. Used on the About page. */
+  /** Hide the 30 Day Pass card-store callout. Used on the About page. */
   hideCardCallout?: boolean;
   /** Hide the four static pass cards. Used on the Passes screen, where the
    *  crypto checkout below already lists the buyable passes. */
@@ -51,7 +51,7 @@ export default function PricingPanel({
 }: PricingPanelProps) {
   const appConfig = useGetAppConfig();
 
-  // Off-platform card store (Squarespace) for the 14 Day Pass. The callout is
+  // Off-platform card store (Squarespace) for the 30 Day Pass. The callout is
   // hidden entirely until an owner configures BREAKBPM_STORE_URL (server sends
   // "" when unset).
   const storeUrl = appConfig.data?.storeUrl ?? "";
@@ -69,7 +69,7 @@ export default function PricingPanel({
       <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <p style={{ fontSize: 12, margin: 0 }}>A pass unlocks full game history, extended stats, spectating, and other paid features. Free play is always available; sign in to save your stats.</p>
 
-        {/* ── Pay-by-card callout (14 Day Pass via Squarespace) ──
+        {/* ── Pay-by-card callout (30 Day Pass via Squarespace) ──
             Framed as the card alternative to crypto: deliberately pricier
             so crypto stays the better deal. Only rendered once an owner
             configures the store URL. */}

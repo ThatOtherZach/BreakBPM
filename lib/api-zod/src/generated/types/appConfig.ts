@@ -10,7 +10,7 @@ export interface AppConfig {
   /** URL encoded into the splash-art QR easter egg. Configurable via the BREAKBPM_PROMO_QR_URL env var so promo links can be swapped at runtime; defaults to the marketing site.
    */
   qrUrl: string;
-  /** Off-platform card store (Squarespace) URL where buyers can purchase the 14 Day Pass by card; the owner then emails a redeem code. Configurable via the BREAKBPM_STORE_URL env var; empty string when unset, in which case the client hides the card-store callout.
+  /** Off-platform card store (Squarespace) URL where buyers can purchase the 30 Day Pass by card; the owner then emails a redeem code. Configurable via the BREAKBPM_STORE_URL env var; empty string when unset, in which case the client hides the card-store callout.
    */
   storeUrl: string;
   /** Owner-curated blocklist (BREAKBPM_BANNED_WORDS), lowercased. The client uses it to emoji-swap blocked words in in-game player names at the input layer so the cleaned name propagates consistently into the shot log. Empty when unset (no filtering). Server surfaces (ad copy, screen names) apply their own authoritative filtering separately.

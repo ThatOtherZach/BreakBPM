@@ -22,10 +22,12 @@ import { luckyBreakLifetimeProbability } from "./config";
  * resolve their own stored price. */
 export const PASS_PRICES_CENTS: Record<PassKind, number> = {
   day: 199,
-  // 14-day card pass sold off-platform via Squarespace + admin redeem code.
-  // Deliberately worse value than the $4.99 / 30-day crypto Month pass to nudge
-  // buyers toward crypto. Not crypto-buyable — absent from CRYPTO_PASS_PLANS.
-  twoweek: 599,
+  // 30-day card pass sold off-platform via Squarespace + admin redeem code
+  // (internal kind name "twoweek" predates this — see passes.ts). Deliberately
+  // worse value than buying the same 30 days via the flexible crypto day pass
+  // (~$4.89 at default DAY_PASS_PRICING) to nudge buyers toward crypto. Not
+  // crypto-buyable — absent from CRYPTO_PASS_PLANS.
+  twoweek: 499,
   month: 499,
   year: 1499,
   lifetime: 2499,

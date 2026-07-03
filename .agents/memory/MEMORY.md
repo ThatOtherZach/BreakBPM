@@ -62,3 +62,4 @@
 - [Mention-accept summary recovery](mention-accept-finalized-summary.md) — accepting an @mention AFTER finalize creates the slot too late; re-distill summaries + bust caches or the accepted player's side vanishes.
 - [Public profile guest-name redaction](public-profile-guest-name-redaction.md) — redacting /games/profile names must also omit shareCode (closes /games/state second-hop recovery of ended-game gameState) and source registered-opponent names from server identity records, not client gameState.
 - [Vite config loader bare imports](vite-config-loader-bare-imports.md) — importing a src/lib helper into vite.config.ts that transitively pulls a @workspace/* package crashes the config loader (ERR_MODULE_NOT_FOUND); duplicate small constants instead.
+- [admin-sales test DB pollution](admin-sales-test-db-pollution.md) — admin-sales.test.ts assumes an empty sale_events table; real leftover dev rows inflate counts and look like a regression but aren't.

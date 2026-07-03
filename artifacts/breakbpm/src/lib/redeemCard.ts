@@ -56,7 +56,7 @@ export function passKindLabel(kind: string): string {
     case "day":
       return "DAY PASS";
     case "twoweek":
-      return "14 DAY PASS";
+      return "30 DAY PASS";
     case "month":
       return "MONTH PASS";
     case "year":
