@@ -1,8 +1,9 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db, gamesTable, gameParticipantsTable } from "@workspace/db";
 import {
   buildGameSummary,
   extractDiscriminators,
+  summaryAccuracy,
   type SummaryParticipantInput,
 } from "./gameSummary";
 
@@ -70,9 +71,20 @@ export async function writeFinalizedSummary(
       })
       .where(eq(gamesTable.id, gameId));
     for (const [slotIndex, summary] of bySlot) {
+      // Backfill the per-slot accuracy snapshot from the summary when it is
+      // still NULL (slots created AFTER finalize — e.g. a post-game @mention
+      // accept — never got the /games/save client snapshot). COALESCE keeps
+      // an existing save-time value authoritative, so re-runs never clobber.
+      const derived = summaryAccuracy(summary);
       await tx
         .update(gameParticipantsTable)
-        .set({ summary })
+        .set({
+          summary,
+          accuracy:
+            derived === null
+              ? undefined
+              : sql`COALESCE(${gameParticipantsTable.accuracy}, ${derived})`,
+        })
         .where(
           and(
             eq(gameParticipantsTable.gameId, gameId),

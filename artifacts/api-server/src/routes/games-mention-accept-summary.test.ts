@@ -167,6 +167,12 @@ describe("POST /mentions/:id/accept — summary recovery on a finalized game", (
     expect(summary?.made).toBeGreaterThan(0);
     expect(summary?.attempts).toBeGreaterThan(0);
 
+    // The accuracy snapshot column is backfilled from the summary: this slot
+    // was created AFTER finalize, so it never got the /games/save client
+    // snapshot — without the backfill it would render as a blank accuracy on
+    // history/profile/mention cards. Guest: 3 made / 3 attempts → 100.
+    expect(guestSlot?.accuracy).toBe(100);
+
     // The host slot's summary is untouched (idempotent re-distill).
     const hostSlot = after.find((p) => p.slotIndex === 0);
     expect((hostSlot?.summary as { v?: number } | null)?.v).toBe(GAME_SUMMARY_VERSION);

@@ -302,3 +302,18 @@ export function readParticipantSummary(raw: unknown): ParticipantSummary | null 
   const s = raw as Partial<ParticipantSummary>;
   return s.v === GAME_SUMMARY_VERSION ? (s as ParticipantSummary) : null;
 }
+
+/**
+ * Derive a participant's whole-number accuracy percentage (0–100) from their
+ * distilled summary, matching the pooled made/attempts math used by stats and
+ * the leaderboard. Null when there's no summary or no qualifying attempts.
+ *
+ * Used as the read-path fallback when `game_participants.accuracy` is NULL —
+ * which happens for slots created AFTER finalize (an @mention accepted on an
+ * already-finished game): the save-time snapshot ran before the slot existed,
+ * but the accept path's re-distill wrote the summary, so accuracy is derivable.
+ */
+export function summaryAccuracy(psum: ParticipantSummary | null): number | null {
+  if (!psum) return null;
+  return psum.attempts > 0 ? Math.round((psum.made / psum.attempts) * 100) : null;
+}

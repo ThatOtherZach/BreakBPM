@@ -70,6 +70,7 @@ import { writeFinalizedSummary } from "../lib/gameSummaryWriter";
 import {
   readGameSummary,
   readParticipantSummary,
+  summaryAccuracy,
   type GameSummary,
   type ParticipantSummary,
 } from "../lib/gameSummary";
@@ -2306,6 +2307,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
     const registeredSlotsByGame = await fetchRegisteredSlots(visibleIds);
     games = visible.map((g) => {
       const part = partByGame.get(g.id);
+      const psum = part ? readParticipantSummary(part.summary) : null;
       const pace = resolveParticipantPace(
         g,
         {
@@ -2314,11 +2316,14 @@ router.get("/games/profile", async (req, res): Promise<void> => {
           isHost: part?.isHost ?? false,
           known: part !== undefined,
         },
-        part ? readParticipantSummary(part.summary) : null,
+        psum,
       );
       return toHistoryEntry(
         g,
-        part ? (part.accuracy ?? null) : (g.accuracy ?? null),
+        // Own snapshot first; derive from the distilled summary when the
+        // column is NULL (slots created after finalize — post-game @mention
+        // accepts — never got the save-time snapshot).
+        part ? (part.accuracy ?? summaryAccuracy(psum)) : (g.accuracy ?? null),
         { slot: part?.slotIndex ?? null, name: host.screenName },
         pace,
         readGameSummary(g.summary),
@@ -2628,6 +2633,7 @@ router.get("/games/history", async (req, res): Promise<void> => {
 
   const games = visible.map((g) => {
     const part = myPartByGame.get(g.id);
+    const psum = part ? readParticipantSummary(part.summary) : null;
     const pace = resolveParticipantPace(
       g,
       {
@@ -2636,11 +2642,14 @@ router.get("/games/history", async (req, res): Promise<void> => {
         isHost: part?.isHost ?? false,
         known: part !== undefined,
       },
-      part ? readParticipantSummary(part.summary) : null,
+      psum,
     );
     return toHistoryEntry(
       g,
-      part ? (part.accuracy ?? null) : (g.accuracy ?? null),
+      // Own snapshot first; derive from the distilled summary when the
+      // column is NULL (slots created after finalize — post-game @mention
+      // accepts — never got the save-time snapshot).
+      part ? (part.accuracy ?? summaryAccuracy(psum)) : (g.accuracy ?? null),
       { slot: part?.slotIndex ?? null, name: user.screenName },
       pace,
       readGameSummary(g.summary),
@@ -3719,6 +3728,7 @@ router.get("/mentions", async (req, res): Promise<void> => {
   const invites = rows.map((r) => {
     const part = partByGame.get(r.game.id);
     const slot = part?.slotIndex ?? r.slotIndex;
+    const psum = part ? readParticipantSummary(part.summary) : null;
     // A pending invite has no participant row yet, so there's no per-slot
     // summary — `resolveParticipantPace` falls back to the gameState recompute.
     const pace = resolveParticipantPace(
@@ -3729,7 +3739,7 @@ router.get("/mentions", async (req, res): Promise<void> => {
         isHost: false,
         known: true,
       },
-      part ? readParticipantSummary(part.summary) : null,
+      psum,
     );
     return {
       id: r.mentionId,
@@ -3738,7 +3748,10 @@ router.get("/mentions", async (req, res): Promise<void> => {
       createdAt: r.createdAt,
       game: toHistoryEntry(
         r.game,
-        part ? (part.accuracy ?? null) : null,
+        // Own snapshot first; derive from the distilled summary when the
+        // column is NULL (accepted-after-finalize slots never got the
+        // save-time snapshot).
+        part ? (part.accuracy ?? summaryAccuracy(psum)) : null,
         { slot, name: user.screenName },
         pace,
         readGameSummary(r.game.summary),
