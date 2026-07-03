@@ -7,6 +7,9 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { createRequire } from "module";
 import type { Plugin } from "vite";
 import {
+  HOME_H1,
+  HOME_INTRO,
+  HOME_LINKS,
   POOL_STATS_H1,
   POOL_STATS_INTRO,
   POOL_STATS_LORE,
@@ -277,6 +280,192 @@ function escapeHtml(s: string): string {
     .replace(/>/g, "&gt;");
 }
 
+/** Real static body for the homepage ("/"). The root `index.html`'s
+ *  head (title/meta/JSON-LD) is already correct for "/" — only the empty
+ *  `#root` shell needs real content. Also injects a tiny inline script that
+ *  strips this body on any OTHER path, since the production static host's
+ *  catch-all rewrite (`/* -> /index.html`) would otherwise flash homepage
+ *  copy on every client-only route (e.g. /account, /game) before React
+ *  mounts and takes over routing. */
+function buildHomeBody(): string {
+  const modes = POOL_STATS_MODES.map(
+    (m) => `    <li><strong>${escapeHtml(m.name)}</strong> — ${escapeHtml(m.body)}</li>`,
+  ).join("\n");
+  const links = HOME_LINKS.map(
+    (l) => `    <li><a href="${escapeHtml(l.href)}">${escapeHtml(l.label)}</a></li>`,
+  ).join("\n");
+
+  return `
+${PRERENDER_STYLE}
+<div id="prerender-static">
+  <h1>${escapeHtml(HOME_H1)}</h1>
+  <p>${escapeHtml(HOME_INTRO)}</p>
+
+  <h2>Game Modes</h2>
+  <ul>
+${modes}
+  </ul>
+
+  <h2>Explore</h2>
+  <ul>
+${links}
+  </ul>
+
+  <p style="margin-top:2em;font-size:.8rem;color:#888">Built by Saym Services Inc. · Vancouver, BC</p>
+</div>
+<script>if (location.pathname !== "/") { var el = document.getElementById("prerender-static"); if (el) { el.remove(); } }</script>`.trim();
+}
+
+/** Row shape read straight off the `venues` table for hall-page prerender.
+ *  Deliberately a plain SQL query (not `@workspace/db`) — the frontend build
+ *  has no other DB dependency, and `@workspace/db` throws at import time
+ *  when `DATABASE_URL` is unset, which would break every frontend build. */
+interface HallVenueRow {
+  slug: string;
+  name: string;
+  locality: string | null;
+  address: string | null;
+  table_count: number | null;
+  contact: string | null;
+  payment_type: string | null;
+  latitude: number;
+  longitude: number;
+}
+
+/** Fetches active, sluggable venues for build-time hall-page prerender.
+ *  Never throws — a missing `DATABASE_URL` or a query failure just means the
+ *  build ships zero prerendered hall pages (they fall back to the existing
+ *  client-rendered shell), not a broken deploy. New halls minted after this
+ *  build won't get their own static page until the next deploy — the same
+ *  accepted staleness tradeoff already documented for the live venue
+ *  sitemap (`api-server/src/routes/sitemap.ts`). */
+async function fetchActiveVenuesForPrerender(): Promise<HallVenueRow[]> {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    console.warn(
+      "[prerender] DATABASE_URL not set — skipping hall page prerender.",
+    );
+    return [];
+  }
+  try {
+    const { Client } = await import("pg");
+    const client = new Client({ connectionString: databaseUrl });
+    await client.connect();
+    try {
+      const result = await client.query<HallVenueRow>(
+        `SELECT slug, name, locality, address, table_count, contact, payment_type, latitude, longitude
+         FROM venues
+         WHERE active = true AND slug IS NOT NULL`,
+      );
+      return result.rows;
+    } finally {
+      await client.end();
+    }
+  } catch (err) {
+    console.warn(
+      "[prerender] Failed to fetch venues for hall page prerender — skipping.",
+      err,
+    );
+    return [];
+  }
+}
+
+function hallCanonical(slug: string): string {
+  return `https://breakbpm.com/leaderboard/hall/${slug}`;
+}
+
+/** SportsActivityLocation structured data for a Verified Hall page. */
+function buildHallJsonLd(row: HallVenueRow): string {
+  const address =
+    row.address || row.locality
+      ? {
+          "@type": "PostalAddress",
+          ...(row.address ? { streetAddress: row.address } : {}),
+          ...(row.locality ? { addressLocality: row.locality } : {}),
+        }
+      : undefined;
+  const node = {
+    "@context": "https://schema.org",
+    "@type": "SportsActivityLocation",
+    name: row.name,
+    url: hallCanonical(row.slug),
+    ...(address ? { address } : {}),
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: row.latitude,
+      longitude: row.longitude,
+    },
+    isAccessibleForFree: true,
+  };
+  const json = JSON.stringify(node).replace(/</g, "\\u003c");
+  return `<script type="application/ld+json">${json}</script>`;
+}
+
+function buildHallMetaEntry(row: HallVenueRow): RouteMetaEntry {
+  const localitySuffix = row.locality ? ` · ${row.locality}` : "";
+  const title = `${row.name} Pool Leaderboard${localitySuffix} | BreakBPM`;
+  const description = `Live local pool leaderboard for ${row.name}${row.locality ? ` in ${row.locality}` : ""}. See the top 8-ball & 9-ball players ranked by accuracy and Balls Per Minute, tracked free with BreakBPM.`;
+  return {
+    path: `leaderboard/hall/${row.slug}`,
+    title,
+    description,
+    canonical: hallCanonical(row.slug),
+    ogTitle: title,
+    ogDescription: description,
+    jsonLd: buildHallJsonLd(row),
+  };
+}
+
+/** Mirrors the labels in `src/lib/venuePaymentType.ts`. Duplicated (rather
+ *  than imported) because that module pulls in `@workspace/api-client-react`,
+ *  a bare package specifier the Vite config loader can't resolve at
+ *  build-config time (it bundles relative imports but leaves package
+ *  imports external, and Node's native ESM loader then fails on the
+ *  generated package's extensionless relative imports). Keep these three
+ *  labels in lockstep with that file. */
+const HALL_PAYMENT_LABELS: Record<string, string> = {
+  free: "Free Play",
+  per_game: "Pay Per Game",
+  hourly: "Hourly",
+};
+
+/** Real per-venue body: name, locality/address, table count, and how the
+ *  hall charges — the same facts shown in the Find Players hall card. The
+ *  live ranked board itself stays client-rendered (rankings are volatile;
+ *  baking a snapshot into the static file would go stale between deploys),
+ *  which matches the task's bar of "route-specific HTML before JS runs",
+ *  not a full server-rendered leaderboard table. */
+function buildHallBody(row: HallVenueRow): string {
+  const paymentLabel = row.payment_type
+    ? (HALL_PAYMENT_LABELS[row.payment_type] ?? null)
+    : null;
+  const details = [
+    row.address
+      ? `<li><strong>Address:</strong> ${escapeHtml(row.address)}</li>`
+      : row.locality
+        ? `<li><strong>Location:</strong> ${escapeHtml(row.locality)}</li>`
+        : null,
+    row.table_count
+      ? `<li><strong>Tables:</strong> ${row.table_count}</li>`
+      : null,
+    paymentLabel
+      ? `<li><strong>Play:</strong> ${escapeHtml(paymentLabel)}</li>`
+      : null,
+  ]
+    .filter((v): v is string => Boolean(v))
+    .join("\n    ");
+
+  return `
+${PRERENDER_STYLE}
+<div id="prerender-static">
+  <nav><a href="/">← Home</a><a href="/leaderboard">Global Leaderboard</a><a href="/for-venues">List Your Hall</a></nav>
+  <h1>${escapeHtml(row.name)} — Verified Pool Hall${row.locality ? ` in ${escapeHtml(row.locality)}` : ""}</h1>
+  <p>${escapeHtml(row.name)} is a BreakBPM Verified Hall with its own live Local Leaderboard, ranking players by accuracy-weighted Balls Per Minute across 8-ball and 9-ball. Finish a 1-on-1 game on location and tag it here to join the board.</p>
+  ${details ? `<ul>\n    ${details}\n  </ul>` : ""}
+  <p style="margin-top:2em;font-size:.8rem;color:#888">Rankings update live — <a href="/">open BreakBPM</a> to see the current standings.</p>
+</div>`.trim();
+}
+
 /** SoftwareApplication + FAQPage structured data for the landing page.
  *  FAQ entries are sourced from the shared landingContent module so the markup
  *  matches the on-page (and prerendered) FAQ text Google requires for rich results. */
@@ -488,6 +677,36 @@ function routeMetaPlugin(): Plugin {
         fs.mkdirSync(routeDir, { recursive: true });
         fs.writeFileSync(path.join(routeDir, "index.html"), routeHtml);
       }
+
+      // Verified-hall pages are minted at runtime (DB rows), not known at
+      // build time like PUBLIC_ROUTES — fetch + emit them separately, from
+      // the same pristine root indexHtml. Never fatal: an empty/failed
+      // fetch just means zero hall pages ship this build.
+      const venues = await fetchActiveVenuesForPrerender();
+      for (const venue of venues) {
+        const route = buildHallMetaEntry(venue);
+        const metaHtml = injectRouteMeta(indexHtml, route);
+        const staticBody = buildHallBody(venue);
+        const routeHtml = metaHtml.replace(
+          /<div id="root"><\/div>/,
+          `<div id="root">${staticBody}</div>`,
+        );
+
+        const routeDir = path.join(outDir, route.path);
+        fs.mkdirSync(routeDir, { recursive: true });
+        fs.writeFileSync(path.join(routeDir, "index.html"), routeHtml);
+      }
+
+      // Home ("/") is generated LAST, from the same pristine indexHtml read
+      // above — its <head> is already correct for "/", only the empty
+      // #root shell needs real content. Writing it last (and overwriting
+      // outDir/index.html, not a subdirectory) keeps every route above safe
+      // to build from the untouched original.
+      const homeHtml = indexHtml.replace(
+        /<div id="root"><\/div>/,
+        `<div id="root">${buildHomeBody()}</div>`,
+      );
+      fs.writeFileSync(indexPath, homeHtml);
     },
   };
 }

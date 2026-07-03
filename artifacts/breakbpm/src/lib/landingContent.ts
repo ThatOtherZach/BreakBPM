@@ -38,6 +38,30 @@ export interface ShowcaseItem {
   liveLeaderboard?: boolean;
 }
 
+/* ───────────────────────── Home ("/") ─────────────────────────
+ * Shared copy for the homepage's build-time prerendered body. There is no
+ * React screen counterpart (SetupScreen.tsx is interactive UI, not a copy
+ * source) — this exists solely so `vite.config.ts` can inject a real,
+ * crawlable body into the root `index.html` instead of an empty shell.
+ * Keep this file dependency-free (plain data only) so the Vite config can
+ * import it at build time without pulling in React.
+ */
+
+export const HOME_H1 =
+  "BreakBPM — Live Balls-Per-Minute Pool Score Tracker";
+
+export const HOME_INTRO =
+  "BreakBPM is a free, browser-based billiards score tracker. It logs every shot and calculates each player's live Balls Per Minute (BPM) and shooting accuracy across 8-ball, 9-ball, practice, and solo Shark mode. Nothing to install — sign in (free) to save your stats.";
+
+export const HOME_LINKS: { href: string; label: string }[] = [
+  { href: "/pool-stats-app", label: "See how it works" },
+  { href: "/about", label: "Read the manual" },
+  { href: "/leaderboard", label: "Global leaderboard" },
+  { href: "/passes", label: "Passes & pricing" },
+  { href: "/for-venues", label: "List your pool hall" },
+  { href: "/legal", label: "Legal" },
+];
+
 export const POOL_STATS_H1 =
   "Nice Rack, Track It";
 
