@@ -333,8 +333,8 @@ export default function CryptoCheckout({
     kind === "lucky_break"
       ? (
         <>
-          Pay once to get a Monthly pass — with a {oddsPct}% chance it upgrades
-          to a Lifetime pass instead.
+          30 Days of access pass with a {oddsPct}% chance it upgrades to a
+          Lifetime pass instead.
         </>
       )
       : (PASS_BLURB[kind] ?? "One-time pass");
