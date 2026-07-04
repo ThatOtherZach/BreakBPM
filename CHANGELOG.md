@@ -5,6 +5,42 @@ All notable changes to BreakBPM will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-07-04
+
+### Added
+- **Local & city leaderboards** — every verified hall gets its own ranked board (`/leaderboard/hall/:slug`) and each hall locality rolls up into a city board (`/leaderboard/city/:locality`). After a finished 1-on-1 8-ball or 9-ball game, the host can tag it to a nearby verified hall (or tag the city directly when no hall is in range). Hall boards expose a public 30-day window without sign-in; 90-day and all-time windows stay pass-gated.
+- **`/for-venues` pitch page** — pool halls can claim a free verified listing (map discovery, local leaderboard, website backlink) in exchange for a social post tagging #BreakBPM.
+- **Readable venue slugs** — hall leaderboard URLs resolve by human-readable slug or legacy id.
+- **Flexible crypto "Purchase Days of Access"** — buy any 1–365 days of access via marginal per-day brackets (first day $1.99; longer runs get cheaper per day). Env-tunable via `BREAKBPM_DAY_PASS_*`; params ship to the client via `/passes/plans` so slider estimates match server quotes.
+- **30 Day Pass (card, off-platform)** — $4.99 / 30 days sold via the owner's Squarespace store (`BREAKBPM_STORE_URL`); buyer receives a manually minted admin redeem code by email. Deliberately worse value than buying ~30 days via crypto to nudge buyers toward on-chain checkout.
+- **Invite links → free trial** — every signed-in user gets a personal invite code (`/invite/:code`). New signups who follow the link receive a configurable free trial pass (default **24 hours**, `BREAKBPM_INVITE_TRIAL_HOURS`). One-sided — no inviter reward.
+- **Landing free-pass giveaway** — monthly stock pools for Lucky Break and Day-pass rewards (`POST /passes/claim`, cap via `BREAKBPM_FREE_PASS_MONTHLY_CAP`).
+- **Remove yourself from a game** — leave an in-progress game you joined; forfeit handling updates participant state server-side.
+- **Rematch with @mentions** — one-tap Rematch now carries linked `@username` slots into the fresh game.
+- **Profile themes & customization** — felt/table themes earned by participation or set via admin-minted redeem codes; frozen into completed-game history as a host snapshot.
+- **Homepage & hall SEO prerender** — build-time static HTML + JSON-LD for `/` and each active hall's `/leaderboard/hall/:slug` page (hall pages generated from a build-time DB read; skipped gracefully when `DATABASE_URL` is unavailable).
+- **Public profile hardening** — free-text guest names redacted on `/watch/:name` profiles; share codes omitted to block second-hop game-state recovery on ended games.
+- **Shark mode leaderboards** — dedicated Shark ranking with win-based semantics, mirrored on global, hall, and city boards.
+- **Marketing assets** — promotional posters, Instagram crops, and social copy templates under `marketing/`.
+
+### Changed
+- **Leaderboard scoring rework** — global, hall, and city boards now rank on a composite skill score (accuracy-weighted, trust-weighted pace; best-2 of ≥2 qualifying 1-on-1 games). Anti-cheat signals (raw composite, registered-opponent game count, thin-sample provisional flag) surface on an admin-only board only. Hardened against rushed/low-quality games (Task #368).
+- **Lucky Break floor copy** — minimum prize described as "30 days of access" (not "Monthly pass") across checkout blurbs; backend `twoweek` pass kind aligned to **30 days / $4.99** (was stale at 14 days / $5.99 internally).
+- **Invite trial default** — extended from 6 hours to 24 hours.
+- **Navigation labels** — user-facing "Manual" renamed to "Help"; "About" menu link points to the marketing page while "Help" points to the in-app guide (`/about`), without changing URLs or SEO canonicals.
+- **Pass pricing visibility** — pass prices shown to all visitors; sign-in prompted at purchase time.
+- **Stats BPM bell curve** — falls back to all-time global averages during quiet 24h periods so the chart stays visible.
+- **Game history cards** — player grouping sub-labels, clickable registered-opponent links to `/watch/:name`, and location shown below player names.
+
+### Fixed
+- **@Mention quick-start race** — invites silently dropped when starting a game before mention resolution finished.
+- **@Mention accept on finalized games** — accepting an invite after finalize now re-distills summaries and busts stats caches so the accepted player's stats appear.
+- **Late-joiner accuracy** — read-path fallback and backfill for participants who joined mid-game.
+- **Leaderboard win counting** — player wins counted correctly for ranking eligibility.
+- **Shark DNF display** — "Beat the Shark" no longer shown on unfinished Shark games.
+- **City leaderboard links** — broken locality links and venue-card city navigation corrected.
+- **Hall prerender escaping** — venue names with apostrophes safely escaped in build-time meta tags.
+
 ## [0.9.0] - 2026-06-14
 
 ### Added
@@ -137,6 +173,7 @@ Major rewrite migrating from a single `index.html` file to a full React + Vite +
 - Multiplayer via link (async state sharing)
 - Shot logging and undo
 
+[0.10.0]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.7.0...v0.9.0
 [0.7.0]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/ThatOtherZach/BreakBPM/compare/v0.5.1...v0.6.0
