@@ -179,24 +179,26 @@ reality, not visible in code).
 | `BREAKBPM_USD_CAD_FALLBACK_RATE` | ~`1.37` | Operator-tunable | USD→CAD fallback used only when the Bank of Canada FX lookup is unreachable and no last-good rate is cached. |
 
 **The active paid path today:** redeem codes. A **Lucky Break** code
-(`$4.99`, "roll the rack") guarantees at least a 30-day Monthly pass with a
-disclosed chance (default 20%) of Lifetime; **admin comp codes** grant any tier
-the admin picks. Card and crypto endpoints + UI remain intact behind their flags
-and can be switched back on without a code change (restart the api-server
-workflow after changing a flag).
+(`$4.99`, "roll the rack") guarantees at least 30 days of access with a
+disclosed chance (default 20%) of Lifetime; **admin comp codes** and **card-store
+codes** (30 Day Pass, manually emailed) grant the tier the admin picks. Card and
+crypto endpoints + UI remain intact behind their flags and can be switched back
+on without a code change (restart the api-server workflow after changing a flag).
 
 ### Plan & price catalog (single source of truth: `pricing.ts`)
 
-| Plan | Price (USD) | Kind |
+| Plan | Price (USD) | Kind / channel |
 |---|---|---|
-| Day Pass | $1.99 | one-time pass |
-| Monthly | $4.99 / mo | subscription |
-| Yearly | $14.99 / yr | subscription |
-| Lifetime | $24.99 | one-time pass |
-| Lucky Break | $4.99 | redeem-code roll (Monthly floor, chance of Lifetime) |
+| Purchase Days of Access | $1.99 first day; marginal brackets to 365d (~$4.89/30d at defaults) | crypto flexible `day` pass (when enabled) |
+| 30 Day Pass | $4.99 / 30d | off-platform card store → admin redeem code (`twoweek` kind) |
+| Lifetime | $24.99 | one-time pass (crypto or redeem) |
+| Lucky Break | $4.99 | redeem-code roll (30-day floor, chance of Lifetime) |
+| Day / Month / Year passes | $1.99 / $4.99 / $14.99 | redeem-code grants only (legacy kinds; not sold direct via crypto) |
+| Monthly / Yearly subscriptions | $4.99 / mo · $14.99 / yr | Stripe (flag-gated, currently off) |
 
-*(Crypto, when enabled, sells one-time Day/Month/Year/Lifetime passes and Lucky
-Break at the same prices — no recurring crypto plans.)*
+*(Crypto, when enabled, sells flexible days, Lifetime, and Lucky Break — no
+recurring crypto plans. Card checkout and subscriptions are behind
+`BREAKBPM_CARD_PAYMENTS_ENABLED`, currently off.)*
 
 ---
 

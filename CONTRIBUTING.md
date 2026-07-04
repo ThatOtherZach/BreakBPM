@@ -85,7 +85,8 @@ The project has gone through major evolutions:
 6. Accounts, game history, passes, per-player BPM
 7. Statistics page, live join & spectate, recurring subscriptions (v0.7)
 8. Tiered entitlements + admin code minting, Lucky Break provably-fair roll, redeem share links, crypto + Stripe checkout (flag-gated), CAD sales ledger
-9. **Find Players + venue map, OBS overlay, @mention invites, Rematch, Chaos mode + rainbow flourish, leaderboard, public profiles, delete-my-data — current state (v0.9)**
+9. Find Players + venue map, OBS overlay, @mention invites, Rematch, Chaos mode + rainbow flourish, leaderboard, public profiles, delete-my-data (v0.9)
+10. **Local & city leaderboards, flexible crypto day-pass pricing, 30 Day card pass, invite trials, hall SEO prerender, profile themes — current state (v0.10)**
 
 **Key things to know:**
 
@@ -96,6 +97,7 @@ The project has gone through major evolutions:
 - Access control is tier-based. `entitlement.ts` resolves a caller into `public` / `account` / `pass`. Gate "paid host" features on `tier === 'pass'`, and Lifetime-only perks on the entitlement (`entitlement.isAdmin || entitlement.activePass?.isLifetime`), never on raw passes. See [PERMISSIONS.md](./PERMISSIONS.md) for the full feature-access model.
 - No background timers touch the DB. The Postgres instance auto-suspends when idle, so stale in-progress games are finalized **lazily** on the next read/write (or when a spectator views the specific game) — there is no heartbeat/cron sweep. Don't add fixed-interval DB polling.
 - Icons live in `public/` and are referenced as `/icon-name.png`.
+- See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for system design and [docs/GOTCHAS.md](./docs/GOTCHAS.md) for common footguns.
 - The `pnpm-workspace` skill in `.local/skills/` describes the full monorepo structure and TypeScript setup.
 
 If you're an AI continuing this project:
