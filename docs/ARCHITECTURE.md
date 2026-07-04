@@ -70,7 +70,7 @@ Purchasing is crypto (when enabled) + redeem codes. `cardPaymentsEnabled()` read
 
 **Crypto catalog (when enabled):** flexible "Purchase Days of Access" (1–365 days), Lifetime, Lucky Break. Fixed Day/Month/Year pass *kinds* still exist for redeem codes but are not directly sold via crypto.
 
-**30 Day Pass:** sold off-platform by card (`BREAKBPM_STORE_URL`); owner manually mints a redeem code. Internal DB kind is `twoweek` (legacy name).
+**30 Day Pass:** $4.99 / 30 days — available off-platform by card (`BREAKBPM_STORE_URL`, owner manually mints a redeem code) or via crypto at the 30-day slider point. Same price either way; card codes are emailed within 24h, crypto grants instantly. Internal DB kind is `twoweek` (legacy name).
 
 ### Lucky Break (provably-fair roll)
 

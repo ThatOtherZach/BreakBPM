@@ -189,8 +189,8 @@ on without a code change (restart the api-server workflow after changing a flag)
 
 | Plan | Price (USD) | Kind / channel |
 |---|---|---|
-| Purchase Days of Access | $1.99 first day; marginal brackets to 365d (~$4.89/30d at defaults) | crypto flexible `day` pass (when enabled) |
-| 30 Day Pass | $4.99 / 30d | off-platform card store → admin redeem code (`twoweek` kind) |
+| Purchase Days of Access | $1.99 first day; marginal brackets to 365d (**$4.99/30d** at defaults) | crypto flexible `day` pass (when enabled) |
+| 30 Day Pass | $4.99 / 30d | off-platform card store → admin redeem code (`twoweek` kind); same price as 30d crypto |
 | Lifetime | $24.99 | one-time pass (crypto or redeem) |
 | Lucky Break | $4.99 | redeem-code roll (30-day floor, chance of Lifetime) |
 | Day / Month / Year passes | $1.99 / $4.99 / $14.99 | redeem-code grants only (legacy kinds; not sold direct via crypto) |

@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`/for-venues` pitch page** — pool halls can claim a free verified listing (map discovery, local leaderboard, website backlink) in exchange for a social post tagging #BreakBPM.
 - **Readable venue slugs** — hall leaderboard URLs resolve by human-readable slug or legacy id.
 - **Flexible crypto "Purchase Days of Access"** — buy any 1–365 days of access via marginal per-day brackets (first day $1.99; longer runs get cheaper per day). Env-tunable via `BREAKBPM_DAY_PASS_*`; params ship to the client via `/passes/plans` so slider estimates match server quotes.
-- **30 Day Pass (card, off-platform)** — $4.99 / 30 days sold via the owner's Squarespace store (`BREAKBPM_STORE_URL`); buyer receives a manually minted admin redeem code by email. Deliberately worse value than buying ~30 days via crypto to nudge buyers toward on-chain checkout.
+- **30 Day Pass (card, off-platform)** — $4.99 / 30 days sold via the owner's Squarespace store (`BREAKBPM_STORE_URL`); buyer receives a manually minted admin redeem code by email. Same price as 30 days of access via crypto — card codes arrive within 24 hours; crypto grants access instantly.
 - **Invite links → free trial** — every signed-in user gets a personal invite code (`/invite/:code`). New signups who follow the link receive a configurable free trial pass (default **24 hours**, `BREAKBPM_INVITE_TRIAL_HOURS`). One-sided — no inviter reward.
 - **Landing free-pass giveaway** — monthly stock pools for Lucky Break and Day-pass rewards (`POST /passes/claim`, cap via `BREAKBPM_FREE_PASS_MONTHLY_CAP`).
 - **Remove yourself from a game** — leave an in-progress game you joined; forfeit handling updates participant state server-side.

@@ -71,10 +71,10 @@ A fully functional **React + Vite + TypeScript** web app styled like genuine 199
 - **Invite links** — share `/invite/:code` so new signups get a free trial pass (default 24 hours)
 
 **Plans**
-- **Purchase Days of Access** (crypto, when enabled) — pick any 1–365 days; marginal per-day pricing gets cheaper the longer you buy (first day $1.99; ~30 days ≈ $4.89 at default rates). Env-tunable via `BREAKBPM_DAY_PASS_*`.
+- **Purchase Days of Access** (crypto, when enabled) — pick any 1–365 days; marginal per-day pricing gets cheaper the longer you buy (first day $1.99; **30 days $4.99** — same as the card pass). Env-tunable via `BREAKBPM_DAY_PASS_*`.
 - **Lifetime** — $24.99 one-time, full access forever (stops any active subscription from renewing)
 - **Lucky Break** — $4.99 "roll the rack" unlock, sold via redeem code. Every roll is a guaranteed win: at minimum **30 days of access**, with a disclosed chance (**20% by default**, server-configurable) of a **Lifetime Pass**.
-- **30 Day Pass** — $4.99 / 30 days, sold **off-platform by card** via the Squarespace store (`BREAKBPM_STORE_URL`); redeem code emailed within 24 hours. Card-only — not available via crypto.
+- **30 Day Pass** — $4.99 / 30 days, also available **off-platform by card** via the Squarespace store (`BREAKBPM_STORE_URL`); redeem code emailed within 24 hours. Same price as buying 30 days via crypto — choose whichever payment method you prefer.
 - **Redeem codes are the active paid path today** (Lucky Break codes, admin-minted comp codes, and card-store codes). Card checkout via **Stripe** and crypto checkout (Base USDC / native ETH) are fully built but gated behind env flags and currently off — cards by `BREAKBPM_CARD_PAYMENTS_ENABLED`, crypto by `BREAKBPM_CRYPTO_PAYMENTS_ENABLED` (plus `BREAKBPM_CRYPTO_RECEIVING_ADDRESS`). Legacy Stripe subscriptions can still be **cancelled** so existing subscribers can stop renewing.
 - **Free pass giveaway** — monthly stock pools on the landing page (`BREAKBPM_FREE_PASS_MONTHLY_CAP`, default 15 per reward type).
 - See [PERMISSIONS.md](./PERMISSIONS.md) for the full tier / entitlement / feature-access model.
