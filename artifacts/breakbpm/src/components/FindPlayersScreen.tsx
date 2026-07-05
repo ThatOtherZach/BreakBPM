@@ -795,9 +795,7 @@ export default function FindPlayersScreen({
                       <a
                         className="btn"
                         href="/for-venues"
-                      >
-                        Get Listed
-                      </a>
+                      >Get Verified</a>
                     </div>
                     {venuesQuery.isLoading ? (
                       <p className="fpp-hint">Loading…</p>
