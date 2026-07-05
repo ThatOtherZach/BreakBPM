@@ -26,6 +26,7 @@ Clerk credentials are configured via the Clerk integration; the frontend reads a
 | `BREAKBPM_DAY_PASS_MAX_DAYS` | `365` | Longest purchasable run (days) |
 | `BREAKBPM_INVITE_TRIAL_HOURS` | `24` | Free trial length (hours) for new users via invite links; min 1. Shipped to the client as `InviteCodeResult.trialLabel` (e.g. "24-hour") so AccountScreen invite copy never drifts |
 | `BREAKBPM_FREE_PASS_MONTHLY_CAP` | `15` | Per-reward monthly stock for the landing-page giveaway |
+| `BREAKBPM_MEETUP_SCENE_RADIUS_KM` | `100` | Outer "nearest scene" radius (km) for the meetup card's city-leaderboard link when no hall/city resolves within the normal 300 m / 50 km caps; min 1. Beyond it the 📍 label stays plain text |
 
 ## Operations & Admin
 

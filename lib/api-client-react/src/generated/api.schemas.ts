@@ -1677,6 +1677,17 @@ export interface CityLeaderboardResult {
   city: TaggedCity;
 }
 
+/**
+ * @nullable
+ */
+export type FindPlayerPostLocationLink = {
+  kind: 'hall' | 'city';
+  label: string;
+  /** @nullable */
+  hallSlug?: string | null;
+  nearestScene: boolean;
+} | null;
+
 export interface FindPlayerPost {
   id: string;
   displayName: string;
@@ -1692,6 +1703,8 @@ export interface FindPlayerPost {
   isOwn: boolean;
   /** @nullable */
   locationLabel?: string | null;
+  /** @nullable */
+  locationLink?: FindPlayerPostLocationLink;
 }
 
 export interface FindPlayerPostsResult {

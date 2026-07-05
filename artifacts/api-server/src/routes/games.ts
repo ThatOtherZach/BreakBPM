@@ -61,6 +61,7 @@ import { ensureVenueSlug } from "../lib/venueSlugStore";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
 import { isAdminEmail } from "../lib/config";
 import { haversineMeters } from "../lib/geocode";
+import { HALL_TAG_RADIUS_METERS, CITY_TAG_RADIUS_METERS } from "../lib/hallLink";
 import {
   resolveUserProfileBackground,
   resolveUserEffectiveTheme,
@@ -495,16 +496,8 @@ function toHistoryEntry(
   };
 }
 
-/** Fixed proximity cap (metres) for "Add to Hall": a game can only be tagged to
- * a Verified Hall the host was physically at. Server-authoritative — the
- * client's reported distance is never trusted. */
-const HALL_TAG_RADIUS_METERS = 300;
-
-/** Wider metro cap (metres) for the "Tag City" fallback: when no Verified Hall
- * is within {@link HALL_TAG_RADIUS_METERS}, a game can still be tagged to the
- * CITY of the nearest active Verified Hall whose locality is known, as long as
- * that hall is within this radius. Server-authoritative, same as the hall cap. */
-const CITY_TAG_RADIUS_METERS = 50_000;
+// Hall/city proximity caps live in ../lib/hallLink (shared with the Find
+// Players meetup-board linking, which reuses the exact same semantics).
 
 /** Shape a venue row into the compact hall identity the hall endpoints return.
  * `slug` is included when present so cards can link by the readable URL; null

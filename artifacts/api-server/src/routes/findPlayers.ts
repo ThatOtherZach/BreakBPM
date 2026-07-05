@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, asc, count, eq, gte, isNull, lt, sql } from "drizzle-orm";
-import { db, findPlayerPostsTable, usersTable } from "@workspace/db";
+import { db, findPlayerPostsTable, usersTable, venuesTable } from "@workspace/db";
 import {
   ListFindPlayerPostsQueryParams,
   ListFindPlayerPostsResponse,
@@ -12,6 +12,12 @@ import {
 import { getOrCreateUser } from "../lib/auth";
 import { computeEntitlement } from "../lib/entitlement";
 import { newId } from "../lib/ids";
+import {
+  matchHallForPoint,
+  resolveMeetupLocationLink,
+  type LinkableVenue,
+  type MeetupLocationLink,
+} from "../lib/hallLink";
 
 const router: IRouter = Router();
 
@@ -80,6 +86,7 @@ function toPostResponse(
   screenName: string,
   callerUserId: string,
   canSeeExact: boolean,
+  locationLink: MeetupLocationLink | null,
 ) {
   const cancelled = row.cancelledAt != null;
   const isOwn = row.userId === callerUserId;
@@ -94,10 +101,64 @@ function toPostResponse(
     latitude: showExact ? row.latitude : null,
     longitude: showExact ? row.longitude : null,
     locationLabel: cancelled ? null : (row.locationLabel ?? null),
+    // Leaderboard link for the 📍 label — hall/city identity only, never
+    // coordinates, so it's safe for redacted (coarse-location) viewers too.
+    // Cancelled posts hide it along with the rest of the place data.
+    locationLink: cancelled ? null : locationLink,
     scheduledAt: cancelled ? null : row.scheduledAt,
     cancelled,
     isOwn,
   };
+}
+
+/**
+ * Load every active Verified Hall in the compact shape the hall/city link
+ * resolver needs. One query per request — the venue directory is small.
+ */
+async function loadActiveVenues(): Promise<LinkableVenue[]> {
+  return db
+    .select({
+      id: venuesTable.id,
+      name: venuesTable.name,
+      slug: venuesTable.slug,
+      locality: venuesTable.locality,
+      latitude: venuesTable.latitude,
+      longitude: venuesTable.longitude,
+    })
+    .from(venuesTable)
+    .where(eq(venuesTable.active, true));
+}
+
+/**
+ * Self-heal the persisted hall auto-link on rows created before the feature
+ * existed (hallLinkResolvedAt IS NULL): compute the 300 m hall match from the
+ * post's true coordinates and persist it, mutating `row` in place so the
+ * current response already reflects it. Guarded on hallLinkResolvedAt IS NULL
+ * so a concurrent request can't double-write. Never throws — a failed heal
+ * just leaves the row for the next read.
+ */
+async function healHallLinks(rows: PostRow[], venues: LinkableVenue[], now: Date): Promise<void> {
+  const stale = rows.filter((r) => r.hallLinkResolvedAt == null);
+  for (const row of stale) {
+    const hall = matchHallForPoint(row.latitude, row.longitude, venues);
+    try {
+      await db
+        .update(findPlayerPostsTable)
+        .set({ venueId: hall?.id ?? null, hallLinkResolvedAt: now })
+        .where(
+          and(
+            eq(findPlayerPostsTable.id, row.id),
+            isNull(findPlayerPostsTable.hallLinkResolvedAt),
+          ),
+        );
+      row.venueId = hall?.id ?? null;
+      row.hallLinkResolvedAt = now;
+    } catch {
+      // Best-effort: the unhealed row still gets a correct link this response
+      // via the in-memory match below; persistence retries on the next read.
+      row.venueId = hall?.id ?? null;
+    }
+  }
 }
 
 /** Start of the UTC calendar day containing `d` (00:00:00.000Z). */
@@ -213,6 +274,11 @@ router.get("/find-players/posts", async (req, res): Promise<void> => {
 
   const activePostCount = await countActivePosts(user.id, now);
 
+  // Hall/city leaderboard links for the 📍 labels. One venue query serves the
+  // whole page; legacy rows missing a persisted hall match self-heal here.
+  const venues = rows.length > 0 ? await loadActiveVenues() : [];
+  await healHallLinks(rows.map((r) => r.post), venues, now);
+
   res.json(
     ListFindPlayerPostsResponse.parse({
       signedIn: true,
@@ -220,7 +286,15 @@ router.get("/find-players/posts", async (req, res): Promise<void> => {
       preciseLocationsVisible: canSeeExact,
       activePostCount,
       maxActivePosts: MAX_ACTIVE_POSTS,
-      posts: rows.map((r) => toPostResponse(r.post, r.screenName, user.id, canSeeExact)),
+      posts: rows.map((r) =>
+        toPostResponse(
+          r.post,
+          r.screenName,
+          user.id,
+          canSeeExact,
+          resolveMeetupLocationLink(r.post.latitude, r.post.longitude, r.post.venueId, venues),
+        ),
+      ),
       page: all ? 1 : page,
       totalPages,
       total,
@@ -271,8 +345,14 @@ router.post("/find-players/posts", async (req, res): Promise<void> => {
   await purgeExpiredPosts(now);
 
   // Geocode outside the transaction — Nominatim is a network call and we don't
-  // want to hold a DB lock while it's in flight. Failure is non-fatal.
-  const locationLabel = await reverseGeocode(latitude, longitude);
+  // want to hold a DB lock while it's in flight. Failure is non-fatal. The
+  // hall auto-link is matched here too, from the post's TRUE coordinates
+  // (server-authoritative, before any privacy redaction).
+  const [locationLabel, venues] = await Promise.all([
+    reverseGeocode(latitude, longitude),
+    loadActiveVenues(),
+  ]);
+  const matchedHall = matchHallForPoint(latitude, longitude, venues);
 
   const scheduledDateUtc = scheduledAt.toISOString().slice(0, 10);
 
@@ -318,6 +398,8 @@ router.post("/find-players/posts", async (req, res): Promise<void> => {
           latitude,
           longitude,
           locationLabel,
+          venueId: matchedHall?.id ?? null,
+          hallLinkResolvedAt: now,
           tableNumber,
           scheduledAt,
           scheduledDateUtc,
@@ -326,11 +408,20 @@ router.post("/find-players/posts", async (req, res): Promise<void> => {
       return row;
     });
 
-    req.log.info({ userId: user.id, postId: created.id }, "Find Players post created");
+    req.log.info(
+      { userId: user.id, postId: created.id, venueId: matchedHall?.id ?? null },
+      "Find Players post created",
+    );
     res.json(
       CreateFindPlayerPostResponse.parse({
         success: true,
-        post: toPostResponse(created, user.screenName, user.id, true),
+        post: toPostResponse(
+          created,
+          user.screenName,
+          user.id,
+          true,
+          resolveMeetupLocationLink(latitude, longitude, created.venueId, venues),
+        ),
       }),
     );
   } catch (err) {
@@ -386,7 +477,8 @@ router.post("/find-players/posts/cancel", async (req, res): Promise<void> => {
   res.json(
     CancelFindPlayerPostResponse.parse({
       success: true,
-      post: toPostResponse(updated, user.screenName, user.id, true),
+      // Cancelled posts hide all place data, so no link is resolved.
+      post: toPostResponse(updated, user.screenName, user.id, true, null),
     }),
   );
 });

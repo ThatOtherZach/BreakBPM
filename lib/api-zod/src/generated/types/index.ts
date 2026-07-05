@@ -77,6 +77,7 @@ export * from './entitlement';
 export * from './entitlementTier';
 export * from './findPlayerPost';
 export * from './findPlayerPostInput';
+export * from './findPlayerPostLocationLink';
 export * from './findPlayerPostsResult';
 export * from './freePassClaimResult';
 export * from './freePassClaimResultReason';

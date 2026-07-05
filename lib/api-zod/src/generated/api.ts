@@ -1438,7 +1438,13 @@ export const ListFindPlayerPostsResponse = zod.object({
   "scheduledAt": zod.coerce.date().nullable(),
   "cancelled": zod.boolean(),
   "isOwn": zod.boolean(),
-  "locationLabel": zod.string().nullish()
+  "locationLabel": zod.string().nullish(),
+  "locationLink": zod.object({
+  "kind": zod.enum(['hall', 'city']),
+  "label": zod.string(),
+  "hallSlug": zod.string().nullish(),
+  "nearestScene": zod.boolean()
+}).nullish()
 })),
   "page": zod.number(),
   "totalPages": zod.number(),
@@ -1482,7 +1488,13 @@ export const CreateFindPlayerPostResponse = zod.object({
   "scheduledAt": zod.coerce.date().nullable(),
   "cancelled": zod.boolean(),
   "isOwn": zod.boolean(),
-  "locationLabel": zod.string().nullish()
+  "locationLabel": zod.string().nullish(),
+  "locationLink": zod.object({
+  "kind": zod.enum(['hall', 'city']),
+  "label": zod.string(),
+  "hallSlug": zod.string().nullish(),
+  "nearestScene": zod.boolean()
+}).nullish()
 }).optional()
 })
 
@@ -1509,7 +1521,13 @@ export const CancelFindPlayerPostResponse = zod.object({
   "scheduledAt": zod.coerce.date().nullable(),
   "cancelled": zod.boolean(),
   "isOwn": zod.boolean(),
-  "locationLabel": zod.string().nullish()
+  "locationLabel": zod.string().nullish(),
+  "locationLink": zod.object({
+  "kind": zod.enum(['hall', 'city']),
+  "label": zod.string(),
+  "hallSlug": zod.string().nullish(),
+  "nearestScene": zod.boolean()
+}).nullish()
 }).optional()
 })
 

@@ -281,6 +281,22 @@ export function inviteTrialLabel(): string {
   return `${inviteTrialHours()}-hour`;
 }
 
+/** Default outer "nearest scene" radius (km) for meetup-card city links. */
+export const MEETUP_SCENE_RADIUS_KM_DEFAULT = 100;
+
+/**
+ * Outer cap (in km) for the meetup card's "nearest scene" city-leaderboard
+ * fallback: when no Verified Hall city resolves within the normal 50 km city
+ * radius, the nearest hall's city within THIS radius is linked with a clear
+ * "nearest scene" label instead. Beyond it the 📍 label stays plain text.
+ * Read from `BREAKBPM_MEETUP_SCENE_RADIUS_KM` fresh on every call; blank or
+ * invalid values log a warning and fall back to the default. Restart the API
+ * server after changing.
+ */
+export function meetupSceneRadiusKm(): number {
+  return envInt("BREAKBPM_MEETUP_SCENE_RADIUS_KM", MEETUP_SCENE_RADIUS_KM_DEFAULT, 1);
+}
+
 /** Default splash QR target when no promo override is configured. */
 export const DEFAULT_PROMO_QR_URL = "https://breakbpm.com";
 

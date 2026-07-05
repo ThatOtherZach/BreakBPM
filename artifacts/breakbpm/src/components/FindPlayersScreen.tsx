@@ -1011,7 +1011,9 @@ function PostCard({
   preciseLocationsVisible: boolean;
   onUpsell: () => void;
 }) {
+  const [, setLocation] = useLocation();
   const cancelled = post.cancelled;
+  const link = post.locationLink ?? null;
   const chipClass =
     rank === 8 ? "hud-chip-eight" : SOLIDS.includes(rank) ? "hud-chip-solid" : "hud-chip-stripe";
   return (
@@ -1037,8 +1039,42 @@ function PostCard({
       {!cancelled && post.scheduledAt && (
         <div className="fpp-card-when">{formatSchedule(new Date(post.scheduledAt))}</div>
       )}
-      {!cancelled && post.locationLabel && (
-        <div className="fpp-card-loc">📍 {post.locationLabel}</div>
+      {/* 📍 location: hall-matched posts show the Verified Hall's name linking
+          to its leaderboard; otherwise the city label links to the matching
+          city leaderboard ("Nearest scene:" prefix when it's the outer
+          fallback). No resolvable board → plain text, never a dead link. */}
+      {!cancelled && (link || post.locationLabel) && (
+        <div className="fpp-card-loc">
+          📍{" "}
+          {link ? (
+            <>
+              {link.nearestScene && <span>Nearest scene: </span>}
+              <span
+                style={{
+                  cursor: "pointer",
+                  textDecoration: "underline dotted",
+                  textUnderlineOffset: 2,
+                }}
+                title={
+                  link.kind === "hall"
+                    ? `View ${link.label} leaderboard`
+                    : `View ${link.label} city leaderboard`
+                }
+                onClick={() =>
+                  setLocation(
+                    link.kind === "hall"
+                      ? `/leaderboard/hall/${encodeURIComponent(link.hallSlug ?? "")}`
+                      : `/leaderboard/city/${encodeURIComponent(link.label)}`,
+                  )
+                }
+              >
+                {link.label}
+              </span>
+            </>
+          ) : (
+            post.locationLabel
+          )}
+        </div>
       )}
       {!cancelled && (
         <div className="fpp-card-actions">

@@ -5,6 +5,7 @@
  * BreakBPM API — accounts, passes, and game persistence
  * OpenAPI spec version: 0.1.0
  */
+import type { FindPlayerPostLocationLink } from './findPlayerPostLocationLink';
 
 export interface FindPlayerPost {
   id: string;
@@ -21,4 +22,6 @@ export interface FindPlayerPost {
   isOwn: boolean;
   /** @nullable */
   locationLabel?: string | null;
+  /** @nullable */
+  locationLink?: FindPlayerPostLocationLink;
 }

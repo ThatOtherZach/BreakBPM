@@ -11,6 +11,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
+import { venuesTable } from "./venues";
 
 /**
  * "Find Players" meetup board posts. Each row is a paid user's invitation to
@@ -46,6 +47,24 @@ export const findPlayerPostsTable = pgTable(
     scheduledDateUtc: text("scheduled_date_utc").notNull(),
     /** Human-readable reverse-geocoded label e.g. "Los Angeles, United States". */
     locationLabel: text("location_label"),
+    /**
+     * Auto-linked Verified Hall: set at creation when the pin falls within the
+     * hall-tag radius (300 m) of an active verified venue, resolved lazily on
+     * the read path for rows created before the feature existed (see
+     * `hallLinkResolvedAt`). The 📍 label then links to that hall's
+     * leaderboard. Null = no hall that close (the card falls back to a city
+     * leaderboard link, computed at read time from the nearest hall's city).
+     */
+    venueId: text("venue_id").references(() => venuesTable.id, {
+      onDelete: "set null",
+    }),
+    /**
+     * When the hall auto-link was last resolved. Null on legacy rows created
+     * before auto-linking existed — the list read path self-heals those by
+     * computing + persisting the match on first sight (one-time backfills
+     * don't reach production automatically).
+     */
+    hallLinkResolvedAt: timestamp("hall_link_resolved_at", { withTimezone: true }),
     /** Null while active. Set when the creator cancels. */
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })

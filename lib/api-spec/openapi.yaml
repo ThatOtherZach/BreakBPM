@@ -3290,6 +3290,27 @@ components:
         # Reverse-geocoded human label e.g. "Los Angeles, United States".
         # Null for cancelled posts (place hidden) or if geocoding failed.
         locationLabel: { type: ["string", "null"] }
+        # Resolved leaderboard link for the 📍 label, server-computed from the
+        # post's TRUE coordinates (never leaks them). Hall-matched posts (pin
+        # within 300 m of an active Verified Hall) carry the hall's name+slug;
+        # otherwise the nearest verified hall's city within the 50 km city
+        # radius; otherwise that city within the wider capped "scene" radius
+        # with nearestScene=true. Null when nothing resolves or the post is
+        # cancelled — the label stays plain, non-clickable text.
+        locationLink:
+          type: ["object", "null"]
+          required: [kind, label, nearestScene]
+          properties:
+            kind: { type: string, enum: [hall, city] }
+            # Hall name (kind=hall) or the city locality verbatim (kind=city,
+            # always matches a real City Leaderboard key).
+            label: { type: string }
+            # Slug (or legacy id) for /leaderboard/hall/:slug. Null for city links.
+            hallSlug: { type: ["string", "null"] }
+            # True when the city link is the OUTER "nearest scene" fallback —
+            # beyond the meetup's own city radius — so the UI must label it as
+            # the nearest scene rather than the meetup's own city.
+            nearestScene: { type: boolean }
 
     FindPlayerPostsResult:
       type: object
