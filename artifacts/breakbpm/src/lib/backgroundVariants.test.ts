@@ -48,6 +48,23 @@ describe("THEME_FELT distinctness", () => {
     const fades = THEME_KEYS.map((k) => THEME_FELT[themeColorOf(k)].feltFade);
     expect(new Set(fades).size).toBe(4);
   });
+
+  it("all four themes map to distinct feltLit colors", () => {
+    const lits = THEME_KEYS.map((k) => THEME_FELT[themeColorOf(k)].feltLit);
+    expect(new Set(lits).size).toBe(4);
+  });
+
+  it("feltLit is brighter than the base felt for every theme", () => {
+    // The selected option must read as a "lit" version of the same felt.
+    const luma = (hex: string) => {
+      const n = parseInt(hex.slice(1), 16);
+      return ((n >> 16) & 0xff) + ((n >> 8) & 0xff) + (n & 0xff);
+    };
+    for (const k of THEME_KEYS) {
+      const t = THEME_FELT[themeColorOf(k)];
+      expect(luma(t.feltLit)).toBeGreaterThan(luma(t.felt));
+    }
+  });
 });
 
 describe("THEME_ACCENT distinctness", () => {

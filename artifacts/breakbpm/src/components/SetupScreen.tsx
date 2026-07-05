@@ -22,6 +22,7 @@ import { useAuth } from '../lib/authClient';
 import { APP_VERSION } from '../lib/version';
 import { pickTagline } from '../lib/taglines';
 import { usePageMeta, PAGE_META } from '../lib/pageMeta';
+import { THEME_FELT, themeColorOf } from '../lib/backgroundVariants';
 
 const tagline = pickTagline();
 
@@ -138,6 +139,17 @@ export default function SetupScreen({ onStart, onResume, onManual, onLegal, onAc
   // to link them (no join code). Used to surface the inline hint; the server
   // re-validates eligibility, so this is presentation only.
   const canMention = me.data?.entitlement?.tier === 'pass';
+  // The Format options wear a pool-table felt skin that follows the signed-in
+  // player's profile theme (same resolution as StatsScreen: auto/rainbow fall
+  // through to the auto-earned background; anything else maps straight to its
+  // felt; unrecognized/none → green default).
+  const feltAccount = me.data?.account;
+  const feltRawTheme = feltAccount?.profileTheme ?? 'none';
+  const feltTheme =
+    feltRawTheme === 'auto' || feltRawTheme === 'rainbow'
+      ? (feltAccount?.profileBackground ?? 'none')
+      : feltRawTheme;
+  const felt = THEME_FELT[themeColorOf(feltTheme)];
   const { user, isAuthenticated } = useAuth();
   // Signed-in users always play as themselves in slot 1 — their screen
   // name is prefilled and the input is locked so they can't masquerade
@@ -933,7 +945,12 @@ export default function SetupScreen({ onStart, onResume, onManual, onLegal, onAc
                 marginTop: 10,
                 padding: '6px 10px',
                 background: 'var(--silver)',
-              }}
+                // Tint the felt-skinned format options (.rule-set-opt) to the
+                // signed-in player's profile theme; green is the default.
+                '--felt-color': felt.felt,
+                '--felt-shadow': felt.feltShadow,
+                '--felt-lit': felt.feltLit,
+              } as React.CSSProperties}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, flex: 1 }}>
