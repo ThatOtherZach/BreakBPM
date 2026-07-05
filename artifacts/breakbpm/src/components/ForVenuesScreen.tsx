@@ -92,8 +92,8 @@ function AllHallsMap() {
         </MapContainer>
       </div>
       <p className="lp-map-caption">
-        {venues.length} Verified Hall{venues.length === 1 ? "" : "s"} on the map — yours could be
-        next. <span className="fpp-attribution">Map data © OpenStreetMap contributors</span>
+        {venues.length} Verified Pool Hall{venues.length === 1 ? "" : "s"}
+        <span className="fpp-attribution">Map data © OpenStreetMap contributors</span>
       </p>
     </div>
   );
