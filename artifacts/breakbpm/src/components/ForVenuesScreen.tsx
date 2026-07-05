@@ -51,6 +51,7 @@ function FitToVenues({ positions }: { positions: [number, number][] }) {
 /** Live map of every Verified Hall, so a prospective venue owner can see the
  *  network they'd be joining (and that their own hall would show up starred). */
 function AllHallsMap() {
+  const [, setLocation] = useLocation();
   const { data, isLoading } = useListVenues(
     { all: true },
     { query: { queryKey: getListVenuesQueryKey({ all: true }) } },
@@ -76,6 +77,14 @@ function AllHallsMap() {
                 <div className="fpp-popup">
                   <div className="fpp-popup-name">🎱 {v.name}</div>
                   {v.locality && <div className="fpp-popup-coords">🏙️ {v.locality}</div>}
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ marginTop: 6, width: "100%" }}
+                    onClick={() => setLocation(`/leaderboard/hall/${v.slug ?? v.id}`)}
+                  >
+                    🏆 Leaderboard
+                  </button>
                 </div>
               </Popup>
             </Marker>
