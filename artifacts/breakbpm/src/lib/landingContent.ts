@@ -181,7 +181,7 @@ export const FOR_VENUES_INTRO =
 export const FOR_VENUES_SHOWCASE: ShowcaseItem[] = [
   {
     title: "Your Own Local Leaderboard",
-    body: "Every verified hall gets its own Local Leaderboard. Regulars battle for the top spot on your tables, and a walk-in just scans the code to get on the board. It's league-night standings that run themselves.",
+    body: "Every verified hall gets its own Local Leaderboard — no hardware, no setup. Regulars battle for the top spot on your tables, and a walk-in just scans the code to get on the board. It's league-night standings that run themselves.",
     img: "/hall-card-example.png",
     imgAlt: "A verified hall card with its own Local Leaderboard button",
     liveHall: true,
@@ -192,7 +192,7 @@ export const FOR_VENUES_SHOWCASE: ShowcaseItem[] = [
   },
   {
     title: "The Scoreboard They'll Actually Use",
-    body: "That dusty bead string over the table? This is the version your players keep on their phones. No hardware, no setup, no cost to you.",
+    body: "That dusty bead string over the table? This is the version your players keep on their phones. No cost to you.",
   },
 ];
 
