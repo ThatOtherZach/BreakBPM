@@ -62,7 +62,7 @@ function AllHallsMap() {
   if (venues.length === 0) return null;
 
   return (
-    <div className="lp-map-wrap">
+    <div className="lp-map-wrap mt-[0px] mb-[0px]">
       <div className="fpp-map lp-map">
         <MapContainer center={[20, 0]} zoom={2} style={{ height: "100%", width: "100%" }}>
           <TileLayer
