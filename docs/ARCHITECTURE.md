@@ -76,6 +76,10 @@ Purchasing is crypto (when enabled) + redeem codes. `cardPaymentsEnabled()` read
 
 `luckyBreak.ts` is pure: SHA-256(global 30-day shot entropy + redemption id) → `[0,1)` → Lifetime if below disclosed probability, else 30-day floor. Odds are server-configured and disclosed via `/passes/plans`. Fairness copy must stay in lockstep across PassesScreen, LuckyBreakReveal, README, and ABOUT.md.
 
+### Landing free-pass giveaway (one atomic claim)
+
+`POST /passes/claim` mints + redeems a single-use code in one transaction. The reward is drawn server-side from two monthly pools (`free_pass_claim_pools`, sized by `BREAKBPM_FREE_PASS_MONTHLY_CAP`) via an oversell-proof guarded `UPDATE`. Three guards stop a double grant: the active-pass pre-check, the atomic pool decrement, and `UNIQUE(user_id)` on `free_pass_claims`. `claim`-issued redemptions book as $0 comps in the sales ledger — even when the drawn reward is a Lucky Break.
+
 ### Sales ledger (CAD, FX frozen at sale time)
 
 Every completed sale appends a `sale_events` row. Pricing is USD; the ledger reports CAD for Canadian tax. Each row freezes a pre-transaction Bank of Canada USD→CAD rate. Fetch the rate pre-tx — never inside the transaction.
@@ -112,9 +116,17 @@ A paid host types `@username` in a non-host slot. On game start the server mints
 
 ### SEO prerender pipeline
 
-Build-time static HTML + JSON-LD for public routes via `vite.config.ts` `closeBundle`. Homepage body is written last with a guard script that strips injected content on non-`/` paths (catch-all rewrite safety). Hall pages are generated from a build-time Postgres query — skipped gracefully when `DATABASE_URL` is unavailable. Dynamic hall pages are served in the live sitemap at `/api/sitemap/venues.xml`.
+Build-time static HTML + JSON-LD for public routes via `vite.config.ts` `closeBundle`. Shared SEO copy lives in `src/lib/landingContent.ts`, imported by BOTH `vite.config.ts` (prerender + JSON-LD) and the React screens, so crawled HTML, on-page text, and JSON-LD stay in lockstep (also wired into `pageMeta.ts`, `sitemap.xml`, `llms.txt`, `Navbar.tsx`). Homepage body is written last with a guard script that strips injected content on non-`/` paths (catch-all rewrite safety). Hall pages are generated from a build-time Postgres query (raw `pg`, not `@workspace/db`) — skipped gracefully when `DATABASE_URL` is unavailable, so newly-minted halls only get a static page on the next deploy. Dynamic hall pages are served in the live sitemap at `/api/sitemap/venues.xml`, referenced from the static `<sitemapindex>` in `sitemap.xml`.
 
 **Do not import `@workspace/*` packages into `vite.config.ts`** — the config loader cannot resolve them. Duplicate small constants locally instead.
+
+### About/Manual labels are decoupled from URLs
+
+The user-facing *label* "About" links to the marketing page (`/pool-stats-app`, keeping its SEO); the *label* "Manual" links to the guide (`/about`, the ABOUT.md page). URLs/canonicals/sitemap/JSON-LD are unchanged — only link text and the guide's title/meta wording differ. The Navbar nav-handler prop is `onManual` (→ `/about`); the "About" menu link navigates to `/pool-stats-app` directly. Keep the label→URL mapping in lockstep across Navbar (menu + hidden crawler anchors), prerender navs in `vite.config.ts`, `llms.txt`, `LegalScreen`, and `PoolStatsAppScreen`'s button.
+
+### OBS overlay
+
+`/watch/:name?obs=1` renders the live HUD as a chrome-free, transparent overlay (OBS Browser Source) — reuses spectator resolution + polling, no new route. Collapses to a themed `:(` face when there's nothing to show. Flags: `&log=1` (compact shot log), `&scale=<n>` (0.2–5).
 
 ### Invite & redeem intent handoff
 

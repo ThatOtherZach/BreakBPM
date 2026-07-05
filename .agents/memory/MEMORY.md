@@ -1,3 +1,4 @@
+- [replit.md is a lean index](replit-md-docs-split.md) — detailed docs live in docs/ (ENV/ARCHITECTURE/PRODUCT/GOTCHAS); add detail there, only one-line rules in replit.md.
 - [API server has no hot reload](api-server-no-hot-reload.md) — editing api-server source does nothing until you restart its workflow; stale server silently serves old responses.
 - [Codegen corrupts Vite HMR](codegen-corrupts-vite-hmr.md) — running API codegen while the dev server runs can break breakbpm HMR silently (stale code); restart the web workflow + hard-refresh.
 - [Visual editor color edits lose to CSS](visual-editor-color-overrides.md) — visual-editor `text-[...]` classes tie specificity with `.hud-*` rules and lose on source order; fix colors in index.css, not inline.

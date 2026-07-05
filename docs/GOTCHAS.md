@@ -40,6 +40,8 @@ Tribal knowledge distilled from development sessions. Each entry describes a foo
 
 ## Game Logic & State
 
+**`calculatePlayerBPM` returns `null` or `0`.** `null` = no pockets yet; `0` = sub-ms elapsed. The HUD and shot log handle null gracefully — keep it that way.
+
 **Team-assignment pre-pocket contract.** `shouldAssignTeams` runs **before** the pocketed ball is appended. 8-ball ruleSet timing depends on this ordering.
 
 **GameState rehydration paths.** A new `GameState` field must be added to `createInitialGameState`, encode/decode, App `?state=` restore, **and** `SetupScreen.handleResume` or it silently drops (rematch lost @mentions this way).
@@ -108,7 +110,7 @@ Tribal knowledge distilled from development sessions. Each entry describes a foo
 
 **DB auto-suspend.** No `setInterval`/cron touching the DB. Finalize stale games lazily on access; tier/idle-backoff polls.
 
-**Backfill rollout gap.** One-time backfills don't reach prod automatically. Ship lazy read-path self-heal + add to `scripts/post-merge.sh`.
+**Backfill rollout gap.** One-time backfills don't reach prod automatically. Ship lazy read-path self-heal + add to `scripts/post-merge.sh`. Note: a `GAME_SUMMARY_VERSION` bump *under-reports* (bulk readers skip old-version rows) rather than mis-averaging, until the one-time backfill reruns.
 
 **api-server deploy startup-probe.** Bind port fast (tiny HTTP bootstrap + esbuild splitting) or autoscale promote fails.
 
