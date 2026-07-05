@@ -190,10 +190,6 @@ export const FOR_VENUES_SHOWCASE: ShowcaseItem[] = [
     title: "Found by Local Players",
     body: "Your hall shows up as a starred pin on the map, points the in-app compass toward you for nearby players, and climbs the Most Popular Venues list as games rack up. Players hunting for a table find you.",
   },
-  {
-    title: "The Scoreboard They'll Actually Use",
-    body: "That dusty bead string over the table? This is the version your players keep on their phones. No cost to you.",
-  },
 ];
 
 export const FOR_VENUES_ASK_TITLE = "The Whole Deal";
