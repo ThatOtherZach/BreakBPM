@@ -1045,12 +1045,19 @@ function PostCard({
       {!cancelled && (
         <div className="fpp-card-actions">
           {post.latitude != null && post.longitude != null && (
-            <a
+            <button
+              type="button"
               className="btn"
-              href={`https://www.google.com/maps?q=${post.latitude},${post.longitude}`}
-              target="_blank"
-              rel="noreferrer"
-            >🗺️ Directions</a>
+              onClick={() =>
+                window.open(
+                  `https://www.google.com/maps?q=${post.latitude},${post.longitude}`,
+                  "_blank",
+                  "noreferrer",
+                )
+              }
+            >
+              🗺️ Directions
+            </button>
           )}
           {post.latitude == null && !preciseLocationsVisible && !post.isOwn && (
             <button className="btn fpp-upsell-btn" onClick={onUpsell}>
