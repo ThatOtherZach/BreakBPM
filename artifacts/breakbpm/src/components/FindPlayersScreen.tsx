@@ -747,13 +747,13 @@ export default function FindPlayersScreen({
                 </button>
                 <button
                   className={`btn fpp-toggle-btn${next30Only ? " btn-primary" : ""}`}
-                  onClick={() => { setNext30Only((v) => !v); setTodayOnly(false); }}
+                  onClick={() => { setNext30Only((v) => !v); setTodayOnly(false); setMapView(false); setCompassOpen(false); }}
                 >
                   🗓️ 30 Days
                 </button>
                 <button
                   className={`btn fpp-toggle-btn${todayOnly ? " btn-primary" : ""}`}
-                  onClick={() => { setTodayOnly((v) => !v); setNext30Only(false); }}
+                  onClick={() => { setTodayOnly((v) => !v); setNext30Only(false); setMapView(false); setCompassOpen(false); }}
                 >
                   📅 Today
                 </button>
