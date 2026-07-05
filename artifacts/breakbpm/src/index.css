@@ -126,6 +126,20 @@ html, #root {
   line-height: 1;
 }
 
+.navbar-home-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.navbar-home-btn:hover { background: rgba(255,255,255,0.15); }
+.navbar-home-btn:active { background: rgba(255,255,255,0.3); }
+
 .navbar-back-btn {
   background: none;
   border: none;

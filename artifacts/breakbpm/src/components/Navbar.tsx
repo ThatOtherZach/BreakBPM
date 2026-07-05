@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { SignedIn, SignedOut } from '../lib/authClient';
+import { SignedIn, SignedOut, useAuth } from '../lib/authClient';
 import { useGetMe } from '@workspace/api-client-react';
 
 interface NavbarProps {
@@ -17,12 +17,14 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
   const [open, setOpen] = useState(false);
   const me = useGetMe();
   const [location, setLocation] = useLocation();
+  const { logout } = useAuth();
 
   const tier = me.data?.entitlement?.tier;
   const screenName = me.data?.account?.screenName ?? null;
 
   // Hide the menu item for the page the user is already on.
   const at = (path: string) => location === path;
+  const isHome = at('/');
 
   const showHamburger = !!(onManual || onAccount || onStats || onFindPlayers || onLeaderboard || onSignIn);
 
@@ -38,6 +40,14 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
       </div>
       <div className="navbar">
         <div className="navbar-left">
+          <button
+            className="navbar-home-btn"
+            onClick={() => (isHome ? logout() : setLocation('/'))}
+            aria-label={isHome ? 'Log out' : 'Home'}
+            title={isHome ? 'Log out' : 'Home'}
+          >
+            {isHome ? '🚪' : '🏠'}
+          </button>
           {onBack ? (
             <button className="navbar-back-btn" onClick={onBack}>← Back</button>
           ) : (
