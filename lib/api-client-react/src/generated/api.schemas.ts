@@ -10,6 +10,9 @@ export interface HealthStatus {
 }
 
 export interface AppConfig {
+  /** Total count of registered accounts (users table), shown in the status bar as a lightweight social-proof signal. Not a real-time "currently active" count.
+   */
+  playersOnline: number;
   /** URL encoded into the splash-art QR easter egg. Configurable via the BREAKBPM_PROMO_QR_URL env var so promo links can be swapped at runtime; defaults to the marketing site.
    */
   qrUrl: string;

@@ -1672,8 +1672,14 @@ components:
 
     AppConfig:
       type: object
-      required: [qrUrl, storeUrl, bannedWords]
+      required: [qrUrl, storeUrl, bannedWords, playersOnline]
       properties:
+        playersOnline:
+          type: integer
+          description: >
+            Total count of registered accounts (users table), shown in the
+            status bar as a lightweight social-proof signal. Not a real-time
+            "currently active" count.
         qrUrl:
           type: string
           description: >

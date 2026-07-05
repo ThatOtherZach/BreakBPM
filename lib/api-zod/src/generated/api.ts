@@ -22,6 +22,7 @@ export const HealthCheckResponse = zod.object({
  * @summary Public runtime app config (no auth)
  */
 export const GetAppConfigResponse = zod.object({
+  "playersOnline": zod.number().describe('Total count of registered accounts (users table), shown in the status bar as a lightweight social-proof signal. Not a real-time \"currently active\" count.\n'),
   "qrUrl": zod.string().describe('URL encoded into the splash-art QR easter egg. Configurable via the BREAKBPM_PROMO_QR_URL env var so promo links can be swapped at runtime; defaults to the marketing site.\n'),
   "storeUrl": zod.string().describe('Off-platform card store (Squarespace) URL where buyers can purchase the 30 Day Pass by card; the owner then emails a redeem code. Configurable via the BREAKBPM_STORE_URL env var; empty string when unset, in which case the client hides the card-store callout.\n'),
   "bannedWords": zod.array(zod.string()).describe('Owner-curated blocklist (BREAKBPM_BANNED_WORDS), lowercased. The client uses it to emoji-swap blocked words in in-game player names at the input layer so the cleaned name propagates consistently into the shot log. Empty when unset (no filtering). Server surfaces (ad copy, screen names) apply their own authoritative filtering separately.\n')

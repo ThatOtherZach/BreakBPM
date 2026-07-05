@@ -1209,7 +1209,12 @@ export default function SetupScreen({ onStart, onResume, onManual, onLegal, onAc
       </div>
       {/* Status bar */}
       <div className="statusbar">
-        <div className="statusbar-item" style={{ flex: 1 }}>READY</div>
+        <div className="statusbar-item" style={{ flex: 1 }}>
+          READY
+          {typeof appConfig.data?.playersOnline === "number" && (
+            <> • {appConfig.data.playersOnline} Players Online</>
+          )}
+        </div>
         <a href="/legal" className="statusbar-item statusbar-link" onClick={(e) => { e.preventDefault(); onLegal(); }}>LEGAL</a>
         <div className="statusbar-item"><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v{APP_VERSION}</a></div>
       </div>
