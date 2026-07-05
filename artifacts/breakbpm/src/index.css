@@ -2701,8 +2701,9 @@ html, #root {
   pointer-events: none;
 }
 .fpp-attribution {
+  display: block;
   font-size: 10px;
-  color: #b9e6c4;
+  color: #1b4d8f;
   text-align: center;
   margin: 6px 0 0;
 }
