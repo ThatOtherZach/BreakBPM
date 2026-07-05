@@ -22,7 +22,7 @@ import {
 const router: IRouter = Router();
 
 /** Posts per page in the list view. */
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 15;
 /** Hard cap on a user's simultaneously-active (non-cancelled) posts. */
 const MAX_ACTIVE_POSTS = 5;
 
