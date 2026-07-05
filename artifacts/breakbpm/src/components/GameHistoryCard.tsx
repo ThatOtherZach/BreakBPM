@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import type { GameHistoryEntry } from "@workspace/api-client-react";
 import SharkIcon from "./SharkIcon";
@@ -165,6 +166,72 @@ function ResultBadge({ outcome, chaosMode }: { outcome: string; chaosMode?: stri
 }
 
 /**
+ * Renders "vs. {opponent}" — a clickable @profile link when the opponent is a
+ * single registered account, plain text for guests/combined team strings.
+ * `wrap=false` is the compact inline placement (ellipsized, non-wrapping);
+ * `wrap=true` is the full-width own-row placement (wraps instead).
+ */
+function OpponentLine({
+  opponent,
+  opponentRegistered,
+  onNavigate,
+  wrap,
+}: {
+  opponent: string;
+  opponentRegistered: boolean;
+  onNavigate: () => void;
+  wrap: boolean;
+}) {
+  return (
+    <span
+      style={
+        wrap
+          ? {
+              display: "block",
+              whiteSpace: "normal",
+              wordBreak: "break-word",
+              color: "#cdeccd",
+              fontSize: 11,
+              lineHeight: 1.3,
+            }
+          : { display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }
+      }
+    >
+      <span
+        style={
+          wrap
+            ? undefined
+            : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }
+        }
+      >
+        {"vs. "}
+        {opponentRegistered ? (
+          <button
+            type="button"
+            onClick={onNavigate}
+            style={{
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              color: "inherit",
+              fontSize: "inherit",
+              fontFamily: "inherit",
+              lineHeight: "inherit",
+              textDecoration: "underline",
+            }}
+          >
+            @{opponent}
+          </button>
+        ) : (
+          opponent
+        )}
+      </span>
+    </span>
+  );
+}
+
+/**
  * One game's history row — mode, result/winner, BPM + accuracy hero, duration
  * and date, plus the visual shot-log of balls in pocket order. Shared between
  * the owner's account page and the public /watch/{name} profile so both stay
@@ -185,6 +252,15 @@ export default function GameHistoryCard({
 }) {
   const [, setLocation] = useLocation();
   const modeLabel = GAME_TYPE_LABEL[g.gameType] ?? g.gameType;
+  // Long opponent names (and multi-player "Alice & Bob & Charlie" strings)
+  // don't fit next to the WIN/LOSS badge. Rather than guessing from character
+  // count, measure the real available space (row width minus the badge) vs.
+  // the opponent text's natural (unwrapped) width via an invisible measurer,
+  // and move the text to its own full-width row below when it wouldn't fit.
+  const badgeRowRef = useRef<HTMLSpanElement>(null);
+  const badgeRef = useRef<HTMLSpanElement>(null);
+  const opponentMeasureRef = useRef<HTMLSpanElement>(null);
+  const [opponentOverflow, setOpponentOverflow] = useState(false);
   const hasBpm = g.bpm != null;
   const hasAcc = g.accuracy != null;
   // Tint the card's pool-table felt to THIS game's HOST theme (server-resolved
@@ -196,6 +272,25 @@ export default function GameHistoryCard({
   // An unfinished Shark game (DNF — forfeit / 60-min cap / inactivity sweep) has
   // no winner, so it shows no verdict at all (the ResultBadge already reads
   // "DNF") rather than falsely claiming the player "Beat the Shark".
+  useLayoutEffect(() => {
+    if (g.sharkMode || !g.opponent || hideOpponent) {
+      setOpponentOverflow(false);
+      return;
+    }
+    const rowEl = badgeRowRef.current;
+    const badgeEl = badgeRef.current;
+    const measureEl = opponentMeasureRef.current;
+    if (!rowEl || !badgeEl || !measureEl) return;
+    const ROW_GAP = 6;
+    const check = () => {
+      const available = rowEl.clientWidth - badgeEl.offsetWidth - ROW_GAP;
+      setOpponentOverflow(measureEl.scrollWidth > available);
+    };
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(rowEl);
+    return () => ro.disconnect();
+  }, [g.sharkMode, g.opponent, g.opponentRegistered, hideOpponent]);
   const sharkVerdict =
     g.winner === SHARK_PLAYER_NAME
       ? "Shark'd"
@@ -281,8 +376,13 @@ export default function GameHistoryCard({
         {/* Left: result + winner */}
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
           {actionSlot == null && titleLabel}
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#cdeccd", fontSize: 11 }}>
-            <ResultBadge outcome={g.outcome} chaosMode={g.chaosMode} />
+          <span
+            ref={badgeRowRef}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#cdeccd", fontSize: 11, minWidth: 0, width: "100%" }}
+          >
+            <span ref={badgeRef} style={{ flexShrink: 0, display: "inline-flex" }}>
+              <ResultBadge outcome={g.outcome} chaosMode={g.chaosMode} />
+            </span>
             {g.sharkMode ? (
               sharkVerdict ? (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
@@ -293,34 +393,48 @@ export default function GameHistoryCard({
                 </span>
               ) : null
             ) : g.opponent && !hideOpponent ? (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 3, minWidth: 0 }}>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <>
+                {/* Invisible measurer: always mounted (regardless of which
+                    placement is active) so overflow can be re-checked in
+                    both directions as the viewport resizes. Zero-sized with
+                    its own overflow:hidden box so it never affects layout,
+                    but scrollWidth still reports the text's true unwrapped
+                    width. */}
+                <span
+                  ref={opponentMeasureRef}
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    visibility: "hidden",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    width: 0,
+                    height: 0,
+                    pointerEvents: "none",
+                  }}
+                >
                   {"vs. "}
-                  {g.opponentRegistered ? (
-                    <button
-                      type="button"
-                      onClick={() => setLocation(`/watch/${encodeURIComponent(g.opponent!)}`)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        cursor: "pointer",
-                        color: "inherit",
-                        fontSize: "inherit",
-                        fontFamily: "inherit",
-                        lineHeight: "inherit",
-                        textDecoration: "underline",
-                      }}
-                    >
-                      @{g.opponent}
-                    </button>
-                  ) : (
-                    g.opponent
-                  )}
+                  {g.opponentRegistered ? `@${g.opponent}` : g.opponent}
                 </span>
-              </span>
+                {!opponentOverflow && (
+                  <OpponentLine
+                    opponent={g.opponent}
+                    opponentRegistered={!!g.opponentRegistered}
+                    onNavigate={() => setLocation(`/watch/${encodeURIComponent(g.opponent!)}`)}
+                    wrap={false}
+                  />
+                )}
+              </>
             ) : null}
           </span>
+          {!g.sharkMode && g.opponent && !hideOpponent && opponentOverflow && (
+            <OpponentLine
+              opponent={g.opponent}
+              opponentRegistered={!!g.opponentRegistered}
+              onNavigate={() => setLocation(`/watch/${encodeURIComponent(g.opponent!)}`)}
+              wrap
+            />
+          )}
           {(() => {
             // A finished game is tagged to a Verified Hall (venue) OR — when no
             // hall was in range — to a city locality. Render whichever applies
