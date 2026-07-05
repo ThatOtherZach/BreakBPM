@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { SignedIn, SignedOut, useAuth } from '../lib/authClient';
 import { useGetMe } from '@workspace/api-client-react';
+import { WinsTodayChip } from './WinsTodayChip';
 
 interface NavbarProps {
   onManual?: () => void;
@@ -45,7 +46,11 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
             <button className="navbar-back-btn" onClick={onBack}>← Back</button>
           ) : (
             <>
-              <img src="/eightball_nobg.png" alt="8-ball" className="navbar-icon-img" />
+              {isAuthenticated && me.data?.account ? (
+                <WinsTodayChip winsToday={me.data.account.winsToday ?? 0} />
+              ) : (
+                <img src="/eightball_nobg.png" alt="8-ball" className="navbar-icon-img" />
+              )}
               <span className="navbar-title">BreakBPM</span>
               {screenName && (
                 <span
