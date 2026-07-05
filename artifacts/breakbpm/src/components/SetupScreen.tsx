@@ -1212,7 +1212,7 @@ export default function SetupScreen({ onStart, onResume, onManual, onLegal, onAc
         <div className="statusbar-item" style={{ flex: 1 }}>
           READY
           {typeof appConfig.data?.playersOnline === "number" && (
-            <> • {appConfig.data.playersOnline} Players Online</>
+            <> • {appConfig.data.playersOnline} PLAYERS ONLINE</>
           )}
         </div>
         <a href="/legal" className="statusbar-item statusbar-link" onClick={(e) => { e.preventDefault(); onLegal(); }}>LEGAL</a>
