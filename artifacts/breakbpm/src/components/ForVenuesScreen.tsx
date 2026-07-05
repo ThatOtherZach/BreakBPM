@@ -273,7 +273,6 @@ export default function ForVenuesScreen({
             {/* ── What the venue gets ── */}
             {FOR_VENUES_SHOWCASE.map((item) => (
               <Fragment key={item.title}>
-                {item.title === "Found by Local Players" && <AllHallsMap />}
                 <section className="lp-feature">
                   <h2 className="lp-h2">{item.title}</h2>
                   <p>{item.body}</p>
