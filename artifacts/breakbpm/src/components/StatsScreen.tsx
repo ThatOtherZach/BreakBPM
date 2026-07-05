@@ -13,6 +13,7 @@ import {
 import type { GetStatsParams, StatsResult } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "./Navbar";
+import Footer from "./Footer";
 import { useAuth } from "../lib/authClient";
 import { SOLIDS } from "../lib/gameLogic";
 import StatsHero, { BALL_COLORS, fmtInt, fmtPct } from "./StatsHero";
@@ -26,6 +27,7 @@ interface Props {
   onSignIn: () => void;
   onPasses: () => void;
   onLeaderboard: () => void;
+  onLegal: () => void;
 }
 
 const WINDOW_LABEL: Record<string, string> = {
@@ -132,7 +134,7 @@ function SectionHeader({ emoji, title }: { emoji: string; title: string }) {
   );
 }
 
-export default function StatsScreen({ onBack, onManual, onAccount, onFindPlayers, onSignIn, onPasses, onLeaderboard }: Props) {
+export default function StatsScreen({ onBack, onManual, onAccount, onFindPlayers, onSignIn, onPasses, onLeaderboard, onLegal }: Props) {
   const qc = useQueryClient();
   const { isAuthenticated, user } = useAuth();
 
@@ -957,6 +959,7 @@ export default function StatsScreen({ onBack, onManual, onAccount, onFindPlayers
           </>
         )}
       </div>
+      <Footer onLegal={onLegal} />
     </div>
   );
 }

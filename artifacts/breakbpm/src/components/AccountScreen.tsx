@@ -43,6 +43,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "./Navbar";
+import Footer from "./Footer";
 import GameHistoryCard, { fmtDate } from "./GameHistoryCard";
 import LuckyBreakReveal from "./LuckyBreakReveal";
 import AdminSalesPanel from "./AdminSalesPanel";
@@ -65,6 +66,7 @@ interface Props {
   onStats: () => void;
   onLeaderboard: () => void;
   onSignIn: () => void;
+  onLegal: () => void;
 }
 
 /**
@@ -81,7 +83,7 @@ function fmtHoursUntil(target: Date | string | null): string | null {
   return `~${hours}h`;
 }
 
-export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayers, onStats, onLeaderboard, onSignIn }: Props) {
+export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayers, onStats, onLeaderboard, onSignIn, onLegal }: Props) {
   const { logout: signOut } = useAuth();
   const qc = useQueryClient();
   const [, setLocation] = useLocation();
@@ -293,6 +295,7 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
         <div className="app-body">
           <p style={{ fontFamily: "VT323", fontSize: 18 }}>Loading…</p>
         </div>
+        <Footer onLegal={onLegal} />
       </div>
     );
   }
@@ -315,6 +318,7 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
             </div>
           </div>
         </div>
+        <Footer onLegal={onLegal} />
       </div>
     );
   }
@@ -1661,6 +1665,7 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
         </div>
 
       </div>
+      <Footer onLegal={onLegal} />
       {revealState !== "idle" && (
         <LuckyBreakReveal
           phase={revealState === "rolling" ? "rolling" : "result"}

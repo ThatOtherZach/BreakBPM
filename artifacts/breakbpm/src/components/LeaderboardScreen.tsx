@@ -12,6 +12,7 @@ import {
 } from "@workspace/api-client-react";
 import type { LeaderboardRow, GetLeaderboardWindow, GetLeaderboardMode } from "@workspace/api-client-react";
 import Navbar from "./Navbar";
+import Footer from "./Footer";
 import { useAuth } from "../lib/authClient";
 import { usePageMeta, type PageMetaConfig } from "../lib/pageMeta";
 import { THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
@@ -213,6 +214,7 @@ interface Props {
   onFindPlayers: () => void;
   onStats: () => void;
   onSignIn: () => void;
+  onLegal: () => void;
   /**
    * When set, this is a per-hall ("Local") leaderboard scoped to a single
    * Verified Hall: the same ranking, but only counting games tagged to this
@@ -243,6 +245,7 @@ export default function LeaderboardScreen({
   onFindPlayers,
   onStats,
   onSignIn,
+  onLegal,
   venueId,
   cityLocality,
 }: Props) {
@@ -662,6 +665,7 @@ export default function LeaderboardScreen({
           </div>
         )}
       </div>
+      <Footer onLegal={onLegal} />
     </div>
   );
 }

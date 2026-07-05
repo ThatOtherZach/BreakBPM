@@ -12,6 +12,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "./Navbar";
+import Footer from "./Footer";
 import LuckyBreakReveal from "./LuckyBreakReveal";
 import CryptoCheckout from "./CryptoCheckout";
 import PricingPanel from "./PricingPanel";
@@ -43,7 +44,7 @@ const MIN_ROLL_MS = 2200;
 
 type RevealState = "idle" | "rolling" | "result";
 
-export default function PassesScreen({ onBack }: { onBack: () => void }) {
+export default function PassesScreen({ onBack, onLegal }: { onBack: () => void; onLegal: () => void }) {
   usePageMeta(PAGE_META.passes);
 
   const me = useGetMe();
@@ -293,6 +294,7 @@ export default function PassesScreen({ onBack }: { onBack: () => void }) {
           <div className="notice"><span>ℹ</span><span>{msg}</span></div>
         )}
       </div>
+      <Footer onLegal={onLegal} />
 
       {revealState !== "idle" && (
         <LuckyBreakReveal

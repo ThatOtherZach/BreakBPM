@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import Navbar from "./Navbar";
+import Footer from "./Footer";
 import FreePassCTA from "./FreePassCTA";
 import LegalDisclosure from "./LegalDisclosure";
 import { LeaderboardWidget } from "./LeaderboardScreen";
@@ -49,6 +50,7 @@ interface Props {
   onFindPlayers: () => void;
   onSignIn: () => void;
   onPasses: () => void;
+  onLegal: () => void;
 }
 
 /**
@@ -67,6 +69,7 @@ export default function PoolStatsAppScreen({
   onFindPlayers,
   onSignIn,
   onPasses,
+  onLegal,
 }: Props) {
   usePageMeta(PAGE_META.poolStatsApp);
 
@@ -194,6 +197,7 @@ export default function PoolStatsAppScreen({
           </div>
         </div>
       </div>
+      <Footer onLegal={onLegal} />
     </div>
   );
 }

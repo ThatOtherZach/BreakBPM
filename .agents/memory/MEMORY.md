@@ -64,3 +64,4 @@
 - [Public profile guest-name redaction](public-profile-guest-name-redaction.md) — redacting /games/profile names must also omit shareCode (closes /games/state second-hop recovery of ended-game gameState) and source registered-opponent names from server identity records, not client gameState.
 - [Vite config loader bare imports](vite-config-loader-bare-imports.md) — importing a src/lib helper into vite.config.ts that transitively pulls a @workspace/* package crashes the config loader (ERR_MODULE_NOT_FOUND); duplicate small constants instead.
 - [admin-sales test DB pollution](admin-sales-test-db-pollution.md) — admin-sales.test.ts assumes an empty sale_events table; real leftover dev rows inflate counts and look like a regression but aren't.
+- [Shared page chrome vs OBS/live](shared-page-chrome-vs-obs-live.md) — WatchByNameScreen branches into OBS overlay / live spectator / plain profile; global chrome only belongs on the plain-profile branch.

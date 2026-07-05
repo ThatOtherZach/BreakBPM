@@ -1,13 +1,14 @@
 import Navbar from './Navbar';
+import Footer from './Footer';
 import LegalDisclosure from './LegalDisclosure';
-import { APP_VERSION } from '../lib/version';
 import { usePageMeta, PAGE_META } from '../lib/pageMeta';
 
 interface LegalScreenProps {
   onBack: () => void;
+  onLegal: () => void;
 }
 
-export default function LegalScreen({ onBack }: LegalScreenProps) {
+export default function LegalScreen({ onBack, onLegal }: LegalScreenProps) {
   usePageMeta(PAGE_META.legal);
   return (
     <div className="app-window about-window">
@@ -19,10 +20,7 @@ export default function LegalScreen({ onBack }: LegalScreenProps) {
         </div>
       </div>
 
-      <div className="statusbar">
-        <span><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v{APP_VERSION}</a> - Saym Services Inc.</span>
-        <a href="/about" style={{ color: 'inherit', textDecoration: 'underline', marginLeft: 12 }}>Manual</a>
-      </div>
+      <Footer onLegal={onLegal} />
     </div>
   );
 }

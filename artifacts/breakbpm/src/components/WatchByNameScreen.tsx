@@ -15,6 +15,7 @@ interface Props {
   onManual: () => void;
   onAccount: () => void;
   onSignIn: () => void;
+  onLegal: () => void;
   /** OBS overlay mode — chrome-free, transparent HUD for a Browser Source. */
   obs?: boolean;
   /** Also render a compact shot log in the overlay. */
@@ -146,7 +147,7 @@ const RESOLVE_FAST_MS = 4000;
 const RESOLVE_IDLE_MS = 30000;
 const RESOLVE_IDLE_AFTER_MS = 2 * 60 * 1000;
 
-export default function WatchByNameScreen({ name, onBack, onManual, onAccount, onSignIn, obs = false, obsLog = false, obsScale = 1, demo = false }: Props) {
+export default function WatchByNameScreen({ name, onBack, onManual, onAccount, onSignIn, onLegal, obs = false, obsLog = false, obsScale = 1, demo = false }: Props) {
   const [liveCode, setLiveCode] = useState<string | null>(null);
   useObsBodyClass(obs);
 
@@ -259,6 +260,7 @@ export default function WatchByNameScreen({ name, onBack, onManual, onAccount, o
       onManual={onManual}
       onAccount={onAccount}
       onSignIn={onSignIn}
+      onLegal={onLegal}
     />
   );
 }

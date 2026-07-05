@@ -23,6 +23,7 @@ import {
 } from "@workspace/api-client-react";
 import type { FindPlayerPost, Venue } from "@workspace/api-client-react";
 import Navbar from "./Navbar";
+import Footer from "./Footer";
 import { SignedIn, SignedOut } from "../lib/authClient";
 import { SOLIDS } from "../lib/gameLogic";
 import { haversineKm } from "../lib/geo";
@@ -44,6 +45,7 @@ interface Props {
   onLeaderboard: () => void;
   onSignIn: () => void;
   onPasses: () => void;
+  onLegal: () => void;
 }
 
 /** Cue-ball pin for MEETUP posts (divIcon avoids bundling marker assets). */
@@ -330,6 +332,7 @@ export default function FindPlayersScreen({
   onLeaderboard,
   onSignIn,
   onPasses,
+  onLegal,
 }: Props) {
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
@@ -990,6 +993,7 @@ export default function FindPlayersScreen({
           )}
         </SignedIn>
       </div>
+      <Footer onLegal={onLegal} />
     </div>
   );
 }

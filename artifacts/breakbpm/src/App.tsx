@@ -386,6 +386,7 @@ function AccountRoute() {
       onStats={() => setLocation("/stats")}
       onLeaderboard={() => setLocation("/leaderboard")}
       onSignIn={() => setLocation("/sign-in")}
+      onLegal={() => setLocation("/legal")}
     />
   );
 }
@@ -402,6 +403,7 @@ function StatsRoute() {
       onSignIn={() => setLocation("/sign-in")}
       onPasses={() => setLocation("/passes")}
       onLeaderboard={() => setLocation("/leaderboard")}
+      onLegal={() => setLocation("/legal")}
     />
   );
 }
@@ -417,6 +419,7 @@ function LeaderboardRoute() {
       onFindPlayers={() => setLocation("/find-players")}
       onStats={() => setLocation("/stats")}
       onSignIn={() => setLocation("/sign-in")}
+      onLegal={() => setLocation("/legal")}
     />
   );
 }
@@ -433,6 +436,7 @@ function HallLeaderboardRoute({ params }: { params: { venueId: string } }) {
       onFindPlayers={() => setLocation("/find-players")}
       onStats={() => setLocation("/stats")}
       onSignIn={() => setLocation("/sign-in")}
+      onLegal={() => setLocation("/legal")}
     />
   );
 }
@@ -449,6 +453,7 @@ function CityLeaderboardRoute({ params }: { params: { locality: string } }) {
       onFindPlayers={() => setLocation("/find-players")}
       onStats={() => setLocation("/stats")}
       onSignIn={() => setLocation("/sign-in")}
+      onLegal={() => setLocation("/legal")}
     />
   );
 }
@@ -456,12 +461,19 @@ function CityLeaderboardRoute({ params }: { params: { locality: string } }) {
 function AboutRoute() {
   const [, setLocation] = useLocation();
   const goBack = useGoBack();
-  return <AboutScreen onBack={() => goBack("/")} onPasses={() => setLocation("/passes")} />;
+  return (
+    <AboutScreen
+      onBack={() => goBack("/")}
+      onPasses={() => setLocation("/passes")}
+      onLegal={() => setLocation("/legal")}
+    />
+  );
 }
 
 function LegalRoute() {
+  const [, setLocation] = useLocation();
   const goBack = useGoBack();
-  return <LegalScreen onBack={() => goBack("/")} />;
+  return <LegalScreen onBack={() => goBack("/")} onLegal={() => setLocation("/legal")} />;
 }
 
 function FindPlayersRoute() {
@@ -475,13 +487,15 @@ function FindPlayersRoute() {
       onLeaderboard={() => setLocation("/leaderboard")}
       onSignIn={() => setLocation("/sign-in")}
       onPasses={() => setLocation("/passes")}
+      onLegal={() => setLocation("/legal")}
     />
   );
 }
 
 function PassesRoute() {
+  const [, setLocation] = useLocation();
   const goBack = useGoBack();
-  return <PassesScreen onBack={() => goBack("/account")} />;
+  return <PassesScreen onBack={() => goBack("/account")} onLegal={() => setLocation("/legal")} />;
 }
 
 function RedeemRoute({ params }: { params: { code: string } }) {
@@ -493,6 +507,7 @@ function RedeemRoute({ params }: { params: { code: string } }) {
       onAccount={() => setLocation("/account")}
       onManual={() => setLocation("/about")}
       onSignUp={() => setLocation("/sign-up")}
+      onLegal={() => setLocation("/legal")}
     />
   );
 }
@@ -506,6 +521,7 @@ function InviteRoute({ params }: { params: { code: string } }) {
       onAccount={() => setLocation("/account")}
       onManual={() => setLocation("/about")}
       onSignUp={() => setLocation("/sign-up")}
+      onLegal={() => setLocation("/legal")}
     />
   );
 }
@@ -518,6 +534,7 @@ function ClaimRoute() {
       onAccount={() => setLocation("/account")}
       onManual={() => setLocation("/about")}
       onSignUp={() => setLocation("/sign-up")}
+      onLegal={() => setLocation("/legal")}
     />
   );
 }
@@ -533,6 +550,7 @@ function PoolStatsAppRoute() {
       onFindPlayers={() => setLocation("/find-players")}
       onSignIn={() => setLocation("/sign-in")}
       onPasses={() => setLocation("/passes")}
+      onLegal={() => setLocation("/legal")}
     />
   );
 }
@@ -548,6 +566,7 @@ function ForVenuesRoute() {
       onFindPlayers={() => setLocation("/find-players")}
       onSignIn={() => setLocation("/sign-in")}
       onPasses={() => setLocation("/passes")}
+      onLegal={() => setLocation("/legal")}
     />
   );
 }
@@ -589,6 +608,7 @@ function WatchRoute({ params }: { params: { name: string } }) {
       onManual={() => setLocation("/about")}
       onAccount={() => setLocation("/account")}
       onSignIn={() => setLocation("/sign-in")}
+      onLegal={() => setLocation("/legal")}
       obs={obs}
       obsLog={obsLog}
       obsScale={obsScale}

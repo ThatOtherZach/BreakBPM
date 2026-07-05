@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import Navbar from "./Navbar";
+import Footer from "./Footer";
 import LegalDisclosure from "./LegalDisclosure";
 import { venueWebsiteUrl } from "./FindPlayersScreen";
 import { venuePaymentBadge } from "../lib/venuePaymentType";
@@ -218,6 +219,7 @@ interface Props {
   onFindPlayers: () => void;
   onSignIn: () => void;
   onPasses: () => void;
+  onLegal: () => void;
 }
 
 /**
@@ -236,6 +238,7 @@ export default function ForVenuesScreen({
   onFindPlayers,
   onSignIn,
   onPasses,
+  onLegal,
 }: Props) {
   usePageMeta(PAGE_META.forVenues);
 
@@ -344,6 +347,7 @@ export default function ForVenuesScreen({
           </div>
         </div>
       </div>
+      <Footer onLegal={onLegal} />
     </div>
   );
 }

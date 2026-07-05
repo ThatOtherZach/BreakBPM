@@ -10,6 +10,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "./Navbar";
+import Footer from "./Footer";
 import LuckyBreakReveal from "./LuckyBreakReveal";
 import { savePendingClaim, clearPendingClaim } from "../lib/pendingClaim";
 
@@ -30,6 +31,7 @@ interface Props {
   onAccount: () => void;
   onManual: () => void;
   onSignUp: () => void;
+  onLegal: () => void;
 }
 
 /**
@@ -47,7 +49,7 @@ interface Props {
  * The stored intent is cleared on both success and failure so a claim isn't
  * re-run on a later visit.
  */
-export default function ClaimScreen({ onHome, onAccount, onManual, onSignUp }: Props) {
+export default function ClaimScreen({ onHome, onAccount, onManual, onSignUp, onLegal }: Props) {
   const { isAuthenticated, isLoading } = useAuth();
   const me = useGetMe();
   const qc = useQueryClient();
@@ -166,6 +168,7 @@ export default function ClaimScreen({ onHome, onAccount, onManual, onSignUp }: P
           </div>
         </div>
       </div>
+      <Footer onLegal={onLegal} />
     </div>
   );
 }

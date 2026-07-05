@@ -1,5 +1,6 @@
 import { useLocation } from "wouter";
 import Navbar from "./Navbar";
+import Footer from "./Footer";
 import GameHistoryCard from "./GameHistoryCard";
 import StatsHero from "./StatsHero";
 import { PlayerName } from "./PlayerName";
@@ -14,6 +15,7 @@ interface Props {
   onManual: () => void;
   onAccount: () => void;
   onSignIn: () => void;
+  onLegal: () => void;
 }
 
 function fmtMemberSince(d: string): string {
@@ -32,7 +34,7 @@ function fmtMemberSince(d: string): string {
  * just a showcase. WatchByNameScreen keeps polling in the background and swaps
  * to the live spectator view the moment they break.
  */
-export default function PlayerProfileScreen({ name, onBack, onManual, onAccount, onSignIn }: Props) {
+export default function PlayerProfileScreen({ name, onBack, onManual, onAccount, onSignIn, onLegal }: Props) {
   const [, setLocation] = useLocation();
   // Opponent names in the recent-games list are only revealed to signed-in
   // visitors; signed-out spectators see them redacted.
@@ -178,6 +180,7 @@ export default function PlayerProfileScreen({ name, onBack, onManual, onAccount,
           ← Back to menu
         </button>
       </div>
+      <Footer onLegal={onLegal} />
     </div>
   );
 }

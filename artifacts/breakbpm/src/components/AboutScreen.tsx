@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { marked } from 'marked';
 import Navbar from './Navbar';
+import Footer from './Footer';
 import PricingPanel from './PricingPanel';
 import ballImg from '/eightball_nobg.png';
 import aboutMd from '../ABOUT.md?raw';
@@ -21,9 +22,10 @@ const GUIDE_RAW_URL = `${RAW_BASE_URL}ABOUT.md`;
 interface AboutScreenProps {
   onBack: () => void;
   onPasses: () => void;
+  onLegal: () => void;
 }
 
-export default function AboutScreen({ onBack, onPasses }: AboutScreenProps) {
+export default function AboutScreen({ onBack, onPasses, onLegal }: AboutScreenProps) {
   usePageMeta(PAGE_META.manual);
   const html = useMemo(() => marked(aboutMd) as string, []);
 
@@ -95,10 +97,7 @@ export default function AboutScreen({ onBack, onPasses }: AboutScreenProps) {
           <PricingPanel showBuyButtons onBuy={onPasses} hideCardCallout />
         </div>
       </div>
-      <div className="statusbar">
-        <span><a href="https://github.com/ThatOtherZach/BreakBPM" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>BREAKBPM SYS v{APP_VERSION}</a> - Saym Services Inc.</span>
-        <a href="/legal" style={{ color: 'inherit', textDecoration: 'underline', marginLeft: 12 }}>Legal</a>
-      </div>
+      <Footer onLegal={onLegal} />
     </div>
   );
 }
