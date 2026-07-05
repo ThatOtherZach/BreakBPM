@@ -1050,9 +1050,7 @@ function PostCard({
               href={`https://www.google.com/maps?q=${post.latitude},${post.longitude}`}
               target="_blank"
               rel="noreferrer"
-            >
-              🗺️ Open in Maps
-            </a>
+            >🗺️ Directions</a>
           )}
           {post.latitude == null && !preciseLocationsVisible && !post.isOwn && (
             <button className="btn fpp-upsell-btn" onClick={onUpsell}>
