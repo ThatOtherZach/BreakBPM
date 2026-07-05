@@ -177,6 +177,13 @@ function LatestHallWidget({
           </div>
         </div>
         <div className="fpp-card-actions">
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setLocation(`/leaderboard/hall/${venue.slug ?? venue.id}`)}
+          >
+            🏆 Leaderboard
+          </button>
           <a
             className="btn"
             href={`https://www.google.com/maps?q=${venue.latitude},${venue.longitude}`}
