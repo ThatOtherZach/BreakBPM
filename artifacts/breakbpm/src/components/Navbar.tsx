@@ -17,7 +17,7 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
   const [open, setOpen] = useState(false);
   const me = useGetMe();
   const [location, setLocation] = useLocation();
-  const { logout } = useAuth();
+  const { logout, login, isAuthenticated } = useAuth();
 
   const tier = me.data?.entitlement?.tier;
   const screenName = me.data?.account?.screenName ?? null;
@@ -42,11 +42,19 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
         <div className="navbar-left">
           <button
             className="navbar-home-btn"
-            onClick={() => (isHome ? logout() : setLocation('/'))}
-            aria-label={isHome ? 'Log out' : 'Home'}
-            title={isHome ? 'Log out' : 'Home'}
+            onClick={() => {
+              if (!isHome) {
+                setLocation('/');
+              } else if (isAuthenticated) {
+                logout();
+              } else {
+                login();
+              }
+            }}
+            aria-label={isHome ? (isAuthenticated ? 'Log out' : 'Sign in') : 'Home'}
+            title={isHome ? (isAuthenticated ? 'Log out' : 'Sign in') : 'Home'}
           >
-            {isHome ? '🚪' : '🏠'}
+            {isHome ? (isAuthenticated ? '🔐' : '👤') : '🏠'}
           </button>
           {onBack ? (
             <button className="navbar-back-btn" onClick={onBack}>← Back</button>
