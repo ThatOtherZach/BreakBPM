@@ -1155,9 +1155,7 @@ export function VenueCard({
           type="button"
           className="btn"
           onClick={() => window.open(`https://www.google.com/maps?q=${venue.latitude},${venue.longitude}`, "_blank", "noreferrer")}
-        >
-          🗺️ Open in Maps
-        </button>
+        >🗺️ Directions</button>
         {websiteUrl && (
           <button
             type="button"
