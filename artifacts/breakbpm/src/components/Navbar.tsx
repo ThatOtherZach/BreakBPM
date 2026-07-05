@@ -26,7 +26,8 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
   const at = (path: string) => location === path;
   const isHome = at('/');
 
-  const showHamburger = !!(onManual || onAccount || onStats || onFindPlayers || onLeaderboard || onSignIn);
+  // Always true: the menu always contains at least the Home/Sign in/Log out item.
+  const showHamburger = true;
 
   return (
     <div className="navbar-wrapper">
@@ -40,22 +41,6 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
       </div>
       <div className="navbar">
         <div className="navbar-left">
-          <button
-            className="navbar-home-btn"
-            onClick={() => {
-              if (!isHome) {
-                setLocation('/');
-              } else if (isAuthenticated) {
-                logout();
-              } else {
-                login();
-              }
-            }}
-            aria-label={isHome ? (isAuthenticated ? 'Log out' : 'Sign in') : 'Home'}
-            title={isHome ? (isAuthenticated ? 'Log out' : 'Sign in') : 'Home'}
-          >
-            {isHome ? (isAuthenticated ? '🔐' : '👤') : '🏠'}
-          </button>
           {onBack ? (
             <button className="navbar-back-btn" onClick={onBack}>← Back</button>
           ) : (
@@ -93,6 +78,23 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
 
       {open && showHamburger && (
         <div className="navbar-menu">
+          <button
+            className="navbar-menu-item"
+            onClick={() => {
+              setOpen(false);
+              if (!isHome) {
+                setLocation('/');
+              } else if (isAuthenticated) {
+                logout();
+              } else {
+                login();
+              }
+            }}
+            aria-label={isHome ? (isAuthenticated ? 'Log out' : 'Sign in') : 'Home'}
+            title={isHome ? (isAuthenticated ? 'Log out' : 'Sign in') : 'Home'}
+          >
+            {isHome ? (isAuthenticated ? '🔐 Log out' : '👤 Sign In') : '🏠 Home'}
+          </button>
           {!at('/pool-stats-app') && (
             <button className="navbar-menu-item" onClick={() => { setOpen(false); setLocation('/pool-stats-app'); }}>
               <span style={{ textDecoration: 'underline' }}>A</span>bout
