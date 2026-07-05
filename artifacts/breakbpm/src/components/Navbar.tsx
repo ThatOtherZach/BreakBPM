@@ -47,7 +47,7 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
           ) : (
             <>
               {isAuthenticated && me.data?.account ? (
-                <WinsTodayChip winsToday={me.data.account.winsToday ?? 0} />
+                <WinsTodayChip winsToday={me.data.account.winsToday ?? 0} small />
               ) : (
                 <img src="/eightball_nobg.png" alt="8-ball" className="navbar-icon-img" />
               )}
