@@ -26,7 +26,7 @@ import {
 
 /** Star pin for a verified hall on the "all our pool halls" map. */
 const starIcon = L.divIcon({
-  html: '<span style="font-size:20px;filter:drop-shadow(0 1px 1px rgba(0,0,0,0.6))">⭐</span>',
+  html: '<span style="font-size:20px;filter:drop-shadow(0 1px 1px rgba(0,0,0,0.6))">🎱</span>',
   className: "fpp-venue-pin",
   iconSize: [24, 24],
   iconAnchor: [12, 12],
@@ -74,7 +74,7 @@ function AllHallsMap() {
             <Marker key={v.id} position={[v.latitude, v.longitude]} icon={starIcon}>
               <Popup>
                 <div className="fpp-popup">
-                  <div className="fpp-popup-name">⭐ {v.name}</div>
+                  <div className="fpp-popup-name">🎱 {v.name}</div>
                   {v.locality && <div className="fpp-popup-coords">🏙️ {v.locality}</div>}
                 </div>
               </Popup>
@@ -181,9 +181,7 @@ function LatestHallWidget({
             type="button"
             className="btn"
             onClick={() => setLocation(`/leaderboard/hall/${venue.slug ?? venue.id}`)}
-          >
-            🏆 Leaderboard
-          </button>
+          >🏆 Local Leaderboard</button>
           <a
             className="btn"
             href={`https://www.google.com/maps?q=${venue.latitude},${venue.longitude}`}
