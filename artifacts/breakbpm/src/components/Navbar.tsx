@@ -93,7 +93,7 @@ export default function Navbar({ onManual, onBack, onAccount, onStats, onFindPla
             aria-label={isHome ? (isAuthenticated ? 'Log out' : 'Sign in') : 'Home'}
             title={isHome ? (isAuthenticated ? 'Log out' : 'Sign in') : 'Home'}
           >
-            {isHome ? (isAuthenticated ? '🔐 Log out' : '👤 Sign In') : '🏠 Home'}
+            {isHome ? (isAuthenticated ? '🔐' : '👤') : '🏠'}
           </button>
           {!at('/pool-stats-app') && (
             <button className="navbar-menu-item" onClick={() => { setOpen(false); setLocation('/pool-stats-app'); }}>
