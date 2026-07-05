@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { QRCodeSVG } from "qrcode.react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import Navbar from "./Navbar";
 import LegalDisclosure from "./LegalDisclosure";
 import { venueWebsiteUrl } from "./FindPlayersScreen";
@@ -20,6 +23,72 @@ import {
   FOR_VENUES_MAILTO,
   FOR_VENUES_FAQ,
 } from "../lib/landingContent";
+
+/** Star pin for a verified hall on the "all our pool halls" map. */
+const starIcon = L.divIcon({
+  html: '<span style="font-size:20px;filter:drop-shadow(0 1px 1px rgba(0,0,0,0.6))">⭐</span>',
+  className: "fpp-venue-pin",
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+});
+
+/** Fits the map view to every verified hall once they load. */
+function FitToVenues({ positions }: { positions: [number, number][] }) {
+  const map = useMap();
+  const key = positions.map((p) => p.join(",")).join("|");
+  useEffect(() => {
+    if (positions.length === 0) return;
+    if (positions.length === 1) {
+      map.setView(positions[0], 12);
+      return;
+    }
+    map.fitBounds(L.latLngBounds(positions), { padding: [30, 30], maxZoom: 13 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, map]);
+  return null;
+}
+
+/** Live map of every Verified Hall, so a prospective venue owner can see the
+ *  network they'd be joining (and that their own hall would show up starred). */
+function AllHallsMap() {
+  const { data, isLoading } = useListVenues(
+    { all: true },
+    { query: { queryKey: getListVenuesQueryKey({ all: true }) } },
+  );
+  const venues = data?.venues ?? [];
+  const positions: [number, number][] = venues.map((v) => [v.latitude, v.longitude]);
+
+  if (isLoading) return null;
+  if (venues.length === 0) return null;
+
+  return (
+    <div className="lp-map-wrap">
+      <div className="fpp-map lp-map">
+        <MapContainer center={[20, 0]} zoom={2} style={{ height: "100%", width: "100%" }}>
+          <TileLayer
+            attribution='&copy; OpenStreetMap'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <FitToVenues positions={positions} />
+          {venues.map((v) => (
+            <Marker key={v.id} position={[v.latitude, v.longitude]} icon={starIcon}>
+              <Popup>
+                <div className="fpp-popup">
+                  <div className="fpp-popup-name">⭐ {v.name}</div>
+                  {v.locality && <div className="fpp-popup-coords">🏙️ {v.locality}</div>}
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      </div>
+      <p className="lp-map-caption">
+        {venues.length} Verified Hall{venues.length === 1 ? "" : "s"} on the map — yours could be
+        next. <span className="fpp-attribution">Map data © OpenStreetMap contributors</span>
+      </p>
+    </div>
+  );
+}
 
 /** Shows a real, live verified-hall card so a venue owner sees exactly what
  *  their listing looks like. Falls back to a static image when no hall exists. */
@@ -196,23 +265,27 @@ export default function ForVenuesScreen({
 
             {/* ── What the venue gets ── */}
             {FOR_VENUES_SHOWCASE.map((item) => (
-              <section key={item.title} className="lp-feature">
-                <h2 className="lp-h2">{item.title}</h2>
-                <p>{item.body}</p>
-                {item.liveHall ? (
-                  <LatestHallWidget
-                    fallbackImg={item.img}
-                    fallbackAlt={item.imgAlt}
-                  />
-                ) : item.img ? (
-                  <img
-                    src={item.img}
-                    alt={item.imgAlt}
-                    className="lp-sneak-img"
-                    loading="lazy"
-                  />
-                ) : null}
-              </section>
+              <Fragment key={item.title}>
+                {item.title === "Found by Local Players" && <AllHallsMap />}
+                <section className="lp-feature">
+                  <h2 className="lp-h2">{item.title}</h2>
+                  <p>{item.body}</p>
+                  {item.liveHall ? (
+                    <LatestHallWidget
+                      fallbackImg={item.img}
+                      fallbackAlt={item.imgAlt}
+                    />
+                  ) : item.img ? (
+                    <img
+                      src={item.img}
+                      alt={item.imgAlt}
+                      className="lp-sneak-img"
+                      loading="lazy"
+                    />
+                  ) : null}
+                </section>
+                {item.title === "Found by Local Players" && <AllHallsMap />}
+              </Fragment>
             ))}
 
             {/* ── How to get listed ── */}

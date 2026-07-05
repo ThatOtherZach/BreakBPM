@@ -2403,6 +2403,14 @@ html, #root {
 }
 .fpp-map--form { height: 240px; }
 .fpp-map--view { height: 360px; }
+.lp-map-wrap { margin: 14px 0; }
+.lp-map { height: 260px; margin-bottom: 6px; }
+.lp-map-caption {
+  font-size: 12px;
+  text-align: center;
+  color: #555;
+  margin: 0;
+}
 .fpp-pin {
   font-size: 22px;
   line-height: 22px;
