@@ -202,6 +202,57 @@ export default function GameHistoryCard({
       : g.outcome === "won"
         ? "Beat The Shark"
         : null;
+  // The mode-label title (e.g. "8-Ball · Solids 1-7"). Rendered either inline
+  // atop the left column (the original layout, used whenever there's no
+  // actionSlot) or promoted to its own top row when an actionSlot is present,
+  // so the control has room and never overlaps other card content.
+  const titleLabel = (
+    <span
+      style={{
+        fontFamily: "VT323",
+        fontSize: 20,
+        lineHeight: 1,
+        letterSpacing: 0.5,
+        color: "#f4f4dc",
+        textShadow: "1px 1px 0 #042414",
+        display: "inline-flex",
+        alignItems: "baseline",
+        gap: 5,
+        minWidth: 0,
+      }}
+    >
+      {modeLabel}
+      {(() => {
+        // Sub-label precedence: Chaos game → rainbow cue ball icon;
+        // else the subject's locked group → "Solids 1-7"/"Stripes 9-15";
+        // else Shark → "Shark Mode". None/9-ball/Practice/un-grouped → nothing.
+        const isChaos =
+          g.chaosMode === "eight-last" || g.chaosMode === "anything-goes";
+        if (isChaos) {
+          return (
+            <span
+              className="rainbow-cue"
+              aria-label="Chaos game"
+              style={{ fontSize: 14, alignSelf: "center" }}
+            />
+          );
+        }
+        const text =
+          g.group === "solids"
+            ? "Solids 1-7"
+            : g.group === "stripes"
+              ? "Stripes 9-15"
+              : g.sharkMode
+                ? "Shark Mode"
+                : null;
+        return text ? (
+          <span style={{ fontSize: 14, color: "#8aa593", textShadow: "none" }}>
+            {text}
+          </span>
+        ) : null;
+      })()}
+    </span>
+  );
   return (
     <div
       className="fpp-card history-card"
@@ -216,60 +267,20 @@ export default function GameHistoryCard({
         "--felt-fade": felt.feltFade,
       } as React.CSSProperties}
     >
-      {/* Top row: title/mode label + optional action slot (e.g. the account
-          history "remove" affordance). Kept on its own row so the control
-          never overlaps the BPM hero, shot log, or other card content. */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-        <span
-          style={{
-            fontFamily: "VT323",
-            fontSize: 20,
-            lineHeight: 1,
-            letterSpacing: 0.5,
-            color: "#f4f4dc",
-            textShadow: "1px 1px 0 #042414",
-            display: "inline-flex",
-            alignItems: "baseline",
-            gap: 5,
-            minWidth: 0,
-          }}
-        >
-          {modeLabel}
-          {(() => {
-            // Sub-label precedence: Chaos game → rainbow cue ball icon;
-            // else the subject's locked group → "Solids 1-7"/"Stripes 9-15";
-            // else Shark → "Shark Mode". None/9-ball/Practice/un-grouped → nothing.
-            const isChaos =
-              g.chaosMode === "eight-last" || g.chaosMode === "anything-goes";
-            if (isChaos) {
-              return (
-                <span
-                  className="rainbow-cue"
-                  aria-label="Chaos game"
-                  style={{ fontSize: 14, alignSelf: "center" }}
-                />
-              );
-            }
-            const text =
-              g.group === "solids"
-                ? "Solids 1-7"
-                : g.group === "stripes"
-                  ? "Stripes 9-15"
-                  : g.sharkMode
-                    ? "Shark Mode"
-                    : null;
-            return text ? (
-              <span style={{ fontSize: 14, color: "#8aa593", textShadow: "none" }}>
-                {text}
-              </span>
-            ) : null;
-          })()}
-        </span>
-        {actionSlot != null && <div style={{ flexShrink: 0 }}>{actionSlot}</div>}
-      </div>
+      {/* Top row: title/mode label + action slot (e.g. the account history
+          "remove" affordance). Only rendered when there's an actionSlot, so
+          it has room and never overlaps other card content; otherwise the
+          title stays inline atop the left column (original layout). */}
+      {actionSlot != null && (
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+          {titleLabel}
+          <div style={{ flexShrink: 0 }}>{actionSlot}</div>
+        </div>
+      )}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         {/* Left: result + winner */}
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+          {actionSlot == null && titleLabel}
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#cdeccd", fontSize: 11 }}>
             <ResultBadge outcome={g.outcome} chaosMode={g.chaosMode} />
             {g.sharkMode ? (
