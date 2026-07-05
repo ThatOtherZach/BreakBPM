@@ -1064,11 +1064,12 @@ function PostCard({
               🔒 Unlock exact location
             </button>
           )}
-          <button className="btn" onClick={() => downloadIcs(post)}>
+          <button type="button" className="btn" onClick={() => downloadIcs(post)}>
             📅 Add to Calendar
           </button>
           {post.isOwn && (
             <button
+              type="button"
               className="btn btn-danger fpp-cancel-btn"
               disabled={pending}
               onClick={() => onCancel(post.id)}
