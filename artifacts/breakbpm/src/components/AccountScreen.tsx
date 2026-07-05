@@ -656,8 +656,24 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
                         <PlayerName name={account.screenName} rainbow={effectiveTheme === "rainbow"} />
                       </span>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                       <WinsTodayChip winsToday={account.winsToday ?? 0} small />
+                      {/* Unranked: tell the player — simply — how to earn the
+                          rank + BPM/ACC chips. Mirrors the server's entry gate
+                          (2 qualifying standard 1-on-1 8-ball games). */}
+                      {standing == null && (
+                        <span
+                          style={{
+                            fontFamily: "VT323",
+                            fontSize: 15,
+                            lineHeight: 1.15,
+                            color: "#b9e6c4",
+                            textShadow: "1px 1px 0 #042414",
+                          }}
+                        >
+                          Finish 2 ranked 1v1 8-Ball games to get ranked!
+                        </span>
+                      )}
                       {standing != null && (
                         <span
                           style={{
