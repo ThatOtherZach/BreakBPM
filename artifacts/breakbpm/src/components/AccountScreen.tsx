@@ -671,7 +671,7 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
                             textShadow: "1px 1px 0 #042414",
                           }}
                         >
-                          Finish 2 ranked 1v1 8-Ball games to get ranked!
+                          Finish 2 1v1 8-Ball games to get ranked!
                         </span>
                       )}
                       {standing != null && (
