@@ -76,9 +76,9 @@ export const PAGE_META = {
   },
   forVenues: {
     title: 'List Your Pool Hall on BreakBPM — Free Verified Hall Listing',
-    description: 'List your pool hall on BreakBPM for free: your own live Local Leaderboard, map discovery, and a link back to your website — in exchange for a poster by your table.',
+    description: 'List your pool hall on BreakBPM for free: your own live Local Leaderboard, map discovery, and a link back to your website — in exchange for one public social post tagging #BreakBPM.',
     canonical: 'https://breakbpm.com/for-venues',
     ogTitle: 'BreakBPM for Venues — Put Your Hall on the Board',
-    ogDescription: 'Free listing for pool halls: your own Local Leaderboard, map discovery, and a website backlink. All we ask is a BreakBPM poster by your table.',
+    ogDescription: 'Free listing for pool halls: your own Local Leaderboard, map discovery, and a website backlink. All it takes is one public social post about your hall.',
   },
 } satisfies Record<string, PageMetaConfig>;

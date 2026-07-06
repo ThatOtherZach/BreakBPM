@@ -114,11 +114,11 @@ const PUBLIC_ROUTES: RouteMetaEntry[] = [
     path: "for-venues",
     title: "List Your Pool Hall on BreakBPM — Free Verified Hall Listing",
     description:
-      "List your pool hall on BreakBPM for free: your own live Local Leaderboard, map discovery, and a link back to your website — in exchange for a poster by your table.",
+      "List your pool hall on BreakBPM for free: your own live Local Leaderboard, map discovery, and a link back to your website — in exchange for one public social post tagging #BreakBPM.",
     canonical: "https://breakbpm.com/for-venues",
     ogTitle: "BreakBPM for Venues — Put Your Hall on the Board",
     ogDescription:
-      "Free listing for pool halls: your own Local Leaderboard, map discovery, and a website backlink. All we ask is a BreakBPM poster by your table.",
+      "Free listing for pool halls: your own Local Leaderboard, map discovery, and a website backlink. All it takes is one public social post about your hall.",
     jsonLd: forVenuesJsonLd(),
   },
 ];
@@ -533,7 +533,7 @@ function forVenuesJsonLd(): string {
     name: "BreakBPM Verified Hall Listing",
     serviceType: "Pool hall listing",
     description:
-      "A free listing for pool halls on BreakBPM. Each verified hall gets its own live Local Leaderboard, map discovery, and a link back to the venue's website, in exchange for displaying a BreakBPM poster by the table.",
+      "A free listing for pool halls on BreakBPM. Each verified hall gets its own live Local Leaderboard, map discovery, and a link back to the venue's website, in exchange for one public social post tagging #BreakBPM — from the venue or anyone else.",
     areaServed: "Worldwide",
     url: "https://breakbpm.com/for-venues",
     provider: {

@@ -34,7 +34,7 @@ Paid hosts link a registered friend by `@username` (no shared device needed); th
 
 ## List your hall (free)
 
-Pool halls can claim a free Verified-Hall listing via the `/for-venues` pitch page — their own Local Leaderboard, map discovery, and a website backlink in exchange for one social media post tagging #BreakBPM with a link to their hall page.
+Pool halls can claim a free Verified-Hall listing via the `/for-venues` pitch page — their own Local Leaderboard, map discovery, and a website backlink in exchange for one public social media post tagging #BreakBPM with a link to their hall page. The post doesn't have to come from the venue itself — any public post that meets those criteria (e.g. from a player or regular) qualifies.
 
 ## Rematch / Resume
 

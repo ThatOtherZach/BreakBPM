@@ -173,7 +173,7 @@ export const POOL_STATS_FAQ: FaqItem[] = [
 export const FOR_VENUES_H1 = "Put Your Hall on the Board";
 
 export const FOR_VENUES_TAGLINE =
-  "A free listing for pool halls — all we ask is one social media post.";
+  "A free listing for pool halls — all it takes is one public social post about your hall.";
 
 export const FOR_VENUES_INTRO =
   "BreakBPM is a free Billiards scoring app players can use right at the table. Track your BPM (Balls Per Minute), accuracy against the global and local leaderboards at Verified Pool Halls. A zero upkeep, complete scoring and ranking system built for your pool tables.";
@@ -195,12 +195,12 @@ export const FOR_VENUES_SHOWCASE: ShowcaseItem[] = [
 export const FOR_VENUES_ASK_TITLE = "The Whole Deal";
 
 export const FOR_VENUES_ASK_BODY =
-  "We list your hall for free. You post once on social media — tag #BreakBPM and link to your hall's leaderboard page. Any platform works. That's it.";
+  "We list your hall for free. All it takes is one public post on social media — tagging #BreakBPM and linking to your hall's leaderboard page. Any platform works, and it doesn't have to come from you — a regular posting about your hall counts too. That's it.";
 
 export const FOR_VENUES_HOWTO_TITLE = "How to Get Listed";
 
 export const FOR_VENUES_HOWTO_BODY =
-  "Get verified for free! We only ask that you post on social media with the tag #BreakBPM and a link to your BreakBPM leaderboard.\n\nEmail us your venue's name, address, number of tables, and a website if you have one. Verification takes 1-3 business days.";
+  "Get verified for free! All we ask is one public social media post about your hall — tagging #BreakBPM with a link to your hall's leaderboard page. It doesn't have to be you posting; if a player or regular puts one up, we'll spot it, add your hall, and email you.\n\nWant it done sooner? Email us your venue's name, address, number of tables, and a website if you have one. Verification takes 1-3 business days.";
 
 export const FOR_VENUES_CTA_LABEL = "Request to be Added";
 
@@ -210,7 +210,7 @@ export const FOR_VENUES_MAILTO =
 export const FOR_VENUES_FAQ: FaqItem[] = [
   {
     q: "What does it cost to list my pool hall?",
-    a: "Nothing. A verified hall listing on BreakBPM is free. In exchange, we ask for one social media post — tag #BreakBPM and link to your hall's leaderboard page on any platform.",
+    a: "Nothing. A verified hall listing on BreakBPM is free. In exchange, we ask for one public social media post — tagging #BreakBPM and linking to your hall's leaderboard page, on any platform. It doesn't have to be posted by the venue; a player or regular posting about your hall counts too.",
   },
   {
     q: "What do my players get?",

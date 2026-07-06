@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Local & city leaderboards** — every verified hall gets its own ranked board (`/leaderboard/hall/:slug`) and each hall locality rolls up into a city board (`/leaderboard/city/:locality`). After a finished 1-on-1 8-ball or 9-ball game, the host can tag it to a nearby verified hall (or tag the city directly when no hall is in range). Hall boards expose a public 30-day window without sign-in; 90-day and all-time windows stay pass-gated.
-- **`/for-venues` pitch page** — pool halls can claim a free verified listing (map discovery, local leaderboard, website backlink) in exchange for a social post tagging #BreakBPM.
+- **`/for-venues` pitch page** — pool halls can claim a free verified listing (map discovery, local leaderboard, website backlink) in exchange for a public social post tagging #BreakBPM, from anyone (not just the venue).
 - **Readable venue slugs** — hall leaderboard URLs resolve by human-readable slug or legacy id.
 - **Flexible crypto "Purchase Days of Access"** — buy any 1–365 days of access via marginal per-day brackets (first day $1.99; longer runs get cheaper per day). Env-tunable via `BREAKBPM_DAY_PASS_*`; params ship to the client via `/passes/plans` so slider estimates match server quotes.
 - **30 Day Pass (card, off-platform)** — $4.99 / 30 days sold via the owner's Squarespace store (`BREAKBPM_STORE_URL`); buyer receives a manually minted admin redeem code by email. Same price as 30 days of access via crypto — card codes arrive within 24 hours; crypto grants access instantly.
