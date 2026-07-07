@@ -189,11 +189,11 @@ export default function PoolStatsAppScreen({
             {/* ── System requirements ── */}
             <div className="lp-sysreq">
               <h2 className="lp-h2 lp-sysreq__heading">System Requirements</h2>
-              <ul className="lp-list">
-                {POOL_STATS_SYSREQ.map((r) => (
-                  <li key={r}>{r}</li>
+              <p className="mt-[5px] mb-[5px]">
+                {POOL_STATS_SYSREQ.map((r, i, arr) => (
+                  <React.Fragment key={r}>{r}{i < arr.length - 1 && <br />}</React.Fragment>
                 ))}
-              </ul>
+              </p>
             </div>
 
             {/* ── Nav links ── */}
