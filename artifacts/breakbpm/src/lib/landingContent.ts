@@ -199,7 +199,7 @@ export const FOR_VENUES_ASK_BODY =
 export const FOR_VENUES_HOWTO_TITLE = "How to Get Listed";
 
 export const FOR_VENUES_HOWTO_BODY =
-  "Get verified for free! All we ask is one public social media post about your hall — tagging #BreakBPM with a link to your hall's leaderboard page. It doesn't have to be you posting; if a player or regular puts one up, we'll spot it, add your hall, and email you.\n\nWant it done sooner? Email us your venue's name, address, number of tables, and a website if you have one. Verification takes 1-3 business days.";
+  "Get verified for free! Post on social media about your hall and tag #BreakBPM. Send us the post and we'll create a link for that hall's leaderboard.\n\nEmail us your venue's name, address, number of tables, and a website if you have one. Verification takes 1-3 business days.";
 
 export const FOR_VENUES_CTA_LABEL = "Request to be Added";
 
