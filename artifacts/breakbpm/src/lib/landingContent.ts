@@ -217,7 +217,7 @@ export const FOR_VENUES_FAQ: FaqItem[] = [
   },
   {
     q: "How do games get added to the hall's leaderboard?",
-    a: "A player finishes a 1-on-1 game on-site and tags it to your hall — a quick on-location check-in. Those games rank players on your hall's Local Leaderboard.",
+    a: "A player finishes a 1-on-1 game on-site and tags it to the hall. The app performs a quick on-location check, and then saves the game to the corresponding leaderboard.",
   },
   {
     q: "How do I get my hall listed?",
