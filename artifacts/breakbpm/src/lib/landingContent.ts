@@ -225,6 +225,6 @@ export const FOR_VENUES_FAQ: FaqItem[] = [
   },
   {
     q: "Can I update or remove the listing later?",
-    a: "Yes. Just email us and we'll update your hall's details or remove the listing.",
+    a: "Email us with any issues regarding a hall's listing — otherwise it's assumed to exist.",
   },
 ];
