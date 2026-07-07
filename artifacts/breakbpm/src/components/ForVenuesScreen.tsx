@@ -336,9 +336,11 @@ export default function ForVenuesScreen({
             {/* ── How to get listed ── */}
             <section>
               <h2 className="lp-h2">{FOR_VENUES_HOWTO_TITLE}</h2>
-              {FOR_VENUES_HOWTO_BODY.split("\n\n").map((para, i) => (
-                <p key={i} className={i === 0 ? "mt-[5px] mb-[5px]" : "mt-[12px] mb-[5px]"}>{para}</p>
-              ))}
+              <p className="mt-[5px] mb-[5px]">
+                {FOR_VENUES_HOWTO_BODY.split("\n\n").map((para, i, arr) => (
+                  <React.Fragment key={i}>{para}{i < arr.length - 1 && <><br /><br /></>}</React.Fragment>
+                ))}
+              </p>
             </section>
 
             <nav className="lp-links" aria-label="Get your hall listed">
