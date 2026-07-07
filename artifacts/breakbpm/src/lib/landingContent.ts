@@ -121,7 +121,7 @@ export const POOL_STATS_SHOWCASE: ShowcaseItem[] = [
     imgAlt: "BreakBPM profile themes and customization",
   },
   {
-    title: "Play at a Verified Hall — Tag the Board",
+    title: "Climb the Local Leaderboard",
     body: "Every Verified Hall on BreakBPM has its own Leaderboard. Finish a game on location and tag it. Need a hall? Find your local spot via Find Players after logging in.",
     img: "/hall-card-example.png",
     imgAlt: "Granville Club verified hall card with Local Leaderboard button",
