@@ -106,7 +106,11 @@ Who's fastest? Use **[the Leaderboard](https://breakbpm.com/leaderboard)** to se
 Earn themes as you play each mode, or buy a pass to unlock them all! Lifetime pass holders also get access to a special raindow effect. Sign in to open the full leaderboard.
 
 ### Leaderboard Ranking
-When you have no won games in the last 24 hours or no won games at all, you will see a cue ball under your username on the Leaderbord. As you win 1-on-1 games of 8-ball 
+When you have no 8-ball wins in the last 24 hours, you'll see a plain cue ball under your username on the leaderboard. As you win games of 8-ball, the ball changes to show how many wins you have in that 24-hour window (1, 2, 3, and so on), up to a maximum of 15.
+
+After that it turns into a rainbow ball (how novel!). Please note that this tracks and credits a game's winning shot, so in doubles only the player who sinks it gets the credit. Wins older than 24 hours roll off, so the ball reflects your recent form.
+
+Tip: You can use this iconography to organize groups in a tournament 😉
 
 ### Local Leaderboards for Verified Halls
 
