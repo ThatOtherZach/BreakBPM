@@ -213,7 +213,7 @@ export const FOR_VENUES_FAQ: FaqItem[] = [
   },
   {
     q: "What do players get?",
-    a: "Their own Local Leaderboard for your tables, free score tracking with live Balls Per Minute and accuracy, and an easy way to find your hall inside the app.",
+    a: "Their own Local Leaderboard for the tables at the venue, a free score tracking system with Balls Per Minute and accuracy readings, and an easy way to find the hall inside the app.",
   },
   {
     q: "How do games get added to my hall's leaderboard?",
