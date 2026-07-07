@@ -32,26 +32,19 @@ const BALL_COLORS_16: Record<number, string> = {
   13: '#F27C1D', 14: '#276B40', 15: '#6B1F2A',
 };
 
-/** Decorative row of all 16 balls: cue ball then 1–15. */
+/** Decorative row of all 16 balls: cue ball then 1–15, using HUD chip CSS. */
 function DecorativeBallRow() {
-  const sz = 30;
-  const numSz = 20;
-  const numFontSz = 10;
   return (
-    <div style={{ display: "flex", gap: 3, justifyContent: "center", flexWrap: "wrap", margin: "10px 0 2px" }} aria-hidden="true">
-      <span className="cue-ball-icon" style={{ fontSize: sz }} />
-      {Array.from({ length: 15 }, (_, i) => i + 1).map((ball) => {
-        const ballClass = ball === 8 ? "ball-btn eight" : ball <= 8 ? "ball-btn solid" : "ball-btn stripe";
-        return (
-          <div
-            key={ball}
-            className={ballClass}
-            style={{ "--ball-color": BALL_COLORS_16[ball], width: sz, height: sz, pointerEvents: "none" } as React.CSSProperties}
-          >
-            <span className="ball-num" style={{ width: numSz, height: numSz, fontSize: numFontSz }}>{ball}</span>
-          </div>
-        );
-      })}
+    <div style={{ display: "flex", gap: 4, justifyContent: "center", flexWrap: "wrap", margin: "10px 0 2px" }} aria-hidden="true">
+      <span className="cue-ball-icon" style={{ fontSize: 26 }} />
+      {Array.from({ length: 15 }, (_, i) => i + 1).map((ball) => (
+        <span
+          key={ball}
+          className={`hud-chip ${ball === 8 ? "hud-chip-eight" : ball <= 7 ? "hud-chip-solid" : "hud-chip-stripe"}`}
+          data-number={ball}
+          style={{ "--chip-color": BALL_COLORS_16[ball] } as React.CSSProperties}
+        />
+      ))}
     </div>
   );
 }
@@ -326,7 +319,7 @@ export default function ForVenuesScreen({
                     <img
                       src={item.img}
                       alt={item.imgAlt}
-                      className="lp-sneak-img"
+                      className="mb-[4px]"
                       loading="lazy"
                     />
                   ) : null}
