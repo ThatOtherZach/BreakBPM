@@ -337,7 +337,7 @@ export default function ForVenuesScreen({
             <section>
               <h2 className="lp-h2">{FOR_VENUES_HOWTO_TITLE}</h2>
               {FOR_VENUES_HOWTO_BODY.split("\n\n").map((para, i) => (
-                <p key={i} className="mt-[5px] mb-[5px]">{para}</p>
+                <p key={i} className={i === 0 ? "mt-[5px] mb-[5px]" : "mt-[12px] mb-[5px]"}>{para}</p>
               ))}
             </section>
 
