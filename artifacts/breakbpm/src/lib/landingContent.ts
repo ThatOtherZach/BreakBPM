@@ -209,7 +209,7 @@ export const FOR_VENUES_MAILTO =
 export const FOR_VENUES_FAQ: FaqItem[] = [
   {
     q: "What does it cost?",
-    a: "Nothing. A verified hall listing on BreakBPM is free. In exchange, we ask for one public social media post — tagging #BreakBPM and linking to your hall's leaderboard page, on any platform. It doesn't have to be posted by the venue; a player or regular posting about your hall counts too.",
+    a: "Nothing, a verified hall on BreakBPM is free. Just share a social media post with us tagged with #BreakBPM and we'll add the location.",
   },
   {
     q: "What do my players get?",
