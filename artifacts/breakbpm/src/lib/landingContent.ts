@@ -139,7 +139,7 @@ export const POOL_STATS_SYSREQ: string[] = [
 export const POOL_STATS_FAQ: FaqItem[] = [
   {
     q: "What is BreakBPM?",
-    a: "BreakBPM is a free, browser-based pool stats app and live billiards score tracker. It logs every shot one ball at a time and gives you two numbers — your shooting accuracy and your Balls Per Minute (BPM) — across 8-ball, 9-ball, practice, and solo Shark mode. Nothing to install.",
+    a: "BreakBPM is a free, browser-based pool stats app and live billiards score tracker. It logs every shot one ball at a time and calculates your shooting accuracy and BPM (Balls Per Minute). Play 8-ball, 9-ball, Practice, and solo Shark Mode.",
   },
   {
     q: "What does Balls Per Minute (BPM) mean?",
