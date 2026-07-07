@@ -221,7 +221,7 @@ export const FOR_VENUES_FAQ: FaqItem[] = [
   },
   {
     q: "How do I get a venue listed in BreakBPM?",
-    a: "Email us your hall's name, address, table count, and website (if you have one). Our team adds verified halls by hand, usually within a day or two.",
+    a: "Email us a social post with the venue's name, address, table count, and website. Our team will verify it and the social post before adding it — usually within a day or two. Be sure to tag #BreakBPM!",
   },
   {
     q: "Can I update or remove my listing later?",
