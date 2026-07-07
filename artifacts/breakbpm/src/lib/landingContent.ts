@@ -212,7 +212,7 @@ export const FOR_VENUES_FAQ: FaqItem[] = [
     a: "Nothing, a verified hall on BreakBPM is free. Just share a social media post with us tagged with #BreakBPM and we'll add the location.",
   },
   {
-    q: "What do my players get?",
+    q: "What do players get?",
     a: "Their own Local Leaderboard for your tables, free score tracking with live Balls Per Minute and accuracy, and an easy way to find your hall inside the app.",
   },
   {
