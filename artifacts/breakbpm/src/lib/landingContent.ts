@@ -220,7 +220,7 @@ export const FOR_VENUES_FAQ: FaqItem[] = [
     a: "A player finishes a 1-on-1 game on-site and tags it to the hall. The app performs a quick on-location check, and then saves the game to the corresponding leaderboard.",
   },
   {
-    q: "How do I get my hall listed?",
+    q: "How do I get a venue listed in BreakBPM?",
     a: "Email us your hall's name, address, table count, and website (if you have one). Our team adds verified halls by hand, usually within a day or two.",
   },
   {
