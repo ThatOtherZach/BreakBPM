@@ -224,7 +224,7 @@ export const FOR_VENUES_FAQ: FaqItem[] = [
     a: "Email us a social post with the venue's name, address, table count, and website. Our team will verify it and the social post before adding it — usually within a day or two. Be sure to tag #BreakBPM!",
   },
   {
-    q: "Can I update or remove my listing later?",
+    q: "Can I update or remove the listing later?",
     a: "Yes. Just email us and we'll update your hall's details or remove the listing.",
   },
 ];
