@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { QRCodeSVG } from "qrcode.react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
@@ -24,6 +24,37 @@ import {
   FOR_VENUES_MAILTO,
   FOR_VENUES_FAQ,
 } from "../lib/landingContent";
+
+const BALL_COLORS_16: Record<number, string> = {
+  1: '#FDD307', 2: '#1F4E9E', 3: '#C3342B', 4: '#5B247A',
+  5: '#F27C1D', 6: '#276B40', 7: '#6B1F2A', 8: '#000000',
+  9: '#FDD307', 10: '#1F4E9E', 11: '#C3342B', 12: '#5B247A',
+  13: '#F27C1D', 14: '#276B40', 15: '#6B1F2A',
+};
+
+/** Decorative row of all 16 balls: cue ball then 1–15. */
+function DecorativeBallRow() {
+  const sz = 30;
+  const numSz = 20;
+  const numFontSz = 10;
+  return (
+    <div style={{ display: "flex", gap: 3, justifyContent: "center", flexWrap: "wrap", margin: "10px 0 2px" }} aria-hidden="true">
+      <span className="cue-ball-icon" style={{ fontSize: sz }} />
+      {Array.from({ length: 15 }, (_, i) => i + 1).map((ball) => {
+        const ballClass = ball === 8 ? "ball-btn eight" : ball <= 8 ? "ball-btn solid" : "ball-btn stripe";
+        return (
+          <div
+            key={ball}
+            className={ballClass}
+            style={{ "--ball-color": BALL_COLORS_16[ball], width: sz, height: sz, pointerEvents: "none" } as React.CSSProperties}
+          >
+            <span className="ball-num" style={{ width: numSz, height: numSz, fontSize: numFontSz }}>{ball}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 /** Star pin for a verified hall on the "all our pool halls" map. */
 const starIcon = L.divIcon({
@@ -300,6 +331,7 @@ export default function ForVenuesScreen({
                     />
                   ) : null}
                 </section>
+                {item.liveHall && <DecorativeBallRow />}
                 {item.title === "Found by Local Players" && <AllHallsMap />}
               </Fragment>
             ))}
