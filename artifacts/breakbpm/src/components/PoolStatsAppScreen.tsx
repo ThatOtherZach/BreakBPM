@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import FreePassCTA from "./FreePassCTA";
@@ -16,6 +16,34 @@ import {
   POOL_STATS_SYSREQ,
   POOL_STATS_FAQ,
 } from "../lib/landingContent";
+
+const BALL_COLORS: Record<number, string> = {
+  1: '#F7D700', 2: '#2255B0', 3: '#E03A2E', 4: '#6B2D8B',
+  5: '#E07820', 6: '#1A7A3C', 7: '#8B1A1A', 8: '#222222',
+  9: '#FDD307', 10: '#1F4E9E', 11: '#C3342B', 12: '#5B247A',
+  13: '#F27C1D', 14: '#276B40', 15: '#6B1F2A',
+};
+
+function DecorativeBallRow() {
+  const chip = (ball: number) => (
+    <span
+      key={ball}
+      className={`hud-chip ${ball === 8 ? "hud-chip-eight" : ball <= 7 ? "hud-chip-solid" : "hud-chip-stripe"}`}
+      data-number={ball}
+      style={{ "--chip-color": BALL_COLORS[ball] } as React.CSSProperties}
+    />
+  );
+  const rowStyle: React.CSSProperties = { display: "flex", gap: 3, justifyContent: "center" };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, margin: "10px 0 2px" }} aria-hidden="true">
+      <div style={rowStyle}>{[1].map(chip)}</div>
+      <div style={rowStyle}>{[2, 3].map(chip)}</div>
+      <div style={rowStyle}>{[4, 8, 5].map(chip)}</div>
+      <div style={rowStyle}>{[6, 7, 9, 10].map(chip)}</div>
+      <div style={rowStyle}>{[11, 12, 13, 14, 15].map(chip)}</div>
+    </div>
+  );
+}
 
 function LatestHallWidget({
   fallbackImg,
@@ -177,6 +205,8 @@ export default function PoolStatsAppScreen({
                 BreakBPM Manual
               </button>
             </nav>
+
+            <DecorativeBallRow />
 
             {/* ── FAQ ── */}
             <h2 className="lp-h2">Frequently Asked Questions (FAQ)</h2>
