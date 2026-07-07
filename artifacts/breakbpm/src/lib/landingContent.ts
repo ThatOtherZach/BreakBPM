@@ -159,7 +159,7 @@ export const POOL_STATS_FAQ: FaqItem[] = [
   },
   {
     q: "How do I get a free pass?",
-    a: "Claim one free pass per account from this page. Every claim is a guaranteed win: at minimum a Day pass, with a chance at a Lucky Break roll for a Monthly or even Lifetime pass, while monthly stock lasts.",
+    a: "Claim one free pass per account. Every claim is a guaranteed win: at minimum a Day Pass, with a chance at a Lucky Break roll for a 30 Day Pass or a Lifetime Pass, while supplies last.",
   },
 ];
 
