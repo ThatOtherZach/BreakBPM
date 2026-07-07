@@ -32,19 +32,26 @@ const BALL_COLORS_16: Record<number, string> = {
   13: '#F27C1D', 14: '#276B40', 15: '#6B1F2A',
 };
 
-/** Decorative row of all 16 balls: cue ball then 1–15, using HUD chip CSS. */
+/** Decorative two-row rack: cue ball + 1–7 on top, 8–15 on the bottom. */
 function DecorativeBallRow() {
+  const rowStyle: React.CSSProperties = { display: "flex", gap: 4, justifyContent: "center" };
+  const chip = (ball: number) => (
+    <span
+      key={ball}
+      className={`hud-chip ${ball === 8 ? "hud-chip-eight" : ball <= 7 ? "hud-chip-solid" : "hud-chip-stripe"}`}
+      data-number={ball}
+      style={{ "--chip-color": BALL_COLORS_16[ball] } as React.CSSProperties}
+    />
+  );
   return (
-    <div style={{ display: "flex", gap: 4, justifyContent: "center", flexWrap: "wrap", margin: "10px 0 2px" }} aria-hidden="true">
-      <span className="cue-ball-icon" style={{ fontSize: 26 }} />
-      {Array.from({ length: 15 }, (_, i) => i + 1).map((ball) => (
-        <span
-          key={ball}
-          className={`hud-chip ${ball === 8 ? "hud-chip-eight" : ball <= 7 ? "hud-chip-solid" : "hud-chip-stripe"}`}
-          data-number={ball}
-          style={{ "--chip-color": BALL_COLORS_16[ball] } as React.CSSProperties}
-        />
-      ))}
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, margin: "10px 0 2px" }} aria-hidden="true">
+      <div style={rowStyle}>
+        <span className="cue-ball-icon" style={{ fontSize: 26 }} />
+        {[1, 2, 3, 4, 5, 6, 7].map(chip)}
+      </div>
+      <div style={rowStyle}>
+        {[8, 9, 10, 11, 12, 13, 14, 15].map(chip)}
+      </div>
     </div>
   );
 }
