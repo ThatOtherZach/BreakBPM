@@ -329,7 +329,6 @@ export default function ForVenuesScreen({
                     />
                   ) : null}
                 </section>
-                {item.liveHall && <DecorativeBallRow />}
                 {item.title === "Found by Local Players" && <AllHallsMap />}
               </Fragment>
             ))}
@@ -347,6 +346,8 @@ export default function ForVenuesScreen({
                 ✉ Request Your Venue
               </a>
             </nav>
+
+            <DecorativeBallRow />
 
             {/* ── FAQ ── */}
             <h2 className="lp-h2">Frequently Asked Questions (FAQ)</h2>
