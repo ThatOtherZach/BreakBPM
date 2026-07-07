@@ -130,7 +130,7 @@ export default function PoolStatsAppScreen({
             <p className="lp-intro">{POOL_STATS_INTRO}</p>
 
             <button className="btn btn-primary btn-big w-full" onClick={onHome}>
-              ▶ Start Scoring — It's Free
+              <span className="cue-ball-icon" style={{ fontSize: 16 }} aria-hidden="true" /> Start Scoring — It's Free
             </button>
 
             <img
