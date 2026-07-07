@@ -216,7 +216,7 @@ export const FOR_VENUES_FAQ: FaqItem[] = [
     a: "Their own Local Leaderboard for the tables at the venue, a free score tracking system with Balls Per Minute and accuracy readings, and an easy way to find the hall inside the app.",
   },
   {
-    q: "How do games get added to my hall's leaderboard?",
+    q: "How do games get added to the hall's leaderboard?",
     a: "A player finishes a 1-on-1 game on-site and tags it to your hall — a quick on-location check-in. Those games rank players on your hall's Local Leaderboard.",
   },
   {
