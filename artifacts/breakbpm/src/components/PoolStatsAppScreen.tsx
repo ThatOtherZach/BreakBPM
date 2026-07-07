@@ -183,7 +183,7 @@ export default function PoolStatsAppScreen({
             />
             <section>
               <h2 className="lp-h2">Spectate &amp; Share Your Stats</h2>
-              <p>Every game has a join code. Friends can join an open seat before the break or spectate by name after — seeing your live HUD, shot log, and BPM in real time, on their own device. Link a registered friend with an @mention before breaking! Pass holders get access to an OBS overlay URL for streaming scores.</p>
+              <p>Every game has a join code. Friends can join an open seat before the break or spectate by name after. See your live HUD, shot log, and BPM in real time, on your device. Link a registered friend with an @mention before breaking! If you have a pass you get access to an OBS overlay URL for streaming your scores.</p>
             </section>
 
             {/* ── System requirements ── */}
