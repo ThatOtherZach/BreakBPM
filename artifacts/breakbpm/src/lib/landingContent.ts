@@ -170,7 +170,7 @@ export const POOL_STATS_FAQ: FaqItem[] = [
  * JSON-LD stay in lockstep. Keep it plain data (no React) for build-time import.
  */
 
-export const FOR_VENUES_H1 = "Put Your Hall on the Board";
+export const FOR_VENUES_H1 = "Add a Verified Pool Hall";
 
 export const FOR_VENUES_TAGLINE =
   "A free listing for pool halls — all it takes is one public social post about your hall.";
