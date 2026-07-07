@@ -50,7 +50,6 @@ function DecorativeBallRow() {
       <div style={rowStyle}>{[4, 8, 5].map(chip)}</div>
       <div style={rowStyle}>{[6, 7, 9, 10].map(chip)}</div>
       <div style={rowStyle}>{[11, 12, 13, 14, 15].map(chip)}</div>
-      <span className="cue-ball-icon" style={{ fontSize: 26, marginTop: 6 }} />
     </div>
   );
 }
