@@ -172,8 +172,7 @@ export const POOL_STATS_FAQ: FaqItem[] = [
 
 export const FOR_VENUES_H1 = "Add a Verified Pool Hall";
 
-export const FOR_VENUES_TAGLINE =
-  "A free listing for pool halls — all it takes is one public social post about your hall.";
+export const FOR_VENUES_TAGLINE = "Share the location, get it added.";
 
 export const FOR_VENUES_INTRO =
   "BreakBPM is a free Billiards scoring app players can use right at the table. Track your BPM (Balls Per Minute), accuracy against the global and local leaderboards at Verified Pool Halls. A zero upkeep, complete scoring and ranking system built for your pool tables.";
