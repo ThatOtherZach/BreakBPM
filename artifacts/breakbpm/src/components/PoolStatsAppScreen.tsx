@@ -153,12 +153,15 @@ export default function PoolStatsAppScreen({
                     fallbackAlt={item.imgAlt}
                   />
                 ) : item.img ? (
-                  <img
-                    src={item.img}
-                    alt={item.imgAlt}
-                    className="lp-sneak-img"
-                    loading="lazy"
-                  />
+                  <div className="panel" style={{ marginTop: 8 }}>
+                    <img
+                      src={item.img}
+                      alt={item.imgAlt}
+                      className="lp-sneak-img"
+                      loading="lazy"
+                      style={{ marginTop: 0 }}
+                    />
+                  </div>
                 ) : null}
                 {item.liveLeaderboard ? <LeaderboardWidget /> : null}
               </section>

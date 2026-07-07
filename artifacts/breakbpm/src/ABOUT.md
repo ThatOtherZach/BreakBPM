@@ -105,6 +105,9 @@ Who's fastest? Use **[the Leaderboard](https://breakbpm.com/leaderboard)** to se
 
 Earn themes as you play each mode, or buy a pass to unlock them all! Lifetime pass holders also get access to a special raindow effect. Sign in to open the full leaderboard.
 
+### Leaderboard Ranking
+When you have no won games in the last 24 hours or no won games at all, you will see a cue ball under your username on the Leaderbord. As you win 1-on-1 games of 8-ball 
+
 ### Local Leaderboards for Verified Halls
 
 Every **[Verified Hall](https://breakbpm.com/find-players)** has its own **Local Leaderboard**, a ranked list of the players who shoot there.
