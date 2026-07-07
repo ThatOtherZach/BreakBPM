@@ -66,7 +66,7 @@ export const POOL_STATS_H1 =
   "Nice Rack, Track It";
 
 export const POOL_STATS_LORE =
-  "Developed by Saym Software Systems in the late 1990s. Held back by the Y2K bug. Unreleased — until now.";
+  "Developed by Saym Services Inc.";
 
 export const POOL_STATS_INTRO =
   "BreakBPM logs every shot, one ball at a time, and gives you two numbers back: your shooting accuracy and your Balls Per Minute. Free to play, nothing to install, works in any browser.";
