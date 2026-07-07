@@ -130,10 +130,10 @@ export const POOL_STATS_SHOWCASE: ShowcaseItem[] = [
 ];
 
 export const POOL_STATS_SYSREQ: string[] = [
-  "Any modern browser — Chrome, Safari, Firefox, Edge",
-  "Works on mobile, tablet, and desktop",
-  "No download. No install. No subscription required.",
-  "Internet connection required to save stats and spectate",
+  "🌐 Any modern browser — Chrome, Safari, Firefox, Edge",
+  "📱 Works on mobile, tablet, and desktop",
+  "✅ No download. No install. No subscription required.",
+  "📶 Internet connection required to save stats and spectate",
 ];
 
 export const POOL_STATS_FAQ: FaqItem[] = [
