@@ -986,6 +986,8 @@ export interface GameHistoryEntry {
   bpm?: number | null;
   /** @nullable */
   accuracy?: number | null;
+  defenseSafeties?: number;
+  defenseSuccesses?: number;
   durationMs: number;
   sunkBallsCount: number;
   outcome: string;

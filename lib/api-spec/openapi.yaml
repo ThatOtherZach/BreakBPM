@@ -2496,6 +2496,15 @@ components:
         # present (so a joiner sees their own accuracy), falling back to the
         # row-level winner/host accuracy for legacy rows. Null when not recorded.
         accuracy: { type: ["integer", "null"] }
+        # The subject's own defense numbers for THIS game: how many safeties
+        # they played (safety button presses) and how many succeeded (the
+        # opponent's very next shot pocketed nothing). Present only when the
+        # subject's participant summary is v2+ — both fields are OMITTED for
+        # older un-healed rows and unknown participants ("no data", never 0).
+        # The history card shows a DEF chip beside accuracy only when
+        # defenseSafeties > 0; otherwise the card renders exactly as before.
+        defenseSafeties: { type: integer }
+        defenseSuccesses: { type: integer }
         durationMs: { type: integer }
         sunkBallsCount: { type: integer }
         # Subject-relative result for the player whose history this is:

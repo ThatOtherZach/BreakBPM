@@ -263,6 +263,15 @@ export default function GameHistoryCard({
   const [opponentOverflow, setOpponentOverflow] = useState(false);
   const hasBpm = g.bpm != null;
   const hasAcc = g.accuracy != null;
+  // Per-game defense: shown only when the subject actually played a safety in
+  // THIS game AND the server sent v2 defense data (older un-healed rows omit
+  // the fields — "no data", never a misleading 0%). No safeties → the card
+  // renders exactly as before.
+  const hasDef =
+    g.defenseSafeties != null && g.defenseSafeties > 0 && g.defenseSuccesses != null;
+  const defRate = hasDef
+    ? Math.round((g.defenseSuccesses! / g.defenseSafeties!) * 100)
+    : null;
   // Tint the card's pool-table felt to THIS game's HOST theme (server-resolved
   // `hostTheme`), so every viewer sees the host's table — not their own theme.
   // No host theme → green (the default felt). Mirrors the leaderboard card felt.
@@ -516,6 +525,22 @@ export default function GameHistoryCard({
           >
             {hasAcc ? `${g.accuracy}% ACC` : "—% ACC"}
           </span>
+          {hasDef && (
+            <span
+              title={`Defense: ${g.defenseSuccesses} of ${g.defenseSafeties} ${
+                g.defenseSafeties === 1 ? "safety" : "safeties"
+              } left the opponent without a pocketed ball`}
+              style={{
+                fontFamily: "VT323",
+                fontSize: 18,
+                lineHeight: 1,
+                color: "#d8b4ff",
+                textShadow: "1px 1px 0 #042414",
+              }}
+            >
+              {defRate}% DEF
+            </span>
+          )}
           <span style={{ fontSize: 10, color: "#a9c9b3" }}>
             🕐 {fmtMs(g.durationMs)}
           </span>

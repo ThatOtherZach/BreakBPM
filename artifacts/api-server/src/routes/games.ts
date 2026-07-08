@@ -360,6 +360,10 @@ function toHistoryEntry(
   venue: { id: string; name: string } | null = null,
   registeredSlots: Map<number, string> | null = null,
   redactGuestNames = false,
+  // The SUBJECT's own participant summary — carries their per-game safety
+  // counts for the DEF chip. Null when the subject has no participant row
+  // (e.g. a pending @mention invite) or the row predates summaries.
+  psum: ParticipantSummary | null = null,
 ) {
   const gs = g.gameState as Record<string, unknown> | null;
   // Host theme snapshotted onto gameState at /games/start (see return field).
@@ -458,6 +462,15 @@ function toHistoryEntry(
     opponentRegistered,
     bpm: pace.bpm,
     accuracy,
+    // Subject's own defense numbers for THIS game, from their participant
+    // summary. Only v2+ summaries carry safetySuccessCount — omit both fields
+    // when it's absent so the card reads "no data" (never a misleading 0%)
+    // for legacy rows the lazy self-heal hasn't re-distilled yet. These are
+    // the subject's OWN aggregate counts (no opponent/guest names), so they
+    // are safe on the redacted public-profile path too.
+    ...(psum && psum.safetySuccessCount != null
+      ? { defenseSafeties: psum.safetyCount, defenseSuccesses: psum.safetySuccessCount }
+      : {}),
     durationMs: g.durationMs,
     sunkBallsCount: pace.sunkBallsCount,
     outcome,
@@ -2332,6 +2345,7 @@ router.get("/games/profile", async (req, res): Promise<void> => {
         // typed-in opponent/winner/shooter names never leave the server. The
         // owner's own Account history (the other call site) keeps full names.
         true,
+        psum,
       );
     });
   }
@@ -2654,6 +2668,8 @@ router.get("/games/history", async (req, res): Promise<void> => {
       readGameSummary(g.summary),
       g.venueId ? (venueLabels.get(g.venueId) ?? null) : null,
       registeredSlotsByGame.get(g.id) ?? null,
+      false,
+      psum,
     );
   });
 
@@ -3756,6 +3772,8 @@ router.get("/mentions", async (req, res): Promise<void> => {
         readGameSummary(r.game.summary),
         null,
         registeredSlotsByGame.get(r.game.id) ?? null,
+        false,
+        psum,
       ),
     };
   });

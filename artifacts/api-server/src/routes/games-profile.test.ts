@@ -18,6 +18,8 @@ import {
   seedDiscountCode,
   seedGame,
   seedParticipant,
+  finalizeSeededGame,
+  setStaleSummary,
   cleanup,
 } from "../test/factories";
 
@@ -454,5 +456,61 @@ describe("GET /games/profile — guest-name redaction on the public profile", ()
     // while the human shooter's typed name is tokenized away.
     expect(players).toContain("Shark");
     expect(players).not.toContain("Champ");
+  });
+});
+
+describe("GET /games/profile — per-game defense fields", () => {
+  it("returns the subject's own safety counts for a finalized (v2) game", async () => {
+    const host = await createUser();
+    const base = Date.now() - 60 * 60 * 1000;
+    // Two safeties by the host: the first HELD (the opponent's very next shot
+    // pocketed nothing), the second was ANSWERED (the opponent sank a ball).
+    const g = await seedGame(host.id, {
+      hostName: host.screenName,
+      shotLog: [
+        { type: "safety", playerName: host.screenName, timestamp: base },
+        { type: "miss", playerName: "Guest", timestamp: base + 10_000 },
+        { type: "safety", playerName: host.screenName, timestamp: base + 20_000 },
+        { type: "sink", playerName: "Guest", ball: 3, timestamp: base + 30_000 },
+      ],
+      startedAt: new Date(base),
+      endedAt: new Date(base + 60_000),
+      winner: "Guest",
+    });
+    await seedParticipant(g.id, 1, { displayName: "Guest" });
+    await finalizeSeededGame(g.id);
+
+    const res = await fetchProfile(host.screenName);
+
+    expect(res.status).toBe(200);
+    const row = res.body.games.find((x: { id: string }) => x.id === g.id);
+    expect(row).toBeDefined();
+    expect(row.defenseSafeties).toBe(2);
+    expect(row.defenseSuccesses).toBe(1);
+  });
+
+  it("omits both defense fields when the subject's summary is unreadable (no data ≠ 0)", async () => {
+    const host = await createUser();
+    const base = Date.now() - 60 * 60 * 1000;
+    const g = await seedGame(host.id, {
+      hostName: host.screenName,
+      shotLog: [{ type: "safety", playerName: host.screenName, timestamp: base }],
+      startedAt: new Date(base),
+      endedAt: new Date(base + 60_000),
+    });
+    await finalizeSeededGame(g.id);
+    // Force a FUTURE-version summary: unreadable, and deliberately NOT lifted
+    // by the read-path self-heal (which only repairs versions BELOW current) —
+    // exactly the rollback-window shape where defense data must read as
+    // "absent", never as a fabricated 0%.
+    await setStaleSummary(g.id);
+
+    const res = await fetchProfile(host.screenName);
+
+    expect(res.status).toBe(200);
+    const row = res.body.games.find((x: { id: string }) => x.id === g.id);
+    expect(row).toBeDefined();
+    expect(row).not.toHaveProperty("defenseSafeties");
+    expect(row).not.toHaveProperty("defenseSuccesses");
   });
 });
