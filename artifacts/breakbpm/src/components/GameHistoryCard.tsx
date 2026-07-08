@@ -555,7 +555,7 @@ export default function GameHistoryCard({
               textShadow: "1px 1px 0 #042414",
             }}
           >
-            🕐 {fmtMs(g.durationMs)}
+            <span style={{ fontSize: 11 }}>🕐</span> {fmtMs(g.durationMs)}
           </span>
         </div>
       </div>
