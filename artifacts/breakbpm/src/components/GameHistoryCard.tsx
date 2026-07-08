@@ -546,7 +546,15 @@ export default function GameHistoryCard({
               {defRate}% DEF
             </span>
           )}
-          <span style={{ fontSize: 10, color: "#a9c9b3" }}>
+          <span
+            style={{
+              fontFamily: "VT323",
+              fontSize: 18,
+              lineHeight: 1,
+              color: "#a9c9b3",
+              textShadow: "1px 1px 0 #042414",
+            }}
+          >
             🕐 {fmtMs(g.durationMs)}
           </span>
         </div>
