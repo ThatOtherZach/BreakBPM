@@ -737,21 +737,26 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
                     </div>
                   </div>
                 </div>
-                {canTheme && (
-                  <button
-                    className="btn w-full"
-                    disabled={updateTheme.isPending}
-                    title="Cycle theme"
-                    onClick={() => {
-                      const idx = THEME_CYCLE.indexOf(effectiveTheme);
-                      handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length]);
-                    }}
-                  >
-                    {effectiveTheme === "rainbow" ? RAINBOW_DOT : THEME_DOT[themeColorOf(effectiveTheme)]} Change Theme
-                  </button>
-                )}
-                {canEditName && (
-                  <button className="btn w-full" onClick={() => setEditing(true)}>Edit Username</button>
+                {(canTheme || canEditName) && (
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {canTheme && (
+                      <button
+                        className="btn"
+                        style={{ flex: 1 }}
+                        disabled={updateTheme.isPending}
+                        title="Cycle theme"
+                        onClick={() => {
+                          const idx = THEME_CYCLE.indexOf(effectiveTheme);
+                          handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length]);
+                        }}
+                      >
+                        {effectiveTheme === "rainbow" ? RAINBOW_DOT : THEME_DOT[themeColorOf(effectiveTheme)]} Change Theme
+                      </button>
+                    )}
+                    {canEditName && (
+                      <button className="btn" style={{ flex: 1 }} onClick={() => setEditing(true)}>Edit Username</button>
+                    )}
+                  </div>
                 )}
                 <div
                   style={{
