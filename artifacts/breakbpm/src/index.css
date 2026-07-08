@@ -2242,6 +2242,23 @@ html, #root {
   background-color: #ff3b3b;
   box-shadow: 0 0 6px rgba(255, 59, 59, 0.55);
 }
+.stats-meter-fill.purple {
+  background-color: #c084ff;
+  box-shadow: 0 0 6px rgba(192, 132, 255, 0.55);
+}
+
+/* Compound (dual) meter — two slim stacked fills sharing the one track.
+   Same overall track height; each fill takes half, with a hairline gap. */
+.stats-meter-track--dual {
+  display: flex;
+  flex-direction: column;
+}
+.stats-meter-track--dual .stats-meter-fill {
+  height: calc(50% - 0.5px);
+}
+.stats-meter-track--dual .stats-meter-fill:first-child {
+  margin-bottom: 1px;
+}
 
 /* Split meter — solids vs stripes in one track. */
 .stats-split-track {

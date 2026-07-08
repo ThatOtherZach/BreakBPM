@@ -63,9 +63,24 @@ function fmtWhen(iso: string | undefined): string {
   }
 }
 
-type Tone = "green" | "amber" | "cyan" | "red";
+type Tone = "green" | "amber" | "cyan" | "red" | "purple";
 
-/** A recessed CRT gauge: glowing notched fill bar scaled 0..100. */
+const TONE_COLORS: Record<Tone, string> = {
+  green: "#00ff41",
+  amber: "#ffb300",
+  cyan: "#36c5f0",
+  red: "#ff3b3b",
+  purple: "#c084ff",
+};
+
+function clampPct(pct: number | null | undefined): number {
+  return pct == null || !Number.isFinite(pct) ? 0 : Math.max(0, Math.min(100, pct));
+}
+
+/** A recessed CRT gauge: glowing notched fill bar scaled 0..100.
+ *  When `pct2`/`display2` are given, renders a compound meter: two slim
+ *  stacked fills in the one track and both values in the header, each
+ *  tinted to match its fill. */
 function PixelMeter({
   label,
   emoji,
@@ -73,6 +88,10 @@ function PixelMeter({
   display,
   sub,
   tone = "green",
+  pct2,
+  display2,
+  tone2 = "purple",
+  title,
 }: {
   label: string;
   emoji?: React.ReactNode;
@@ -80,19 +99,39 @@ function PixelMeter({
   display: string;
   sub?: string;
   tone?: Tone;
+  pct2?: number | null;
+  display2?: string;
+  tone2?: Tone;
+  title?: string;
 }) {
-  const w = pct == null || !Number.isFinite(pct) ? 0 : Math.max(0, Math.min(100, pct));
+  const w = clampPct(pct);
+  const dual = display2 != null;
   return (
-    <div className="stats-meter-row">
+    <div className="stats-meter-row" title={title}>
       <div className="stats-meter-top">
         <span className="stats-meter-name font-semibold">
           {emoji && <span aria-hidden="true">{emoji}</span>}
           {label}
         </span>
-        <span className="stats-meter-val">{display}</span>
+        {dual ? (
+          <span className="stats-meter-val">
+            <span style={{ color: TONE_COLORS[tone] }}>{display}</span>
+            <span style={{ opacity: 0.6 }}> / </span>
+            <span style={{ color: TONE_COLORS[tone2] }}>{display2}</span>
+          </span>
+        ) : (
+          <span className="stats-meter-val">{display}</span>
+        )}
       </div>
-      <div className="stats-meter-track">
-        <div className={`stats-meter-fill ${tone}`} style={{ width: `${w}%` }} />
+      <div className={`stats-meter-track${dual ? " stats-meter-track--dual" : ""}`}>
+        {dual ? (
+          <>
+            <div className={`stats-meter-fill ${tone}`} style={{ width: `${w}%` }} />
+            <div className={`stats-meter-fill ${tone2}`} style={{ width: `${clampPct(pct2)}%` }} />
+          </>
+        ) : (
+          <div className={`stats-meter-fill ${tone}`} style={{ width: `${w}%` }} />
+        )}
       </div>
       {sub && (
         <span style={{ fontSize: 10, color: "#ffffff", letterSpacing: 0.3, marginTop: 1, display: "block", textAlign: "center" }}>{sub}</span>
@@ -809,7 +848,6 @@ export default function StatsScreen({ onBack, onManual, onAccount, onFindPlayers
                   <SectionHeader emoji="🎯" title="Shooting" />
                   <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     <PixelMeter
-                      label="ACCURACY"
                       emoji={stats.topBalls.length > 0 ? (() => {
                         const top = stats.topBalls[0].ball;
                         const chipClass =
@@ -826,9 +864,18 @@ export default function StatsScreen({ onBack, onManual, onAccount, onFindPlayers
                           />
                         );
                       })() : "🎯"}
+                      label={stats.defenseRate != null ? "ACC / DEF" : "ACCURACY"}
                       pct={stats.accuracy}
                       display={stats.accuracy == null ? "—" : `${stats.accuracy}%`}
                       tone="green"
+                      {...(stats.defenseRate != null
+                        ? {
+                            pct2: stats.defenseRate,
+                            display2: `${stats.defenseRate}%`,
+                            tone2: "purple" as const,
+                            title: `Accuracy ${stats.accuracy == null ? "—" : `${stats.accuracy}%`} · Defense: held ${stats.defenseSuccesses} of ${stats.defenseSafeties} ${stats.defenseSafeties === 1 ? "safety" : "safeties"}`,
+                          }
+                        : {})}
                     />
                     <PixelMeter
                       label="FOUL RATE"
