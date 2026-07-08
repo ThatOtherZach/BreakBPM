@@ -327,11 +327,6 @@ export default function StatsHero({
             >
               <span className="stats-hero-side-val">{stats.defenseRate == null ? "--" : `${stats.defenseRate}%`}</span>
               <span className="stats-hero-side-label" style={{ color: "#fff" }}>DEFENSE</span>
-              <span className="stats-hero-side-label">
-                {stats.defenseSafeties > 0
-                  ? `${stats.defenseSuccesses}/${stats.defenseSafeties} ${stats.defenseSafeties === 1 ? "SAFETY" : "SAFETIES"}`
-                  : "NO SAFETIES"}
-              </span>
             </div>
           </div>
           {joinedAt && (
