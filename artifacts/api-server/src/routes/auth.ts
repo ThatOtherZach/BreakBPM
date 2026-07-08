@@ -62,11 +62,13 @@ router.get("/auth/me", async (req, res): Promise<void> => {
   // The caller's own standing in the all-time global BPM ranking (shares the
   // 1-hour leaderboard cache, so this is a cheap lookup in the common case).
   // Screen names are canonical + unique, so they key a row to a single user.
-  // Omitted when the caller has too few qualifying games to be ranked.
-  // All-time personal stats supply the identity card's Defense chip. Shares
-  // the 1-hour personal-stats cache (busted on every game completion), so
-  // this is a cheap lookup in the common case — same snapshot the Stats
-  // screen's all-time window renders.
+  // Omitted when the caller has too few qualifying games to be ranked. The
+  // identity card's ACC and DEF chips both read from this standing so they
+  // describe the same slice of ranked games.
+  // All-time personal stats supply the account's defense fields (same
+  // snapshot the Stats screen's all-time window renders). Shares the 1-hour
+  // personal-stats cache (busted on every game completion), so this is a
+  // cheap lookup in the common case.
   const [globalRanking, winsToday, allTimeStats] = await Promise.all([
     resolveLeaderboard("8ball", "all"),
     countEightBallWinsToday(user.id),
