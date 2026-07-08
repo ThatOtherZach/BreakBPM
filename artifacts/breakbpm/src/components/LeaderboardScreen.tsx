@@ -183,13 +183,6 @@ export function LeaderboardRowCard({
         </div>
       </div>
       </div>
-      {onWho && (
-        <button
-          className="btn"
-          style={{ alignSelf: "flex-start", fontSize: 11, padding: "1px 8px" }}
-          onClick={() => onWho(row.screenName)}
-        >🔎 View</button>
-      )}
     </div>
   );
 }
