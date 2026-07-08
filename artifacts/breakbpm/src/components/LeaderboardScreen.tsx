@@ -182,7 +182,11 @@ export function LeaderboardRowCard({
         </div>
       </div>
       {onWho && (
-        <button className="btn" style={{ flexShrink: 0 }} onClick={() => onWho(row.screenName)}>🔎</button>
+        <button
+          className="btn"
+          style={{ flexShrink: 0, minHeight: 0, minWidth: 0, padding: "4px 8px", fontSize: 14 }}
+          onClick={() => onWho(row.screenName)}
+        >🔎</button>
       )}
     </div>
   );
