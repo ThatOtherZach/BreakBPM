@@ -120,7 +120,7 @@ export function LeaderboardRowCard({
             <PlayerName name={row.screenName} rainbow={row.rainbowName ?? false} />
           </span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           <WinsTodayChip winsToday={row.winsToday ?? 0} small />
           <span
             style={{
@@ -144,6 +144,23 @@ export function LeaderboardRowCard({
           >
             {row.accuracy != null ? `${row.accuracy}% ACC` : "—% ACC"}
           </span>
+          {/* Defense chip — window safety effectiveness, same style as the
+              account page. Only shown once the player has at least one
+              defense-scored safety; v1-only history = "no data", not 0%. */}
+          {(row.defenseSafeties ?? 0) > 0 && row.defenseRate != null && (
+            <span
+              title={`Defense: ${row.defenseSuccesses} of ${row.defenseSafeties} ${row.defenseSafeties === 1 ? "safety" : "safeties"} left the opponent without a pocketed ball`}
+              style={{
+                fontFamily: "VT323",
+                fontSize: 16,
+                lineHeight: 1,
+                color: "#d8b4ff",
+                textShadow: "1px 1px 0 #042414",
+              }}
+            >
+              {row.defenseRate}% DEF
+            </span>
+          )}
           {row.sharkLevel != null && row.sharkLevel > 0 && (
             <span
               style={{
@@ -326,10 +343,10 @@ export default function LeaderboardScreen({
     isHall && hallVenue
       ? {
           title: `${hallVenue.name} Pool Leaderboard${hallVenue.locality ? ` · ${hallVenue.locality}` : ""} | BreakBPM`,
-          description: `Live local pool leaderboard for ${hallVenue.name}${hallVenue.locality ? ` in ${hallVenue.locality}` : ""}. See the top 8-ball & 9-ball players ranked by accuracy and Balls Per Minute, tracked free with BreakBPM.`,
+          description: `Live local pool leaderboard for ${hallVenue.name}${hallVenue.locality ? ` in ${hallVenue.locality}` : ""}. See the top 8-ball & 9-ball players ranked by accuracy, defense, and Balls Per Minute, tracked free with BreakBPM.`,
           canonical: `https://breakbpm.com/leaderboard/hall/${encodeURIComponent(hallSlug)}`,
           ogTitle: `${hallVenue.name} — Local Pool Leaderboard | BreakBPM`,
-          ogDescription: `The live 8-ball & 9-ball leaderboard for ${hallVenue.name}${hallVenue.locality ? ` in ${hallVenue.locality}` : ""}, ranked by accuracy and Balls Per Minute.`,
+          ogDescription: `The live 8-ball & 9-ball leaderboard for ${hallVenue.name}${hallVenue.locality ? ` in ${hallVenue.locality}` : ""}, ranked by accuracy, defense, and Balls Per Minute.`,
         }
       : null;
   usePageMeta(hallMeta);
@@ -567,7 +584,7 @@ export default function LeaderboardScreen({
                 ? `Local standings${hallVenue?.name ? ` · ${hallVenue.name}` : ""} — recent ${MODE_LABEL_PROSE[mode]} 1-on-1 games at this hall.`
                 : mode === "shark"
                 ? `Top pace & accuracy, recent solo Shark-mode WINS only — beat the 🦈 Shark ${SHARK_BOARD_MIN_WINS} times in the window to get ranked.`
-                : `Top pace & accuracy, recent ${MODE_LABEL_PROSE[mode]} 1-on-1 games only.`}
+                : `Top pace & accuracy — winning safeties add a small DEF bonus — recent ${MODE_LABEL_PROSE[mode]} 1-on-1 games only.`}
             </span>
           </div>
         )}

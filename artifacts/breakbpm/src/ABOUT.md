@@ -101,7 +101,7 @@ Sign in to save and view your own, as well as a free 24-hour global view. Use a 
 
 ![Leaderboard example](leaderboard-example.gif)
 
-Who's fastest? Use **[the Leaderboard](https://breakbpm.com/leaderboard)** to see your rank by BPM across recent 8-ball singles games (time weighted average). Pass holders can switch the ranking window to 90 days or all-time.
+Who's fastest? Use **[the Leaderboard](https://breakbpm.com/leaderboard)** to see where you stand across recent 8-ball (or 9-ball) singles games. Rankings use accuracy-weighted pace — your BPM scaled by your shooting accuracy, averaged over your best recent games — plus a small bonus for proven defense (safeties that leave your opponent without a pocketed ball). Pass holders can switch the ranking window to 90 days or all-time.
 
 Earn themes as you play each mode, or buy a pass to unlock them all! Lifetime pass holders also get access to a special raindow effect. Sign in to open the full leaderboard.
 
@@ -124,6 +124,7 @@ You can also open any hall's leaderboard straight from **[Find Players](https://
 
 **A few things to know:**
 - Rankings come from 1-on-1 8-Ball and 9-Ball games (seperate leadersboards for each).
+- Local standings use the same ranking math as the global board: accuracy-weighted pace, plus a small defense bonus.
 - Only the host can tag a game, only once, and only to the hall they're standing in.
 - No verified hall close enough? You can tag the game to your **city** instead, so it still lands on that City Leaderboard.
 - Sign in to view a Local Leaderboard.

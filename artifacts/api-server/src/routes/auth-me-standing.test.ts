@@ -61,6 +61,9 @@ function row(over: Partial<LeaderboardRow> & Pick<LeaderboardRow, "rank" | "scre
     profileBackground: null,
     winsToday: 0,
     rainbowName: false,
+    defenseRate: null,
+    defenseSuccesses: 0,
+    defenseSafeties: 0,
     ...over,
   };
 }
@@ -78,7 +81,16 @@ describe("/auth/me global standing", () => {
     mocks.currentUser = { ...user, profileTheme: user.profileTheme ?? null };
     mocks.ranking = [
       row({ rank: 1, screenName: "SomeoneElse", bpm: 99 }),
-      row({ rank: 7, screenName: user.screenName, bpm: 42.5, accuracy: 88, sharkLevel: 3 }),
+      row({
+        rank: 7,
+        screenName: user.screenName,
+        bpm: 42.5,
+        accuracy: 88,
+        sharkLevel: 3,
+        defenseRate: 75,
+        defenseSuccesses: 3,
+        defenseSafeties: 4,
+      }),
     ];
 
     const res = await request(app).get("/api/auth/me");
@@ -89,6 +101,10 @@ describe("/auth/me global standing", () => {
     expect(res.body.globalStanding.bpm).toBe(42.5);
     expect(res.body.globalStanding.accuracy).toBe(88);
     expect(res.body.globalStanding.sharkLevel).toBe(3);
+    // The standing row carries the WINDOW defense fields (drives the DEF chip).
+    expect(res.body.globalStanding.defenseRate).toBe(75);
+    expect(res.body.globalStanding.defenseSuccesses).toBe(3);
+    expect(res.body.globalStanding.defenseSafeties).toBe(4);
     // Account carries the all-time Defense numbers for the identity chip row.
     expect(res.body.account.defenseRate).toBe(50);
     expect(res.body.account.defenseSuccesses).toBe(1);

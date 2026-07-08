@@ -760,6 +760,14 @@ export interface LeaderboardRow {
   // Whether to render this player's name with the rainbow flair — admins always,
   // or any paid ("pass") tier holder whose profileTheme is "rainbow".
   rainbowName: boolean;
+  // Defense (safety effectiveness) across the player's qualifying window games.
+  // Whole-number % of defense-scored safeties that succeeded; null when the
+  // player has no defense-scored safeties in the window (v1-only history =
+  // "no data", never 0%). The client hides the DEF chip when null.
+  defenseRate: number | null;
+  // Numerator / denominator behind defenseRate (v2+ summaries only).
+  defenseSuccesses: number;
+  defenseSafeties: number;
 }
 
 /**
@@ -802,6 +810,22 @@ const LEADERBOARD_BEST_N = 2;
  * score against an honor-system guest seat.
  */
 const LEADERBOARD_GUEST_WEIGHT = 0.85;
+/**
+ * Maximum multiplicative score bonus for proven defense: a player at 100% DEF
+ * with a full confidence sample scores ×(1 + this). Deliberately modest — the
+ * yin-yang balance is that accuracy scales the score fully (every attempt is
+ * high-confidence data) while defense, a rarer and noisier signal, only ever
+ * ADDS a small bounded bonus. No defense data = factor exactly 1, never a
+ * penalty.
+ */
+const LEADERBOARD_DEFENSE_MAX_BONUS = 0.05;
+/**
+ * Defense-scored safety count at/above which the defense bonus reaches full
+ * strength. Below it the bonus is scaled by (safeties / this), so a single
+ * lucky safety at 100% earns only a sliver of the bonus while a real body of
+ * defensive work earns the full amount.
+ */
+const LEADERBOARD_DEFENSE_CONFIDENCE_SAFETIES = 10;
 /**
  * Minimum balls a player must have pocketed in a 9-ball game for it to count
  * toward their score. 9-ball allows combo / 9-on-the-break wins that pocket a
@@ -968,6 +992,12 @@ async function computeLeaderboard(
     {
       screenName: string;
       games: Array<{ bpm: number; accuracy: number | null; trusted: boolean; contribution: number }>;
+      // Window defense counts, accumulated across the SAME qualifying games
+      // that feed the score. Presence-gated exactly like personal stats: only
+      // summaries that carry the fields (v2+) enter EITHER side of the ratio —
+      // a v1 game is "no data", not zero successes.
+      defenseSuccesses: number;
+      defenseSafeties: number;
     }
   >();
   // SHARK entry gate counts WINS, not scorable games: a win whose summary has
@@ -1018,8 +1048,16 @@ async function computeLeaderboard(
       // not apply — every Shark game gets full weight.
       const trustFactor = isShark ? 1 : trusted ? 1 : LEADERBOARD_GUEST_WEIGHT;
       const contribution = bpm * accFactor * trustFactor;
-      const entry = byUser.get(p.userId) ?? { screenName: p.screenName, games: [] };
+      const entry =
+        byUser.get(p.userId) ??
+        { screenName: p.screenName, games: [], defenseSuccesses: 0, defenseSafeties: 0 };
       entry.games.push({ bpm, accuracy, trusted, contribution });
+      // Defense counts from this qualifying game (v2+ summaries only — the
+      // null check IS the presence gate; lockstep with computePersonalStats).
+      if (psum.safetySuccessCount != null) {
+        entry.defenseSafeties += psum.safetyCount;
+        entry.defenseSuccesses += psum.safetySuccessCount;
+      }
       byUser.set(p.userId, entry);
     }
   }
@@ -1037,6 +1075,9 @@ async function computeLeaderboard(
     gamesPlayed: number;
     trustedGames: number;
     provisional: boolean;
+    defenseRate: number | null;
+    defenseSuccesses: number;
+    defenseSafeties: number;
   }> = [];
   // SHARK entry gate: a player is ranked only after SHARK_WIN_THRESHOLD
   // winning Shark games INSIDE the active window (entry.games only ever holds
@@ -1052,7 +1093,24 @@ async function computeLeaderboard(
     const best = [...entry.games]
       .sort((a, b) => b.contribution - a.contribution)
       .slice(0, LEADERBOARD_BEST_N);
-    const score = round1(best.reduce((s, g) => s + g.contribution, 0) / best.length);
+    // Defense over the player's window games (null = no defense data). The
+    // score bonus is bounded (max +LEADERBOARD_DEFENSE_MAX_BONUS at 100% DEF)
+    // and confidence-scaled by sample size, so a single lucky safety earns
+    // only a sliver of the bonus. No data → factor exactly 1, never a penalty.
+    const defenseRate =
+      entry.defenseSafeties > 0
+        ? Math.round((entry.defenseSuccesses / entry.defenseSafeties) * 100)
+        : null;
+    const defenseFactor =
+      defenseRate != null
+        ? 1 +
+          LEADERBOARD_DEFENSE_MAX_BONUS *
+            (defenseRate / 100) *
+            Math.min(1, entry.defenseSafeties / LEADERBOARD_DEFENSE_CONFIDENCE_SAFETIES)
+        : 1;
+    const score = round1(
+      (best.reduce((s, g) => s + g.contribution, 0) / best.length) * defenseFactor,
+    );
     const avgBpm = round1(best.reduce((s, g) => s + g.bpm, 0) / best.length);
     const accs = best.map((g) => g.accuracy).filter((a): a is number => a != null);
     const accuracy = accs.length > 0 ? Math.round(accs.reduce((s, a) => s + a, 0) / accs.length) : null;
@@ -1067,6 +1125,9 @@ async function computeLeaderboard(
       gamesPlayed: gateCount,
       trustedGames,
       provisional,
+      defenseRate,
+      defenseSuccesses: entry.defenseSuccesses,
+      defenseSafeties: entry.defenseSafeties,
     });
   }
 
@@ -1207,6 +1268,9 @@ async function computeLeaderboard(
       profileBackground: bgByUser.get(r.userId) ?? null,
       winsToday: winsTodayByUser.get(r.userId) ?? 0,
       rainbowName,
+      defenseRate: r.defenseRate,
+      defenseSuccesses: r.defenseSuccesses,
+      defenseSafeties: r.defenseSafeties,
     };
   });
   // Rank by composite score desc; tie-break by accuracy desc then name for
@@ -1284,6 +1348,9 @@ function toPublicRow(e: RankedEntry): LeaderboardRow {
     profileBackground: e.profileBackground,
     winsToday: e.winsToday,
     rainbowName: e.rainbowName,
+    defenseRate: e.defenseRate,
+    defenseSuccesses: e.defenseSuccesses,
+    defenseSafeties: e.defenseSafeties,
   };
 }
 

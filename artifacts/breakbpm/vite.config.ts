@@ -412,7 +412,7 @@ function buildHallJsonLd(row: HallVenueRow): string {
 function buildHallMetaEntry(row: HallVenueRow): RouteMetaEntry {
   const localitySuffix = row.locality ? ` · ${row.locality}` : "";
   const title = `${row.name} Pool Leaderboard${localitySuffix} | BreakBPM`;
-  const description = `Live local pool leaderboard for ${row.name}${row.locality ? ` in ${row.locality}` : ""}. See the top 8-ball & 9-ball players ranked by accuracy and Balls Per Minute, tracked free with BreakBPM.`;
+  const description = `Live local pool leaderboard for ${row.name}${row.locality ? ` in ${row.locality}` : ""}. See the top 8-ball & 9-ball players ranked by accuracy, defense, and Balls Per Minute, tracked free with BreakBPM.`;
   return {
     path: `leaderboard/hall/${row.slug}`,
     title,
@@ -468,7 +468,7 @@ ${PRERENDER_STYLE}
 <div id="prerender-static">
   <nav><a href="/">← Home</a><a href="/leaderboard">Global Leaderboard</a><a href="/for-venues">List Your Hall</a></nav>
   <h1>${escapeHtml(row.name)} — Verified Pool Hall${row.locality ? ` in ${escapeHtml(row.locality)}` : ""}</h1>
-  <p>${escapeHtml(row.name)} is a BreakBPM Verified Hall with its own live Local Leaderboard, ranking players by accuracy-weighted Balls Per Minute across 8-ball and 9-ball. Finish a 1-on-1 game on location and tag it here to join the board.</p>
+  <p>${escapeHtml(row.name)} is a BreakBPM Verified Hall with its own live Local Leaderboard, ranking players by accuracy-weighted Balls Per Minute — with a small bonus for winning defense — across 8-ball and 9-ball. Finish a 1-on-1 game on location and tag it here to join the board.</p>
   ${details ? `<ul>\n    ${details}\n  </ul>` : ""}
   <p style="margin-top:2em;font-size:.8rem;color:#888">Rankings update live — <a href="/">open BreakBPM</a> to see the current standings.</p>
 </div>`.trim();

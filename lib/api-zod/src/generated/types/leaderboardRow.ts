@@ -19,4 +19,8 @@ export interface LeaderboardRow {
   profileBackground: LeaderboardRowProfileBackground;
   winsToday: number;
   rainbowName: boolean;
+  /** @nullable */
+  defenseRate: number | null;
+  defenseSuccesses: number;
+  defenseSafeties: number;
 }

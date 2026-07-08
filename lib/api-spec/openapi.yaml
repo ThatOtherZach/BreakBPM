@@ -3067,7 +3067,7 @@ components:
 
     LeaderboardRow:
       type: object
-      required: [rank, screenName, bpm, accuracy, gamesPlayed, sharkLevel, profileBackground, winsToday, rainbowName]
+      required: [rank, screenName, bpm, accuracy, gamesPlayed, sharkLevel, profileBackground, winsToday, rainbowName, defenseRate, defenseSuccesses, defenseSafeties]
       properties:
         # 1-indexed standing within the ranking (after sorting by bpm desc).
         rank: { type: integer }
@@ -3098,6 +3098,17 @@ components:
         # admins, or active pass holders (one-time pass or subscription) whose
         # profileTheme is "rainbow". Resolved server-side per response.
         rainbowName: { type: boolean }
+        # ── Defense (safety effectiveness) over the player's window games ──
+        # Whole-number percentage (0–100) of defense-scored safeties that
+        # SUCCEEDED — the opponent's very next shot pocketed nothing. Null when
+        # defenseSafeties is 0 (no defense data in the window; v1-only history
+        # is "no data", never 0%). The client hides the DEF chip when null.
+        defenseRate: { type: ["integer", "null"] }
+        # Numerator / denominator behind defenseRate. The denominator counts
+        # only safeties from games whose summary carries defense data (v2+),
+        # aggregated across the player's qualifying window games.
+        defenseSuccesses: { type: integer }
+        defenseSafeties: { type: integer }
 
     LeaderboardResult:
       type: object

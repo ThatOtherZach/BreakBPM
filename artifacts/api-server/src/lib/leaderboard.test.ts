@@ -297,6 +297,143 @@ describe("admin leaderboard — hidden signals", () => {
   });
 });
 
+describe("leaderboard ranking — defense weighting", () => {
+  /**
+   * Build a shotLog opening with `successful` host safeties (each answered by
+   * an opponent miss — a different player pocketing nothing → success) and
+   * `unsuccessful` host safeties (answered by the host's OWN next shot → not
+   * successful), followed by the normal sink run. Safeties sit at `base` and
+   * BEFORE the first sink in log order, so the BPM elapsed window (first sink
+   * → last entry) and the accuracy attempt count (safeties are excluded) are
+   * IDENTICAL to a safety-free game — the only difference is defense.
+   */
+  function shotsWithSafeties(
+    name: string,
+    opts: { sinks: number; successful: number; unsuccessful: number; spanMs: number; base: number },
+  ): Shot[] {
+    const log: Shot[] = [];
+    for (let i = 0; i < opts.successful; i++) {
+      log.push({ type: "safety", playerName: name, timestamp: opts.base });
+      log.push({ type: "miss", playerName: "AnswerOpp", timestamp: opts.base });
+    }
+    for (let i = 0; i < opts.unsuccessful; i++) {
+      // Followed immediately by the host's own sink below → not successful.
+      log.push({ type: "safety", playerName: name, timestamp: opts.base });
+    }
+    return log.concat(shots(name, opts.sinks, 0, opts.spanMs, opts.base));
+  }
+
+  /** Seed a trusted, finalized 8-ball game with the given defense profile. */
+  async function seedDefenseGame(
+    host: User,
+    opts: { sinks: number; successful?: number; unsuccessful?: number },
+  ): Promise<void> {
+    const base = Date.now() - 2 * HOUR;
+    const spanMs = 60_000;
+    const log = shotsWithSafeties(host.screenName, {
+      sinks: opts.sinks,
+      successful: opts.successful ?? 0,
+      unsuccessful: opts.unsuccessful ?? 0,
+      spanMs,
+      base,
+    });
+    const g = await seedGame(host.id, {
+      gameType: "8ball",
+      maxPlayers: 2,
+      hostName: host.screenName,
+      shotLog: log,
+      startedAt: new Date(base),
+      endedAt: new Date(base + spanMs + 60_000),
+    });
+    await db
+      .update(gamesTable)
+      .set({
+        gameState: { ...(g.gameState as Record<string, unknown>), ruleSet: "open-through-break" },
+      })
+      .where(eq(gamesTable.id, g.id));
+    const opp = await createUser();
+    await seedParticipant(g.id, 1, { userId: opp.id, displayName: `Opp_${opp.id.slice(0, 6)}` });
+    await finalizeSeededGame(g.id);
+  }
+
+  it("emits window defense fields on public rows; no data = null, never 0", async () => {
+    const defender = await createUser();
+    // Per game: 2 successful + 1 unsuccessful safety → totals 6 safeties,
+    // 4 successes → rate = round(4/6 × 100) = 67.
+    await seedDefenseGame(defender, { sinks: 4, successful: 2, unsuccessful: 1 });
+    await seedDefenseGame(defender, { sinks: 4, successful: 2, unsuccessful: 1 });
+
+    const plain = await createUser();
+    await seedDefenseGame(plain, { sinks: 4 });
+    await seedDefenseGame(plain, { sinks: 4 });
+
+    clearLeaderboardCache();
+    const board = await resolveLeaderboard("8ball", "all");
+
+    const dRow = board.find((r) => r.screenName === defender.screenName);
+    expect(dRow).toBeDefined();
+    expect(dRow!.defenseSafeties).toBe(6);
+    expect(dRow!.defenseSuccesses).toBe(4);
+    expect(dRow!.defenseRate).toBe(67);
+
+    const pRow = board.find((r) => r.screenName === plain.screenName);
+    expect(pRow).toBeDefined();
+    expect(pRow!.defenseSafeties).toBe(0);
+    expect(pRow!.defenseSuccesses).toBe(0);
+    // No safeties = no data → null, NEVER 0%.
+    expect(pRow!.defenseRate).toBeNull();
+  });
+
+  it("ranks a proven defender above an otherwise-identical non-defender", async () => {
+    // Identical pace + accuracy; the defender adds 5 successful safeties per
+    // game (10 total = the full confidence sample). Sinks land at identical
+    // timestamps, so only the defense bonus separates the two scores.
+    const defender = await createUser();
+    await seedDefenseGame(defender, { sinks: 8, successful: 5 });
+    await seedDefenseGame(defender, { sinks: 8, successful: 5 });
+
+    const plain = await createUser();
+    await seedDefenseGame(plain, { sinks: 8 });
+    await seedDefenseGame(plain, { sinks: 8 });
+
+    clearLeaderboardCache();
+    const board = await resolveLeaderboard("8ball", "all");
+    const dRank = board.find((r) => r.screenName === defender.screenName)?.rank;
+    const pRank = board.find((r) => r.screenName === plain.screenName)?.rank;
+
+    expect(dRank).toBeDefined();
+    expect(pRank).toBeDefined();
+    expect(dRank!).toBeLessThan(pRank!);
+  });
+
+  it("bounds the bonus and scales it by sample-size confidence", async () => {
+    // Three players with IDENTICAL pace/accuracy, differing only in defense
+    // volume (all at 100% success): none, a thin sample (2 safeties), and a
+    // full confidence sample (10). Scores must order plain ≤ thin < full, and
+    // the full bonus must never exceed the +5% cap over the no-defense score.
+    const plain = await createUser();
+    await seedDefenseGame(plain, { sinks: 8 });
+    await seedDefenseGame(plain, { sinks: 8 });
+
+    const thin = await createUser();
+    await seedDefenseGame(thin, { sinks: 8, successful: 1 });
+    await seedDefenseGame(thin, { sinks: 8, successful: 1 });
+
+    const full = await createUser();
+    await seedDefenseGame(full, { sinks: 8, successful: 5 });
+    await seedDefenseGame(full, { sinks: 8, successful: 5 });
+
+    clearLeaderboardCache();
+    const rows = await resolveAdminLeaderboard("8ball", "all");
+    const score = (u: User) => rows.find((r) => r.screenName === u.screenName)!.score;
+
+    expect(score(thin)).toBeGreaterThanOrEqual(score(plain)); // never a penalty
+    expect(score(full)).toBeGreaterThan(score(thin)); // confidence ramps the bonus
+    // Bounded: at 100% DEF with a full sample the score is exactly +5%.
+    expect(score(full)).toBeLessThanOrEqual(score(plain) * 1.05 + 0.05);
+  });
+});
+
 describe("shark board — win gate vs scorable games", () => {
   /**
    * Seed a finished solo Shark-mode WIN for `host`. `sinks: 1` produces a

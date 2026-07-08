@@ -83,7 +83,10 @@ export const GetMeResponse = zod.object({
   "sharkLevel": zod.number(),
   "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
   "winsToday": zod.number().default(getMeResponseGlobalStandingWinsTodayDefault),
-  "rainbowName": zod.boolean()
+  "rainbowName": zod.boolean(),
+  "defenseRate": zod.number().nullable(),
+  "defenseSuccesses": zod.number(),
+  "defenseSafeties": zod.number()
 }).optional()
 })
 
@@ -867,7 +870,10 @@ export const GetPublicProfileResponse = zod.object({
   "sharkLevel": zod.number(),
   "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
   "winsToday": zod.number().default(getPublicProfileResponseGlobalStandingWinsTodayDefault),
-  "rainbowName": zod.boolean()
+  "rainbowName": zod.boolean(),
+  "defenseRate": zod.number().nullable(),
+  "defenseSuccesses": zod.number(),
+  "defenseSafeties": zod.number()
 }).optional()
 })
 
@@ -1316,7 +1322,10 @@ export const GetLeaderboardResponse = zod.object({
   "sharkLevel": zod.number(),
   "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
   "winsToday": zod.number().default(getLeaderboardResponseRowsItemWinsTodayDefault),
-  "rainbowName": zod.boolean()
+  "rainbowName": zod.boolean(),
+  "defenseRate": zod.number().nullable(),
+  "defenseSuccesses": zod.number(),
+  "defenseSafeties": zod.number()
 }))
 })
 
@@ -1362,7 +1371,10 @@ export const GetHallLeaderboardResponse = zod.object({
   "sharkLevel": zod.number(),
   "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
   "winsToday": zod.number().default(getHallLeaderboardResponseRowsItemWinsTodayDefault),
-  "rainbowName": zod.boolean()
+  "rainbowName": zod.boolean(),
+  "defenseRate": zod.number().nullable(),
+  "defenseSuccesses": zod.number(),
+  "defenseSafeties": zod.number()
 })),
   "venue": zod.object({
   "id": zod.string(),
@@ -1421,7 +1433,10 @@ export const GetCityLeaderboardResponse = zod.object({
   "sharkLevel": zod.number(),
   "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
   "winsToday": zod.number().default(getCityLeaderboardResponseRowsItemWinsTodayDefault),
-  "rainbowName": zod.boolean()
+  "rainbowName": zod.boolean(),
+  "defenseRate": zod.number().nullable(),
+  "defenseSuccesses": zod.number(),
+  "defenseSafeties": zod.number()
 })),
   "city": zod.object({
   "locality": zod.string()

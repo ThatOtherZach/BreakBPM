@@ -111,7 +111,7 @@ export const POOL_STATS_SHOWCASE: ShowcaseItem[] = [
   },
   {
     title: "The Global BPM Leaderboard",
-    body: "Ranked by pace across recent 1-on-1 games with separate leaderboards for 8-ball and 9-ball. Users qualify after just two games. Show up, shoot, and climb the board!",
+    body: "Ranked by accuracy-weighted pace across recent 1-on-1 games — your BPM scaled by your shooting accuracy, with a small bonus for proven defense (safeties that leave your opponent without a pocket). Separate leaderboards for 8-ball and 9-ball. Users qualify after just two games. Show up, shoot, and climb the board!",
     liveLeaderboard: true,
   },
   {
@@ -161,6 +161,10 @@ export const POOL_STATS_FAQ: FaqItem[] = [
     q: "How do I get a free pass?",
     a: "Claim one free pass per account. Every claim is a guaranteed win: at minimum a Day Pass, with a chance at a Lucky Break roll for a 30 Day Pass or a Lifetime Pass, while supplies last.",
   },
+  {
+    q: "How are players ranked on the leaderboard?",
+    a: "By accuracy-weighted pace: your BPM scaled by your shooting accuracy, averaged over your best recent 1-on-1 games. Proven defense adds a small bonus — safeties that leave your opponent without a pocketed ball. Separate boards for 8-ball and 9-ball, and you qualify after just two games.",
+  },
 ];
 
 /* ───────────────────────── For Venues (venue-owner pitch) ─────────────────────────
@@ -180,7 +184,7 @@ export const FOR_VENUES_INTRO =
 export const FOR_VENUES_SHOWCASE: ShowcaseItem[] = [
   {
     title: "Your Own Local Leaderboard",
-    body: "Every verified hall gets its own Local Leaderboard — no hardware, no setup. Regulars battle for the top spot on your tables, and a walk-in just scans the code to get on the board. It's league-night standings that run themselves.",
+    body: "Every verified hall gets its own Local Leaderboard — no hardware, no setup. Regulars battle for the top spot on your tables, and a walk-in just scans the code to get on the board. Standings rank accuracy-weighted pace with a small bonus for winning defense, so fast, clean, smart pool wins. It's league-night standings that run themselves.",
     img: "/hall-card-example.png",
     imgAlt: "A verified hall card with its own Local Leaderboard button",
     liveHall: true,
@@ -218,6 +222,10 @@ export const FOR_VENUES_FAQ: FaqItem[] = [
   {
     q: "How do games get added to the hall's leaderboard?",
     a: "A player finishes a 1-on-1 game on-site and tags it to the hall. The app performs a quick on-location check, and then saves the game to the corresponding leaderboard.",
+  },
+  {
+    q: "How are players ranked on a hall's leaderboard?",
+    a: "Same math as the global board: accuracy-weighted pace — each player's BPM scaled by their shooting accuracy over their best recent games — plus a small bonus for proven defense (successful safeties). Fast, clean, smart pool climbs the board.",
   },
   {
     q: "How do I get a venue listed in BreakBPM?",
