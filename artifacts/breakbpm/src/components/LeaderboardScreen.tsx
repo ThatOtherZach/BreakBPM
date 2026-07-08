@@ -539,7 +539,7 @@ export default function LeaderboardScreen({
           <div className="panel-header">
             <span>
               {isCity
-                ? `🏙️ ${cityName ?? "City"} · City`
+                ? "🏙️ Filter City"
                 : isHall
                 ? `🏆 ${hallVenue?.name ?? "Local"} · Local`
                 : "🏆 Leaderboard"}
