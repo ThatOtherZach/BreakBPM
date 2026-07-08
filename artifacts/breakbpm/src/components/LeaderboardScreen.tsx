@@ -121,9 +121,15 @@ export function LeaderboardRowCard({
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
+              cursor: onWho ? "pointer" : undefined,
+              textDecoration: onWho ? "underline dotted" : undefined,
+              textUnderlineOffset: 2,
             }}
+            title={onWho ? `View ${row.screenName}'s profile` : undefined}
+            onClick={onWho ? () => onWho(row.screenName) : undefined}
           >
             <PlayerName name={row.screenName} rainbow={row.rainbowName ?? false} />
+            {onWho && " ↗"}
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
