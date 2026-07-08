@@ -427,7 +427,7 @@ export default function LeaderboardScreen({
             <div className="city-hero-shade" />
             <div className="city-hero-title-block">
               <div className="city-hero-kicker">
-                {kickerPart ? kickerPart.toUpperCase() : isGlobal ? "Global Leaderboard" : "City Leaderboard"}
+                {kickerPart ? kickerPart.toUpperCase() : isGlobal ? "Leaderboard" : "City Leaderboard"}
               </div>
               <h1 className="city-hero-title">{titlePart}</h1>
               {/* Activity line: distinct registered players in games tagged to
