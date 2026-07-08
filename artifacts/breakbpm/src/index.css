@@ -2247,11 +2247,13 @@ html, #root {
   box-shadow: 0 0 6px rgba(192, 132, 255, 0.55);
 }
 
-/* Compound (dual) meter — two slim stacked fills sharing the one track.
-   Same overall track height; each fill takes half, with a hairline gap. */
+/* Compound (dual) meter — two stacked fills sharing one track. The track
+   grows so each fill is nearly full standard height (matches the vibe of
+   the single meters instead of two skinny slivers). */
 .stats-meter-track--dual {
   display: flex;
   flex-direction: column;
+  height: 26px;
 }
 .stats-meter-track--dual .stats-meter-fill {
   height: calc(50% - 0.5px);

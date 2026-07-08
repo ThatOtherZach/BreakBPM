@@ -65,14 +65,6 @@ function fmtWhen(iso: string | undefined): string {
 
 type Tone = "green" | "amber" | "cyan" | "red" | "purple";
 
-const TONE_COLORS: Record<Tone, string> = {
-  green: "#00ff41",
-  amber: "#ffb300",
-  cyan: "#36c5f0",
-  red: "#ff3b3b",
-  purple: "#c084ff",
-};
-
 function clampPct(pct: number | null | undefined): number {
   return pct == null || !Number.isFinite(pct) ? 0 : Math.max(0, Math.min(100, pct));
 }
@@ -113,15 +105,7 @@ function PixelMeter({
           {emoji && <span aria-hidden="true">{emoji}</span>}
           {label}
         </span>
-        {dual ? (
-          <span className="stats-meter-val">
-            <span style={{ color: TONE_COLORS[tone] }}>{display}</span>
-            <span style={{ opacity: 0.6 }}> / </span>
-            <span style={{ color: TONE_COLORS[tone2] }}>{display2}</span>
-          </span>
-        ) : (
-          <span className="stats-meter-val">{display}</span>
-        )}
+        <span className="stats-meter-val">{dual ? `${display} / ${display2}` : display}</span>
       </div>
       <div className={`stats-meter-track${dual ? " stats-meter-track--dual" : ""}`}>
         {dual ? (
