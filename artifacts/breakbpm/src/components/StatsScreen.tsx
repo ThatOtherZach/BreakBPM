@@ -107,14 +107,16 @@ function StatCard({
   value,
   label,
   sub,
+  title,
 }: {
   emoji: React.ReactNode;
   value: string;
   label: string;
   sub?: string;
+  title?: string;
 }) {
   return (
-    <div className="stats-card">
+    <div className="stats-card" title={title}>
       <span className="stats-card-emoji" aria-hidden="true">{emoji}</span>
       <span className="stats-card-val">{value}</span>
       <span className="stats-card-label">{label}</span>
@@ -808,7 +810,17 @@ export default function StatsScreen({ onBack, onManual, onAccount, onFindPlayers
                       >
                         <StatCard emoji="❌" value={fmtNum(stats.avgMissesPerGame)} label="MISSES" sub="per game" />
                         <StatCard emoji={<span className="cue-ball-icon" style={{ fontSize: 21, verticalAlign: "baseline" }} />} value={fmtCeil(stats.avgFoulsPerGame)} label="FOULS" sub="per game" />
-                        <StatCard emoji="🛡️" value={fmtCeil(stats.avgSafetiesPerGame)} label="SAFETIES" sub="per game" />
+                        <StatCard
+                          emoji="🛡️"
+                          value={stats.defenseSafeties > 0 ? `${stats.defenseSuccesses}/${stats.defenseSafeties}` : "--"}
+                          label="SAFETIES HELD"
+                          sub="defense"
+                          title={
+                            stats.defenseSafeties > 0
+                              ? `Defense: ${stats.defenseSuccesses} of ${stats.defenseSafeties} ${stats.defenseSafeties === 1 ? "safety" : "safeties"} left the opponent without a pocketed ball`
+                              : "Defense — no safeties in this window yet"
+                          }
+                        />
                         <StatCard emoji="↩️" value={fmtInt(stats.totalUndos)} label="TIMES NO ONE SAW THAT (UNDOS)" />
                       </div>
                     )}
