@@ -266,8 +266,10 @@ export default function GameHistoryCard({
   // Per-game defense: shown only when the subject actually played a safety in
   // THIS game AND the server sent v2 defense data (older un-healed rows omit
   // the fields — "no data", never a misleading 0%). No safeties → the card
-  // renders exactly as before.
+  // renders exactly as before. Shark Mode games never show it — there's no
+  // human opponent to play defense against.
   const hasDef =
+    !g.sharkMode &&
     g.defenseSafeties != null && g.defenseSafeties > 0 && g.defenseSuccesses != null;
   const defRate = hasDef
     ? Math.round((g.defenseSuccesses! / g.defenseSafeties!) * 100)
