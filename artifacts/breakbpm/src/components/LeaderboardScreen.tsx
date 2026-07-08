@@ -129,7 +129,7 @@ export function LeaderboardRowCard({
             onClick={onWho ? () => onWho(row.screenName) : undefined}
           >
             <PlayerName name={row.screenName} rainbow={row.rainbowName ?? false} />
-            {onWho && <span style={{ fontSize: "50%" }}> ➜</span>}
+            {onWho && <span style={{ fontSize: "62.5%" }}> ➜</span>}
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
