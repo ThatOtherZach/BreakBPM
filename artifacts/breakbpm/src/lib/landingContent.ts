@@ -36,6 +36,9 @@ export interface ShowcaseItem {
   liveHall?: boolean;
   /** When true, the screen renders the live LeaderboardWidget after the image. */
   liveLeaderboard?: boolean;
+  /** When true, the screen renders a "Read the Manual" button below the image
+   *  that deep-links to the Shark Mode section of the manual (/about). */
+  manualShark?: boolean;
 }
 
 /* ───────────────────────── Home ("/") ─────────────────────────
@@ -102,6 +105,7 @@ export const POOL_STATS_SHOWCASE: ShowcaseItem[] = [
     body: "Shark Mode is for solo 8-ball players verses The Shark (CPU). Set the aggression and break the rack! The Shark will steal a ball on every foul, or in every miss AND foul. When that happens, just remove a ball from the table. It's honour system based, so be honest.",
     img: "/shark.jpg",
     imgAlt: "Shark Mode — solo 8-ball against an invisible opponent",
+    manualShark: true,
   },
   {
     title: "Stats That Sharpen the More You Play",

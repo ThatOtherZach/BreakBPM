@@ -73,6 +73,7 @@ function LatestHallWidget({
 interface Props {
   onHome: () => void;
   onManual: () => void;
+  onManualShark: () => void;
   onAccount: () => void;
   onStats: () => void;
   onFindPlayers: () => void;
@@ -92,6 +93,7 @@ interface Props {
 export default function PoolStatsAppScreen({
   onHome,
   onManual,
+  onManualShark,
   onAccount,
   onStats,
   onFindPlayers,
@@ -160,6 +162,11 @@ export default function PoolStatsAppScreen({
                     loading="lazy"
                   />
                 ) : null}
+                {item.manualShark && (
+                  <button className="btn btn-big w-full" onClick={onManualShark}>
+                    🦈 Read the Manual on Shark Mode
+                  </button>
+                )}
                 {item.liveLeaderboard ? <LeaderboardWidget /> : null}
               </section>
             ))}

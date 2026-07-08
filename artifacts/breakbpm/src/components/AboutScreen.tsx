@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { marked } from 'marked';
+import { useEffect, useMemo, useState } from 'react';
+import { marked, Renderer } from 'marked';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import PricingPanel from './PricingPanel';
@@ -11,6 +11,24 @@ import { usePageMeta, PAGE_META } from '../lib/pageMeta';
 import { RAW_BASE_URL, buildCopyPrompt } from '../lib/aiTranslate';
 
 const tagline = pickTagline();
+
+/** GitHub-style heading slug: strip emoji/punctuation, lowercase, dash-join. */
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
+}
+
+/** Gives every rendered heading a stable `id` (e.g. "shark-mode") so other
+ *  pages can deep-link straight to a manual section via `/about#shark-mode`. */
+const aboutRenderer = new Renderer();
+aboutRenderer.heading = function (token) {
+  const html = this.parser.parseInline(token.tokens);
+  const slug = slugify(html.replace(/<[^>]*>/g, ''));
+  return `<h${token.depth} id="${slug}">${html}</h${token.depth}>\n`;
+};
 
 /**
  * Canonical, always-current source for the guide text. The same ABOUT.md file
@@ -27,7 +45,18 @@ interface AboutScreenProps {
 
 export default function AboutScreen({ onBack, onPasses, onLegal }: AboutScreenProps) {
   usePageMeta(PAGE_META.manual);
-  const html = useMemo(() => marked(aboutMd) as string, []);
+  const html = useMemo(() => marked(aboutMd, { renderer: aboutRenderer }) as string, []);
+
+  // Deep-link support (e.g. /about#shark-mode): the markdown renders after
+  // mount, so wait a tick for the target heading to exist before scrolling.
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (!hash) return;
+    const id = window.setTimeout(() => {
+      document.getElementById(hash)?.scrollIntoView({ block: 'start' });
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [html]);
 
   const [copyState, setCopyState] = useState<'idle' | 'ok' | 'fail'>('idle');
 

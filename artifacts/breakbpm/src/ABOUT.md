@@ -2,7 +2,7 @@
 
 BreakBPM was developed by Saym Software Systems in the late 1990s. However, due to the Y2K bug, the software was never officially released, until now!
 
-BreakBPM got started as a bowling score tracker before being augmented into a billiards format. The system logs every shot over your game, one ball at a time, and gives you two numbers back: **accuracy** and **BPM**, a relative stat you can compare with friends (or no one).
+BreakBPM got started as a bowling score tracker before being augmented into a billiards format. The system logs every shot over your game, one ball at a time, and provides you a **BPM** rating, a relative stat you can compare with friends (or no one).
 
 That's basically it. Want a sticker? **[Grab one here](https://www.saymservices.com/store/p/breakbpmcom-rack-sticker)**.
 
@@ -16,7 +16,7 @@ That's basically it. Want a sticker? **[Grab one here](https://www.saymservices.
 - Share code for easy joining
 - Link players with @ mentions
 - Global BPM leaderboard
-- Stats with accuracy and pace breakdowns
+- Stats with accuracy, defense and pace breakdowns
 - Works in any browser, no install
 - Free to play. Sign in to save your stats.
 - Data deletion by default, full export included in pass.
@@ -93,7 +93,7 @@ Can't find players? Pass holders get access to Meetup posts to host billiard eve
 
 ![BPM Bell Curve](/bpm-bell-curve.gif)
 
-The BPM Bell Curve is basically a speedometer for your pool game — the center is the average player's pace, and your cue ball sits to the left if you're slower or to the right if you're faster.
+The BPM Bell Curve is basically a speedometer for your pool game. The center is the average player's pace, and your cue ball sits to the left if you're slower or to the right if you're faster.
 
 The Stats page shows your shooting over time, including relative accuracy, pace, and ball patterns.
 

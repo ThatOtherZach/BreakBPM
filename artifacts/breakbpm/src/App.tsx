@@ -545,6 +545,7 @@ function PoolStatsAppRoute() {
     <PoolStatsAppScreen
       onHome={() => setLocation("/")}
       onManual={() => setLocation("/about")}
+      onManualShark={() => setLocation("/about#shark-mode")}
       onAccount={() => setLocation("/account")}
       onStats={() => setLocation("/stats")}
       onFindPlayers={() => setLocation("/find-players")}
