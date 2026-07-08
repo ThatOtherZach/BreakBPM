@@ -1401,16 +1401,6 @@ html, #root {
   white-space: nowrap;
 }
 
-.city-hero-sub {
-  font-family: 'Courier New', monospace;
-  font-size: 11px;
-  color: #7aba7a;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  text-shadow: 1px 1px 0 #000;
-  margin-top: 4px;
-}
-
 /* ── Game HUD Panel (mirrors splash-panel aesthetic) ── */
 .hud-panel {
   background: #0a1a0a;

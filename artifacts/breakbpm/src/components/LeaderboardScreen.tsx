@@ -398,9 +398,8 @@ export default function LeaderboardScreen({
             <img src="/city-hero.png" alt="" aria-hidden="true" className="city-hero-img" draggable={false} />
             <div className="city-hero-shade" />
             <div className="city-hero-title-block">
-              <div className="city-hero-kicker">City Leaderboard</div>
+              <div className="city-hero-kicker">{countryPart ? countryPart.toUpperCase() : "City Leaderboard"}</div>
               <h1 className="city-hero-title">{cityPart}</h1>
-              {countryPart && <div className="city-hero-sub">{countryPart}</div>}
             </div>
           </div>
         );
