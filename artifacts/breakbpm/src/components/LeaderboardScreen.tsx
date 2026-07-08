@@ -383,6 +383,28 @@ export default function LeaderboardScreen({
         onStats={onStats}
         onSignIn={onSignIn}
       />
+      {/* ── City hero (city pages only) ── mirrors the home-page splash panel:
+          racked-balls artwork behind a dark vignette + CRT scanlines, with the
+          city + country centered in the VT323 title font. `cityName` is the
+          hall-entered locality ("Vancouver, Canada"), so split on the last
+          comma: big city line, small country line. */}
+      {isCity && (() => {
+        const full = (cityName ?? "City").trim();
+        const cut = full.lastIndexOf(",");
+        const cityPart = cut > 0 ? full.slice(0, cut).trim() : full;
+        const countryPart = cut > 0 ? full.slice(cut + 1).trim() : null;
+        return (
+          <div className="city-hero">
+            <img src="/city-hero.png" alt="" aria-hidden="true" className="city-hero-img" draggable={false} />
+            <div className="city-hero-shade" />
+            <div className="city-hero-title-block">
+              <div className="city-hero-kicker">City Leaderboard</div>
+              <h1 className="city-hero-title">{cityPart}</h1>
+              {countryPart && <div className="city-hero-sub">{countryPart}</div>}
+            </div>
+          </div>
+        );
+      })()}
       <div className="app-body">
         {isHall && hallVenue && (() => {
           const websiteUrl = venueWebsiteUrl(hallVenue.contact);

@@ -1321,6 +1321,96 @@ html, #root {
   letter-spacing: 1px;
 }
 
+/* ── City Leaderboard Hero (mirrors the splash-panel aesthetic) ──
+   Full-bleed banner under the navbar on /leaderboard/city/:locality only.
+   The racked-balls artwork cover-fills the strip; a dark vignette + the same
+   CRT scanline overlay as .splash-art-frame keep the centered city name
+   readable on any part of the image. */
+.city-hero {
+  position: relative;
+  height: 150px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #0a1a0a;
+  border-bottom: 3px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.city-hero-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Readability filter: radial vignette (darkest behind the title) topped with
+   the CRT scanlines from the splash art frame. */
+.city-hero-shade {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.18) 2px,
+      rgba(0, 0, 0, 0.18) 4px
+    ),
+    radial-gradient(
+      ellipse at center,
+      rgba(4, 16, 6, 0.72) 0%,
+      rgba(4, 16, 6, 0.55) 55%,
+      rgba(4, 16, 6, 0.38) 100%
+    );
+}
+
+.city-hero-title-block {
+  position: relative;
+  text-align: center;
+  padding: 10px 14px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.city-hero-kicker {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  color: #9adba0;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 0 #000;
+  margin-bottom: 2px;
+}
+
+.city-hero-title {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 42px;
+  font-weight: normal;
+  line-height: 1;
+  color: #e8e8e8;
+  letter-spacing: 1px;
+  margin: 0;
+  text-shadow: 2px 2px 0 #000, 0 0 14px rgba(0, 255, 65, 0.25);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.city-hero-sub {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #7aba7a;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 0 #000;
+  margin-top: 4px;
+}
+
 /* ── Game HUD Panel (mirrors splash-panel aesthetic) ── */
 .hud-panel {
   background: #0a1a0a;
