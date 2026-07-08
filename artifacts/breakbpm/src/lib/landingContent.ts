@@ -115,7 +115,7 @@ export const POOL_STATS_SHOWCASE: ShowcaseItem[] = [
   },
   {
     title: "The Global BPM Leaderboard",
-    body: "Ranked by accuracy-weighted pace across recent 1-on-1 games — your BPM scaled by your shooting accuracy, with a small bonus for proven defense (safeties that leave your opponent without a pocket). Separate leaderboards for 8-ball and 9-ball. Users qualify after just two games. Show up, shoot, and climb the board!",
+    body: "Your BPM is ranked by accuracy-weighted pace across recent 1-on-1 games. It's also scaled by your shooting accuracy, with a small bonus for proven defense (safeties that leave your opponent without a pocket). There are separate leaderboards for 8-ball and 9-ball. Users qualify after just two games. Shoot and climb the board!",
     liveLeaderboard: true,
   },
   {
