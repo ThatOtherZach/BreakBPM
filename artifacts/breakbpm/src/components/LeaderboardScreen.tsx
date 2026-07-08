@@ -550,7 +550,7 @@ export default function LeaderboardScreen({
                 ? "🏙️ Filter City"
                 : isHall
                 ? `🏆 ${hallVenue?.name ?? "Local"} · Local`
-                : "🏆 Leaderboard"}
+                : "🏆 Filter Leaderboard"}
             </span>
           </div>
           <div className="panel-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>

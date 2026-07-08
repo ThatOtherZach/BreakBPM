@@ -101,7 +101,7 @@ Sign in to save and view your own, as well as a free 24-hour global view. Use a 
 
 ![Leaderboard example](leaderboard-example.gif)
 
-Who's fastest? Use **[the Leaderboard](https://breakbpm.com/leaderboard)** to see where you stand across recent 8-ball (or 9-ball) singles games. Rankings use accuracy-weighted pace — your BPM scaled by your shooting accuracy, averaged over your best recent games — plus a small bonus for proven defense (safeties that leave your opponent without a pocketed ball). Pass holders can switch the ranking window to 90 days or all-time.
+Who's fastest? Use **[the Leaderboard](https://breakbpm.com/leaderboard)** to see where you stand across recent 8-ball (or 9-ball) singles games. Rankings use accuracy-weighted pace which is your BPM scaled by your shooting accuracy, averaged over your best recent games. ther is also a small bonus for proven defense (safeties that leave your opponent without a pocketed ball). Pass holders can switch the ranking window to 90 days or all-time.
 
 Earn themes as you play each mode, or buy a pass to unlock them all! Lifetime pass holders also get access to a special raindow effect. Sign in to open the full leaderboard.
 
