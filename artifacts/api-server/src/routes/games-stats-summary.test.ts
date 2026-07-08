@@ -8,16 +8,18 @@ import request from "supertest";
 //
 //   1. A completed game whose summary write was simply MISSED (the column is
 //      still the default `{}`). The /stats read path self-heals these
-//      (`backfillUserGameSummaries`, keyed on `summary = '{}'`) BEFORE computing,
-//      so they get a real summary and DO count. Net: every completed game the
-//      player hosted/joined is counted.
+//      (`backfillUserGameSummaries`, keyed on summary version < current — `{}`
+//      coalesces to 0) BEFORE computing, so they get a real summary and DO
+//      count. Net: every completed game the player hosted/joined is counted.
 //
-//   2. A completed game carrying a STALE summary version (e.g. left over after a
-//      `GAME_SUMMARY_VERSION` bump, before the one-time backfill reruns). The
-//      self-heal does NOT touch these (it matches only `{}`), so the bulk readers
-//      skip them ("absent not corrupt"). That skip must drop the row from BOTH
-//      the numerator AND the denominator, so it temporarily under-reports rather
-//      than mis-averaging — never inflating gamesPlayed / avg*PerGame.
+//   2. A completed game carrying an UNREADABLE summary version (ABOVE the compat
+//      range, e.g. rows written by a newer deploy during a rollback window). The
+//      self-heal does NOT touch these (it only lifts versions BELOW the current
+//      one), so the bulk readers skip them ("absent not corrupt"). That skip must
+//      drop the row from BOTH the numerator AND the denominator, so it
+//      temporarily under-reports rather than mis-averaging — never inflating
+//      gamesPlayed / avg*PerGame. (An OLDER in-range version is the opposite
+//      case: readers accept it and the self-heal lifts it, so nothing is skipped.)
 //
 // Personal scope is used deliberately: it filters to the caller's own
 // participant rows, so the assertion is isolated from whatever else lives in the
@@ -119,13 +121,14 @@ describe("GET /stats — completed-game counting", () => {
     expect(res.body.avgShotsPerGame).toBe(3);
   });
 
-  it("drops a completed game with a stale summary version from BOTH numerator and denominator", async () => {
+  it("drops a completed game with an unreadable (future) summary version from BOTH numerator and denominator", async () => {
     const user = await createUser();
     vi.mocked(getOrCreateUser).mockResolvedValue(user);
 
-    // One fully-finalized game (4 shots) and one completed game left on a STALE
-    // summary version — the self-heal (which matches only `{}`) won't repair it,
-    // so the bulk readers skip it ("absent not corrupt").
+    // One fully-finalized game (4 shots) and one completed game left on a
+    // FUTURE summary version — the self-heal (which only lifts versions BELOW
+    // the current one) won't touch it, so the bulk readers skip it
+    // ("absent not corrupt").
     await seedFinishedGame(user, 4, true);
     const stale = await seedFinishedGame(user, 2, false);
     await setStaleSummary(stale);

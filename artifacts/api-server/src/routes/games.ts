@@ -69,6 +69,7 @@ import {
 import { coerceBackgroundVariant, type BackgroundVariant } from "../lib/profileBackground";
 import { writeFinalizedSummary } from "../lib/gameSummaryWriter";
 import {
+  GAME_SUMMARY_VERSION,
   readGameSummary,
   readParticipantSummary,
   summaryAccuracy,
@@ -699,14 +700,18 @@ async function backfillHostParticipants(userId: string): Promise<void> {
 }
 
 /**
- * Lazily distill any of this user's finalized games that are still
- * un-summarized (game-level summary is the empty `{}` sentinel). Mirrors
- * {@link backfillHostParticipants}: idempotent, with a cheap early-return when
- * there is nothing to repair, so it is safe to call on every personal read
- * path. This self-heals games that predate the summary rollout (or whose
- * best-effort live finalize write failed) the first time the player views
- * their stats/history/profile — without it, the bulk read paths, which
- * deliberately SKIP summary-less rows, hide the player's whole history.
+ * Lazily distill any of this user's finalized games whose game-level summary
+ * is missing OR on an OLDER version than the current one (the empty `{}`
+ * sentinel has no `v`, so both cases collapse into a single "v below current"
+ * predicate). Mirrors {@link backfillHostParticipants}: idempotent, with a
+ * cheap early-return when there is nothing to repair, so it is safe to call
+ * on every personal read path. This self-heals games that predate the summary
+ * rollout (or whose best-effort live finalize write failed) AND — because
+ * one-time backfills never run in production — lazily lifts pre-bump rows to
+ * the current summary version the first time the player views their
+ * stats/history/profile, so additive fields (e.g. Defense) reach historical
+ * games in prod. Rows on a FUTURE (unreadable) version are deliberately left
+ * alone ("absent not corrupt", and an old writer must not clobber them).
  *
  * Returns the number of games repaired so callers can bust the now-stale
  * personal stats cache only when a repair actually happened.
@@ -722,7 +727,8 @@ async function backfillUserGameSummaries(userId: string): Promise<number> {
       and(
         eq(gameParticipantsTable.userId, userId),
         isNotNull(gamesTable.endedAt),
-        eq(gamesTable.summary, sql`'{}'::jsonb`),
+        // `{}` has no 'v' → COALESCE 0 → matched, same as any older version.
+        sql`COALESCE((${gamesTable.summary} ->> 'v')::int, 0) < ${GAME_SUMMARY_VERSION}`,
       ),
     );
   if (stale.length === 0) return 0;

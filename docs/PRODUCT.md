@@ -26,7 +26,7 @@ Paid hosts link a registered friend by `@username` (no shared device needed); th
 
 ## Stats & leaderboards
 
-- `/stats` shows accuracy, pace, and ball/pattern breakdowns (retro CRT styling) with tier-gated windows. Recent Chaos winners get a rainbow AVG-BPM flourish.
+- `/stats` shows accuracy, pace, defense (safety effectiveness — % of safeties after which the opponent's next shot pocketed nothing), and ball/pattern breakdowns (retro CRT styling) with tier-gated windows. Recent Chaos winners get a rainbow AVG-BPM flourish.
 - Separate **8-ball** and **9-ball** leaderboards ranked on a composite skill score (accuracy-weighted, trust-weighted pace; best-2 of ≥2 qualifying 1-on-1 games) — players appear after just 2 games.
 - Anti-cheat signals (raw composite score, registered-vs-registered game count, thin-sample "provisional" flag) are hidden from players and surfaced only on an admin-only board (`GET /admin/leaderboard`).
 - Per-venue **Local Leaderboards**: when a 1-on-1 8/9-ball game finishes, its host can 🏆 tag it — once, while on location — to a nearby Verified Hall, putting that game on the hall's own ranked board (and the rolled-up **City** board for that locality); if no hall is in range, the host can tag the city directly. Both boards are reachable from Find Players and the verified-hall cards (each card's locality is a clickable city link).

@@ -7,11 +7,25 @@ import { venuesTable } from "./venues";
 
 /**
  * Bump when the stored summary shape changes incompatibly. Parsers treat a
- * blob without a matching `v` as "no summary" and fall back / skip, so old
- * rows are never mis-read after a shape change (re-run the backfill to lift
- * them to the new version).
+ * blob without a `v` inside the compat range as "no summary" and fall back /
+ * skip, so old rows are never mis-read after a shape change (re-run the
+ * backfill to lift them to the new version).
+ *
+ * v2 (additive): per-participant `safetySuccessCount` + game-level
+ * `totalSafetySuccesses` for the Defense stat. Every v1 field is unchanged,
+ * so v1 rows stay fully readable (see GAME_SUMMARY_MIN_COMPAT_VERSION).
  */
-export const GAME_SUMMARY_VERSION = 1;
+export const GAME_SUMMARY_VERSION = 2;
+
+/**
+ * Oldest summary version the readers still accept. v1 rows lack only the
+ * additive Defense fields (typed optional), so BPM / accuracy / event counts
+ * keep serving from them during rollout — no window where old games vanish
+ * from prod aggregates. Readers must gate NEW-field consumption on field
+ * presence (`!= null`), never on the version. Raise this only when a version
+ * becomes genuinely unreadable.
+ */
+export const GAME_SUMMARY_MIN_COMPAT_VERSION = 1;
 
 /**
  * Game-level distilled summary, stored on `games.summary` and computed once at
@@ -30,6 +44,13 @@ export interface GameSummary {
   totalMisses: number;
   totalFouls: number;
   totalSafeties: number;
+  /**
+   * ALL-players count of SUCCESSFUL safeties: a safety succeeds when the very
+   * next logged shot is by a DIFFERENT player and pockets nothing (miss/foul/
+   * safety). Optional — absent on v1 summaries; readers must treat absence as
+   * "no defense data", never as zero.
+   */
+  totalSafetySuccesses?: number;
   /** Undo count carried from gameState (drives the global undos stat). */
   undoCount: number;
   /** True when an 8-ball game was decided on the 8 by any player. */
@@ -72,6 +93,14 @@ export interface ParticipantSummary {
   missCount: number;
   foulCount: number;
   safetyCount: number;
+  /**
+   * Of this participant's `safetyCount` safeties (same stats window), how many
+   * SUCCEEDED: the game's very next logged shot was by a different player and
+   * pocketed nothing. Success is judged on the FULL game timeline (the answering
+   * shot may fall outside this participant's window). Optional — absent on v1
+   * summaries; readers must treat absence as "no defense data", never as zero.
+   */
+  safetySuccessCount?: number;
   /** This player's locked-in 8-ball group ("solids" | "stripes" | null). */
   team: string | null;
   /** Sink/win pocket histogram by ball (EXCLUDES terminal lose) for top-balls. */

@@ -317,6 +317,17 @@ export default function StatsHero({
               <span className="stats-hero-side-val">{stats.accuracy == null ? "--" : `${stats.accuracy}%`}</span>
               <span className="stats-hero-side-label" style={{ color: "#fff" }}>ACCURACY</span>
             </div>
+            <div
+              className="stats-hero-side-item"
+              title={
+                stats.defenseRate == null
+                  ? "Safety effectiveness — no safeties in this window yet"
+                  : `Safety effectiveness: ${stats.defenseSuccesses} of ${stats.defenseSafeties} ${stats.defenseSafeties === 1 ? "safety" : "safeties"} left the opponent without a pocketed ball`
+              }
+            >
+              <span className="stats-hero-side-val">{stats.defenseRate == null ? "--" : `${stats.defenseRate}%`}</span>
+              <span className="stats-hero-side-label" style={{ color: "#fff" }}>DEFENSE</span>
+            </div>
           </div>
           {joinedAt && (
             <p style={{ fontSize: 11, color: "#d8b4ff", textAlign: "center", margin: 0, paddingTop: 5 }}>

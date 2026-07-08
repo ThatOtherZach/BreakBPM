@@ -1,5 +1,6 @@
 import {
   GAME_SUMMARY_VERSION,
+  GAME_SUMMARY_MIN_COMPAT_VERSION,
   type GameSummary,
   type ParticipantSummary,
 } from "@workspace/db";
@@ -20,7 +21,7 @@ import {
  * module free of any DB connection so it stays unit-testable.
  */
 
-export { GAME_SUMMARY_VERSION };
+export { GAME_SUMMARY_VERSION, GAME_SUMMARY_MIN_COMPAT_VERSION };
 export type { GameSummary, ParticipantSummary };
 
 const EIGHT_BALL = 8;
@@ -88,6 +89,33 @@ export function accuracyCounts(entries: ShotEntry[]): { made: number; attempts: 
     (e) => isPocket(e) || e.type === "miss" || e.type === "foul" || e.isFoul === true,
   ).length;
   return { made, attempts };
+}
+
+/**
+ * Defense: the set of shotLog indices holding a SUCCESSFUL safety. A safety by
+ * player P succeeds when the game's very next logged shot (the next `isShot`
+ * entry, any window) is by a DIFFERENT player and pockets nothing — i.e. the
+ * opponent was left with no makeable ball. Consequences of that rule:
+ *  - a safety answered by the SAME player's shot (solo practice, or the
+ *    opponent's turn producing no logged entry) is NOT successful;
+ *  - a safety as the game's final logged shot counts as played, not successful;
+ *  - back-to-back safeties: the FIRST one succeeds (the answering entry is the
+ *    opponent's safety — a shot that pocketed nothing).
+ * Judged on the FULL log so a participant window never severs the pairing.
+ */
+export function successfulSafetyIndices(shotLog: ShotEntry[]): Set<number> {
+  const out = new Set<number>();
+  for (let i = 0; i < shotLog.length; i++) {
+    const e = shotLog[i];
+    if (e.type !== "safety") continue;
+    for (let j = i + 1; j < shotLog.length; j++) {
+      const next = shotLog[j];
+      if (!isShot(next)) continue; // skip non-shot markers (e.g. Shark-wins 'lose')
+      if (next.playerName !== e.playerName && !isPocket(next)) out.add(i);
+      break;
+    }
+  }
+  return out;
 }
 
 /** Find this game's terminal 8-ball shot (if any), restricted to `player` when given. */
@@ -198,6 +226,9 @@ export function buildGameSummary(
       pocketSequence.push({ ball: e.ball, player: e.playerName ?? "" });
     }
   }
+  // Defense: which safeties succeeded, judged once on the FULL log (indices are
+  // stable), then counted per scope below.
+  const safetyWins = successfulSafetyIndices(shotLog);
   const gameTerm = eightBallTerminal(shotLog, null);
   const game: GameSummary = {
     v: GAME_SUMMARY_VERSION,
@@ -205,6 +236,7 @@ export function buildGameSummary(
     totalMisses,
     totalFouls,
     totalSafeties,
+    totalSafetySuccesses: safetyWins.size,
     undoCount,
     eightDecided: gameTerm.decided,
     eightClean: gameTerm.clean,
@@ -247,6 +279,18 @@ export function buildGameSummary(
     const statsTerm = eightBallTerminal(statsMine, part.displayName);
     const team = players.find((p) => p.name === part.displayName)?.team ?? null;
 
+    // Defense: of this slot's safeties INSIDE the stats window (same filter as
+    // `statsMine`, so safetySuccessCount ≤ safetyCount always holds), how many
+    // succeeded per the full-log pairing. Iterated over the raw log because
+    // `statsMine` loses the original indices `safetyWins` is keyed on.
+    let safetySuccessCount = 0;
+    for (let i = 0; i < shotLog.length; i++) {
+      const e = shotLog[i];
+      if (e.type !== "safety" || e.playerName !== part.displayName) continue;
+      if (typeof e.timestamp !== "number" || e.timestamp < startMs || e.timestamp > leftMs) continue;
+      if (safetyWins.has(i)) safetySuccessCount += 1;
+    }
+
     // HISTORY window [statsStartAt, +inf), attributed by the slot's player name.
     const slotName =
       typeof players[part.slotIndex]?.name === "string"
@@ -272,6 +316,7 @@ export function buildGameSummary(
       missCount,
       foulCount,
       safetyCount,
+      safetySuccessCount,
       team,
       ballCounts,
       eightDecided: statsTerm.decided,
@@ -285,22 +330,33 @@ export function buildGameSummary(
   return { game, bySlot };
 }
 
+/** Version inside [GAME_SUMMARY_MIN_COMPAT_VERSION, GAME_SUMMARY_VERSION]? */
+function versionReadable(v: unknown): boolean {
+  return (
+    typeof v === "number" &&
+    v >= GAME_SUMMARY_MIN_COMPAT_VERSION &&
+    v <= GAME_SUMMARY_VERSION
+  );
+}
+
 /**
- * Read a stored `games.summary` blob, returning it only when the version
- * matches the current one. Empty `{}` (pre-finalize / un-backfilled) or a stale
- * version → null, so callers fall back / skip ("absent not corrupt").
+ * Read a stored `games.summary` blob, returning it only when the version is
+ * inside the compat range [MIN_COMPAT, CURRENT]. Empty `{}` (pre-finalize /
+ * un-backfilled) or an out-of-range version → null, so callers fall back /
+ * skip ("absent not corrupt"). Older in-range versions may lack the additive
+ * fields (typed optional) — consumers gate on field presence, not version.
  */
 export function readGameSummary(raw: unknown): GameSummary | null {
   if (!raw || typeof raw !== "object") return null;
   const s = raw as Partial<GameSummary>;
-  return s.v === GAME_SUMMARY_VERSION ? (s as GameSummary) : null;
+  return versionReadable(s.v) ? (s as GameSummary) : null;
 }
 
 /** As {@link readGameSummary}, for a `game_participants.summary` blob. */
 export function readParticipantSummary(raw: unknown): ParticipantSummary | null {
   if (!raw || typeof raw !== "object") return null;
   const s = raw as Partial<ParticipantSummary>;
-  return s.v === GAME_SUMMARY_VERSION ? (s as ParticipantSummary) : null;
+  return versionReadable(s.v) ? (s as ParticipantSummary) : null;
 }
 
 /**

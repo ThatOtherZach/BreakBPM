@@ -57,6 +57,14 @@ export interface StatsCore {
   totalFouls: number;
   totalSafeties: number;
   totalUndos: number;
+  // ── Defense (safety effectiveness) ──
+  // Whole-number % (0–100) of defense-scored safeties whose opposing answer
+  // pocketed nothing; null when defenseSafeties is 0. Denominator counts ONLY
+  // games whose summary carries the defense fields (v2+) — v1 rows contribute
+  // their BPM/accuracy but neither side of the defense ratio ("no data" ≠ 0).
+  defenseRate: number | null;
+  defenseSuccesses: number;
+  defenseSafeties: number;
   avgShotsPerGame: number;
   avgMissesPerGame: number;
   avgFoulsPerGame: number;
@@ -136,6 +144,9 @@ function emptyCore(): StatsCore {
     totalFouls: 0,
     totalSafeties: 0,
     totalUndos: 0,
+    defenseRate: null,
+    defenseSuccesses: 0,
+    defenseSafeties: 0,
     avgShotsPerGame: 0,
     avgMissesPerGame: 0,
     avgFoulsPerGame: 0,
@@ -351,6 +362,12 @@ async function computeGlobalStats(window: StatWindow, gameMode: StatGameMode): P
     core.totalFouls += gsum.totalFouls;
     core.totalSafeties += gsum.totalSafeties;
     core.totalUndos += gsum.undoCount;
+    // Defense — only summaries that carry the fields (v2+) enter EITHER side
+    // of the ratio; a v1 row is "no data", not zero successes.
+    if (gsum.totalSafetySuccesses != null) {
+      core.defenseSafeties += gsum.totalSafeties;
+      core.defenseSuccesses += gsum.totalSafetySuccesses;
+    }
     // 8-ball decided-on-the-8 rate (game-level terminal, all players).
     if (r.gameType === "8ball" && gsum.eightDecided) {
       eightDecided += 1;
@@ -377,6 +394,10 @@ async function computeGlobalStats(window: StatWindow, gameMode: StatGameMode): P
   core.avgMissesPerGame = gp > 0 ? round1(core.totalMisses / gp) : 0;
   core.avgFoulsPerGame = gp > 0 ? round1(core.totalFouls / gp) : 0;
   core.avgSafetiesPerGame = gp > 0 ? round1(core.totalSafeties / gp) : 0;
+  core.defenseRate =
+    core.defenseSafeties > 0
+      ? Math.round((core.defenseSuccesses / core.defenseSafeties) * 100)
+      : null;
   core.playTimeByType = rollUpPlayTime(byType);
   // Ball patterns + solids/stripes + shark are personal-only — left at defaults.
   core.computedAt = Date.now();
@@ -525,6 +546,12 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
     core.totalMisses += psum.missCount;
     core.totalFouls += psum.foulCount;
     core.totalSafeties += psum.safetyCount;
+    // Defense — only summaries that carry the fields (v2+) enter EITHER side
+    // of the ratio; a v1 row is "no data", not zero successes.
+    if (psum.safetySuccessCount != null) {
+      core.defenseSafeties += psum.safetyCount;
+      core.defenseSuccesses += psum.safetySuccessCount;
+    }
     // Top balls — pockets only (sink / terminal win), keyed by ball number.
     for (const [ball, c] of Object.entries(psum.ballCounts)) {
       const n = Number(ball);
@@ -579,6 +606,10 @@ async function computePersonalStats(userId: string, window: StatWindow, gameMode
   core.avgMissesPerGame = gp > 0 ? round1(core.totalMisses / gp) : 0;
   core.avgFoulsPerGame = gp > 0 ? round1(core.totalFouls / gp) : 0;
   core.avgSafetiesPerGame = gp > 0 ? round1(core.totalSafeties / gp) : 0;
+  core.defenseRate =
+    core.defenseSafeties > 0
+      ? Math.round((core.defenseSuccesses / core.defenseSafeties) * 100)
+      : null;
   core.winRate = nonPracticeGames > 0 ? round3(wins / nonPracticeGames) : null;
   core.finishRate = null; // global-only
   core.eightBallDecidedGames = eightDecided;

@@ -289,17 +289,18 @@ export async function finalizeSeededGame(gameId: string): Promise<void> {
 }
 
 /**
- * Force a finished game's game-level + per-slot summaries to a STALE version
- * blob (`{ v: 0 }`). Unlike the default empty `{}` (which the read-path
- * self-heal repairs on the next personal read), a stale-version summary is NOT
- * matched by the self-heal (`summary = '{}'` only), so it survives into the
- * bulk readers and exercises their "absent not corrupt" skip — the row is
- * dropped from BOTH the numerator and the denominator until a standalone
- * backfill rewrites it. Models the transient window after a
- * `GAME_SUMMARY_VERSION` bump, before the backfill reruns.
+ * Force a finished game's game-level + per-slot summaries to an UNREADABLE
+ * version blob (`{ v: 999 }` — above the compat range). Unlike the default
+ * empty `{}` or an OLDER version (both of which the read-path self-heal now
+ * lifts to the current version on the next personal read, matching
+ * `v < GAME_SUMMARY_VERSION`), a FUTURE version is deliberately left alone by
+ * the self-heal, so it survives into the bulk readers and exercises their
+ * "absent not corrupt" skip — the row is dropped from BOTH the numerator and
+ * the denominator. Models a rollback window where rows written by a newer
+ * deploy are served by an older one.
  */
 export async function setStaleSummary(gameId: string): Promise<void> {
-  const stale = sql`'{"v":0}'::jsonb`;
+  const stale = sql`'{"v":999}'::jsonb`;
   await db.update(gamesTable).set({ summary: stale }).where(eq(gamesTable.id, gameId));
   await db
     .update(gameParticipantsTable)

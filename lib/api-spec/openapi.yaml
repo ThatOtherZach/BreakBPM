@@ -2930,6 +2930,9 @@ components:
           avgMissesPerGame,
           avgFoulsPerGame,
           avgSafetiesPerGame,
+          defenseRate,
+          defenseSuccesses,
+          defenseSafeties,
           playTimeByType,
           topBalls,
           trend,
@@ -2985,6 +2988,17 @@ components:
         avgMissesPerGame: { type: number }
         avgFoulsPerGame: { type: number }
         avgSafetiesPerGame: { type: number }
+
+        # ── Defense (safety effectiveness) ──
+        # Whole-number percentage (0–100) of defense-scored safeties that
+        # SUCCEEDED — the opponent's very next shot pocketed nothing. Null when
+        # defenseSafeties is 0 (no safeties with defense data in the window).
+        defenseRate: { type: ["integer", "null"] }
+        # Numerator / denominator behind defenseRate. The denominator counts
+        # only safeties from games whose summary carries defense data (v2+),
+        # so it can briefly trail totalSafeties until old games are re-distilled.
+        defenseSuccesses: { type: integer }
+        defenseSafeties: { type: integer }
 
         # ── Pace ──
         # Mean / peak per-game BPM. Null when no game has a BPM yet.

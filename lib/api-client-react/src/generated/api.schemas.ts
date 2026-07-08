@@ -1378,6 +1378,10 @@ export interface StatsResult {
   avgFoulsPerGame: number;
   avgSafetiesPerGame: number;
   /** @nullable */
+  defenseRate: number | null;
+  defenseSuccesses: number;
+  defenseSafeties: number;
+  /** @nullable */
   avgBpm?: number | null;
   /** @nullable */
   bestBpm?: number | null;
