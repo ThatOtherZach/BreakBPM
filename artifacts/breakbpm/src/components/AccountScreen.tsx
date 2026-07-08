@@ -703,8 +703,10 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
                       {/* Defense chip — all-time safety effectiveness (same
                           numbers as the Stats hero's all-time window). Only
                           shown once the player has at least one defense-scored
-                          safety; v1-only history means "no data", not 0%. */}
-                      {(account.defenseSafeties ?? 0) > 0 && account.defenseRate != null && (
+                          safety; v1-only history means "no data", not 0%.
+                          Also gated on the player being ranked (standing != null)
+                          so it doesn't appear before BPM/ACC do. */}
+                      {standing != null && (account.defenseSafeties ?? 0) > 0 && account.defenseRate != null && (
                         <span
                           title={`Defense: ${account.defenseSuccesses} of ${account.defenseSafeties} ${account.defenseSafeties === 1 ? "safety" : "safeties"} left the opponent without a pocketed ball`}
                           style={{
