@@ -751,7 +751,7 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
                   </button>
                 )}
                 {canEditName && (
-                  <button className="btn w-full" onClick={() => setEditing(true)}>Edit</button>
+                  <button className="btn w-full" onClick={() => setEditing(true)}>Edit Username</button>
                 )}
                 <div
                   style={{
