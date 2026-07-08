@@ -125,6 +125,40 @@ function StatCard({
   );
 }
 
+/**
+ * Approximate successes/total as a "common" fraction — halves, thirds,
+ * quarters or fifths — so the card reads like something you'd say out loud
+ * ("held 2/3 of my safeties") instead of raw tallies like 7/10. Picks the
+ * candidate nearest the true ratio, rounding UP on ties. Extremes stay
+ * exact (0/N and N/N) so "none held" / "all held" never get fudged. The
+ * tooltip always carries the exact numbers.
+ */
+function commonFraction(successes: number, total: number): string {
+  if (total <= 0) return "--";
+  if (successes <= 0) return `0/${total}`;
+  if (successes >= total) return `${total}/${total}`;
+  const r = successes / total;
+  let best: [number, number] = [1, 2];
+  let bestDiff = Infinity;
+  for (let d = 2; d <= 5; d++) {
+    for (let n = 1; n < d; n++) {
+      // lowest terms only, so 2/4 never beats 1/2
+      if (gcd(n, d) !== 1) continue;
+      const diff = Math.abs(n / d - r);
+      // strictly closer wins; on a tie, prefer the larger fraction (round up)
+      if (diff < bestDiff - 1e-9 || (Math.abs(diff - bestDiff) < 1e-9 && n / d > best[0] / best[1])) {
+        best = [n, d];
+        bestDiff = diff;
+      }
+    }
+  }
+  return `${best[0]}/${best[1]}`;
+}
+
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
+
 function SectionHeader({ emoji, title }: { emoji: string; title: string }) {
   return (
     <div className="panel-header">
@@ -812,7 +846,7 @@ export default function StatsScreen({ onBack, onManual, onAccount, onFindPlayers
                         <StatCard emoji={<span className="cue-ball-icon" style={{ fontSize: 21, verticalAlign: "baseline" }} />} value={fmtCeil(stats.avgFoulsPerGame)} label="FOULS" sub="per game" />
                         <StatCard
                           emoji="🛡️"
-                          value={stats.defenseSafeties > 0 ? `${stats.defenseSuccesses}/${stats.defenseSafeties}` : "--"}
+                          value={commonFraction(stats.defenseSuccesses, stats.defenseSafeties)}
                           label="SAFETIES HELD"
                           sub="defense"
                           title={
