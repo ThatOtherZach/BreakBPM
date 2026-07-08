@@ -167,7 +167,7 @@ export const POOL_STATS_FAQ: FaqItem[] = [
   },
   {
     q: "How are players ranked on the leaderboard?",
-    a: "By accuracy-weighted pace: your BPM scaled by your shooting accuracy, averaged over your best recent 1-on-1 games. Proven defense adds a small bonus — safeties that leave your opponent without a pocketed ball. Separate boards for 8-ball and 9-ball, and you qualify after just two games.",
+    a: "An accuracy-weighted pace: your BPM is scaled by your shooting accuracy and averaged over your best recent 1-on-1 games. Successfull safety shots adds a small bonus when they leave your opponent without a pocketed ball. Qualification happens after two games.",
   },
 ];
 
