@@ -1731,6 +1731,15 @@ components:
         # excludes Shark/Chaos games). Drives the wins-today ball chip on the
         # Account identity card. Always 0 for non-personal contexts.
         winsToday: { type: integer, default: 0 }
+        # ── All-time defense (safety effectiveness) ── the same numbers the
+        # Stats hero shows for the all-time window, surfaced on the Account
+        # identity chip row. Optional: only GET /auth/me populates them (the
+        # PATCH handlers return the Account shape without stats). defenseRate
+        # is a whole-number % (0–100), null when defenseSafeties is 0 — v1
+        # summaries carry no defense data, so "no data" never renders as 0%.
+        defenseRate: { type: ["integer", "null"] }
+        defenseSuccesses: { type: integer }
+        defenseSafeties: { type: integer }
 
     PassSummary:
       type: object

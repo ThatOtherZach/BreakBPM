@@ -700,6 +700,24 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
                           {standing.accuracy != null ? `${standing.accuracy}% ACC` : "—% ACC"}
                         </span>
                       )}
+                      {/* Defense chip — all-time safety effectiveness (same
+                          numbers as the Stats hero's all-time window). Only
+                          shown once the player has at least one defense-scored
+                          safety; v1-only history means "no data", not 0%. */}
+                      {(account.defenseSafeties ?? 0) > 0 && account.defenseRate != null && (
+                        <span
+                          title={`Defense: ${account.defenseSuccesses} of ${account.defenseSafeties} ${account.defenseSafeties === 1 ? "safety" : "safeties"} left the opponent without a pocketed ball`}
+                          style={{
+                            fontFamily: "VT323",
+                            fontSize: 16,
+                            lineHeight: 1,
+                            color: "#d8b4ff",
+                            textShadow: "1px 1px 0 #042414",
+                          }}
+                        >
+                          {account.defenseRate}% DEF
+                        </span>
+                      )}
                       {standing != null && standing.sharkLevel > 0 && (
                         <span
                           style={{

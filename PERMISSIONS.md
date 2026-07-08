@@ -113,6 +113,7 @@ holding a token/handle, not from the tier.
 | Export my data (`GET /games/export`) | ❌ | last 24h | full | full | 401 if signed out; free accounts capped to the free window, `pass` exports everything. |
 | Delete my data (`DELETE /games/data`) | ❌ | ✅ | ✅ | ✅ | Scoped to the caller's own participation. |
 | **Stats** scope/window | global, 24h (forced) | personal 24h; may toggle global (all-time) | personal with selectable window (24h/30d/365d/all) + global toggle + refresh | same as `pass` | `GET /stats`. `canChooseWindow`/`canRefresh` are `pass`-only; `canToggleGlobal` is `account`+`pass`. |
+| Account identity chips — own **all-time Defense** | ❌ | ✅ | ✅ | ✅ | `GET /auth/me` puts the caller's own all-time `defenseRate`/`defenseSuccesses`/`defenseSafeties` on `account` — an **intentional** free-tier carve-out from the 24h stats clamp (teaser; precedent: `globalStanding` already exposes all-time BPM/ACC). Not a leak. |
 | **Leaderboard** window | 30d only | 30d only | 30d / 90d / all-time | all | `GET /leaderboard`; 90d & all-time return 403 `pass_required` for non-pass. |
 | Public profile / watch resolution | ✅ | ✅ | ✅ | ✅ | `GET /games/profile`, `GET /games/watch-resolve` — capability = the screen name. **Not** host-paid gated. Fixed 5-game showcase; tier does not change it. |
 | **Spectate** via the official seat/role (`/games/join`) | gated on **host** | gated on **host** | gated on **host** | gated on **host** | The view-only spectator *role* is granted only when the **HOST is paid** (real pass or active subscription). The watcher pays nothing. |

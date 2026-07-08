@@ -12,7 +12,12 @@ import { getVerifiedSubject, getOrCreateUser, needsOnboarding } from "../lib/aut
 import { computeEntitlement, getActivePasses, isRainbowEligible } from "../lib/entitlement";
 import { normalizeProfileTheme } from "../lib/profileBackground";
 import { resolveUserProfileBackground } from "../lib/userProfileBackground";
-import { resolveLeaderboard, clearLeaderboardCache, countEightBallWinsToday } from "../lib/stats";
+import {
+  resolveLeaderboard,
+  clearLeaderboardCache,
+  countEightBallWinsToday,
+  resolveStats,
+} from "../lib/stats";
 import { bannedWords } from "../lib/config";
 import { findBannedWord } from "../lib/wordFilter";
 import type { User } from "@workspace/db";
@@ -58,9 +63,14 @@ router.get("/auth/me", async (req, res): Promise<void> => {
   // 1-hour leaderboard cache, so this is a cheap lookup in the common case).
   // Screen names are canonical + unique, so they key a row to a single user.
   // Omitted when the caller has too few qualifying games to be ranked.
-  const [globalRanking, winsToday] = await Promise.all([
+  // All-time personal stats supply the identity card's Defense chip. Shares
+  // the 1-hour personal-stats cache (busted on every game completion), so
+  // this is a cheap lookup in the common case — same snapshot the Stats
+  // screen's all-time window renders.
+  const [globalRanking, winsToday, allTimeStats] = await Promise.all([
     resolveLeaderboard("8ball", "all"),
     countEightBallWinsToday(user.id),
+    resolveStats("personal", "all", user.id, false),
   ]);
   const globalStanding = globalRanking.find((r) => r.screenName === user.screenName);
   res.json(
@@ -75,6 +85,9 @@ router.get("/auth/me", async (req, res): Promise<void> => {
         profileTheme: normalizeProfileTheme(user.profileTheme),
         profileBackground,
         winsToday,
+        defenseRate: allTimeStats.core.defenseRate,
+        defenseSuccesses: allTimeStats.core.defenseSuccesses,
+        defenseSafeties: allTimeStats.core.defenseSafeties,
       },
       entitlement,
       passes,

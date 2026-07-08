@@ -45,7 +45,10 @@ export const GetMeResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "profileTheme": zod.enum(['auto', 'none', 'rainbow', 'shark', 'pool-player', 'hustler']),
   "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
-  "winsToday": zod.number().default(getMeResponseAccountWinsTodayDefault)
+  "winsToday": zod.number().default(getMeResponseAccountWinsTodayDefault),
+  "defenseRate": zod.number().nullish(),
+  "defenseSuccesses": zod.number().optional(),
+  "defenseSafeties": zod.number().optional()
 }).optional(),
   "entitlement": zod.object({
   "tier": zod.enum(['public', 'account', 'pass']),
@@ -105,7 +108,10 @@ export const UpdateScreenNameResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "profileTheme": zod.enum(['auto', 'none', 'rainbow', 'shark', 'pool-player', 'hustler']),
   "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
-  "winsToday": zod.number().default(updateScreenNameResponseWinsTodayDefault)
+  "winsToday": zod.number().default(updateScreenNameResponseWinsTodayDefault),
+  "defenseRate": zod.number().nullish(),
+  "defenseSuccesses": zod.number().optional(),
+  "defenseSafeties": zod.number().optional()
 })
 
 
@@ -127,7 +133,10 @@ export const UpdateProfileThemeResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "profileTheme": zod.enum(['auto', 'none', 'rainbow', 'shark', 'pool-player', 'hustler']),
   "profileBackground": zod.enum(['shark', 'pool-player', 'hustler']).nullable(),
-  "winsToday": zod.number().default(updateProfileThemeResponseWinsTodayDefault)
+  "winsToday": zod.number().default(updateProfileThemeResponseWinsTodayDefault),
+  "defenseRate": zod.number().nullish(),
+  "defenseSuccesses": zod.number().optional(),
+  "defenseSafeties": zod.number().optional()
 })
 
 

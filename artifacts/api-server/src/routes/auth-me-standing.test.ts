@@ -28,6 +28,12 @@ vi.mock("../lib/stats", () => ({
   resolveLeaderboard: vi.fn(async () => mocks.ranking),
   clearLeaderboardCache: vi.fn(() => {}),
   countEightBallWinsToday: vi.fn(async () => 0),
+  // /auth/me also resolves the caller's all-time personal stats to populate
+  // the account's Defense fields (defenseRate/successes/safeties).
+  resolveStats: vi.fn(async () => ({
+    core: { defenseRate: 50, defenseSuccesses: 1, defenseSafeties: 2 },
+    cached: true,
+  })),
 }));
 
 import authRouter from "./auth";
@@ -83,6 +89,10 @@ describe("/auth/me global standing", () => {
     expect(res.body.globalStanding.bpm).toBe(42.5);
     expect(res.body.globalStanding.accuracy).toBe(88);
     expect(res.body.globalStanding.sharkLevel).toBe(3);
+    // Account carries the all-time Defense numbers for the identity chip row.
+    expect(res.body.account.defenseRate).toBe(50);
+    expect(res.body.account.defenseSuccesses).toBe(1);
+    expect(res.body.account.defenseSafeties).toBe(2);
   });
 
   it("omits globalStanding when the caller is not ranked", async () => {

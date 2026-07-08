@@ -58,6 +58,10 @@ export interface Account {
   /** @nullable */
   profileBackground: AccountProfileBackground;
   winsToday: number;
+  /** @nullable */
+  defenseRate?: number | null;
+  defenseSuccesses?: number;
+  defenseSafeties?: number;
 }
 
 export type PassSummaryKind = typeof PassSummaryKind[keyof typeof PassSummaryKind];
