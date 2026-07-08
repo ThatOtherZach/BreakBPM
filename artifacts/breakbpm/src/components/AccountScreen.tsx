@@ -736,21 +736,20 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
                       )}
                     </div>
                   </div>
-                  {canTheme && (
-                    <button
-                      className="btn"
-                      disabled={updateTheme.isPending}
-                      title="Cycle theme"
-                      style={{ flexShrink: 0 }}
-                      onClick={() => {
-                        const idx = THEME_CYCLE.indexOf(effectiveTheme);
-                        handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length]);
-                      }}
-                    >
-                      {effectiveTheme === "rainbow" ? RAINBOW_DOT : THEME_DOT[themeColorOf(effectiveTheme)]}
-                    </button>
-                  )}
                 </div>
+                {canTheme && (
+                  <button
+                    className="btn w-full"
+                    disabled={updateTheme.isPending}
+                    title="Cycle theme"
+                    onClick={() => {
+                      const idx = THEME_CYCLE.indexOf(effectiveTheme);
+                      handleChangeTheme(THEME_CYCLE[(idx < 0 ? 0 : idx + 1) % THEME_CYCLE.length]);
+                    }}
+                  >
+                    {effectiveTheme === "rainbow" ? RAINBOW_DOT : THEME_DOT[themeColorOf(effectiveTheme)]} Change Theme
+                  </button>
+                )}
                 <div
                   style={{
                     display: "flex",
