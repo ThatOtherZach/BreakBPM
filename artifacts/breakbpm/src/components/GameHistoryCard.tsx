@@ -528,7 +528,7 @@ export default function GameHistoryCard({
               }}
             >
               {hasAcc && <span style={{ color: "#b9e6c4" }}>{g.accuracy}% ACC</span>}
-              {hasAcc && hasDef && <span style={{ color: "#8aa593" }}> · </span>}
+              {hasAcc && hasDef && " "}
               {hasDef && (
                 <span
                   title={`Defense: ${g.defenseSuccesses} of ${g.defenseSafeties} ${
