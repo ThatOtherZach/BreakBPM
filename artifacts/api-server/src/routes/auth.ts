@@ -88,6 +88,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
         defenseRate: allTimeStats.core.defenseRate,
         defenseSuccesses: allTimeStats.core.defenseSuccesses,
         defenseSafeties: allTimeStats.core.defenseSafeties,
+        defenseShots: allTimeStats.core.defenseShots,
       },
       entitlement,
       passes,

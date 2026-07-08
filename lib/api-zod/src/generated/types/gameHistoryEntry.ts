@@ -26,6 +26,7 @@ export interface GameHistoryEntry {
   accuracy?: number | null;
   defenseSafeties?: number;
   defenseSuccesses?: number;
+  defenseShots?: number;
   durationMs: number;
   sunkBallsCount: number;
   outcome: string;

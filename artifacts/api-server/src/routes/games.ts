@@ -470,7 +470,11 @@ function toHistoryEntry(
     // the subject's OWN aggregate counts (no opponent/guest names), so they
     // are safe on the redacted public-profile path too.
     ...(psum && psum.safetySuccessCount != null
-      ? { defenseSafeties: psum.safetyCount, defenseSuccesses: psum.safetySuccessCount }
+      ? {
+          defenseSafeties: psum.safetyCount,
+          defenseSuccesses: psum.safetySuccessCount,
+          defenseShots: psum.shotCount,
+        }
       : {}),
     durationMs: g.durationMs,
     sunkBallsCount: pace.sunkBallsCount,

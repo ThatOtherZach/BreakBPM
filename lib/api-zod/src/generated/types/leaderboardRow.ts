@@ -23,4 +23,5 @@ export interface LeaderboardRow {
   defenseRate: number | null;
   defenseSuccesses: number;
   defenseSafeties: number;
+  defenseShots: number;
 }

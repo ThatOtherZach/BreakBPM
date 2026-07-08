@@ -487,9 +487,12 @@ describe("GET /games/profile — per-game defense fields", () => {
     expect(row).toBeDefined();
     expect(row.defenseSafeties).toBe(2);
     expect(row.defenseSuccesses).toBe(1);
+    // The host's only shots this game were the two safeties — the DEF
+    // denominator (successful-defense share of shots).
+    expect(row.defenseShots).toBe(2);
   });
 
-  it("omits both defense fields when the subject's summary is unreadable (no data ≠ 0)", async () => {
+  it("omits all defense fields when the subject's summary is unreadable (no data ≠ 0)", async () => {
     const host = await createUser();
     const base = Date.now() - 60 * 60 * 1000;
     const g = await seedGame(host.id, {
@@ -512,5 +515,6 @@ describe("GET /games/profile — per-game defense fields", () => {
     expect(row).toBeDefined();
     expect(row).not.toHaveProperty("defenseSafeties");
     expect(row).not.toHaveProperty("defenseSuccesses");
+    expect(row).not.toHaveProperty("defenseShots");
   });
 });

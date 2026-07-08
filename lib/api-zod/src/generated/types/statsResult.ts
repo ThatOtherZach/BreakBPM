@@ -50,6 +50,7 @@ export interface StatsResult {
   defenseRate: number | null;
   defenseSuccesses: number;
   defenseSafeties: number;
+  defenseShots: number;
   /** @nullable */
   avgBpm?: number | null;
   /** @nullable */

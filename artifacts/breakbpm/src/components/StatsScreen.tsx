@@ -860,7 +860,7 @@ export default function StatsScreen({ onBack, onManual, onAccount, onFindPlayers
                         pct={stats.defenseRate}
                         display={`${stats.defenseRate}%`}
                         tone="purple"
-                        title={`Defense: held ${stats.defenseSuccesses} of ${stats.defenseSafeties} ${stats.defenseSafeties === 1 ? "safety" : "safeties"}`}
+                        title={`Defense: ${stats.defenseSuccesses} of ${stats.defenseShots} ${stats.defenseShots === 1 ? "shot" : "shots"} were winning safeties`}
                       />
                     )}
                     <PixelMeter

@@ -1731,15 +1731,17 @@ components:
         # excludes Shark/Chaos games). Drives the wins-today ball chip on the
         # Account identity card. Always 0 for non-personal contexts.
         winsToday: { type: integer, default: 0 }
-        # ── All-time defense (safety effectiveness) ── the same numbers the
-        # Stats hero shows for the all-time window, surfaced on the Account
-        # identity chip row. Optional: only GET /auth/me populates them (the
-        # PATCH handlers return the Account shape without stats). defenseRate
-        # is a whole-number % (0–100), null when defenseSafeties is 0 — v1
-        # summaries carry no defense data, so "no data" never renders as 0%.
+        # ── All-time defense (successful-defense share of shots) ── the same
+        # numbers the Stats hero shows for the all-time window, surfaced on
+        # the Account identity chip row. Optional: only GET /auth/me populates
+        # them (the PATCH handlers return the Account shape without stats).
+        # defenseRate is the whole-number % (0–100) of shots that were
+        # successful safeties; null when defenseSafeties is 0 — v1 summaries
+        # carry no defense data, so "no data" never renders as 0%.
         defenseRate: { type: ["integer", "null"] }
         defenseSuccesses: { type: integer }
         defenseSafeties: { type: integer }
+        defenseShots: { type: integer }
 
     PassSummary:
       type: object
@@ -2497,14 +2499,17 @@ components:
         # row-level winner/host accuracy for legacy rows. Null when not recorded.
         accuracy: { type: ["integer", "null"] }
         # The subject's own defense numbers for THIS game: how many safeties
-        # they played (safety button presses) and how many succeeded (the
-        # opponent's very next shot pocketed nothing). Present only when the
-        # subject's participant summary is v2+ — both fields are OMITTED for
-        # older un-healed rows and unknown participants ("no data", never 0).
-        # The history card shows a DEF chip beside accuracy only when
-        # defenseSafeties > 0; otherwise the card renders exactly as before.
+        # they played (safety button presses), how many succeeded (the
+        # opponent's very next shot pocketed nothing), and how many shots they
+        # took (the DEF denominator — DEF is the successful-defense share of
+        # shots). Present only when the subject's participant summary is v2+ —
+        # all three fields are OMITTED for older un-healed rows and unknown
+        # participants ("no data", never 0). The history card shows a DEF chip
+        # beside accuracy only when defenseSafeties > 0; otherwise the card
+        # renders exactly as before.
         defenseSafeties: { type: integer }
         defenseSuccesses: { type: integer }
+        defenseShots: { type: integer }
         durationMs: { type: integer }
         sunkBallsCount: { type: integer }
         # Subject-relative result for the player whose history this is:
@@ -2951,6 +2956,7 @@ components:
           defenseRate,
           defenseSuccesses,
           defenseSafeties,
+          defenseShots,
           playTimeByType,
           topBalls,
           trend,
@@ -3007,16 +3013,19 @@ components:
         avgFoulsPerGame: { type: number }
         avgSafetiesPerGame: { type: number }
 
-        # ── Defense (safety effectiveness) ──
-        # Whole-number percentage (0–100) of defense-scored safeties that
-        # SUCCEEDED — the opponent's very next shot pocketed nothing. Null when
-        # defenseSafeties is 0 (no safeties with defense data in the window).
+        # ── Defense (successful-defense share of shots) ──
+        # Whole-number percentage (0–100) of the window's SHOTS that were
+        # SUCCESSFUL safeties (the opponent's very next shot pocketed nothing)
+        # — the volume-aware pair to Accuracy. Null when defenseSafeties is 0
+        # (no safeties with defense data in the window).
         defenseRate: { type: ["integer", "null"] }
-        # Numerator / denominator behind defenseRate. The denominator counts
-        # only safeties from games whose summary carries defense data (v2+),
-        # so it can briefly trail totalSafeties until old games are re-distilled.
+        # Counts behind defenseRate: defenseSuccesses is the numerator,
+        # defenseShots the denominator (shots from games whose summary carries
+        # defense data, v2+ — so it can briefly trail totalShots until old
+        # games are re-distilled), defenseSafeties gates chip visibility.
         defenseSuccesses: { type: integer }
         defenseSafeties: { type: integer }
+        defenseShots: { type: integer }
 
         # ── Pace ──
         # Mean / peak per-game BPM. Null when no game has a BPM yet.
@@ -3067,7 +3076,7 @@ components:
 
     LeaderboardRow:
       type: object
-      required: [rank, screenName, bpm, accuracy, gamesPlayed, sharkLevel, profileBackground, winsToday, rainbowName, defenseRate, defenseSuccesses, defenseSafeties]
+      required: [rank, screenName, bpm, accuracy, gamesPlayed, sharkLevel, profileBackground, winsToday, rainbowName, defenseRate, defenseSuccesses, defenseSafeties, defenseShots]
       properties:
         # 1-indexed standing within the ranking (after sorting by bpm desc).
         rank: { type: integer }
@@ -3098,17 +3107,20 @@ components:
         # admins, or active pass holders (one-time pass or subscription) whose
         # profileTheme is "rainbow". Resolved server-side per response.
         rainbowName: { type: boolean }
-        # ── Defense (safety effectiveness) over the player's window games ──
-        # Whole-number percentage (0–100) of defense-scored safeties that
-        # SUCCEEDED — the opponent's very next shot pocketed nothing. Null when
-        # defenseSafeties is 0 (no defense data in the window; v1-only history
-        # is "no data", never 0%). The client hides the DEF chip when null.
+        # ── Defense (successful-defense share of shots) over window games ──
+        # Whole-number percentage (0–100) of the player's SHOTS that were
+        # SUCCESSFUL safeties (the opponent's very next shot pocketed nothing)
+        # — the volume-aware pair to Accuracy. Null when defenseSafeties is 0
+        # (no defense data in the window; v1-only history is "no data", never
+        # 0%). The client hides the DEF chip when null.
         defenseRate: { type: ["integer", "null"] }
-        # Numerator / denominator behind defenseRate. The denominator counts
-        # only safeties from games whose summary carries defense data (v2+),
-        # aggregated across the player's qualifying window games.
+        # Counts behind defenseRate, from games whose summary carries defense
+        # data (v2+), aggregated across the player's qualifying window games:
+        # defenseSuccesses is the numerator, defenseShots the denominator,
+        # defenseSafeties gates chip visibility.
         defenseSuccesses: { type: integer }
         defenseSafeties: { type: integer }
+        defenseShots: { type: integer }
 
     LeaderboardResult:
       type: object

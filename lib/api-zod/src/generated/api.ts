@@ -48,7 +48,8 @@ export const GetMeResponse = zod.object({
   "winsToday": zod.number().default(getMeResponseAccountWinsTodayDefault),
   "defenseRate": zod.number().nullish(),
   "defenseSuccesses": zod.number().optional(),
-  "defenseSafeties": zod.number().optional()
+  "defenseSafeties": zod.number().optional(),
+  "defenseShots": zod.number().optional()
 }).optional(),
   "entitlement": zod.object({
   "tier": zod.enum(['public', 'account', 'pass']),
@@ -86,7 +87,8 @@ export const GetMeResponse = zod.object({
   "rainbowName": zod.boolean(),
   "defenseRate": zod.number().nullable(),
   "defenseSuccesses": zod.number(),
-  "defenseSafeties": zod.number()
+  "defenseSafeties": zod.number(),
+  "defenseShots": zod.number()
 }).optional()
 })
 
@@ -114,7 +116,8 @@ export const UpdateScreenNameResponse = zod.object({
   "winsToday": zod.number().default(updateScreenNameResponseWinsTodayDefault),
   "defenseRate": zod.number().nullish(),
   "defenseSuccesses": zod.number().optional(),
-  "defenseSafeties": zod.number().optional()
+  "defenseSafeties": zod.number().optional(),
+  "defenseShots": zod.number().optional()
 })
 
 
@@ -139,7 +142,8 @@ export const UpdateProfileThemeResponse = zod.object({
   "winsToday": zod.number().default(updateProfileThemeResponseWinsTodayDefault),
   "defenseRate": zod.number().nullish(),
   "defenseSuccesses": zod.number().optional(),
-  "defenseSafeties": zod.number().optional()
+  "defenseSafeties": zod.number().optional(),
+  "defenseShots": zod.number().optional()
 })
 
 
@@ -785,6 +789,7 @@ export const GetPublicProfileResponse = zod.object({
   "accuracy": zod.number().nullish(),
   "defenseSafeties": zod.number().optional(),
   "defenseSuccesses": zod.number().optional(),
+  "defenseShots": zod.number().optional(),
   "durationMs": zod.number(),
   "sunkBallsCount": zod.number(),
   "outcome": zod.string(),
@@ -837,6 +842,7 @@ export const GetPublicProfileResponse = zod.object({
   "defenseRate": zod.number().nullable(),
   "defenseSuccesses": zod.number(),
   "defenseSafeties": zod.number(),
+  "defenseShots": zod.number(),
   "avgBpm": zod.number().nullish(),
   "bestBpm": zod.number().nullish(),
   "globalAvgBpm": zod.number().nullish(),
@@ -873,7 +879,8 @@ export const GetPublicProfileResponse = zod.object({
   "rainbowName": zod.boolean(),
   "defenseRate": zod.number().nullable(),
   "defenseSuccesses": zod.number(),
-  "defenseSafeties": zod.number()
+  "defenseSafeties": zod.number(),
+  "defenseShots": zod.number()
 }).optional()
 })
 
@@ -964,6 +971,7 @@ export const GetGameHistoryResponse = zod.object({
   "accuracy": zod.number().nullish(),
   "defenseSafeties": zod.number().optional(),
   "defenseSuccesses": zod.number().optional(),
+  "defenseShots": zod.number().optional(),
   "durationMs": zod.number(),
   "sunkBallsCount": zod.number(),
   "outcome": zod.string(),
@@ -1054,6 +1062,7 @@ export const ListMyInvitesResponse = zod.object({
   "accuracy": zod.number().nullish(),
   "defenseSafeties": zod.number().optional(),
   "defenseSuccesses": zod.number().optional(),
+  "defenseShots": zod.number().optional(),
   "durationMs": zod.number(),
   "sunkBallsCount": zod.number(),
   "outcome": zod.string(),
@@ -1159,6 +1168,7 @@ export const GetStatsResponse = zod.object({
   "defenseRate": zod.number().nullable(),
   "defenseSuccesses": zod.number(),
   "defenseSafeties": zod.number(),
+  "defenseShots": zod.number(),
   "avgBpm": zod.number().nullish(),
   "bestBpm": zod.number().nullish(),
   "globalAvgBpm": zod.number().nullish(),
@@ -1325,7 +1335,8 @@ export const GetLeaderboardResponse = zod.object({
   "rainbowName": zod.boolean(),
   "defenseRate": zod.number().nullable(),
   "defenseSuccesses": zod.number(),
-  "defenseSafeties": zod.number()
+  "defenseSafeties": zod.number(),
+  "defenseShots": zod.number()
 }))
 })
 
@@ -1374,7 +1385,8 @@ export const GetHallLeaderboardResponse = zod.object({
   "rainbowName": zod.boolean(),
   "defenseRate": zod.number().nullable(),
   "defenseSuccesses": zod.number(),
-  "defenseSafeties": zod.number()
+  "defenseSafeties": zod.number(),
+  "defenseShots": zod.number()
 })),
   "venue": zod.object({
   "id": zod.string(),
@@ -1437,7 +1449,8 @@ export const GetCityLeaderboardResponse = zod.object({
   "rainbowName": zod.boolean(),
   "defenseRate": zod.number().nullable(),
   "defenseSuccesses": zod.number(),
-  "defenseSafeties": zod.number()
+  "defenseSafeties": zod.number(),
+  "defenseShots": zod.number()
 })),
   "city": zod.object({
   "locality": zod.string()

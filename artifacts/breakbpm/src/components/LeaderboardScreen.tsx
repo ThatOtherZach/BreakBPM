@@ -161,7 +161,7 @@ export function LeaderboardRowCard({
               defense-scored safety; v1-only history = "no data", not 0%. */}
           {!hideDefense && (row.defenseSafeties ?? 0) > 0 && row.defenseRate != null && (
             <span
-              title={`Defense: ${row.defenseSuccesses} of ${row.defenseSafeties} ${row.defenseSafeties === 1 ? "safety" : "safeties"} left the opponent without a pocketed ball`}
+              title={`Defense: ${row.defenseSuccesses} of ${row.defenseShots} ${row.defenseShots === 1 ? "shot" : "shots"} were winning safeties (left the opponent without a pocketed ball)`}
               style={{
                 fontFamily: "VT323",
                 fontSize: 16,
@@ -655,7 +655,7 @@ export default function LeaderboardScreen({
                 ? `Local standings${hallVenue?.name ? ` · ${hallVenue.name}` : ""} — recent ${MODE_LABEL_PROSE[mode]} 1-on-1 games at this hall.`
                 : mode === "shark"
                 ? `Top pace & accuracy, recent solo Shark-mode WINS only — beat the 🦈 Shark ${SHARK_BOARD_MIN_WINS} times in the window to get ranked.`
-                : `Top pace & accuracy — winning safeties add a small DEF bonus — recent ${MODE_LABEL_PROSE[mode]} 1-on-1 games only.`}
+                : `Top pace & accuracy — a higher share of winning safeties adds a small DEF bonus — recent ${MODE_LABEL_PROSE[mode]} 1-on-1 games only.`}
             </span>
           </div>
         )}

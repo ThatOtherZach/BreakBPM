@@ -358,8 +358,9 @@ describe("leaderboard ranking — defense weighting", () => {
 
   it("emits window defense fields on public rows; no data = null, never 0", async () => {
     const defender = await createUser();
-    // Per game: 2 successful + 1 unsuccessful safety → totals 6 safeties,
-    // 4 successes → rate = round(4/6 × 100) = 67.
+    // Per game: 2 successful + 1 unsuccessful safety + 4 sinks → 7 shots.
+    // Totals over 2 games: 6 safeties, 4 successes, 14 shots →
+    // DEF = round(4/14 × 100) = 29 (successful-defense share of SHOTS).
     await seedDefenseGame(defender, { sinks: 4, successful: 2, unsuccessful: 1 });
     await seedDefenseGame(defender, { sinks: 4, successful: 2, unsuccessful: 1 });
 
@@ -374,20 +375,23 @@ describe("leaderboard ranking — defense weighting", () => {
     expect(dRow).toBeDefined();
     expect(dRow!.defenseSafeties).toBe(6);
     expect(dRow!.defenseSuccesses).toBe(4);
-    expect(dRow!.defenseRate).toBe(67);
+    expect(dRow!.defenseShots).toBe(14);
+    expect(dRow!.defenseRate).toBe(29);
 
     const pRow = board.find((r) => r.screenName === plain.screenName);
     expect(pRow).toBeDefined();
     expect(pRow!.defenseSafeties).toBe(0);
     expect(pRow!.defenseSuccesses).toBe(0);
-    // No safeties = no data → null, NEVER 0%.
+    // Shots still accumulate from v2 games, but no safeties = no data → null,
+    // NEVER 0%.
+    expect(pRow!.defenseShots).toBe(8);
     expect(pRow!.defenseRate).toBeNull();
   });
 
   it("ranks a proven defender above an otherwise-identical non-defender", async () => {
     // Identical pace + accuracy; the defender adds 5 successful safeties per
-    // game (10 total = the full confidence sample). Sinks land at identical
-    // timestamps, so only the defense bonus separates the two scores.
+    // game. Sinks land at identical timestamps, so only the defense bonus
+    // separates the two scores.
     const defender = await createUser();
     await seedDefenseGame(defender, { sinks: 8, successful: 5 });
     await seedDefenseGame(defender, { sinks: 8, successful: 5 });
@@ -406,11 +410,13 @@ describe("leaderboard ranking — defense weighting", () => {
     expect(dRank!).toBeLessThan(pRank!);
   });
 
-  it("bounds the bonus and scales it by sample-size confidence", async () => {
+  it("bounds the bonus and scales it with defense volume", async () => {
     // Three players with IDENTICAL pace/accuracy, differing only in defense
-    // volume (all at 100% success): none, a thin sample (2 safeties), and a
-    // full confidence sample (10). Scores must order plain ≤ thin < full, and
-    // the full bonus must never exceed the +5% cap over the no-defense score.
+    // volume (all safeties successful): none, thin (1 per game), and heavy
+    // (5 per game). DEF is the successful-defense share of shots, so more
+    // winning safeties → higher DEF → bigger (but capped) bonus. Scores must
+    // order plain ≤ thin < full, and the bonus must never exceed the +5% cap
+    // over the no-defense score.
     const plain = await createUser();
     await seedDefenseGame(plain, { sinks: 8 });
     await seedDefenseGame(plain, { sinks: 8 });
@@ -428,8 +434,8 @@ describe("leaderboard ranking — defense weighting", () => {
     const score = (u: User) => rows.find((r) => r.screenName === u.screenName)!.score;
 
     expect(score(thin)).toBeGreaterThanOrEqual(score(plain)); // never a penalty
-    expect(score(full)).toBeGreaterThan(score(thin)); // confidence ramps the bonus
-    // Bounded: at 100% DEF with a full sample the score is exactly +5%.
+    expect(score(full)).toBeGreaterThan(score(thin)); // volume raises the share → bigger bonus
+    // Bounded: the bonus can never exceed +5% (the theoretical 100%-DEF cap).
     expect(score(full)).toBeLessThanOrEqual(score(plain) * 1.05 + 0.05);
   });
 });

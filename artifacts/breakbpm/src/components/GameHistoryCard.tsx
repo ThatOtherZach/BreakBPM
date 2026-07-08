@@ -268,12 +268,16 @@ export default function GameHistoryCard({
   // THIS game AND the server sent v2 defense data (older un-healed rows omit
   // the fields — "no data", never a misleading 0%). No safeties → the card
   // renders exactly as before. Shark Mode games never show it — there's no
-  // human opponent to play defense against.
+  // human opponent to play defense against. DEF = successful safeties as a
+  // share of the subject's SHOTS this game (the volume-aware pair to
+  // Accuracy), not per-safety hold rate.
   const hasDef =
     !g.sharkMode &&
-    g.defenseSafeties != null && g.defenseSafeties > 0 && g.defenseSuccesses != null;
+    g.defenseSafeties != null && g.defenseSafeties > 0 &&
+    g.defenseSuccesses != null &&
+    g.defenseShots != null && g.defenseShots > 0;
   const defRate = hasDef
-    ? Math.round((g.defenseSuccesses! / g.defenseSafeties!) * 100)
+    ? Math.round((g.defenseSuccesses! / g.defenseShots!) * 100)
     : null;
   // Tint the card's pool-table felt to THIS game's HOST theme (server-resolved
   // `hostTheme`), so every viewer sees the host's table — not their own theme.
@@ -535,9 +539,9 @@ export default function GameHistoryCard({
           )}
           {hasDef && (
             <span
-              title={`Defense: ${g.defenseSuccesses} of ${g.defenseSafeties} ${
-                g.defenseSafeties === 1 ? "safety" : "safeties"
-              } left the opponent without a pocketed ball`}
+              title={`Defense: ${g.defenseSuccesses} of ${g.defenseShots} ${
+                g.defenseShots === 1 ? "shot" : "shots"
+              } were winning safeties (left the opponent without a pocketed ball)`}
               style={{
                 fontFamily: "VT323",
                 fontSize: 18,

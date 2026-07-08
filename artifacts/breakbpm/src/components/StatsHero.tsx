@@ -321,8 +321,8 @@ export default function StatsHero({
               className="stats-hero-side-item"
               title={
                 stats.defenseRate == null
-                  ? "Safety effectiveness — no safeties in this window yet"
-                  : `Safety effectiveness: ${stats.defenseSuccesses} of ${stats.defenseSafeties} ${stats.defenseSafeties === 1 ? "safety" : "safeties"} left the opponent without a pocketed ball`
+                  ? "Defense — no safeties in this window yet"
+                  : `Defense: ${stats.defenseSuccesses} of ${stats.defenseShots} ${stats.defenseShots === 1 ? "shot" : "shots"} were winning safeties (left the opponent without a pocketed ball)`
               }
             >
               <span className="stats-hero-side-val">{stats.defenseRate == null ? "--" : `${stats.defenseRate}%`}</span>

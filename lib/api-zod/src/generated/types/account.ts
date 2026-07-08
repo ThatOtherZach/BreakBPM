@@ -22,4 +22,5 @@ export interface Account {
   defenseRate?: number | null;
   defenseSuccesses?: number;
   defenseSafeties?: number;
+  defenseShots?: number;
 }

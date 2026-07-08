@@ -62,6 +62,7 @@ export interface Account {
   defenseRate?: number | null;
   defenseSuccesses?: number;
   defenseSafeties?: number;
+  defenseShots?: number;
 }
 
 export type PassSummaryKind = typeof PassSummaryKind[keyof typeof PassSummaryKind];
@@ -604,6 +605,7 @@ export interface LeaderboardRow {
   defenseRate: number | null;
   defenseSuccesses: number;
   defenseSafeties: number;
+  defenseShots: number;
 }
 
 export interface MeResponse {
@@ -992,6 +994,7 @@ export interface GameHistoryEntry {
   accuracy?: number | null;
   defenseSafeties?: number;
   defenseSuccesses?: number;
+  defenseShots?: number;
   durationMs: number;
   sunkBallsCount: number;
   outcome: string;
@@ -1391,6 +1394,7 @@ export interface StatsResult {
   defenseRate: number | null;
   defenseSuccesses: number;
   defenseSafeties: number;
+  defenseShots: number;
   /** @nullable */
   avgBpm?: number | null;
   /** @nullable */

@@ -31,7 +31,7 @@ vi.mock("../lib/stats", () => ({
   // /auth/me also resolves the caller's all-time personal stats to populate
   // the account's Defense fields (defenseRate/successes/safeties).
   resolveStats: vi.fn(async () => ({
-    core: { defenseRate: 50, defenseSuccesses: 1, defenseSafeties: 2 },
+    core: { defenseRate: 10, defenseSuccesses: 1, defenseSafeties: 2, defenseShots: 10 },
     cached: true,
   })),
 }));
@@ -64,6 +64,7 @@ function row(over: Partial<LeaderboardRow> & Pick<LeaderboardRow, "rank" | "scre
     defenseRate: null,
     defenseSuccesses: 0,
     defenseSafeties: 0,
+    defenseShots: 0,
     ...over,
   };
 }
@@ -87,9 +88,10 @@ describe("/auth/me global standing", () => {
         bpm: 42.5,
         accuracy: 88,
         sharkLevel: 3,
-        defenseRate: 75,
+        defenseRate: 15,
         defenseSuccesses: 3,
         defenseSafeties: 4,
+        defenseShots: 20,
       }),
     ];
 
@@ -102,13 +104,15 @@ describe("/auth/me global standing", () => {
     expect(res.body.globalStanding.accuracy).toBe(88);
     expect(res.body.globalStanding.sharkLevel).toBe(3);
     // The standing row carries the WINDOW defense fields (drives the DEF chip).
-    expect(res.body.globalStanding.defenseRate).toBe(75);
+    expect(res.body.globalStanding.defenseRate).toBe(15);
     expect(res.body.globalStanding.defenseSuccesses).toBe(3);
     expect(res.body.globalStanding.defenseSafeties).toBe(4);
+    expect(res.body.globalStanding.defenseShots).toBe(20);
     // Account carries the all-time Defense numbers for the identity chip row.
-    expect(res.body.account.defenseRate).toBe(50);
+    expect(res.body.account.defenseRate).toBe(10);
     expect(res.body.account.defenseSuccesses).toBe(1);
     expect(res.body.account.defenseSafeties).toBe(2);
+    expect(res.body.account.defenseShots).toBe(10);
   });
 
   it("omits globalStanding when the caller is not ranked", async () => {

@@ -709,7 +709,7 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
                           data", not 0%. */}
                       {standing != null && standing.defenseSafeties > 0 && standing.defenseRate != null && (
                         <span
-                          title={`Defense: ${standing.defenseSuccesses} of ${standing.defenseSafeties} ${standing.defenseSafeties === 1 ? "safety" : "safeties"} left the opponent without a pocketed ball`}
+                          title={`Defense: ${standing.defenseSuccesses} of ${standing.defenseShots} ${standing.defenseShots === 1 ? "shot" : "shots"} were winning safeties (left the opponent without a pocketed ball)`}
                           style={{
                             fontFamily: "VT323",
                             fontSize: 16,
