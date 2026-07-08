@@ -848,19 +848,21 @@ export default function StatsScreen({ onBack, onManual, onAccount, onFindPlayers
                           />
                         );
                       })() : "🎯"}
-                      label={stats.defenseRate != null ? "ACCURACY & DEFENSE" : "ACCURACY"}
+                      label="ACCURACY"
                       pct={stats.accuracy}
                       display={stats.accuracy == null ? "—" : `${stats.accuracy}%`}
                       tone="green"
-                      {...(stats.defenseRate != null
-                        ? {
-                            pct2: stats.defenseRate,
-                            display2: `${stats.defenseRate}%`,
-                            tone2: "purple" as const,
-                            title: `Accuracy ${stats.accuracy == null ? "—" : `${stats.accuracy}%`} · Defense: held ${stats.defenseSuccesses} of ${stats.defenseSafeties} ${stats.defenseSafeties === 1 ? "safety" : "safeties"}`,
-                          }
-                        : {})}
                     />
+                    {stats.defenseRate != null && (
+                      <PixelMeter
+                        emoji="🛡️"
+                        label="DEFENSE"
+                        pct={stats.defenseRate}
+                        display={`${stats.defenseRate}%`}
+                        tone="purple"
+                        title={`Defense: held ${stats.defenseSuccesses} of ${stats.defenseSafeties} ${stats.defenseSafeties === 1 ? "safety" : "safeties"}`}
+                      />
+                    )}
                     <PixelMeter
                       label="FOUL RATE"
                       emoji={<span className="cue-ball-icon" style={{ fontSize: 14, verticalAlign: "baseline" }} />}
