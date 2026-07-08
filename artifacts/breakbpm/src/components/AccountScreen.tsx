@@ -750,6 +750,9 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
                     {effectiveTheme === "rainbow" ? RAINBOW_DOT : THEME_DOT[themeColorOf(effectiveTheme)]} Change Theme
                   </button>
                 )}
+                {canEditName && (
+                  <button className="btn w-full" onClick={() => setEditing(true)}>Edit</button>
+                )}
                 <div
                   style={{
                     display: "flex",
@@ -921,9 +924,6 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
               >
                 Sign Out
               </button>
-              {canEditName && (
-                <button className="btn" style={{ flex: 1 }} onClick={() => setEditing(true)}>Edit</button>
-              )}
             </div>
           </div>
         </div>
