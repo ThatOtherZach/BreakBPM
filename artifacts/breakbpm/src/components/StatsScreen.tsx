@@ -848,7 +848,7 @@ export default function StatsScreen({ onBack, onManual, onAccount, onFindPlayers
                           />
                         );
                       })() : "🎯"}
-                      label={stats.defenseRate != null ? "ACC / DEF" : "ACCURACY"}
+                      label={stats.defenseRate != null ? "Accuracy & Defense" : "ACCURACY"}
                       pct={stats.accuracy}
                       display={stats.accuracy == null ? "—" : `${stats.accuracy}%`}
                       tone="green"
