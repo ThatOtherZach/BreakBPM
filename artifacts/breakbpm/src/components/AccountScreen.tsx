@@ -700,15 +700,15 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
                           {standing.accuracy != null ? `${standing.accuracy}% ACC` : "—% ACC"}
                         </span>
                       )}
-                      {/* Defense chip — same leaderboard standing the ACC chip
-                          reads (ranked 1-on-1 games in the board window), so the
-                          card's ACC and DEF describe the same board window.
-                          Only shown once the standing has at least one
-                          defense-scored safety; v1-only history means "no
-                          data", not 0%. */}
-                      {standing != null && (standing.defenseSafeties ?? 0) > 0 && standing.defenseRate != null && (
+                      {/* Defense chip — all-time safety effectiveness (same
+                          numbers as the Stats hero's all-time window). Only
+                          shown once the player has at least one defense-scored
+                          safety; v1-only history means "no data", not 0%.
+                          Also gated on the player being ranked (standing != null)
+                          so it doesn't appear before BPM/ACC do. */}
+                      {standing != null && (account.defenseSafeties ?? 0) > 0 && account.defenseRate != null && (
                         <span
-                          title={`Defense: ${standing.defenseSuccesses} of ${standing.defenseSafeties} ${standing.defenseSafeties === 1 ? "safety" : "safeties"} left the opponent without a pocketed ball`}
+                          title={`Defense: ${account.defenseSuccesses} of ${account.defenseSafeties} ${account.defenseSafeties === 1 ? "safety" : "safeties"} left the opponent without a pocketed ball`}
                           style={{
                             fontFamily: "VT323",
                             fontSize: 16,
@@ -717,7 +717,7 @@ export default function AccountScreen({ onBack, onPasses, onManual, onFindPlayer
                             textShadow: "1px 1px 0 #042414",
                           }}
                         >
-                          {standing.defenseRate}% DEF
+                          {account.defenseRate}% DEF
                         </span>
                       )}
                       {standing != null && standing.sharkLevel > 0 && (
