@@ -501,44 +501,44 @@ export default function GameHistoryCard({
           </span>
         </div>
 
-        {/* Right: BPM hero + acc + duration */}
+        {/* Right: BPM hero + one combined ACC · DEF line + duration. Stats
+            with no data are simply absent — no dash placeholders. */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-          <span
-            style={{
-              fontFamily: "VT323",
-              fontSize: 26,
-              lineHeight: 1,
-              color: hasBpm ? "#ffe98a" : "#8aa593",
-              textShadow: "1px 1px 0 #042414",
-            }}
-          >
-            {hasBpm ? `${g.bpm!.toFixed(1)} BPM` : "— BPM"}
-          </span>
-          <span
-            style={{
-              fontFamily: "VT323",
-              fontSize: 18,
-              lineHeight: 1,
-              color: hasAcc ? "#b9e6c4" : "#8aa593",
-              textShadow: "1px 1px 0 #042414",
-            }}
-          >
-            {hasAcc ? `${g.accuracy}% ACC` : "—% ACC"}
-          </span>
-          {hasDef && (
+          {hasBpm && (
             <span
-              title={`Defense: ${g.defenseSuccesses} of ${g.defenseSafeties} ${
-                g.defenseSafeties === 1 ? "safety" : "safeties"
-              } left the opponent without a pocketed ball`}
+              style={{
+                fontFamily: "VT323",
+                fontSize: 26,
+                lineHeight: 1,
+                color: "#ffe98a",
+                textShadow: "1px 1px 0 #042414",
+              }}
+            >
+              {g.bpm!.toFixed(1)} BPM
+            </span>
+          )}
+          {(hasAcc || hasDef) && (
+            <span
               style={{
                 fontFamily: "VT323",
                 fontSize: 18,
                 lineHeight: 1,
-                color: "#d8b4ff",
                 textShadow: "1px 1px 0 #042414",
+                whiteSpace: "nowrap",
               }}
             >
-              {defRate}% DEF
+              {hasAcc && <span style={{ color: "#b9e6c4" }}>{g.accuracy}% ACC</span>}
+              {hasAcc && hasDef && <span style={{ color: "#8aa593" }}> · </span>}
+              {hasDef && (
+                <span
+                  title={`Defense: ${g.defenseSuccesses} of ${g.defenseSafeties} ${
+                    g.defenseSafeties === 1 ? "safety" : "safeties"
+                  } left the opponent without a pocketed ball`}
+                  style={{ color: "#d8b4ff" }}
+                >
+                  {defRate}% DEF
+                </span>
+              )}
             </span>
           )}
           <span style={{ fontSize: 10, color: "#a9c9b3" }}>
