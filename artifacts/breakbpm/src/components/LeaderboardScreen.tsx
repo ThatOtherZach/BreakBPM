@@ -87,12 +87,13 @@ export function LeaderboardRowCard({
       className="fpp-card history-card"
       style={{
         display: "flex",
-        alignItems: "center",
-        gap: 8,
+        flexDirection: "column",
+        gap: 6,
         backgroundColor: felt.felt,
         boxShadow: `inset 0 0 0 2px ${felt.feltShadow}, inset 0 2px 6px rgba(0, 0, 0, 0.35)`,
       }}
     >
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <span
         style={{
           fontFamily: "VT323",
@@ -181,8 +182,9 @@ export function LeaderboardRowCard({
           )}
         </div>
       </div>
+      </div>
       {onWho && (
-        <button className="btn" style={{ flexShrink: 0 }} onClick={() => onWho(row.screenName)}>🔎</button>
+        <button className="btn w-full" onClick={() => onWho(row.screenName)}>🔎 View</button>
       )}
     </div>
   );
