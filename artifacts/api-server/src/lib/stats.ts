@@ -862,7 +862,7 @@ const LEADERBOARD_MAX_PLAUSIBLE_BPM = 12;
  */
 const LEADERBOARD_NULL_RULESET_CUTOFF = new Date("2026-06-08T00:00:00Z");
 
-function leaderboardCutoff(window: LeaderboardWindow): Date | null {
+export function leaderboardCutoff(window: LeaderboardWindow): Date | null {
   const day = 24 * 60 * 60 * 1000;
   const now = Date.now();
   switch (window) {

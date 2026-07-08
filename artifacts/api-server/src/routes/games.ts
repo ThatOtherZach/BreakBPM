@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { randomUUID } from "node:crypto";
-import { and, count, desc, eq, gte, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
+import { and, count, countDistinct, desc, eq, gte, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { db, gamesTable, gameParticipantsTable, usersTable, gameMentionsTable, passesTable, subscriptionsTable, venuesTable } from "@workspace/db";
 import {
   StartGameBody,
@@ -54,7 +54,7 @@ import {
   getActiveSubscription,
   resolveRainbowName,
 } from "../lib/entitlement";
-import { resolveStats, resolveLeaderboard, clearUserStatsCache, clearLeaderboardCache, windowCutoff, FREE_TIER_WINDOW, type StatScope, type StatWindow, type StatGameMode, type LeaderboardMode, type LeaderboardWindow } from "../lib/stats";
+import { resolveStats, resolveLeaderboard, clearUserStatsCache, clearLeaderboardCache, windowCutoff, leaderboardCutoff, FREE_TIER_WINDOW, type StatScope, type StatWindow, type StatGameMode, type LeaderboardMode, type LeaderboardWindow } from "../lib/stats";
 import { sweepStaleGames, finalizeGameIfStale, INACTIVITY_FORFEIT_MS, MAX_GAME_DURATION_MS } from "../lib/forfeit";
 import { newId } from "../lib/ids";
 import { ensureVenueSlug } from "../lib/venueSlugStore";
@@ -3232,6 +3232,29 @@ router.get("/leaderboard/city", async (req, res): Promise<void> => {
     venueIds: cityVenues.map((v) => v.id),
   });
   const totalPlayers = all.length;
+
+  // Broader activity signal for the city hero: distinct REGISTERED players who
+  // participated in ANY finalized game tagged to this city (directly via the
+  // "Tag City" fallback or through one of its Verified Halls) inside the
+  // selected window — regardless of mode or ranked-board eligibility. Zero
+  // renders as "Open Table" client-side.
+  const cutoff = leaderboardCutoff(window as LeaderboardWindow);
+  const taggedPlayersRows = await db
+    .select({ value: countDistinct(gameParticipantsTable.userId) })
+    .from(gamesTable)
+    .innerJoin(gameParticipantsTable, eq(gameParticipantsTable.gameId, gamesTable.id))
+    .where(
+      and(
+        isNotNull(gamesTable.endedAt),
+        or(
+          eq(gamesTable.cityLocality, locality),
+          inArray(gamesTable.venueId, cityVenues.map((v) => v.id)),
+        )!,
+        isNotNull(gameParticipantsTable.userId),
+        ...(cutoff ? [gte(gamesTable.endedAt, cutoff)] : []),
+      ),
+    );
+  const taggedPlayers = taggedPlayersRows[0]?.value ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalPlayers / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
   const offset = (safePage - 1) * pageSize;
@@ -3245,6 +3268,7 @@ router.get("/leaderboard/city", async (req, res): Promise<void> => {
       pageSize,
       totalPlayers,
       totalPages,
+      taggedPlayers,
       rows,
       city: { locality },
     }),

@@ -3297,7 +3297,7 @@ components:
     # games tagged to any Verified Hall in that city.
     CityLeaderboardResult:
       type: object
-      required: [mode, window, page, pageSize, totalPlayers, totalPages, rows, city]
+      required: [mode, window, page, pageSize, totalPlayers, totalPages, taggedPlayers, rows, city]
       properties:
         mode: { type: string, enum: [8ball, 9ball, shark] }
         window: { type: string, enum: [30d, 90d, all] }
@@ -3305,6 +3305,12 @@ components:
         pageSize: { type: integer }
         totalPlayers: { type: integer }
         totalPages: { type: integer }
+        # Distinct REGISTERED players who participated in any finalized game
+        # tagged to this city (directly or via one of its Verified Halls) inside
+        # the requested window — regardless of mode or ranked-board eligibility.
+        # Powers the city-hero "N Players / Open Table" line, so it's a broader
+        # activity signal than totalPlayers (ranked rows only).
+        taggedPlayers: { type: integer }
         rows:
           type: array
           items: { $ref: "#/components/schemas/LeaderboardRow" }

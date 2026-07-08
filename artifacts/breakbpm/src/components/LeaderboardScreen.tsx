@@ -400,6 +400,16 @@ export default function LeaderboardScreen({
             <div className="city-hero-title-block">
               <div className="city-hero-kicker">{countryPart ? countryPart.toUpperCase() : "City Leaderboard"}</div>
               <h1 className="city-hero-title">{cityPart}</h1>
+              {/* Activity line: distinct registered players in games tagged to
+                  this city inside the selected window (server-computed, broader
+                  than the ranked count). Zero = "Open Table" — come get a game. */}
+              {cityQ.data && (
+                <div className="city-hero-players">
+                  {cityQ.data.taggedPlayers > 0
+                    ? `🙋‍♂️ ${cityQ.data.taggedPlayers} ${cityQ.data.taggedPlayers === 1 ? "Player" : "Players"}`
+                    : "Open Table"}
+                </div>
+              )}
             </div>
           </div>
         );

@@ -17,6 +17,7 @@ export interface CityLeaderboardResult {
   pageSize: number;
   totalPlayers: number;
   totalPages: number;
+  taggedPlayers: number;
   rows: LeaderboardRow[];
   city: TaggedCity;
 }
