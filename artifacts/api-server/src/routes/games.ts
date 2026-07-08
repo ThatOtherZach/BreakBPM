@@ -58,6 +58,7 @@ import { resolveStats, resolveLeaderboard, clearUserStatsCache, clearLeaderboard
 import { sweepStaleGames, finalizeGameIfStale, INACTIVITY_FORFEIT_MS, MAX_GAME_DURATION_MS } from "../lib/forfeit";
 import { newId } from "../lib/ids";
 import { ensureVenueSlug } from "../lib/venueSlugStore";
+import { slugifyText } from "../lib/venueSlug";
 import { generateUniqueShareCode, normalizeShareCode } from "../lib/shareCode";
 import { isAdminEmail } from "../lib/config";
 import { haversineMeters } from "../lib/geocode";
@@ -3209,10 +3210,37 @@ router.get("/leaderboard/city", async (req, res): Promise<void> => {
   // A City only exists if at least one active Verified Hall has that locality.
   // We also collect those venue ids to roll their hall-tagged games into the
   // city pool (a hall's games count toward its city without any backfill).
-  const cityVenues = await db
+  // The param accepts the exact locality ("Vancouver, Canada" — legacy encoded
+  // URLs) OR its slug form ("vancouver-canada"); exact match always wins first
+  // so a locality that happens to look like another city's slug can't be
+  // shadowed.
+  let resolvedLocality = locality;
+  let cityVenues = await db
     .select({ id: venuesTable.id })
     .from(venuesTable)
-    .where(and(eq(venuesTable.active, true), eq(venuesTable.locality, locality)));
+    .where(and(eq(venuesTable.active, true), eq(venuesTable.locality, resolvedLocality)));
+  if (cityVenues.length === 0) {
+    const wantedSlug = slugifyText(locality);
+    if (wantedSlug) {
+      // Ordered so a (rare) slug collision between two localities resolves
+      // deterministically (alphabetical first wins) instead of by DB plan.
+      const localities = await db
+        .selectDistinct({ locality: venuesTable.locality })
+        .from(venuesTable)
+        .where(and(eq(venuesTable.active, true), isNotNull(venuesTable.locality)))
+        .orderBy(venuesTable.locality);
+      const match = localities.find(
+        (row) => row.locality != null && slugifyText(row.locality) === wantedSlug,
+      );
+      if (match?.locality) {
+        resolvedLocality = match.locality;
+        cityVenues = await db
+          .select({ id: venuesTable.id })
+          .from(venuesTable)
+          .where(and(eq(venuesTable.active, true), eq(venuesTable.locality, resolvedLocality)));
+      }
+    }
+  }
   if (cityVenues.length === 0) {
     res.status(404).json({ error: "not_found" });
     return;
@@ -3228,7 +3256,7 @@ router.get("/leaderboard/city", async (req, res): Promise<void> => {
 
   const all = await resolveLeaderboard(mode as LeaderboardMode, window as LeaderboardWindow, {
     kind: "city",
-    locality,
+    locality: resolvedLocality,
     venueIds: cityVenues.map((v) => v.id),
   });
   const totalPlayers = all.length;
@@ -3247,7 +3275,7 @@ router.get("/leaderboard/city", async (req, res): Promise<void> => {
       and(
         isNotNull(gamesTable.endedAt),
         or(
-          eq(gamesTable.cityLocality, locality),
+          eq(gamesTable.cityLocality, resolvedLocality),
           inArray(gamesTable.venueId, cityVenues.map((v) => v.id)),
         )!,
         isNotNull(gameParticipantsTable.userId),
@@ -3270,7 +3298,7 @@ router.get("/leaderboard/city", async (req, res): Promise<void> => {
       totalPages,
       taggedPlayers,
       rows,
-      city: { locality },
+      city: { locality: resolvedLocality },
     }),
   );
 });

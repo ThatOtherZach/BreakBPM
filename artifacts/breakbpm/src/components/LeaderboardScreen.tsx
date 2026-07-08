@@ -16,6 +16,7 @@ import Footer from "./Footer";
 import { useAuth } from "../lib/authClient";
 import { usePageMeta, type PageMetaConfig } from "../lib/pageMeta";
 import { THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
+import { citySlug, cityBoardPath, prettifyCitySlug } from "../lib/citySlug";
 import { WinsTodayChip } from "./WinsTodayChip";
 import { PlayerName } from "./PlayerName";
 import { venueWebsiteUrl } from "./FindPlayersScreen";
@@ -329,7 +330,17 @@ export default function LeaderboardScreen({
   // tell "no games tagged here yet" (0) apart from "games tagged but none
   // qualify for the ranked board yet" (>0 with no ranked rows).
   const hallTaggedGames = hallQ.data?.taggedGames ?? 0;
-  const cityName = cityQ.data?.city?.locality ?? cityLocality;
+  // Prefer the server's real locality (the URL may carry the slug form,
+  // "vancouver-canada"). Before the auth-gated city query returns — or when
+  // signed out — prettify a slug-looking param so the hero doesn't show raw
+  // kebab-case; a legacy encoded locality ("Vancouver, Canada") passes through
+  // untouched.
+  const rawCityParam = cityLocality ?? "";
+  const cityName =
+    cityQ.data?.city?.locality ??
+    (rawCityParam && citySlug(rawCityParam) === rawCityParam
+      ? prettifyCitySlug(rawCityParam)
+      : cityLocality);
 
   // Per-hall pages are public, crawlable SEO surfaces (they're listed in the
   // venue sitemap), so give each one an indexable, venue-specific title +
@@ -361,6 +372,18 @@ export default function LeaderboardScreen({
     if (!isHall || !slug || slug === venueId) return;
     setLocation(`/leaderboard/hall/${encodeURIComponent(slug)}`, { replace: true });
   }, [isHall, venueId, hallVenue?.slug, setLocation]);
+
+  // Same canonicalization for cities: when opened via a legacy encoded
+  // locality ("Vancouver, Canada"), swap the address bar to the slug form
+  // ("vancouver-canada") once the server confirms the city. Old links keep
+  // working because the server resolves either form (exact match wins).
+  useEffect(() => {
+    const real = cityQ.data?.city?.locality;
+    if (!isCity || !real) return;
+    const slug = citySlug(real);
+    if (!slug || slug === cityLocality) return;
+    setLocation(`/leaderboard/city/${slug}`, { replace: true });
+  }, [isCity, cityLocality, cityQ.data?.city?.locality, setLocation]);
 
   function chooseWindow(w: GetLeaderboardWindow) {
     if (w !== "30d" && !isPass) return;
@@ -444,7 +467,7 @@ export default function LeaderboardScreen({
                         <span
                           style={{ cursor: "pointer", textDecoration: "underline dotted", textUnderlineOffset: 2 }}
                           title={`View ${hallVenue.locality} city leaderboard`}
-                          onClick={() => setLocation(`/leaderboard/city/${encodeURIComponent(hallVenue.locality!)}`)}
+                          onClick={() => setLocation(cityBoardPath(hallVenue.locality!))}
                         >
                           {hallVenue.locality}
                         </span>

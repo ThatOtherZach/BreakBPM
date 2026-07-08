@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
+import { cityBoardPath } from "../lib/citySlug";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -1064,7 +1065,7 @@ function PostCard({
                   setLocation(
                     link.kind === "hall"
                       ? `/leaderboard/hall/${encodeURIComponent(link.hallSlug ?? "")}`
-                      : `/leaderboard/city/${encodeURIComponent(link.label)}`,
+                      : cityBoardPath(link.label),
                   )
                 }
               >
@@ -1170,7 +1171,7 @@ export function VenueCard({
           className="fpp-card-loc"
           style={{ cursor: "pointer" }}
           title={`View ${venue.locality} city leaderboard`}
-          onClick={() => setLocation(`/leaderboard/city/${encodeURIComponent(venue.locality!)}`)}
+          onClick={() => setLocation(cityBoardPath(venue.locality!))}
         >
           📍 <span style={{ textDecoration: "underline dotted", textUnderlineOffset: 2 }}>{venue.locality}</span>
         </div>

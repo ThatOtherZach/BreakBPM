@@ -4,6 +4,7 @@ import type { GameHistoryEntry } from "@workspace/api-client-react";
 import SharkIcon from "./SharkIcon";
 import { SHARK_PLAYER_NAME, SOLIDS } from "../lib/gameLogic";
 import { THEME_FELT, themeColorOf } from "../lib/backgroundVariants";
+import { cityBoardPath } from "../lib/citySlug";
 
 const BALL_COLORS: Record<number, string> = {
   1: "#FDD307", 2: "#1F4E9E", 3: "#C3342B", 4: "#5B247A",
@@ -459,7 +460,7 @@ export default function GameHistoryCard({
               : g.cityLocality
                 ? {
                     label: g.cityLocality,
-                    href: `/leaderboard/city/${encodeURIComponent(g.cityLocality)}`,
+                    href: cityBoardPath(g.cityLocality),
                     title: `City Leaderboard · ${g.cityLocality}`,
                   }
                 : null;

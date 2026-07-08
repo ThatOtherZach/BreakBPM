@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, Fragment, type CSSProperties 
 import { useLocation } from 'wouter';
 import type { GameState, ShotLogEntry, RematchConfig } from '../lib/gameLogic';
 import { THEME_FELT, THEME_ACCENT, themeColorOf } from '../lib/backgroundVariants';
+import { cityBoardPath } from '../lib/citySlug';
 import Navbar from './Navbar';
 import {
   getLegalBalls, getRemainingBalls, getAllBalls, checkSinkResult,
@@ -1641,7 +1642,7 @@ export default function GameScreen({ initialState, serverGameId, maxGameDuration
                   </p>
                   <button
                     className="btn btn-primary w-full"
-                    onClick={() => navigate(`/leaderboard/city/${encodeURIComponent(taggedCity.locality)}`)}
+                    onClick={() => navigate(cityBoardPath(taggedCity.locality))}
                   >
                     🏙️ City Leaderboard
                   </button>

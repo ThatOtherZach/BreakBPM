@@ -9,6 +9,7 @@ import Footer from "./Footer";
 import LegalDisclosure from "./LegalDisclosure";
 import { venueWebsiteUrl } from "./FindPlayersScreen";
 import { venuePaymentBadge } from "../lib/venuePaymentType";
+import { cityBoardPath } from "../lib/citySlug";
 import { useListVenues, getListVenuesQueryKey } from "@workspace/api-client-react";
 import { usePageMeta, PAGE_META } from "../lib/pageMeta";
 import {
@@ -178,7 +179,7 @@ function LatestHallWidget({
                 <span
                   style={{ cursor: "pointer", textDecoration: "underline dotted", textUnderlineOffset: 2 }}
                   title={`View ${venue.locality} city leaderboard`}
-                  onClick={() => setLocation(`/leaderboard/city/${encodeURIComponent(venue.locality!)}`)}
+                  onClick={() => setLocation(cityBoardPath(venue.locality!))}
                 >
                   {venue.locality}
                 </span>
