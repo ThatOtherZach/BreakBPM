@@ -273,6 +273,7 @@ export default function LeaderboardScreen({
   const isPass = me.data?.entitlement?.tier === "pass";
   const isHall = venueId != null;
   const isCity = cityLocality != null;
+  const isGlobal = !isHall && !isCity;
 
   const [mode, setMode] = useState<GetLeaderboardMode>("8ball");
   const [window, setWindow] = useState<GetLeaderboardWindow>("30d");
@@ -406,30 +407,37 @@ export default function LeaderboardScreen({
         onStats={onStats}
         onSignIn={onSignIn}
       />
-      {/* ── City hero (city pages only) ── mirrors the home-page splash panel:
-          racked-balls artwork behind a dark vignette + CRT scanlines, with the
-          city + country centered in the VT323 title font. `cityName` is the
-          hall-entered locality ("Vancouver, Canada"), so split on the last
-          comma: big city line, small country line. */}
-      {isCity && (() => {
+      {/* ── City/Global hero ── mirrors the home-page splash panel: racked-balls
+          artwork behind a dark vignette + CRT scanlines, with the title
+          centered in the VT323 title font. On city pages `cityName` is the
+          hall-entered locality ("Vancouver, Canada"), split on the last comma:
+          big city line, small country line. On the main (global) board there
+          is no locality to split, so it just reads "Global". */}
+      {(isCity || isGlobal) && (() => {
         const full = (cityName ?? "City").trim();
-        const cut = full.lastIndexOf(",");
-        const cityPart = cut > 0 ? full.slice(0, cut).trim() : full;
-        const countryPart = cut > 0 ? full.slice(cut + 1).trim() : null;
+        const cut = isCity ? full.lastIndexOf(",") : -1;
+        const titlePart = isGlobal ? "Global" : cut > 0 ? full.slice(0, cut).trim() : full;
+        const kickerPart = isGlobal ? null : cut > 0 ? full.slice(cut + 1).trim() : null;
+        // Global has no separate "tagged" signal — reuse the ranked-player
+        // count (totalPlayers), which is already a global, mode-scoped tally.
+        const playerCount = isGlobal ? globalQ.data?.totalPlayers : cityQ.data?.taggedPlayers;
         return (
           <div className="city-hero">
             <img src="/city-hero.png" alt="" aria-hidden="true" className="city-hero-img" draggable={false} />
             <div className="city-hero-shade" />
             <div className="city-hero-title-block">
-              <div className="city-hero-kicker">{countryPart ? countryPart.toUpperCase() : "City Leaderboard"}</div>
-              <h1 className="city-hero-title">{cityPart}</h1>
+              <div className="city-hero-kicker">
+                {kickerPart ? kickerPart.toUpperCase() : isGlobal ? "Global Leaderboard" : "City Leaderboard"}
+              </div>
+              <h1 className="city-hero-title">{titlePart}</h1>
               {/* Activity line: distinct registered players in games tagged to
-                  this city inside the selected window (server-computed, broader
-                  than the ranked count). Zero = "Open Table" — come get a game. */}
-              {cityQ.data && (
+                  this city (or, on the global board, ranked players overall)
+                  inside the selected window. Zero = "Open Table" — come get a
+                  game. */}
+              {playerCount != null && (
                 <div className="city-hero-players">
-                  {cityQ.data.taggedPlayers > 0
-                    ? `🙋‍♂️ ${cityQ.data.taggedPlayers} ${cityQ.data.taggedPlayers === 1 ? "Player" : "Players"}`
+                  {playerCount > 0
+                    ? `🙋‍♂️ ${playerCount} ${playerCount === 1 ? "Player" : "Players"}`
                     : "Open Table"}
                 </div>
               )}
