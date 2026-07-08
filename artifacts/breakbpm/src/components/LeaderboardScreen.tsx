@@ -68,9 +68,13 @@ function rankBadge(rank: number): string {
 export function LeaderboardRowCard({
   row,
   onWho,
+  hideDefense = false,
 }: {
   row: LeaderboardRow;
   onWho?: (name: string) => void;
+  /** Hide the DEF chip — used on Shark-mode boards, where solo games have no
+      opponent to defend against, so a safety rate is meaningless. */
+  hideDefense?: boolean;
 }) {
   // Tint the whole card's pool-table felt to the player's profile theme
   // (shark→blue, hustler→red, pool-player→purple, else green) so each
@@ -148,7 +152,7 @@ export function LeaderboardRowCard({
           {/* Defense chip — window safety effectiveness, same style as the
               account page. Only shown once the player has at least one
               defense-scored safety; v1-only history = "no data", not 0%. */}
-          {(row.defenseSafeties ?? 0) > 0 && row.defenseRate != null && (
+          {!hideDefense && (row.defenseSafeties ?? 0) > 0 && row.defenseRate != null && (
             <span
               title={`Defense: ${row.defenseSuccesses} of ${row.defenseSafeties} ${row.defenseSafeties === 1 ? "safety" : "safeties"} left the opponent without a pocketed ball`}
               style={{
@@ -706,6 +710,7 @@ export default function LeaderboardScreen({
                     <LeaderboardRowCard
                       key={row.screenName}
                       row={row}
+                      hideDefense={mode === "shark"}
                       onWho={(name) => setLocation(`/watch/${encodeURIComponent(name)}`)}
                     />
                   ))}
