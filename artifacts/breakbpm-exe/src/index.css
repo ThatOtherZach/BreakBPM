@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+:root {
+  --color-silver: #c0c0c0;
+  --color-dark: #808080;
+  --color-darker: #404040;
+  --color-navy: #000080;
+  --color-blue: #1084d0;
+  --color-teal: #008080;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-green: #00ff41;
+  --color-amber: #ffb300;
+  --color-felt: #0f5a2e;
+  --color-felt-lit: #147a3e;
+
+  --color-primary: #000080;
+  --color-secondary: #008080;
+  --color-accent: #00ff41;
+
+  --color-bg-light: #c0c0c0;
+  --color-bg-dark: #000000;
+  --color-bg-muted: #808080;
+
+  --color-text-primary: #000000;
+  --color-text-secondary: #404040;
+  --color-text-inverse: #ffffff;
+
+  --font-display: 'VT323', monospace;
+  --font-body: 'Pixelify Sans', 'MS Sans Serif', sans-serif;
+}
+
+@theme inline {
+  --color-silver: var(--color-silver);
+  --color-dark: var(--color-dark);
+  --color-darker: var(--color-darker);
+  --color-navy: var(--color-navy);
+  --color-blue: var(--color-blue);
+  --color-teal: var(--color-teal);
+  --color-green: var(--color-green);
+  --color-amber: var(--color-amber);
+  --color-felt: var(--color-felt);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-teal);
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+.win98-window {
+  background: var(--color-silver);
+  border-top: 2px solid var(--color-white);
+  border-left: 2px solid var(--color-white);
+  border-right: 2px solid var(--color-darker);
+  border-bottom: 2px solid var(--color-darker);
+  box-shadow: inset 1px 1px 0 var(--color-silver), inset -1px -1px 0 var(--color-dark);
+}
+
+.win98-titlebar {
+  background: linear-gradient(to right, var(--color-navy) 0%, var(--color-blue) 100%);
+  color: var(--color-white);
+  font-family: var(--font-body);
+  padding: 2px 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.win98-btn {
+  background: var(--color-silver);
+  border-top: 1px solid var(--color-white);
+  border-left: 1px solid var(--color-white);
+  border-right: 1px solid var(--color-darker);
+  border-bottom: 1px solid var(--color-darker);
+  box-shadow: inset 1px 1px 0 var(--color-silver), inset -1px -1px 0 var(--color-dark);
+  color: var(--color-black);
+  font-family: var(--font-body);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.win98-btn:active {
+  border-top: 1px solid var(--color-darker);
+  border-left: 1px solid var(--color-darker);
+  border-right: 1px solid var(--color-white);
+  border-bottom: 1px solid var(--color-white);
+  box-shadow: inset 1px 1px 0 var(--color-dark), inset -1px -1px 0 var(--color-silver);
+}
+
+.felt-panel {
+  background-color: var(--color-felt);
+  background-image:
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.10) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 4px);
+  border: 4px outset #7a4a22;
+  box-shadow: inset 0 0 0 2px #0a4322, inset 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.glitch-text {
+  position: relative;
+  display: inline-block;
+}
+.glitch-text::before,
+.glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0.8;
+}
+.glitch-text::before {
+  color: #0ff;
+  z-index: -1;
+  transform: translate(-2px, 1px);
+}
+.glitch-text::after {
+  color: #f0f;
+  z-index: -2;
+  transform: translate(2px, -1px);
+}
+
+.crt-overlay {
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.15;
+}

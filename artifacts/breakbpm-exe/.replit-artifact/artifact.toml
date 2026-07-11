@@ -1,0 +1,31 @@
+kind = "video"
+previewPath = "/breakbpm-exe/"
+title = "BreakBPM.exe"
+version = "1.0.0"
+id = "artifacts/breakbpm-exe"
+router = "path"
+
+[[integratedSkills]]
+name = "video-js"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/breakbpm-exe/" ]
+localPort = 24442
+
+[services.development]
+run = "pnpm --filter @workspace/breakbpm-exe run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/breakbpm-exe", "run", "build" ]
+publicDir = "artifacts/breakbpm-exe/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24442"
+BASE_PATH = "/breakbpm-exe/"
