@@ -5,25 +5,27 @@ export function Scene3Corruption() {
   const [phase, setPhase] = useState(0);
   const [bpm, setBpm] = useState(4.1);
 
+  // One-time phase schedule — must NOT depend on `phase`, or each phase change
+  // would cancel and reschedule the remaining timers and push them past the
+  // scene's 5s duration (the phase-3 error dialog would never appear).
   useEffect(() => {
     const timers = [
       setTimeout(() => setPhase(1), 1000), // starts spiking
       setTimeout(() => setPhase(2), 2500), // RGB split
       setTimeout(() => setPhase(3), 3500), // first error dialog
     ];
+    return () => timers.forEach(t => clearTimeout(t));
+  }, []);
 
-    let interval: any;
-    if (phase >= 1) {
-      interval = setInterval(() => {
-        setBpm(prev => prev * 1.8 + Math.random() * 10);
-      }, 100);
-    }
-
-    return () => {
-      timers.forEach(t => clearTimeout(t));
-      if (interval) clearInterval(interval);
-    };
-  }, [phase]);
+  // BPM spike interval — starts once when spiking begins (phase >= 1).
+  const spiking = phase >= 1;
+  useEffect(() => {
+    if (!spiking) return;
+    const interval = setInterval(() => {
+      setBpm(prev => prev * 1.8 + Math.random() * 10);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [spiking]);
 
   return (
     <motion.div
